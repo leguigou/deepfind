@@ -91,8 +91,44 @@ fs.mkdirSync(OUT, { recursive: true });
   check('mapping visuel : SKU pré-rempli', (await page.inputValue('select[name="f[sku][path]"]')) === 'sku');
   check('mapping visuel : exemple affiché', (await page.textContent('.map-sample')).includes('ex.'));
   await page.screenshot({ path: OUT + '/09-mapping-visuel.png', fullPage: false });
+  await page.selectOption('select[name="f[type][path]"]', '');
   await page.click('.sticky-actions button.btn');
   check('mapping visuel : enregistré', (await page.textContent('body')).includes('Mapping enregistré'));
+  check('mapping visuel : « non mappé » conservé (pas de re-suggestion)', (await page.inputValue('select[name="f[type][path]"]')) === '');
+  check('mapping visuel : interprétation du stock affichée', (await page.textContent('body')).includes('= oui'));
+  await page.selectOption('select[name="f[type][path]"]', 'type');
+  await page.click('.sticky-actions button.btn');
+  check('mapping visuel : champ re-mappé', (await page.inputValue('select[name="f[type][path]"]')) === 'type');
+
+  // Paramètres : interrupteurs marche/arrêt
+  await page.goto(BASE + '/admin/settings');
+  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 2);
+  await page.click('label.toggle:has(input[name=block_bad_user_agents])');
+  await page.click('form.form > button.btn');
+  check('interrupteur : désactivé et enregistré', (await page.isChecked('input[name=block_bad_user_agents][type=checkbox]')) === false);
+  await page.screenshot({ path: OUT + '/14-parametres-interrupteurs.png', fullPage: false });
+  await page.click('label.toggle:has(input[name=block_bad_user_agents])');
+  await page.click('form.form > button.btn');
+  check('interrupteur : réactivé', await page.isChecked('input[name=block_bad_user_agents][type=checkbox]'));
+
+  // Pertinence & classement
+  await page.goto(BASE + '/admin/relevance');
+  check('pertinence : page affichée', (await page.textContent('body')).includes('Comment un produit est classé'));
+  await page.fill('input[name="fields[brand][pos]"]', '1');
+  await page.fill('input[name="fields[name][pos]"]', '2');
+  await page.check('input[name=biz_importance][value=medium]');
+  await page.fill('input[name=w_margin]', '35');
+  await page.click('.sticky-actions button.btn >> nth=0');
+  const relTxt = await page.textContent('body');
+  check('pertinence : appliquée au moteur', relTxt.includes('appliqués à'));
+  check('pertinence : avertissement poids (import requis)', relTxt.includes('prochain import complet'));
+  check('pertinence : nouvel ordre enregistré', (await page.inputValue('input[name="fields[brand][pos]"]')) === '1');
+  await page.screenshot({ path: OUT + '/13-pertinence.png', fullPage: false });
+  await page.fill('input[name="fields[brand][pos]"]', '2');
+  await page.fill('input[name="fields[name][pos]"]', '1');
+  await page.check('input[name=biz_importance][value=low]');
+  await page.fill('input[name=w_margin]', '20');
+  await page.click('.sticky-actions button.btn >> nth=0');
   await page.goto(BASE + '/admin/sources/test?id=1');
   check('mapping visuel : test du résultat sans rejet', !(await page.textContent('body')).includes('Rejeté'));
 

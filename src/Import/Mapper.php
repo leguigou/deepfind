@@ -377,10 +377,26 @@ final class Mapper
         return (float) preg_replace('/[^0-9.\-]/', '', $s);
     }
 
+    /** Valeurs reconnues comme « oui » / « en stock » (après minuscules, sans accents, _ et - remplacés par des espaces). */
+    private const TRUE_VALUES = [
+        '1', 'true', 'yes', 'oui', 'y', 'o', 'vrai', 'on', 'enabled', 'enable', 'active', 'actif', 'published', 'publie',
+        // stock : Magento, Google Shopping (in_stock, preorder, backorder), schema.org (InStock, LimitedAvailability…), français
+        'in stock', 'instock', 'en stock', 'available', 'available for order', 'disponible', 'dispo', 'en stock fournisseur',
+        'limited availability', 'limitedavailability', 'online only', 'onlineonly', 'preorder', 'pre order', 'backorder', 'back order',
+        'precommande', 'pre commande', 'sur commande', 'is in stock',
+    ];
+
     public static function toBool(string $s): int
     {
-        $s = Text::normalize($s);
-        return in_array($s, ['1', 'true', 'yes', 'oui', 'y', 'o', 'in stock', 'instock', 'en stock', 'available', 'disponible', 'enabled', 'active'], true) ? 1 : 0;
+        $s = trim($s);
+        if (preg_match('#^https?://schema\.org/(\w+)$#i', $s, $m)) {
+            $s = $m[1];
+        }
+        if (is_numeric($s)) {
+            return (float) $s > 0 ? 1 : 0; // « 12 » (quantité) = en stock, « 0 » = rupture
+        }
+        $s = trim((string) preg_replace('/[\s_\-]+/', ' ', Text::normalize($s)));
+        return in_array($s, self::TRUE_VALUES, true) ? 1 : 0;
     }
 
     public static function toTimestamp(string $s): int

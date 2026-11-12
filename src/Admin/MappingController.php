@@ -81,14 +81,15 @@ final class MappingController
             $root = array_values(array_filter($root, static fn ($o) => !str_starts_with($o['value'], $variantsPath . '/')));
         }
 
-        $rows = static function (array $catalog, array $current, array $options): array {
+        // $unmapped : champs volontairement laissés « non mappé » lors d'un enregistrement précédent (pas de re-suggestion).
+        $rows = static function (array $catalog, array $current, array $options, array $unmapped = []): array {
             $out = [];
             foreach ($catalog as $field => $info) {
                 $conf = $current[$field] ?? null;
                 $path = is_string($conf) ? $conf : (string) ($conf['path'] ?? '');
                 $transform = is_array($conf) ? implode(', ', (array) ($conf['transform'] ?? [])) : '';
                 $auto = false;
-                if ($path === '' && !isset($conf['value'])) {
+                if ($path === '' && !isset($conf['value']) && !in_array($field, $unmapped, true)) {
                     $path = FeedInspector::suggest($info['synonyms'], $options);
                     $auto = $path !== '';
                 }
@@ -106,8 +107,9 @@ final class MappingController
                 unset($current[$f]);
             }
         }
-        $vars['required'] = $rows($groupsFields['required'], $current, $root);
-        $vars['secondary'] = $rows($groupsFields['secondary'], $current, $root);
+        $unmapped = array_map('strval', (array) ($mapping['unmapped'] ?? []));
+        $vars['required'] = $rows($groupsFields['required'], $current, $root, $unmapped);
+        $vars['secondary'] = $rows($groupsFields['secondary'], $current, $root, $unmapped);
 
         $vcurrent = $mapping['variants']['fields'] ?? [];
         $vknown = array_column($varOpts, 'value');
@@ -117,7 +119,7 @@ final class MappingController
                 unset($vcurrent[$f]);
             }
         }
-        $vars['variantRows'] = $variantsPath !== '' ? $rows(FieldCatalog::variants(), $vcurrent, $varOpts) : [];
+        $vars['variantRows'] = $variantsPath !== '' ? $rows(FieldCatalog::variants(), $vcurrent, $varOpts, array_map('strval', (array) ($mapping['variants']['unmapped'] ?? []))) : [];
 
         // Catégories : éléments répétés ou dont le nom évoque une catégorie
         $catCandidates = [];
@@ -205,16 +207,20 @@ final class MappingController
         $mode = ($_POST['variant_mode'] ?? 'nested') === 'flat' ? 'flat' : 'nested';
 
         $groups = FieldCatalog::groups($kind, $mode);
-        $mapping['fields'] = self::fields($_POST['f'] ?? [], array_keys($groups['required'] + $groups['secondary']), $mapping['fields'] ?? [], $kind);
+        $allFields = array_keys($groups['required'] + $groups['secondary']);
+        $mapping['fields'] = self::fields($_POST['f'] ?? [], $allFields, $mapping['fields'] ?? [], $kind);
+        $mapping['unmapped'] = array_values(array_diff($allFields, array_keys($mapping['fields'])));
 
         if ($kind === 'products') {
             $mapping['variant_mode'] = $mode;
             $mapping['parent_match'] = ($_POST['parent_match'] ?? 'id') === 'sku' ? 'sku' : 'id';
             $vpath = trim((string) ($_POST['variants_path'] ?? ''));
             if ($mode === 'nested' && $vpath !== '') {
+                $vfields = self::fields($_POST['v'] ?? [], array_keys(FieldCatalog::variants()), $mapping['variants']['fields'] ?? [], 'variants');
                 $mapping['variants'] = [
                     'path' => $vpath,
-                    'fields' => self::fields($_POST['v'] ?? [], array_keys(FieldCatalog::variants()), $mapping['variants']['fields'] ?? [], 'variants'),
+                    'fields' => $vfields,
+                    'unmapped' => array_values(array_diff(array_keys(FieldCatalog::variants()), array_keys($vfields))),
                 ];
                 $vb = self::block($_POST['vattr'] ?? []);
                 if ($vb !== null) {

@@ -31,6 +31,8 @@ final class Settings
         'popularity_ref' => '100',
         'new_days' => '45',
         'out_of_stock_last' => '1',
+        'biz_importance' => 'low',
+        'searchable_fields' => '',
         // Recherche
         'posts_limit' => '4',
         'max_limit' => '48',
@@ -43,6 +45,9 @@ final class Settings
         'max_drop_percent' => '20',
     ];
 
+    /** Paramètres marche/arrêt (affichés sous forme d'interrupteur) */
+    public const BOOLEANS = ['block_bad_user_agents', 'out_of_stock_last', 'log_searches'];
+
     public const LABELS = [
         'rate_per_minute' => 'Requêtes max. par IP et par minute',
         'rate_per_hour' => 'Requêtes max. par IP et par heure',
@@ -50,7 +55,7 @@ final class Settings
         'burst_multiplier' => 'Blocage immédiat si la limite/minute est dépassée × N',
         'violations_before_block' => 'Minutes en dépassement (sur 1 h) avant blocage auto',
         'block_minutes' => 'Durée du blocage automatique (minutes)',
-        'block_bad_user_agents' => 'Refuser les user-agents de robots (1/0)',
+        'block_bad_user_agents' => 'Refuser les user-agents de robots',
         'bad_user_agents' => 'Motifs de user-agents refusés (regex, séparés par |)',
         'ip_allowlist' => 'IP jamais limitées (séparées par des virgules)',
         'w_stock' => 'Poids : en stock',
@@ -60,12 +65,12 @@ final class Settings
         'w_manual_boost' => 'Poids : par point de boost manuel',
         'popularity_ref' => 'Ventes 30 j considérées comme « max » de popularité',
         'new_days' => 'Un produit est « nouveau » pendant N jours',
-        'out_of_stock_last' => 'Ruptures en fin de liste (1/0)',
+        'out_of_stock_last' => 'Ruptures en fin de liste',
         'posts_limit' => 'Nombre d\'articles de blog affichés',
         'max_limit' => 'Produits max. par page',
         'cache_ttl' => 'Cache des réponses (secondes, 0 = désactivé)',
         'facet_values_limit' => 'Valeurs max. par filtre',
-        'log_searches' => 'Journaliser les recherches (1/0)',
+        'log_searches' => 'Journaliser les recherches',
         'log_retention_days' => 'Conservation des journaux (jours)',
         'max_drop_percent' => 'Import bloqué si le catalogue baisse de plus de N %',
     ];

@@ -43,6 +43,20 @@ check('stripHtml', Text::stripHtml('<p>Bonjour<br>le <strong>monde</strong> &amp
 check('to_float virgule française', Mapper::toFloat('1 234,56 €') === 1234.56);
 check('to_float point + séparateur milliers', Mapper::toFloat('1,234.56') === 1234.56);
 check('to_bool « En stock »', Mapper::toBool('En stock') === 1 && Mapper::toBool('Rupture') === 0);
+check('stock Google Shopping (in_stock / out_of_stock / preorder)', Mapper::toBool('in_stock') === 1 && Mapper::toBool('out_of_stock') === 0 && Mapper::toBool('preorder') === 1);
+check('stock schema.org et quantités', Mapper::toBool('https://schema.org/InStock') === 1 && Mapper::toBool('http://schema.org/OutOfStock') === 0 && Mapper::toBool('12') === 1 && Mapper::toBool('0') === 0);
+$gxml = '<rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>1</g:id><g:availability>out_of_stock</g:availability></item>'
+    . '<item><g:id>2</g:id><g:availability>in_stock</g:availability></item></channel></rss>';
+$gtmp = tempnam(sys_get_temp_dir(), 'df');
+file_put_contents($gtmp, $gxml);
+$gm = new Mapper(['item_element' => 'item', 'fields' => ['in_stock' => ['path' => 'g:availability'], 'id' => ['path' => 'g:id']]]);
+$gvals = [];
+foreach (XmlItemReader::items($gtmp, ['item']) as [, $gel]) {
+    $gvals[] = $gm->mapProduct($gel)['fields']['in_stock'] ?? null;
+}
+unlink($gtmp);
+check('flux Google (g:availability) : stock lu correctement', $gvals === [0, 1], json_encode($gvals));
+check('pertinence : importance du score métier', DeepFind\Search\Relevance::rankingRules('low')[6] === 'biz_score:desc' && DeepFind\Search\Relevance::rankingRules('high')[2] === 'biz_score:desc');
 check('transform divide:100', Mapper::transform(['to_float', 'divide:100'], '42') === 0.42);
 check('transform split', Mapper::transform(['split:|'], 'a| b |c') === ['a', 'b', 'c']);
 check('transform replace', Mapper::transform(['replace:-| '], 'a-b') === 'a b');

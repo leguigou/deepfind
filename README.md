@@ -256,7 +256,7 @@ Deux options pour les flux :
 | `ean` | texte | | recherche exacte |
 | `price` | décimal | ✅ (ou final_price) | prix barré si promo |
 | `final_price` | décimal | conseillé | prix affiché (exportez le **prix final** Magento, règles de prix catalogue incluses) |
-| `in_stock`, `salable_qty` | 0/1, entier | conseillé | exportez la **quantité vendable MSI** |
+| `in_stock`, `salable_qty` | oui/non, entier | conseillé | exportez la **quantité vendable MSI**. Pour `in_stock`, sont reconnus comme « en stock » : 1, un nombre > 0, oui/yes/true, « En stock », `in_stock`, `available`, `preorder`, `backorder` (Google Shopping) et `https://schema.org/InStock`. Tout le reste = rupture |
 | `margin_rate` | 0 à 1 | | **classement uniquement, jamais envoyé au site** |
 | `sales_30d` | entier | | popularité |
 | `created_at` | date | | badge « Nouveau » et classement |
@@ -309,6 +309,8 @@ Champs : `id`, `title`, `url`, `published_at` (obligatoires), plus `image`, `exc
 - **À gauche**, les champs DeepFind : d'abord les **obligatoires** (marqués d'un `*`, surlignés tant qu'ils ne sont pas mappés), puis les **secondaires**.
 - **À droite**, une liste déroulante des champs détectés, avec un **exemple de valeur** et le **taux de présence** (ex. `url_key (22 %)` : présent seulement sur les parents d'un flux à plat).
 - Les champs sont **pré-sélectionnés automatiquement** d'après les noms usuels (badge « auto ») : `url_key` pour l'URL, `special_price` pour le prix final, `manufacturer` pour la marque, `is_in_stock`, `qty`… Vérifiez toujours ces suggestions.
+- Choisir **« — non mappé — »** pour un champ est mémorisé : il n'est plus re-proposé automatiquement.
+- Pour les champs oui/non (stock, activé), l'écran montre comment chaque valeur d'exemple sera comprise (`in_stock = oui, out_of_stock = non`).
 - Une colonne facultative permet d'ajouter des **transformations** (ex. `to_float, divide:100` pour une marge en %).
 - **Sections suivantes** : variantes, catégories (chemin et identifiant), **attributs filtrables** (liste « par code » détectée, ou champs simples comme `color` et `size`, proposés automatiquement).
 
@@ -406,10 +408,22 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Clés & intégration | Clés publiques, domaines autorisés, code à copier |
 | Paramètres | Seuils anti-robots, poids du classement, cache, conservation des journaux, seuil de sécurité des imports |
 
-**Classement métier (`biz_score`)**
-- Calcul : stock × poids + marge × poids + popularité × poids + nouveauté × poids + boost manuel × poids.
-- Il sert à départager des résultats aussi pertinents les uns que les autres. La pertinence du texte passe toujours en premier.
-- Si vous modifiez les poids, relancez un import complet pour qu'ils s'appliquent.
+### Pertinence & classement : mettre en avant ce que vous voulez
+
+![Pertinence & classement](docs/screenshots/13-pertinence.png)
+
+La page **Pertinence & classement** regroupe tout ce qui fait remonter un produit :
+
+1. **Importance des champs dans la recherche texte** : numérotez les champs (nom, marque, SKU, mots-clés, catégories, attributs, descriptions). Un mot trouvé dans un champ bien classé fait remonter le produit. Un champ peut être rendu non cherchable. *Appliqué immédiatement au moteur.*
+2. **Score métier** : un poids par critère (en stock, rentabilité, popularité sur 30 jours, nouveauté, boost manuel du flux). Mettez 0 pour ignorer un critère.
+   - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
+   - Le score est calculé à l'import : *appliqué au prochain import complet*. Le bouton « Enregistrer et recalculer maintenant » le lance tout de suite, et la page signale des poids modifiés mais pas encore appliqués.
+3. **Importance du score métier face à la pertinence** : *faible* (il ne départage que des produits aussi pertinents, recommandé), *moyenne* ou *forte*. Interrupteur **Ruptures en fin de liste**. *Appliqué immédiatement.*
+
+**Ordre de classement :**
+- Le nombre de mots trouvés passe toujours en premier.
+- Les **règles** (épingler, remonter) passent avant tout le reste.
+- Vérifiez l'effet de vos réglages dans **Aperçu interne**, qui affiche le score et la marge de chaque produit.
 
 ## 7. Anti-robots
 

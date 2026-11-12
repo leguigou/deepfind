@@ -9,6 +9,7 @@ $nav = [
     'synonyms' => ['/admin/synonyms', 'Synonymes & alias'],
     'rules' => ['/admin/rules', 'Règles de résultats'],
     'redirects' => ['/admin/redirects', 'Redirections'],
+    'relevance' => ['/admin/relevance', 'Pertinence & classement'],
     'preview' => ['/admin/preview', 'Aperçu interne'],
     'stats' => ['/admin/stats', 'Statistiques'],
     'logs' => ['/admin/logs', 'Journal des recherches'],

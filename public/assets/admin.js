@@ -99,13 +99,21 @@
     function showSample(sel) {
       var opt = sel.options[sel.selectedIndex];
       var out = sel.parentNode.querySelector('[data-sample-out]');
-      if (out) { out.textContent = opt && opt.getAttribute('data-sample') ? 'ex. ' + opt.getAttribute('data-sample') : ''; }
+      if (out) {
+        var txt = opt && opt.getAttribute('data-sample') ? 'ex. ' + opt.getAttribute('data-sample') : '';
+        var interp = opt && opt.getAttribute('data-interpret');
+        out.textContent = txt + (interp ? '  →  ' + interp : '');
+      }
       var row = sel.closest('tr');
       if (row && row.classList.contains('map-missing') && sel.value) { row.classList.remove('map-missing'); }
     }
     document.querySelectorAll('select[data-sample-select]').forEach(function (sel) {
       showSample(sel);
-      sel.addEventListener('change', function () { showSample(sel); });
+      sel.addEventListener('change', function () {
+        showSample(sel);
+        var badge = sel.parentNode.querySelector('.badge-auto');
+        if (badge) { badge.remove(); }
+      });
     });
     document.querySelectorAll('code.select').forEach(function (el) {
       el.addEventListener('click', function () {

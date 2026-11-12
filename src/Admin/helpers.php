@@ -45,7 +45,7 @@ function badge(string $status): string
  * Liste déroulante des chemins détectés dans le flux (mapping visuel).
  * @param list<array{value:string, group:string, sample:string, coverage:int}> $options
  */
-function select_paths(string $name, array $options, string $selected, string $empty = '— non mappé —', string $extraAttrs = ''): string
+function select_paths(string $name, array $options, string $selected, string $empty = '— non mappé —', string $extraAttrs = '', bool $interpretBool = false): string
 {
     $html = '<select name="' . e($name) . '" data-sample-select ' . $extraAttrs . '><option value="">' . e($empty) . '</option>';
     $values = array_column($options, 'value');
@@ -60,7 +60,12 @@ function select_paths(string $name, array $options, string $selected, string $em
         $html .= '<optgroup label="' . e($group) . '">';
         foreach ($opts as $o) {
             $label = $o['value'] . ($o['coverage'] >= 0 && $o['coverage'] < 100 ? ' (' . $o['coverage'] . ' %)' : '');
-            $html .= '<option value="' . e($o['value']) . '" data-sample="' . e($o['sample']) . '"' . ($o['value'] === $selected ? ' selected' : '') . '>' . e($label) . '</option>';
+            $interp = '';
+            if ($interpretBool && $o['sample'] !== '') {
+                // Montre comment chaque valeur d'exemple sera comprise (ex. in_stock → oui, out_of_stock → non)
+                $interp = implode(', ', array_map(static fn ($v) => trim($v) . ' = ' . (DeepFind\Import\Mapper::toBool(trim($v)) ? 'oui' : 'non'), explode('|', $o['sample'])));
+            }
+            $html .= '<option value="' . e($o['value']) . '" data-sample="' . e($o['sample']) . '"' . ($interp !== '' ? ' data-interpret="' . e($interp) . '"' : '') . ($o['value'] === $selected ? ' selected' : '') . '>' . e($label) . '</option>';
         }
         $html .= '</optgroup>';
     }

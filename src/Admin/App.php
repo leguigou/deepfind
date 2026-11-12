@@ -25,6 +25,8 @@ final class App
         'GET /admin/imports' => [SourcesController::class, 'imports'],
         'GET /admin/imports/view' => [SourcesController::class, 'importView'],
         'GET /admin/imports/status' => [SourcesController::class, 'importStatus'],
+        'GET /admin/relevance' => [RelevanceController::class, 'index'],
+        'POST /admin/relevance/save' => [RelevanceController::class, 'save'],
         'GET /admin/cache' => [CacheController::class, 'index'],
         'POST /admin/cache/purge' => [CacheController::class, 'purge'],
         'GET /admin/synonyms' => [RulesController::class, 'synonyms'],

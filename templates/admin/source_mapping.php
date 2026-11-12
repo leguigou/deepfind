@@ -11,8 +11,8 @@ $renderRows = static function (array $rows, string $prefix, array $opts, bool $r
         </td>
         <td class="map-arrow" aria-hidden="true">←</td>
         <td class="map-source">
-          <?= select_paths($prefix . '[' . $field . '][path]', $opts, $r['path'], $r['fixed'] !== null ? '— valeur fixe : ' . $r['fixed'] . ' —' : '— non mappé —', 'aria-label="Champ du flux pour ' . e($r['label']) . '"') ?>
-          <?php if ($r['auto']): ?><span class="badge badge-info" title="Pré-sélectionné automatiquement d'après le nom du champ">auto</span><?php endif; ?>
+          <?= select_paths($prefix . '[' . $field . '][path]', $opts, $r['path'], $r['fixed'] !== null ? '— valeur fixe : ' . $r['fixed'] . ' —' : '— non mappé —', 'aria-label="Champ du flux pour ' . e($r['label']) . '"', in_array($field, ['in_stock', 'enabled'], true)) ?>
+          <?php if ($r['auto']): ?><span class="badge badge-info badge-auto" title="Pré-sélectionné automatiquement d'après le nom du champ">auto</span><?php endif; ?>
           <div class="map-sample muted" data-sample-out></div>
         </td>
         <td class="map-transform">

@@ -27,14 +27,13 @@ final class IndexSettings
             $filterable[] = 'attr.' . $code;
         }
         $s = [
-            'searchableAttributes' => [
-                'name', 'brand', 'sku', 'all_skus', 'search_keywords', 'category_terms', 'attr_values',
-                'all_eans', 'short_description', 'description',
-            ],
+            // Ordre = importance (réglable dans l'extranet : Pertinence & classement)
+            'searchableAttributes' => Relevance::searchableAttributes(),
             'filterableAttributes' => $filterable,
             'sortableAttributes' => ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d'],
             // "sort" après "words" : un tri demandé (prix, stock) ne fait pas passer un produit peu pertinent devant.
-            'rankingRules' => ['words', 'sort', 'typo', 'proximity', 'attribute', 'exactness', 'biz_score:desc'],
+            // Position de biz_score selon l'importance choisie pour le score métier.
+            'rankingRules' => Relevance::rankingRules(),
             'typoTolerance' => [
                 'enabled' => true,
                 'minWordSizeForTypos' => ['oneTypo' => 4, 'twoTypos' => 8],
