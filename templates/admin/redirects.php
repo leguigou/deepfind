@@ -12,7 +12,7 @@
     <h3>Importer un CSV</h3>
     <p class="muted">Colonnes : <code>requete;url</code></p>
     <input type="file" name="csv" accept=".csv,text/csv" required>
-    <label class="check"><input type="checkbox" name="replace"> Remplacer toutes les redirections de cette langue</label>
+    <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="replace"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Remplacer toutes les redirections de cette langue</span></label>
     <button class="btn">Importer</button>
   </form>
 </div>

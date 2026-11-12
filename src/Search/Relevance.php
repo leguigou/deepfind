@@ -17,7 +17,7 @@ final class Relevance
     public const FIELDS = [
         'name' => ['Nom du produit', 'Toujours cherchable', false],
         'brand' => ['Marque', '« cressi » trouve les produits Cressi', true],
-        'sku' => ['SKU du parent', 'La recherche exacte par SKU fonctionne même si décoché', true],
+        'sku' => ['SKU du parent', 'La recherche exacte par SKU fonctionne même si désactivé', true],
         'all_skus' => ['SKU des variantes', 'Recherche partielle sur les références enfants', true],
         'search_keywords' => ['Mots-clés de recherche', 'Champ « search_keywords » du flux', true],
         'category_terms' => ['Catégories', 'Noms des catégories et de leurs parents', true],

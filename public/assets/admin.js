@@ -84,6 +84,10 @@
       }
     }
 
+    document.querySelectorAll('[data-dim-row] input').forEach(function (cb) {
+      cb.addEventListener('change', function () { var tr = cb.closest('tr'); if (tr) { tr.classList.toggle('dim', !cb.checked); } });
+    });
+
     // Planification : un choix prédéfini remplit l'expression cron
     document.querySelectorAll('select[data-cron-preset]').forEach(function (sel) {
       var input = document.getElementById(sel.getAttribute('data-cron-preset'));

@@ -20,7 +20,7 @@
           <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $k['id'] ?>">
           <input name="origins" value="<?= e($k['allowed_origins']) ?>" placeholder="(tous les domaines : déconseillé)">
           <input name="langs" value="<?= e($k['langs']) ?>" size="6">
-          <label class="check"><input type="checkbox" name="active" <?= $k['active'] ? 'checked' : '' ?>> active</label>
+          <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="active" <?= $k['active'] ? 'checked' : '' ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">> active</span></label>
           <button class="btn btn-sm btn-light">Enregistrer</button>
         </form>
       </td>

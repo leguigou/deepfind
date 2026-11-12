@@ -47,7 +47,7 @@ $radios = static function (string $name, array $options, string $current): void 
   </div>
 
   <h2>2. Importance des champs dans la recherche texte</h2>
-  <p class="muted">Numérotez de 1 (le plus important) au dernier ; décochez un champ pour qu'il ne soit plus cherchable.
+  <p class="muted">Numérotez de 1 (le plus important) au dernier ; désactivez un champ pour qu'il ne soit plus cherchable.
     <strong>Pas de poids chiffré par champ</strong> : Meilisearch classe uniquement par <em>ordre</em> des champs. Pour que cet ordre pèse davantage, activez l'option ci-dessous. Appliqué immédiatement.</p>
   <table class="table compact rel-fields">
     <thead><tr><th class="num">Rang</th><th>Champ</th><th>Rôle</th><th>Cherchable</th></tr></thead>
@@ -57,7 +57,7 @@ $radios = static function (string $name, array $options, string $current): void 
         <td class="num"><input type="number" name="fields[<?= e($r['field']) ?>][pos]" value="<?= $i + 1 ?>" min="1" max="20" class="rank" aria-label="Rang de <?= e($label) ?>"></td>
         <td><strong><?= e($label) ?></strong><br><code><?= e($r['field']) ?></code></td>
         <td class="muted"><?= e($help) ?></td>
-        <td><?php if ($canDisable): ?><input type="checkbox" name="fields[<?= e($r['field']) ?>][enabled]" value="1" <?= $r['enabled'] ? 'checked' : '' ?> aria-label="<?= e($label) ?> cherchable"><?php else: ?><span class="badge badge-ok">toujours</span><input type="hidden" name="fields[<?= e($r['field']) ?>][enabled]" value="1"><?php endif; ?></td>
+        <td><?php if ($canDisable): ?><label class="toggle toggle-sm" data-dim-row><input type="checkbox" role="switch" name="fields[<?= e($r['field']) ?>][enabled]" value="1" <?= $r['enabled'] ? 'checked' : '' ?> aria-label="<?= e($label) ?> cherchable"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label><?php else: ?><label class="toggle toggle-sm" title="Toujours cherchable"><input type="checkbox" role="switch" checked disabled aria-label="<?= e($label) ?> toujours cherchable"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text muted">toujours</span></label><input type="hidden" name="fields[<?= e($r['field']) ?>][enabled]" value="1"><?php endif; ?></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

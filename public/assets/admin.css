@@ -23,6 +23,7 @@
   --shadow: 0 10px 30px rgba(8, 2, 30, .45);
   --blur: blur(14px);
   --bar-bg: rgba(23, 10, 54, .88);
+  --toggle-off: rgba(255, 255, 255, .22);
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -49,6 +50,7 @@
   --shadow: 0 6px 20px rgba(60, 30, 120, .08);
   --blur: none;
   --bar-bg: rgba(255, 255, 255, .94);
+  --toggle-off: #cfc6e3;
   color-scheme: light;
 }
 
@@ -289,3 +291,17 @@ label.choice input { margin-top: 3px; width: 16px; height: 16px; }
 .syn-form { margin: 0; flex-wrap: nowrap; }
 .syn-form input[name=synonyms] { min-width: 200px; }
 .zero-table td { vertical-align: middle; }
+
+/* ---------- Interrupteur compact (tableaux, filtres, options) */
+.toggle.toggle-sm { gap: 8px; }
+.toggle-sm .toggle-track { flex-basis: 36px; width: 36px; height: 20px; }
+.toggle-sm .toggle-thumb { width: 14px; height: 14px; }
+.toggle-sm input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+.toggle-sm .toggle-text { font-size: 13.5px; }
+.toggle input:disabled + .toggle-track { opacity: .55; cursor: not-allowed; }
+td > .toggle { vertical-align: middle; }
+
+.toggle-track { background: var(--toggle-off); border-color: transparent; }
+.toggle-thumb { background: #fff; }
+.dim .toggle { opacity: 1; }
+tr.dim td:last-child { opacity: 1; }

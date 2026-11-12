@@ -118,7 +118,7 @@ $tableHead = '<thead><tr><th>Champ DeepFind</th><th></th><th>Champ détecté dan
         <p class="muted">Codes à proposer comme filtres (en plus de ceux marqués filtrables dans le flux) :</p>
         <div class="code-checks">
           <?php foreach ($state['codes'] as $c): ?>
-            <label class="check"><input type="checkbox" name="<?= e($prefix) ?>[filterable_codes][]" value="<?= e($c) ?>" <?= in_array(\DeepFind\Import\Mapper::code($c), $state['filterable_codes'], true) ? 'checked' : '' ?>> <?= e($c) ?></label>
+            <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="<?= e($prefix) ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">[filterable_codes][]" value="<?= e($c) ?>" <?= in_array(\DeepFind\Import\Mapper::code($c), $state['filterable_codes'], true) ? 'checked' : '' ?>> <?= e($c) ?></span></label>
           <?php endforeach; ?>
         </div>
         <?php endif; ?>
@@ -132,7 +132,7 @@ $tableHead = '<thead><tr><th>Champ DeepFind</th><th></th><th>Champ détecté dan
           <tr>
             <td><?= select_paths($prefix . '[' . $i . '][path]', $opts, $r['path'], '— choisir —') ?><div class="map-sample muted" data-sample-out></div></td>
             <td><input name="<?= e($prefix . '[' . $i . '][label]') ?>" value="<?= e($r['label']) ?>" placeholder="Couleur"></td>
-            <td><input type="checkbox" name="<?= e($prefix . '[' . $i . '][filterable]') ?>" value="1" <?= $r['filterable'] ? 'checked' : '' ?> aria-label="Filtrable"></td>
+            <td><label class="toggle toggle-sm"><input type="checkbox" role="switch" name="<?= e($prefix . '[' . $i . '][filterable]') ?>" value="1" <?= $r['filterable'] ? 'checked' : '' ?> aria-label="Filtrable"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
