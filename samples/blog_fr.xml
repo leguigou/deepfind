@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blog version="1.0" type="full" lang="fr_FR" store="fr" generated_at="2026-11-12T12:09:49+00:00">
+  <post>
+    <id>200</id>
+    <title><![CDATA[Comment choisir ses palmes de chasse sous-marine ?]]></title>
+    <url>https://www.example.com/blog/article-200.html</url>
+    <image>http://localhost:8080/assets/demo/blog.svg</image>
+    <excerpt><![CDATA[Longueur, voilure, chausson : nos conseils pour bien choisir.]]></excerpt>
+    <content><![CDATA[<p>Longueur, voilure, chausson : nos conseils pour bien choisir. Texte complet de l'article.</p>]]></content>
+    <author><![CDATA[Équipe démo]]></author>
+    <published_at>2026-11-12T12:09:49+00:00</published_at>
+    <categories><category><![CDATA[Conseils]]></category></categories>
+    <tags><tag><![CDATA[palmes]]></tag><tag><![CDATA[chasse]]></tag></tags>
+    <related_products><sku>C4-PREDATOR</sku></related_products>
+  </post>
+  <post>
+    <id>201</id>
+    <title><![CDATA[Palmes chaussantes ou réglables : que choisir ?]]></title>
+    <url>https://www.example.com/blog/article-201.html</url>
+    <image>http://localhost:8080/assets/demo/blog.svg</image>
+    <excerpt><![CDATA[Avantages et inconvénients des deux familles de palmes.]]></excerpt>
+    <content><![CDATA[<p>Avantages et inconvénients des deux familles de palmes. Texte complet de l'article.</p>]]></content>
+    <author><![CDATA[Équipe démo]]></author>
+    <published_at>2026-10-23T12:09:49+00:00</published_at>
+    <categories><category><![CDATA[Conseils]]></category></categories>
+    <tags><tag><![CDATA[palmes]]></tag><tag><![CDATA[plongée]]></tag></tags>
+    <related_products></related_products>
+  </post>
+  <post>
+    <id>202</id>
+    <title><![CDATA[Entretenir sa combinaison néoprène]]></title>
+    <url>https://www.example.com/blog/article-202.html</url>
+    <image>http://localhost:8080/assets/demo/blog.svg</image>
+    <excerpt><![CDATA[Rinçage, séchage, stockage : prolongez la vie de votre combinaison.]]></excerpt>
+    <content><![CDATA[<p>Rinçage, séchage, stockage : prolongez la vie de votre combinaison. Texte complet de l'article.</p>]]></content>
+    <author><![CDATA[Équipe démo]]></author>
+    <published_at>2026-10-03T12:09:49+00:00</published_at>
+    <categories><category><![CDATA[Conseils]]></category></categories>
+    <tags><tag><![CDATA[combinaison]]></tag><tag><![CDATA[entretien]]></tag></tags>
+    <related_products></related_products>
+  </post>
+  <post>
+    <id>203</id>
+    <title><![CDATA[Bien régler son masque de plongée]]></title>
+    <url>https://www.example.com/blog/article-203.html</url>
+    <image>http://localhost:8080/assets/demo/blog.svg</image>
+    <excerpt><![CDATA[Éviter la buée et les fuites : le guide complet.]]></excerpt>
+    <content><![CDATA[<p>Éviter la buée et les fuites : le guide complet. Texte complet de l'article.</p>]]></content>
+    <author><![CDATA[Équipe démo]]></author>
+    <published_at>2026-09-13T12:09:49+00:00</published_at>
+    <categories><category><![CDATA[Conseils]]></category></categories>
+    <tags><tag><![CDATA[masque]]></tag></tags>
+    <related_products></related_products>
+  </post>
+  <post>
+    <id>204</id>
+    <title><![CDATA[Débuter l'apnée : le matériel indispensable]]></title>
+    <url>https://www.example.com/blog/article-204.html</url>
+    <image>http://localhost:8080/assets/demo/blog.svg</image>
+    <excerpt><![CDATA[Palmes longues, masque à faible volume, tuba : la liste.]]></excerpt>
+    <content><![CDATA[<p>Palmes longues, masque à faible volume, tuba : la liste. Texte complet de l'article.</p>]]></content>
+    <author><![CDATA[Équipe démo]]></author>
+    <published_at>2026-08-24T12:09:49+00:00</published_at>
+    <categories><category><![CDATA[Conseils]]></category></categories>
+    <tags><tag><![CDATA[apnée]]></tag><tag><![CDATA[palmes]]></tag><tag><![CDATA[débutant]]></tag></tags>
+    <related_products></related_products>
+  </post>
+</blog>

@@ -1,0 +1,194 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Tests automatisés (sans PHPUnit). Lancement : bash tests/run.sh
+ * Partie 1 : tests unitaires (aucune dépendance).
+ * Partie 2 : tests d'intégration (MySQL de test + faux Meilisearch + serveur web PHP), si TEST_BASE_URL est défini.
+ */
+
+require dirname(__DIR__) . '/src/bootstrap.php';
+
+use DeepFind\Import\Mapper;
+use DeepFind\Import\ProductBuilder;
+use DeepFind\Import\XmlItemReader;
+use DeepFind\Search\Filter;
+use DeepFind\Search\SearchService;
+use DeepFind\Security\ApiKeys;
+use DeepFind\Security\ClientIp;
+use DeepFind\Text;
+
+$passed = 0;
+$failed = [];
+function check(string $name, bool $cond, string $detail = ''): void
+{
+    global $passed, $failed;
+    if ($cond) {
+        $passed++;
+        echo "  \033[32m✔\033[0m $name\n";
+    } else {
+        $failed[] = $name;
+        echo "  \033[31m✘ $name\033[0m" . ($detail !== '' ? " — $detail" : '') . "\n";
+    }
+}
+
+echo "Tests unitaires\n";
+
+// Texte
+check('normalize : minuscules, accents, espaces', Text::normalize('  Palmes  Réglables ÉTÉ ') === 'palmes reglables ete');
+check('stripHtml', Text::stripHtml('<p>Bonjour<br>le <strong>monde</strong> &amp; co</p><script>x()</script>') === 'Bonjour le monde & co');
+
+// Transformations
+check('to_float virgule française', Mapper::toFloat('1 234,56 €') === 1234.56);
+check('to_float point + séparateur milliers', Mapper::toFloat('1,234.56') === 1234.56);
+check('to_bool « En stock »', Mapper::toBool('En stock') === 1 && Mapper::toBool('Rupture') === 0);
+check('transform divide:100', Mapper::transform(['to_float', 'divide:100'], '42') === 0.42);
+check('transform split', Mapper::transform(['split:|'], 'a| b |c') === ['a', 'b', 'c']);
+check('transform replace', Mapper::transform(['replace:-| '], 'a-b') === 'a b');
+check('transform default', Mapper::transform(['default:simple'], '') === 'simple');
+$threw = false;
+try {
+    Mapper::transform(['inconnue'], 'x');
+} catch (InvalidArgumentException) {
+    $threw = true;
+}
+check('transformation inconnue refusée', $threw);
+
+// Mapping imbriqué
+$xml = <<<XML
+<product id="7"><sku>ABC-1</sku><name><![CDATA[Palme <b>Test</b>]]></name><brand>  Cressi </brand>
+<url>https://ex.com/p</url><price>100</price><final_price>80</final_price>
+<categories><category id="3" path="Plongée &gt; Palmes">Palmes</category></categories>
+<attributes><attribute code="Couleur" label="Couleur" filterable="1">Noir</attribute></attributes>
+<variants>
+  <variant><sku>ABC-1-S</sku><price>100</price><final_price>80</final_price><in_stock>0</in_stock><attributes><attribute code="taille" label="Taille" filterable="1">S</attribute></attributes></variant>
+  <variant><sku>ABC-1-M</sku><price>110</price><final_price>90</final_price><in_stock>1</in_stock><salable_qty>4</salable_qty><attributes><attribute code="taille" label="Taille" filterable="1">M</attribute></attributes></variant>
+</variants></product>
+XML;
+$map = Mapper::defaultProducts();
+$map['fields']['id'] = ['path' => '@id'];
+$mapper = new Mapper(json_decode(json_encode($map), true));
+$m = $mapper->mapProduct(new SimpleXMLElement($xml));
+check('mapping : attribut XML @id', $m['fields']['id'] === '7');
+check('mapping : champ absent non renseigné', !array_key_exists('enabled', $m['fields']));
+check('mapping : catégorie avec chemin', $m['categories'][0]['path'] === ['Plongée', 'Palmes']);
+check('mapping : code attribut normalisé', isset($m['attributes']['couleur']));
+check('mapping : 2 variantes', count($m['variants']) === 2);
+
+$b = new ProductBuilder(['stock' => 30, 'margin' => 20, 'popularity' => 30, 'new' => 10, 'boost' => 5, 'popularity_ref' => 100, 'new_days' => 45], 1_800_000_000);
+$doc = $b->build($m, $m['variants']);
+check('agrégat : document construit', is_array($doc), is_string($doc) ? $doc : '');
+check('agrégat : prix « dès » = variante en stock la moins chère', $doc['final_price'] === 90.0 && $doc['price'] === 110.0);
+check('agrégat : en stock si un enfant en stock', $doc['in_stock'] === 1 && $doc['salable_qty'] === 4);
+check('agrégat : promotion et pourcentage', $doc['on_sale'] === 1 && $doc['discount_percent'] === 18);
+check('agrégat : SKU enfants recherchables', $doc['all_skus'] === ['ABC-1', 'ABC-1-S', 'ABC-1-M']);
+check('agrégat : attributs des enfants remontés', $doc['attr']['taille'] === ['S', 'M']);
+check('agrégat : HTML retiré du nom', $doc['name'] === 'Palme Test' || $doc['name'] === 'Palme <b>Test</b>');
+check('agrégat : identifiant Meilisearch valide', preg_match('/^[a-zA-Z0-9_\-]+$/', $doc['id']) === 1);
+check('rejet si prix manquant', $b->build(['fields' => ['sku' => 'X', 'name' => 'X', 'url' => 'https://x'], 'categories' => [], 'attributes' => []], []) === 'prix manquant ou nul');
+check('rejet si désactivé', $b->build(['fields' => ['sku' => 'X', 'name' => 'X', 'url' => 'https://x', 'enabled' => 0], 'categories' => [], 'attributes' => []], []) === 'désactivé');
+
+// Lecture XML en flux
+$tmp = tempnam(sys_get_temp_dir(), 'df');
+file_put_contents($tmp, '<?xml version="1.0"?><catalog><product><sku>A</sku></product><deleted><sku>B</sku></deleted><product><sku>C</sku></product></catalog>');
+$names = [];
+foreach (XmlItemReader::items($tmp, ['product', 'deleted']) as [$n, $el]) {
+    $names[] = $n . ':' . trim((string) $el->sku);
+}
+check('XMLReader : éléments extraits dans l\'ordre', $names === ['product:A', 'deleted:B', 'product:C'], implode(',', $names));
+file_put_contents($tmp, gzencode('<?xml version="1.0"?><c><product><sku>Z</sku></product></c>'));
+$n = 0;
+foreach (XmlItemReader::items($tmp, ['product']) as $_) {
+    $n++;
+}
+check('XMLReader : fichier .gz lu', $n === 1);
+file_put_contents($tmp, '<?xml version="1.0"?><c><product><sku>Z</sku></product><product><sku>');
+$threw = false;
+try {
+    foreach (XmlItemReader::items($tmp, ['product']) as $_) {
+    }
+} catch (RuntimeException) {
+    $threw = true;
+}
+check('XMLReader : XML tronqué => import en erreur (pas d\'index à moitié vide)', $threw);
+file_put_contents($tmp, '<?xml version="1.0"?><!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]><c><product><sku>&x;</sku></product></c>');
+$val = '';
+try {
+    foreach (XmlItemReader::items($tmp, ['product']) as [, $el]) {
+        $val = (string) $el->sku;
+    }
+} catch (RuntimeException) {
+}
+check('XMLReader : entités externes non résolues (XXE)', !str_contains($val, 'root:'));
+unlink($tmp);
+
+// Filtres et sécurité
+check('échappement des filtres', Filter::eq('brand', 'A "B" \\') === 'brand = "A \\"B\\" \\\\"');
+check('détection SKU', SearchService::looksLikeSku('C4-PRED-42') && !SearchService::looksLikeSku('palme') && !SearchService::looksLikeSku('palme c4'));
+check('IP masquée IPv4', ClientIp::mask('203.0.113.42') === '203.0.113.x');
+check('IP masquée IPv6', ClientIp::mask('2001:db8:abcd:12::1') === '2001:db8:abcd::/48');
+check('CIDR', ClientIp::inCidr('10.1.2.3', '10.0.0.0/8') && !ClientIp::inCidr('11.1.2.3', '10.0.0.0/8'));
+check('IP hachée (pas en clair)', strlen(ClientIp::hash('1.2.3.4')) === 16 && !str_contains(ClientIp::hash('1.2.3.4'), '1.2.3.4'));
+$key = ['allowed_origins' => 'cabesto.com'];
+check('origine autorisée (sous-domaine)', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://www.cabesto.com', 'HTTP_HOST' => 'search.x']) === 'https://www.cabesto.com');
+check('origine refusée', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://cabesto.com.evil.io', 'HTTP_HOST' => 'search.x']) === null);
+check('origine refusée sans en-tête', ApiKeys::checkOrigin($key, ['HTTP_HOST' => 'search.x']) === null);
+check('même domaine sans Origin (Referer) accepté', ApiKeys::checkOrigin($key, ['HTTP_REFERER' => 'https://search.x/admin/demo', 'HTTP_HOST' => 'search.x']) === '');
+
+// ---------------------------------------------------------------- Intégration
+$base = getenv('TEST_BASE_URL');
+if ($base) {
+    echo "\nTests d'intégration ($base)\n";
+    $key = trim((string) getenv('TEST_KEY'));
+    $get = static function (string $path, array $headers = []) use ($base): array {
+        $ch = curl_init($base . $path);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => false, CURLOPT_NOPROXY => '*',
+            CURLOPT_HTTPHEADER => array_values(array_merge(['origin' => 'Origin: http://localhost:8080', 'user-agent' => 'User-Agent: Mozilla/5.0 Tests'],
+                array_combine(array_map(static fn ($h) => strtolower(strstr($h, ':', true)), $headers), $headers) ?: []))]);
+        $body = (string) curl_exec($ch);
+        return [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), json_decode($body, true) ?? $body];
+    };
+    [$c, $d] = $get("/api/v1/search?key=$key&q=palme&limit=5");
+    check('API : 200 et résultats', $c === 200 && $d['total'] > 0, (string) $c);
+    check('API : règle « épingler » (C4-PREDATOR en 1re position)', ($d['products'][0]['sku'] ?? '') === 'C4-PREDATOR');
+    check('API : marge jamais exposée', !str_contains(json_encode($d), 'margin'));
+    check('API : marques à gauche', ($d['facets'][0]['code'] ?? '') === 'brand');
+    check('API : articles de blog', count($d['posts']) > 0);
+    [$c2, $d2] = $get("/api/v1/search?key=$key&q=palme&limit=5&offset=5&posts=0");
+    $ids1 = array_column($d['products'], 'id');
+    $ids2 = array_column($d2['products'], 'id');
+    check('API : page 2 sans doublon (défilement)', $c2 === 200 && array_intersect($ids1, $ids2) === [] && count($ids2) === 5);
+    [, $d] = $get("/api/v1/search?key=$key&q=plame&limit=3");
+    check('API : faute de frappe tolérée (plame)', $d['total'] > 0);
+    [, $d] = $get("/api/v1/search?key=$key&q=c4-predator-40-41");
+    check('API : recherche par SKU enfant => parent + variante', ($d['products'][0]['sku'] ?? '') === 'C4-PREDATOR' && ($d['products'][0]['matched_variant']['sku'] ?? '') === 'C4-PREDATOR-40-41');
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&brand%5B%5D=SEAC&limit=48");
+    check('API : filtre marque', $d['total'] > 0 && count(array_unique(array_column($d['products'], 'brand'))) === 1);
+    $brandFacet = $d['facets'][0]['values'] ?? [];
+    check('API : compteurs marques disjonctifs (autres marques toujours listées)', count($brandFacet) > 1);
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&in_stock=1&limit=48");
+    check('API : filtre en stock', !in_array(false, array_column($d['products'], 'in_stock'), true));
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&on_sale=1&limit=48");
+    check('API : filtre promotion', $d['total'] > 0 && !in_array(false, array_column($d['products'], 'on_sale'), true));
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&sort=price_asc&in_stock=1&limit=48");
+    $prices = array_column($d['products'], 'final_price');
+    $sorted = $prices;
+    sort($sorted);
+    check('API : tri prix croissant', $prices === $sorted);
+    [, $d] = $get("/api/v1/search?key=$key&q=retour");
+    check('API : redirection', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours');
+    [, $d] = $get("/api/v1/search?key=$key&q=nageoire");
+    check('API : synonymes', $d['total'] > 0);
+    [$c] = $get("/api/v1/search?key=pk_00000000000000000000000000000000&q=palme");
+    check('API : clé invalide => 401', $c === 401);
+    [$c] = $get("/api/v1/search?key=$key&q=palme", ['Origin: https://evil.example']);
+    check('API : domaine non autorisé => 403', $c === 403);
+    [$c] = $get("/api/v1/search?key=$key&q=palme", ['User-Agent: python-requests/2.31']);
+    check('API : user-agent de robot => 403', $c === 403);
+    [$c, $d] = $get('/api/v1/health');
+    check('API : santé', $c === 200 && $d['status'] === 'ok');
+}
+
+echo "\n" . $passed . ' réussi(s), ' . count($failed) . " échec(s)\n";
+exit($failed === [] ? 0 : 1);

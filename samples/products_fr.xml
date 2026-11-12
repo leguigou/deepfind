@@ -1,0 +1,3894 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog version="1.0" type="full" lang="fr_FR" store="fr" currency="EUR" generated_at="2026-11-12T12:09:49+00:00">
+ <product>
+  <id>1010</id>
+  <sku>C4-PREDATOR</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Predator C4]]></name>
+  <brand><![CDATA[C4]]></brand>
+  <url>https://www.example.com/c4-predator.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Predator C4 : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Predator C4.</p>]]></description>
+  <price>378.99</price>
+  <final_price>378.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>45</salable_qty>
+  <margin_rate>0.19</margin_rate>
+  <sales_30d>81</sales_30d>
+  <created_at>2026-03-25T12:09:49+00:00</created_at>
+  <rating>4.6</rating>
+  <reviews_count>20</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1011</id>
+    <sku>C4-PREDATOR-38-39</sku>
+    <ean>3000000010100</ean>
+    <url>https://www.example.com/c4-predator.html#taille=38%2F39</url>
+    <price>378.99</price>
+    <final_price>378.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>16</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1012</id>
+    <sku>C4-PREDATOR-40-41</sku>
+    <ean>3000000010101</ean>
+    <url>https://www.example.com/c4-predator.html#taille=40%2F41</url>
+    <price>378.99</price>
+    <final_price>378.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1013</id>
+    <sku>C4-PREDATOR-42-43</sku>
+    <ean>3000000010102</ean>
+    <url>https://www.example.com/c4-predator.html#taille=42%2F43</url>
+    <price>378.99</price>
+    <final_price>378.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1014</id>
+    <sku>C4-PREDATOR-44-45</sku>
+    <ean>3000000010103</ean>
+    <url>https://www.example.com/c4-predator.html#taille=44%2F45</url>
+    <price>378.99</price>
+    <final_price>378.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1015</id>
+    <sku>C4-PREDATOR-46-47</sku>
+    <ean>3000000010104</ean>
+    <url>https://www.example.com/c4-predator.html#taille=46%2F47</url>
+    <price>378.99</price>
+    <final_price>378.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1020</id>
+  <sku>CRESSI-PREDATOR</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Predator Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-predator.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Predator Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Predator Cressi.</p>]]></description>
+  <price>351.99</price>
+  <final_price>351.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>73</salable_qty>
+  <margin_rate>0.33</margin_rate>
+  <sales_30d>5</sales_30d>
+  <created_at>2026-08-28T12:09:49+00:00</created_at>
+  <rating>3.7</rating>
+  <reviews_count>17</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1021</id>
+    <sku>CRESSI-PREDATOR-38-39</sku>
+    <ean>3000000010200</ean>
+    <url>https://www.example.com/cressi-predator.html#taille=38%2F39</url>
+    <price>351.99</price>
+    <final_price>351.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1022</id>
+    <sku>CRESSI-PREDATOR-40-41</sku>
+    <ean>3000000010201</ean>
+    <url>https://www.example.com/cressi-predator.html#taille=40%2F41</url>
+    <price>351.99</price>
+    <final_price>351.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1023</id>
+    <sku>CRESSI-PREDATOR-42-43</sku>
+    <ean>3000000010202</ean>
+    <url>https://www.example.com/cressi-predator.html#taille=42%2F43</url>
+    <price>351.99</price>
+    <final_price>351.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1024</id>
+    <sku>CRESSI-PREDATOR-44-45</sku>
+    <ean>3000000010203</ean>
+    <url>https://www.example.com/cressi-predator.html#taille=44%2F45</url>
+    <price>351.99</price>
+    <final_price>351.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>10</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1025</id>
+    <sku>CRESSI-PREDATOR-46-47</sku>
+    <ean>3000000010204</ean>
+    <url>https://www.example.com/cressi-predator.html#taille=46%2F47</url>
+    <price>351.99</price>
+    <final_price>351.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1030</id>
+  <sku>SOMMAP-PREDATOR</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Predator Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-predator.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Predator Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Predator Sommap.</p>]]></description>
+  <price>140.99</price>
+  <final_price>140.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>37</salable_qty>
+  <margin_rate>0.38</margin_rate>
+  <sales_30d>97</sales_30d>
+  <created_at>2026-08-26T12:09:49+00:00</created_at>
+  <rating>4.5</rating>
+  <reviews_count>72</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1031</id>
+    <sku>SOMMAP-PREDATOR-38-39</sku>
+    <ean>3000000010300</ean>
+    <url>https://www.example.com/sommap-predator.html#taille=38%2F39</url>
+    <price>140.99</price>
+    <final_price>140.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1032</id>
+    <sku>SOMMAP-PREDATOR-40-41</sku>
+    <ean>3000000010301</ean>
+    <url>https://www.example.com/sommap-predator.html#taille=40%2F41</url>
+    <price>140.99</price>
+    <final_price>140.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>7</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1033</id>
+    <sku>SOMMAP-PREDATOR-42-43</sku>
+    <ean>3000000010302</ean>
+    <url>https://www.example.com/sommap-predator.html#taille=42%2F43</url>
+    <price>140.99</price>
+    <final_price>140.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>18</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1034</id>
+    <sku>SOMMAP-PREDATOR-44-45</sku>
+    <ean>3000000010303</ean>
+    <url>https://www.example.com/sommap-predator.html#taille=44%2F45</url>
+    <price>140.99</price>
+    <final_price>140.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>8</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1035</id>
+    <sku>SOMMAP-PREDATOR-46-47</sku>
+    <ean>3000000010304</ean>
+    <url>https://www.example.com/sommap-predator.html#taille=46%2F47</url>
+    <price>140.99</price>
+    <final_price>140.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1040</id>
+  <sku>BEUCHAT-GARA-TURBO</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Gara Turbo Beuchat]]></name>
+  <brand><![CDATA[BEUCHAT]]></brand>
+  <url>https://www.example.com/beuchat-gara-turbo.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Gara Turbo Beuchat : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Gara Turbo Beuchat.</p>]]></description>
+  <price>290.99</price>
+  <final_price>247.34</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>22</salable_qty>
+  <margin_rate>0.3</margin_rate>
+  <sales_30d>26</sales_30d>
+  <created_at>2026-10-31T12:09:49+00:00</created_at>
+  <rating>3.7</rating>
+  <reviews_count>44</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1041</id>
+    <sku>BEUCHAT-GARA-TURBO-38-39</sku>
+    <ean>3000000010400</ean>
+    <url>https://www.example.com/beuchat-gara-turbo.html#taille=38%2F39</url>
+    <price>290.99</price>
+    <final_price>247.34</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1042</id>
+    <sku>BEUCHAT-GARA-TURBO-40-41</sku>
+    <ean>3000000010401</ean>
+    <url>https://www.example.com/beuchat-gara-turbo.html#taille=40%2F41</url>
+    <price>290.99</price>
+    <final_price>247.34</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1043</id>
+    <sku>BEUCHAT-GARA-TURBO-42-43</sku>
+    <ean>3000000010402</ean>
+    <url>https://www.example.com/beuchat-gara-turbo.html#taille=42%2F43</url>
+    <price>290.99</price>
+    <final_price>247.34</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1044</id>
+    <sku>BEUCHAT-GARA-TURBO-44-45</sku>
+    <ean>3000000010403</ean>
+    <url>https://www.example.com/beuchat-gara-turbo.html#taille=44%2F45</url>
+    <price>290.99</price>
+    <final_price>247.34</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1045</id>
+    <sku>BEUCHAT-GARA-TURBO-46-47</sku>
+    <ean>3000000010404</ean>
+    <url>https://www.example.com/beuchat-gara-turbo.html#taille=46%2F47</url>
+    <price>290.99</price>
+    <final_price>247.34</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>2</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1050</id>
+  <sku>SEAC-GARA-TURBO</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Gara Turbo Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-gara-turbo.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Gara Turbo Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Gara Turbo Seac.</p>]]></description>
+  <price>256.99</price>
+  <final_price>256.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>55</salable_qty>
+  <margin_rate>0.15</margin_rate>
+  <sales_30d>21</sales_30d>
+  <created_at>2026-01-25T12:09:49+00:00</created_at>
+  <rating>4.3</rating>
+  <reviews_count>18</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1051</id>
+    <sku>SEAC-GARA-TURBO-38-39</sku>
+    <ean>3000000010500</ean>
+    <url>https://www.example.com/seac-gara-turbo.html#taille=38%2F39</url>
+    <price>256.99</price>
+    <final_price>256.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1052</id>
+    <sku>SEAC-GARA-TURBO-40-41</sku>
+    <ean>3000000010501</ean>
+    <url>https://www.example.com/seac-gara-turbo.html#taille=40%2F41</url>
+    <price>256.99</price>
+    <final_price>256.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1053</id>
+    <sku>SEAC-GARA-TURBO-42-43</sku>
+    <ean>3000000010502</ean>
+    <url>https://www.example.com/seac-gara-turbo.html#taille=42%2F43</url>
+    <price>256.99</price>
+    <final_price>256.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1054</id>
+    <sku>SEAC-GARA-TURBO-44-45</sku>
+    <ean>3000000010503</ean>
+    <url>https://www.example.com/seac-gara-turbo.html#taille=44%2F45</url>
+    <price>256.99</price>
+    <final_price>256.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1055</id>
+    <sku>SEAC-GARA-TURBO-46-47</sku>
+    <ean>3000000010504</ean>
+    <url>https://www.example.com/seac-gara-turbo.html#taille=46%2F47</url>
+    <price>256.99</price>
+    <final_price>256.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1060</id>
+  <sku>CRESSI-LIBECCIO</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Libeccio Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-libeccio.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Libeccio Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Libeccio Cressi.</p>]]></description>
+  <price>178.99</price>
+  <final_price>139.61</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>61</salable_qty>
+  <margin_rate>0.19</margin_rate>
+  <sales_30d>68</sales_30d>
+  <created_at>2026-04-20T12:09:49+00:00</created_at>
+  <rating>4</rating>
+  <reviews_count>25</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1061</id>
+    <sku>CRESSI-LIBECCIO-38-39</sku>
+    <ean>3000000010600</ean>
+    <url>https://www.example.com/cressi-libeccio.html#taille=38%2F39</url>
+    <price>178.99</price>
+    <final_price>139.61</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>6</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1062</id>
+    <sku>CRESSI-LIBECCIO-40-41</sku>
+    <ean>3000000010601</ean>
+    <url>https://www.example.com/cressi-libeccio.html#taille=40%2F41</url>
+    <price>178.99</price>
+    <final_price>139.61</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1063</id>
+    <sku>CRESSI-LIBECCIO-42-43</sku>
+    <ean>3000000010602</ean>
+    <url>https://www.example.com/cressi-libeccio.html#taille=42%2F43</url>
+    <price>178.99</price>
+    <final_price>139.61</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1064</id>
+    <sku>CRESSI-LIBECCIO-44-45</sku>
+    <ean>3000000010603</ean>
+    <url>https://www.example.com/cressi-libeccio.html#taille=44%2F45</url>
+    <price>178.99</price>
+    <final_price>139.61</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1065</id>
+    <sku>CRESSI-LIBECCIO-46-47</sku>
+    <ean>3000000010604</ean>
+    <url>https://www.example.com/cressi-libeccio.html#taille=46%2F47</url>
+    <price>178.99</price>
+    <final_price>139.61</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>16</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1070</id>
+  <sku>SOMMAP-LIBECCIO</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Libeccio Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-libeccio.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Libeccio Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Libeccio Sommap.</p>]]></description>
+  <price>127.99</price>
+  <final_price>127.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>34</salable_qty>
+  <margin_rate>0.49</margin_rate>
+  <sales_30d>103</sales_30d>
+  <created_at>2026-10-25T12:09:49+00:00</created_at>
+  <rating>4.7</rating>
+  <reviews_count>4</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1071</id>
+    <sku>SOMMAP-LIBECCIO-38-39</sku>
+    <ean>3000000010700</ean>
+    <url>https://www.example.com/sommap-libeccio.html#taille=38%2F39</url>
+    <price>127.99</price>
+    <final_price>127.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>2</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1072</id>
+    <sku>SOMMAP-LIBECCIO-40-41</sku>
+    <ean>3000000010701</ean>
+    <url>https://www.example.com/sommap-libeccio.html#taille=40%2F41</url>
+    <price>127.99</price>
+    <final_price>127.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1073</id>
+    <sku>SOMMAP-LIBECCIO-42-43</sku>
+    <ean>3000000010702</ean>
+    <url>https://www.example.com/sommap-libeccio.html#taille=42%2F43</url>
+    <price>127.99</price>
+    <final_price>127.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1074</id>
+    <sku>SOMMAP-LIBECCIO-44-45</sku>
+    <ean>3000000010703</ean>
+    <url>https://www.example.com/sommap-libeccio.html#taille=44%2F45</url>
+    <price>127.99</price>
+    <final_price>127.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1075</id>
+    <sku>SOMMAP-LIBECCIO-46-47</sku>
+    <ean>3000000010704</ean>
+    <url>https://www.example.com/sommap-libeccio.html#taille=46%2F47</url>
+    <price>127.99</price>
+    <final_price>127.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1080</id>
+  <sku>BEUCHAT-L-30</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine L-30 Beuchat]]></name>
+  <brand><![CDATA[BEUCHAT]]></brand>
+  <url>https://www.example.com/beuchat-l-30.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine L-30 Beuchat : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine L-30 Beuchat.</p>]]></description>
+  <price>262.99</price>
+  <final_price>262.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>18</salable_qty>
+  <margin_rate>0.27</margin_rate>
+  <sales_30d>49</sales_30d>
+  <created_at>2026-01-19T12:09:49+00:00</created_at>
+  <rating>5</rating>
+  <reviews_count>9</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1081</id>
+    <sku>BEUCHAT-L-30-38-39</sku>
+    <ean>3000000010800</ean>
+    <url>https://www.example.com/beuchat-l-30.html#taille=38%2F39</url>
+    <price>262.99</price>
+    <final_price>262.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1082</id>
+    <sku>BEUCHAT-L-30-40-41</sku>
+    <ean>3000000010801</ean>
+    <url>https://www.example.com/beuchat-l-30.html#taille=40%2F41</url>
+    <price>262.99</price>
+    <final_price>262.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1083</id>
+    <sku>BEUCHAT-L-30-42-43</sku>
+    <ean>3000000010802</ean>
+    <url>https://www.example.com/beuchat-l-30.html#taille=42%2F43</url>
+    <price>262.99</price>
+    <final_price>262.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1084</id>
+    <sku>BEUCHAT-L-30-44-45</sku>
+    <ean>3000000010803</ean>
+    <url>https://www.example.com/beuchat-l-30.html#taille=44%2F45</url>
+    <price>262.99</price>
+    <final_price>262.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1085</id>
+    <sku>BEUCHAT-L-30-46-47</sku>
+    <ean>3000000010804</ean>
+    <url>https://www.example.com/beuchat-l-30.html#taille=46%2F47</url>
+    <price>262.99</price>
+    <final_price>262.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1090</id>
+  <sku>SEAC-L-30</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine L-30 Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-l-30.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine L-30 Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine L-30 Seac.</p>]]></description>
+  <price>66.99</price>
+  <final_price>56.94</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>52</salable_qty>
+  <margin_rate>0.26</margin_rate>
+  <sales_30d>11</sales_30d>
+  <created_at>2026-06-11T12:09:49+00:00</created_at>
+  <rating>3</rating>
+  <reviews_count>79</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1091</id>
+    <sku>SEAC-L-30-38-39</sku>
+    <ean>3000000010900</ean>
+    <url>https://www.example.com/seac-l-30.html#taille=38%2F39</url>
+    <price>66.99</price>
+    <final_price>56.94</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1092</id>
+    <sku>SEAC-L-30-40-41</sku>
+    <ean>3000000010901</ean>
+    <url>https://www.example.com/seac-l-30.html#taille=40%2F41</url>
+    <price>66.99</price>
+    <final_price>56.94</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1093</id>
+    <sku>SEAC-L-30-42-43</sku>
+    <ean>3000000010902</ean>
+    <url>https://www.example.com/seac-l-30.html#taille=42%2F43</url>
+    <price>66.99</price>
+    <final_price>56.94</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>3</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1094</id>
+    <sku>SEAC-L-30-44-45</sku>
+    <ean>3000000010903</ean>
+    <url>https://www.example.com/seac-l-30.html#taille=44%2F45</url>
+    <price>66.99</price>
+    <final_price>56.94</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1095</id>
+    <sku>SEAC-L-30-46-47</sku>
+    <ean>3000000010904</ean>
+    <url>https://www.example.com/seac-l-30.html#taille=46%2F47</url>
+    <price>66.99</price>
+    <final_price>56.94</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1100</id>
+  <sku>IMERSION-L-30</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine L-30 Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-l-30.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine L-30 Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine L-30 Imersion.</p>]]></description>
+  <price>317.99</price>
+  <final_price>317.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>44</salable_qty>
+  <margin_rate>0.4</margin_rate>
+  <sales_30d>23</sales_30d>
+  <created_at>2026-08-16T12:09:49+00:00</created_at>
+  <rating>4</rating>
+  <reviews_count>59</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1101</id>
+    <sku>IMERSION-L-30-38-39</sku>
+    <ean>3000000011000</ean>
+    <url>https://www.example.com/imersion-l-30.html#taille=38%2F39</url>
+    <price>317.99</price>
+    <final_price>317.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1102</id>
+    <sku>IMERSION-L-30-40-41</sku>
+    <ean>3000000011001</ean>
+    <url>https://www.example.com/imersion-l-30.html#taille=40%2F41</url>
+    <price>317.99</price>
+    <final_price>317.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1103</id>
+    <sku>IMERSION-L-30-42-43</sku>
+    <ean>3000000011002</ean>
+    <url>https://www.example.com/imersion-l-30.html#taille=42%2F43</url>
+    <price>317.99</price>
+    <final_price>317.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1104</id>
+    <sku>IMERSION-L-30-44-45</sku>
+    <ean>3000000011003</ean>
+    <url>https://www.example.com/imersion-l-30.html#taille=44%2F45</url>
+    <price>317.99</price>
+    <final_price>317.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>6</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1105</id>
+    <sku>IMERSION-L-30-46-47</sku>
+    <ean>3000000011004</ean>
+    <url>https://www.example.com/imersion-l-30.html#taille=46%2F47</url>
+    <price>317.99</price>
+    <final_price>317.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1110</id>
+  <sku>C4-M-30</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine M-30 C4]]></name>
+  <brand><![CDATA[C4]]></brand>
+  <url>https://www.example.com/c4-m-30.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine M-30 C4 : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine M-30 C4.</p>]]></description>
+  <price>303.99</price>
+  <final_price>303.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>32</salable_qty>
+  <margin_rate>0.52</margin_rate>
+  <sales_30d>60</sales_30d>
+  <created_at>2025-10-15T12:09:49+00:00</created_at>
+  <rating>4.6</rating>
+  <reviews_count>4</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1111</id>
+    <sku>C4-M-30-38-39</sku>
+    <ean>3000000011100</ean>
+    <url>https://www.example.com/c4-m-30.html#taille=38%2F39</url>
+    <price>303.99</price>
+    <final_price>303.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1112</id>
+    <sku>C4-M-30-40-41</sku>
+    <ean>3000000011101</ean>
+    <url>https://www.example.com/c4-m-30.html#taille=40%2F41</url>
+    <price>303.99</price>
+    <final_price>303.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1113</id>
+    <sku>C4-M-30-42-43</sku>
+    <ean>3000000011102</ean>
+    <url>https://www.example.com/c4-m-30.html#taille=42%2F43</url>
+    <price>303.99</price>
+    <final_price>303.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1114</id>
+    <sku>C4-M-30-44-45</sku>
+    <ean>3000000011103</ean>
+    <url>https://www.example.com/c4-m-30.html#taille=44%2F45</url>
+    <price>303.99</price>
+    <final_price>303.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1115</id>
+    <sku>C4-M-30-46-47</sku>
+    <ean>3000000011104</ean>
+    <url>https://www.example.com/c4-m-30.html#taille=46%2F47</url>
+    <price>303.99</price>
+    <final_price>303.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>10</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1120</id>
+  <sku>CRESSI-M-30</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine M-30 Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-m-30.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine M-30 Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine M-30 Cressi.</p>]]></description>
+  <price>330.99</price>
+  <final_price>330.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>35</salable_qty>
+  <margin_rate>0.35</margin_rate>
+  <sales_30d>101</sales_30d>
+  <created_at>2025-11-27T12:09:49+00:00</created_at>
+  <rating>4.4</rating>
+  <reviews_count>72</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1121</id>
+    <sku>CRESSI-M-30-38-39</sku>
+    <ean>3000000011200</ean>
+    <url>https://www.example.com/cressi-m-30.html#taille=38%2F39</url>
+    <price>330.99</price>
+    <final_price>330.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1122</id>
+    <sku>CRESSI-M-30-40-41</sku>
+    <ean>3000000011201</ean>
+    <url>https://www.example.com/cressi-m-30.html#taille=40%2F41</url>
+    <price>330.99</price>
+    <final_price>330.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>7</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1123</id>
+    <sku>CRESSI-M-30-42-43</sku>
+    <ean>3000000011202</ean>
+    <url>https://www.example.com/cressi-m-30.html#taille=42%2F43</url>
+    <price>330.99</price>
+    <final_price>330.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1124</id>
+    <sku>CRESSI-M-30-44-45</sku>
+    <ean>3000000011203</ean>
+    <url>https://www.example.com/cressi-m-30.html#taille=44%2F45</url>
+    <price>330.99</price>
+    <final_price>330.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1125</id>
+    <sku>CRESSI-M-30-46-47</sku>
+    <ean>3000000011204</ean>
+    <url>https://www.example.com/cressi-m-30.html#taille=46%2F47</url>
+    <price>330.99</price>
+    <final_price>330.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1130</id>
+  <sku>C4-GHOST</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Ghost C4]]></name>
+  <brand><![CDATA[C4]]></brand>
+  <url>https://www.example.com/c4-ghost.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Ghost C4 : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Ghost C4.</p>]]></description>
+  <price>242.99</price>
+  <final_price>177.38</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>44</salable_qty>
+  <margin_rate>0.47</margin_rate>
+  <sales_30d>47</sales_30d>
+  <created_at>2026-10-02T12:09:49+00:00</created_at>
+  <rating>3.5</rating>
+  <reviews_count>69</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1131</id>
+    <sku>C4-GHOST-38-39</sku>
+    <ean>3000000011300</ean>
+    <url>https://www.example.com/c4-ghost.html#taille=38%2F39</url>
+    <price>242.99</price>
+    <final_price>177.38</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1132</id>
+    <sku>C4-GHOST-40-41</sku>
+    <ean>3000000011301</ean>
+    <url>https://www.example.com/c4-ghost.html#taille=40%2F41</url>
+    <price>242.99</price>
+    <final_price>177.38</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1133</id>
+    <sku>C4-GHOST-42-43</sku>
+    <ean>3000000011302</ean>
+    <url>https://www.example.com/c4-ghost.html#taille=42%2F43</url>
+    <price>242.99</price>
+    <final_price>177.38</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1134</id>
+    <sku>C4-GHOST-44-45</sku>
+    <ean>3000000011303</ean>
+    <url>https://www.example.com/c4-ghost.html#taille=44%2F45</url>
+    <price>242.99</price>
+    <final_price>177.38</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1135</id>
+    <sku>C4-GHOST-46-47</sku>
+    <ean>3000000011304</ean>
+    <url>https://www.example.com/c4-ghost.html#taille=46%2F47</url>
+    <price>242.99</price>
+    <final_price>177.38</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>2</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1140</id>
+  <sku>CRESSI-GHOST</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Ghost Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-ghost.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Ghost Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Ghost Cressi.</p>]]></description>
+  <price>96.99</price>
+  <final_price>96.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>62</salable_qty>
+  <margin_rate>0.49</margin_rate>
+  <sales_30d>68</sales_30d>
+  <created_at>2026-04-17T12:09:49+00:00</created_at>
+  <rating>3.4</rating>
+  <reviews_count>53</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1141</id>
+    <sku>CRESSI-GHOST-38-39</sku>
+    <ean>3000000011400</ean>
+    <url>https://www.example.com/cressi-ghost.html#taille=38%2F39</url>
+    <price>96.99</price>
+    <final_price>96.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>16</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1142</id>
+    <sku>CRESSI-GHOST-40-41</sku>
+    <ean>3000000011401</ean>
+    <url>https://www.example.com/cressi-ghost.html#taille=40%2F41</url>
+    <price>96.99</price>
+    <final_price>96.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>18</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1143</id>
+    <sku>CRESSI-GHOST-42-43</sku>
+    <ean>3000000011402</ean>
+    <url>https://www.example.com/cressi-ghost.html#taille=42%2F43</url>
+    <price>96.99</price>
+    <final_price>96.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1144</id>
+    <sku>CRESSI-GHOST-44-45</sku>
+    <ean>3000000011403</ean>
+    <url>https://www.example.com/cressi-ghost.html#taille=44%2F45</url>
+    <price>96.99</price>
+    <final_price>96.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>7</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1145</id>
+    <sku>CRESSI-GHOST-46-47</sku>
+    <ean>3000000011404</ean>
+    <url>https://www.example.com/cressi-ghost.html#taille=46%2F47</url>
+    <price>96.99</price>
+    <final_price>96.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1150</id>
+  <sku>IMERSION-CARBON-500</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de chasse sous-marine Carbon 500 Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-carbon-500.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="41" path="Chasse sous-marine &gt; Palmes"><![CDATA[Palmes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de chasse sous-marine Carbon 500 Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de chasse sous-marine Carbon 500 Imersion.</p>]]></description>
+  <price>279.99</price>
+  <final_price>279.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>33</salable_qty>
+  <margin_rate>0.23</margin_rate>
+  <sales_30d>110</sales_30d>
+  <created_at>2025-11-15T12:09:49+00:00</created_at>
+  <rating>3.8</rating>
+  <reviews_count>66</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1151</id>
+    <sku>IMERSION-CARBON-500-38-39</sku>
+    <ean>3000000011500</ean>
+    <url>https://www.example.com/imersion-carbon-500.html#taille=38%2F39</url>
+    <price>279.99</price>
+    <final_price>279.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1152</id>
+    <sku>IMERSION-CARBON-500-40-41</sku>
+    <ean>3000000011501</ean>
+    <url>https://www.example.com/imersion-carbon-500.html#taille=40%2F41</url>
+    <price>279.99</price>
+    <final_price>279.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1153</id>
+    <sku>IMERSION-CARBON-500-42-43</sku>
+    <ean>3000000011502</ean>
+    <url>https://www.example.com/imersion-carbon-500.html#taille=42%2F43</url>
+    <price>279.99</price>
+    <final_price>279.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1154</id>
+    <sku>IMERSION-CARBON-500-44-45</sku>
+    <ean>3000000011503</ean>
+    <url>https://www.example.com/imersion-carbon-500.html#taille=44%2F45</url>
+    <price>279.99</price>
+    <final_price>279.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1155</id>
+    <sku>IMERSION-CARBON-500-46-47</sku>
+    <ean>3000000011504</ean>
+    <url>https://www.example.com/imersion-carbon-500.html#taille=46%2F47</url>
+    <price>279.99</price>
+    <final_price>279.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1160</id>
+  <sku>C4-ALCYON</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Alcyon C4]]></name>
+  <brand><![CDATA[C4]]></brand>
+  <url>https://www.example.com/c4-alcyon.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Alcyon C4 : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Alcyon C4.</p>]]></description>
+  <price>104.99</price>
+  <final_price>104.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>53</salable_qty>
+  <margin_rate>0.43</margin_rate>
+  <sales_30d>77</sales_30d>
+  <created_at>2026-08-21T12:09:49+00:00</created_at>
+  <rating>3.2</rating>
+  <reviews_count>73</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1161</id>
+    <sku>C4-ALCYON-38-39</sku>
+    <ean>3000000011600</ean>
+    <url>https://www.example.com/c4-alcyon.html#taille=38%2F39</url>
+    <price>104.99</price>
+    <final_price>104.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1162</id>
+    <sku>C4-ALCYON-40-41</sku>
+    <ean>3000000011601</ean>
+    <url>https://www.example.com/c4-alcyon.html#taille=40%2F41</url>
+    <price>104.99</price>
+    <final_price>104.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1163</id>
+    <sku>C4-ALCYON-42-43</sku>
+    <ean>3000000011602</ean>
+    <url>https://www.example.com/c4-alcyon.html#taille=42%2F43</url>
+    <price>104.99</price>
+    <final_price>104.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1164</id>
+    <sku>C4-ALCYON-44-45</sku>
+    <ean>3000000011603</ean>
+    <url>https://www.example.com/c4-alcyon.html#taille=44%2F45</url>
+    <price>104.99</price>
+    <final_price>104.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>8</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1165</id>
+    <sku>C4-ALCYON-46-47</sku>
+    <ean>3000000011604</ean>
+    <url>https://www.example.com/c4-alcyon.html#taille=46%2F47</url>
+    <price>104.99</price>
+    <final_price>104.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1170</id>
+  <sku>CRESSI-ALCYON</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Alcyon Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-alcyon.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Alcyon Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Alcyon Cressi.</p>]]></description>
+  <price>72.99</price>
+  <final_price>62.77</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>50</salable_qty>
+  <margin_rate>0.22</margin_rate>
+  <sales_30d>50</sales_30d>
+  <created_at>2026-08-26T12:09:49+00:00</created_at>
+  <rating>4.7</rating>
+  <reviews_count>8</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1171</id>
+    <sku>CRESSI-ALCYON-38-39</sku>
+    <ean>3000000011700</ean>
+    <url>https://www.example.com/cressi-alcyon.html#taille=38%2F39</url>
+    <price>72.99</price>
+    <final_price>62.77</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1172</id>
+    <sku>CRESSI-ALCYON-40-41</sku>
+    <ean>3000000011701</ean>
+    <url>https://www.example.com/cressi-alcyon.html#taille=40%2F41</url>
+    <price>72.99</price>
+    <final_price>62.77</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1173</id>
+    <sku>CRESSI-ALCYON-42-43</sku>
+    <ean>3000000011702</ean>
+    <url>https://www.example.com/cressi-alcyon.html#taille=42%2F43</url>
+    <price>72.99</price>
+    <final_price>62.77</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1174</id>
+    <sku>CRESSI-ALCYON-44-45</sku>
+    <ean>3000000011703</ean>
+    <url>https://www.example.com/cressi-alcyon.html#taille=44%2F45</url>
+    <price>72.99</price>
+    <final_price>62.77</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1175</id>
+    <sku>CRESSI-ALCYON-46-47</sku>
+    <ean>3000000011704</ean>
+    <url>https://www.example.com/cressi-alcyon.html#taille=46%2F47</url>
+    <price>72.99</price>
+    <final_price>62.77</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1180</id>
+  <sku>SOMMAP-ALCYON</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Alcyon Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-alcyon.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Alcyon Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Alcyon Sommap.</p>]]></description>
+  <price>58.99</price>
+  <final_price>58.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>62</salable_qty>
+  <margin_rate>0.19</margin_rate>
+  <sales_30d>56</sales_30d>
+  <created_at>2026-06-29T12:09:49+00:00</created_at>
+  <rating>3.4</rating>
+  <reviews_count>5</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1181</id>
+    <sku>SOMMAP-ALCYON-38-39</sku>
+    <ean>3000000011800</ean>
+    <url>https://www.example.com/sommap-alcyon.html#taille=38%2F39</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>8</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1182</id>
+    <sku>SOMMAP-ALCYON-40-41</sku>
+    <ean>3000000011801</ean>
+    <url>https://www.example.com/sommap-alcyon.html#taille=40%2F41</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>16</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1183</id>
+    <sku>SOMMAP-ALCYON-42-43</sku>
+    <ean>3000000011802</ean>
+    <url>https://www.example.com/sommap-alcyon.html#taille=42%2F43</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1184</id>
+    <sku>SOMMAP-ALCYON-44-45</sku>
+    <ean>3000000011803</ean>
+    <url>https://www.example.com/sommap-alcyon.html#taille=44%2F45</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1185</id>
+    <sku>SOMMAP-ALCYON-46-47</sku>
+    <ean>3000000011804</ean>
+    <url>https://www.example.com/sommap-alcyon.html#taille=46%2F47</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1190</id>
+  <sku>CRESSI-AVANTI</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Avanti Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-avanti.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Avanti Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Avanti Cressi.</p>]]></description>
+  <price>58.99</price>
+  <final_price>58.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>23</salable_qty>
+  <margin_rate>0.23</margin_rate>
+  <sales_30d>60</sales_30d>
+  <created_at>2026-02-09T12:09:49+00:00</created_at>
+  <rating>4.4</rating>
+  <reviews_count>67</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1191</id>
+    <sku>CRESSI-AVANTI-38-39</sku>
+    <ean>3000000011900</ean>
+    <url>https://www.example.com/cressi-avanti.html#taille=38%2F39</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1192</id>
+    <sku>CRESSI-AVANTI-40-41</sku>
+    <ean>3000000011901</ean>
+    <url>https://www.example.com/cressi-avanti.html#taille=40%2F41</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1193</id>
+    <sku>CRESSI-AVANTI-42-43</sku>
+    <ean>3000000011902</ean>
+    <url>https://www.example.com/cressi-avanti.html#taille=42%2F43</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1194</id>
+    <sku>CRESSI-AVANTI-44-45</sku>
+    <ean>3000000011903</ean>
+    <url>https://www.example.com/cressi-avanti.html#taille=44%2F45</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>7</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1195</id>
+    <sku>CRESSI-AVANTI-46-47</sku>
+    <ean>3000000011904</ean>
+    <url>https://www.example.com/cressi-avanti.html#taille=46%2F47</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1200</id>
+  <sku>SOMMAP-AVANTI</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Avanti Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-avanti.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Avanti Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Avanti Sommap.</p>]]></description>
+  <price>138.99</price>
+  <final_price>138.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>27</salable_qty>
+  <margin_rate>0.22</margin_rate>
+  <sales_30d>37</sales_30d>
+  <created_at>2026-01-21T12:09:49+00:00</created_at>
+  <rating>4.1</rating>
+  <reviews_count>50</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1201</id>
+    <sku>SOMMAP-AVANTI-38-39</sku>
+    <ean>3000000012000</ean>
+    <url>https://www.example.com/sommap-avanti.html#taille=38%2F39</url>
+    <price>138.99</price>
+    <final_price>138.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>3</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1202</id>
+    <sku>SOMMAP-AVANTI-40-41</sku>
+    <ean>3000000012001</ean>
+    <url>https://www.example.com/sommap-avanti.html#taille=40%2F41</url>
+    <price>138.99</price>
+    <final_price>138.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1203</id>
+    <sku>SOMMAP-AVANTI-42-43</sku>
+    <ean>3000000012002</ean>
+    <url>https://www.example.com/sommap-avanti.html#taille=42%2F43</url>
+    <price>138.99</price>
+    <final_price>138.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>3</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1204</id>
+    <sku>SOMMAP-AVANTI-44-45</sku>
+    <ean>3000000012003</ean>
+    <url>https://www.example.com/sommap-avanti.html#taille=44%2F45</url>
+    <price>138.99</price>
+    <final_price>138.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1205</id>
+    <sku>SOMMAP-AVANTI-46-47</sku>
+    <ean>3000000012004</ean>
+    <url>https://www.example.com/sommap-avanti.html#taille=46%2F47</url>
+    <price>138.99</price>
+    <final_price>138.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1210</id>
+  <sku>BEUCHAT-AVANTI</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Avanti Beuchat]]></name>
+  <brand><![CDATA[BEUCHAT]]></brand>
+  <url>https://www.example.com/beuchat-avanti.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Avanti Beuchat : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Avanti Beuchat.</p>]]></description>
+  <price>58.99</price>
+  <final_price>58.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>44</salable_qty>
+  <margin_rate>0.44</margin_rate>
+  <sales_30d>27</sales_30d>
+  <created_at>2026-08-24T12:09:49+00:00</created_at>
+  <rating>4.3</rating>
+  <reviews_count>55</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1211</id>
+    <sku>BEUCHAT-AVANTI-38-39</sku>
+    <ean>3000000012100</ean>
+    <url>https://www.example.com/beuchat-avanti.html#taille=38%2F39</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1212</id>
+    <sku>BEUCHAT-AVANTI-40-41</sku>
+    <ean>3000000012101</ean>
+    <url>https://www.example.com/beuchat-avanti.html#taille=40%2F41</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1213</id>
+    <sku>BEUCHAT-AVANTI-42-43</sku>
+    <ean>3000000012102</ean>
+    <url>https://www.example.com/beuchat-avanti.html#taille=42%2F43</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1214</id>
+    <sku>BEUCHAT-AVANTI-44-45</sku>
+    <ean>3000000012103</ean>
+    <url>https://www.example.com/beuchat-avanti.html#taille=44%2F45</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>18</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1215</id>
+    <sku>BEUCHAT-AVANTI-46-47</sku>
+    <ean>3000000012104</ean>
+    <url>https://www.example.com/beuchat-avanti.html#taille=46%2F47</url>
+    <price>58.99</price>
+    <final_price>58.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1220</id>
+  <sku>BEUCHAT-GO-SPORT</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Go Sport Beuchat]]></name>
+  <brand><![CDATA[BEUCHAT]]></brand>
+  <url>https://www.example.com/beuchat-go-sport.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Go Sport Beuchat : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Go Sport Beuchat.</p>]]></description>
+  <price>118.99</price>
+  <final_price>118.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>18</salable_qty>
+  <margin_rate>0.15</margin_rate>
+  <sales_30d>120</sales_30d>
+  <created_at>2026-06-28T12:09:49+00:00</created_at>
+  <rating>4.5</rating>
+  <reviews_count>76</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1221</id>
+    <sku>BEUCHAT-GO-SPORT-38-39</sku>
+    <ean>3000000012200</ean>
+    <url>https://www.example.com/beuchat-go-sport.html#taille=38%2F39</url>
+    <price>118.99</price>
+    <final_price>118.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1222</id>
+    <sku>BEUCHAT-GO-SPORT-40-41</sku>
+    <ean>3000000012201</ean>
+    <url>https://www.example.com/beuchat-go-sport.html#taille=40%2F41</url>
+    <price>118.99</price>
+    <final_price>118.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>2</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1223</id>
+    <sku>BEUCHAT-GO-SPORT-42-43</sku>
+    <ean>3000000012202</ean>
+    <url>https://www.example.com/beuchat-go-sport.html#taille=42%2F43</url>
+    <price>118.99</price>
+    <final_price>118.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1224</id>
+    <sku>BEUCHAT-GO-SPORT-44-45</sku>
+    <ean>3000000012203</ean>
+    <url>https://www.example.com/beuchat-go-sport.html#taille=44%2F45</url>
+    <price>118.99</price>
+    <final_price>118.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1225</id>
+    <sku>BEUCHAT-GO-SPORT-46-47</sku>
+    <ean>3000000012204</ean>
+    <url>https://www.example.com/beuchat-go-sport.html#taille=46%2F47</url>
+    <price>118.99</price>
+    <final_price>118.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1230</id>
+  <sku>SEAC-GO-SPORT</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Go Sport Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-go-sport.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Go Sport Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Go Sport Seac.</p>]]></description>
+  <price>62.99</price>
+  <final_price>62.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>61</salable_qty>
+  <margin_rate>0.55</margin_rate>
+  <sales_30d>52</sales_30d>
+  <created_at>2026-10-05T12:09:49+00:00</created_at>
+  <rating>5</rating>
+  <reviews_count>71</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1231</id>
+    <sku>SEAC-GO-SPORT-38-39</sku>
+    <ean>3000000012300</ean>
+    <url>https://www.example.com/seac-go-sport.html#taille=38%2F39</url>
+    <price>62.99</price>
+    <final_price>62.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1232</id>
+    <sku>SEAC-GO-SPORT-40-41</sku>
+    <ean>3000000012301</ean>
+    <url>https://www.example.com/seac-go-sport.html#taille=40%2F41</url>
+    <price>62.99</price>
+    <final_price>62.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1233</id>
+    <sku>SEAC-GO-SPORT-42-43</sku>
+    <ean>3000000012302</ean>
+    <url>https://www.example.com/seac-go-sport.html#taille=42%2F43</url>
+    <price>62.99</price>
+    <final_price>62.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1234</id>
+    <sku>SEAC-GO-SPORT-44-45</sku>
+    <ean>3000000012303</ean>
+    <url>https://www.example.com/seac-go-sport.html#taille=44%2F45</url>
+    <price>62.99</price>
+    <final_price>62.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>16</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1235</id>
+    <sku>SEAC-GO-SPORT-46-47</sku>
+    <ean>3000000012304</ean>
+    <url>https://www.example.com/seac-go-sport.html#taille=46%2F47</url>
+    <price>62.99</price>
+    <final_price>62.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1240</id>
+  <sku>SOMMAP-JET</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée réglables Jet Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-jet.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="669" path="Plongée &gt; Palmes &gt; Palmes réglables"><![CDATA[Palmes réglables]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée réglables Jet Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée réglables Jet Sommap.</p>]]></description>
+  <price>80.99</price>
+  <final_price>80.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>21</salable_qty>
+  <margin_rate>0.2</margin_rate>
+  <sales_30d>37</sales_30d>
+  <created_at>2026-01-15T12:09:49+00:00</created_at>
+  <rating>3.8</rating>
+  <reviews_count>77</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1241</id>
+    <sku>SOMMAP-JET-38-39</sku>
+    <ean>3000000012400</ean>
+    <url>https://www.example.com/sommap-jet.html#taille=38%2F39</url>
+    <price>80.99</price>
+    <final_price>80.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1242</id>
+    <sku>SOMMAP-JET-40-41</sku>
+    <ean>3000000012401</ean>
+    <url>https://www.example.com/sommap-jet.html#taille=40%2F41</url>
+    <price>80.99</price>
+    <final_price>80.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1243</id>
+    <sku>SOMMAP-JET-42-43</sku>
+    <ean>3000000012402</ean>
+    <url>https://www.example.com/sommap-jet.html#taille=42%2F43</url>
+    <price>80.99</price>
+    <final_price>80.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1244</id>
+    <sku>SOMMAP-JET-44-45</sku>
+    <ean>3000000012403</ean>
+    <url>https://www.example.com/sommap-jet.html#taille=44%2F45</url>
+    <price>80.99</price>
+    <final_price>80.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>2</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1245</id>
+    <sku>SOMMAP-JET-46-47</sku>
+    <ean>3000000012404</ean>
+    <url>https://www.example.com/sommap-jet.html#taille=46%2F47</url>
+    <price>80.99</price>
+    <final_price>80.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1250</id>
+  <sku>BEUCHAT-ESTREL</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée chaussantes Estrel Beuchat]]></name>
+  <brand><![CDATA[BEUCHAT]]></brand>
+  <url>https://www.example.com/beuchat-estrel.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="500" path="Plongée &gt; Palmes &gt; Palmes chaussantes"><![CDATA[Palmes chaussantes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée chaussantes Estrel Beuchat : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée chaussantes Estrel Beuchat.</p>]]></description>
+  <price>24.99</price>
+  <final_price>24.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>65</salable_qty>
+  <margin_rate>0.5</margin_rate>
+  <sales_30d>98</sales_30d>
+  <created_at>2026-03-22T12:09:49+00:00</created_at>
+  <rating>3.2</rating>
+  <reviews_count>74</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1251</id>
+    <sku>BEUCHAT-ESTREL-38-39</sku>
+    <ean>3000000012500</ean>
+    <url>https://www.example.com/beuchat-estrel.html#taille=38%2F39</url>
+    <price>24.99</price>
+    <final_price>24.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1252</id>
+    <sku>BEUCHAT-ESTREL-40-41</sku>
+    <ean>3000000012501</ean>
+    <url>https://www.example.com/beuchat-estrel.html#taille=40%2F41</url>
+    <price>24.99</price>
+    <final_price>24.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1253</id>
+    <sku>BEUCHAT-ESTREL-42-43</sku>
+    <ean>3000000012502</ean>
+    <url>https://www.example.com/beuchat-estrel.html#taille=42%2F43</url>
+    <price>24.99</price>
+    <final_price>24.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1254</id>
+    <sku>BEUCHAT-ESTREL-44-45</sku>
+    <ean>3000000012503</ean>
+    <url>https://www.example.com/beuchat-estrel.html#taille=44%2F45</url>
+    <price>24.99</price>
+    <final_price>24.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1255</id>
+    <sku>BEUCHAT-ESTREL-46-47</sku>
+    <ean>3000000012504</ean>
+    <url>https://www.example.com/beuchat-estrel.html#taille=46%2F47</url>
+    <price>24.99</price>
+    <final_price>24.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1260</id>
+  <sku>SEAC-ESTREL</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée chaussantes Estrel Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-estrel.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="500" path="Plongée &gt; Palmes &gt; Palmes chaussantes"><![CDATA[Palmes chaussantes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée chaussantes Estrel Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée chaussantes Estrel Seac.</p>]]></description>
+  <price>71.99</price>
+  <final_price>71.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>46</salable_qty>
+  <margin_rate>0.43</margin_rate>
+  <sales_30d>1</sales_30d>
+  <created_at>2026-04-01T12:09:49+00:00</created_at>
+  <rating>3.1</rating>
+  <reviews_count>57</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1261</id>
+    <sku>SEAC-ESTREL-38-39</sku>
+    <ean>3000000012600</ean>
+    <url>https://www.example.com/seac-estrel.html#taille=38%2F39</url>
+    <price>71.99</price>
+    <final_price>71.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>6</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1262</id>
+    <sku>SEAC-ESTREL-40-41</sku>
+    <ean>3000000012601</ean>
+    <url>https://www.example.com/seac-estrel.html#taille=40%2F41</url>
+    <price>71.99</price>
+    <final_price>71.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1263</id>
+    <sku>SEAC-ESTREL-42-43</sku>
+    <ean>3000000012602</ean>
+    <url>https://www.example.com/seac-estrel.html#taille=42%2F43</url>
+    <price>71.99</price>
+    <final_price>71.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1264</id>
+    <sku>SEAC-ESTREL-44-45</sku>
+    <ean>3000000012603</ean>
+    <url>https://www.example.com/seac-estrel.html#taille=44%2F45</url>
+    <price>71.99</price>
+    <final_price>71.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1265</id>
+    <sku>SEAC-ESTREL-46-47</sku>
+    <ean>3000000012604</ean>
+    <url>https://www.example.com/seac-estrel.html#taille=46%2F47</url>
+    <price>71.99</price>
+    <final_price>71.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>6</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1270</id>
+  <sku>IMERSION-ESTREL</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée chaussantes Estrel Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-estrel.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="500" path="Plongée &gt; Palmes &gt; Palmes chaussantes"><![CDATA[Palmes chaussantes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée chaussantes Estrel Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée chaussantes Estrel Imersion.</p>]]></description>
+  <price>74.99</price>
+  <final_price>74.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>53</salable_qty>
+  <margin_rate>0.38</margin_rate>
+  <sales_30d>56</sales_30d>
+  <created_at>2025-12-29T12:09:49+00:00</created_at>
+  <rating>4.9</rating>
+  <reviews_count>62</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1271</id>
+    <sku>IMERSION-ESTREL-38-39</sku>
+    <ean>3000000012700</ean>
+    <url>https://www.example.com/imersion-estrel.html#taille=38%2F39</url>
+    <price>74.99</price>
+    <final_price>74.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1272</id>
+    <sku>IMERSION-ESTREL-40-41</sku>
+    <ean>3000000012701</ean>
+    <url>https://www.example.com/imersion-estrel.html#taille=40%2F41</url>
+    <price>74.99</price>
+    <final_price>74.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1273</id>
+    <sku>IMERSION-ESTREL-42-43</sku>
+    <ean>3000000012702</ean>
+    <url>https://www.example.com/imersion-estrel.html#taille=42%2F43</url>
+    <price>74.99</price>
+    <final_price>74.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1274</id>
+    <sku>IMERSION-ESTREL-44-45</sku>
+    <ean>3000000012703</ean>
+    <url>https://www.example.com/imersion-estrel.html#taille=44%2F45</url>
+    <price>74.99</price>
+    <final_price>74.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1275</id>
+    <sku>IMERSION-ESTREL-46-47</sku>
+    <ean>3000000012704</ean>
+    <url>https://www.example.com/imersion-estrel.html#taille=46%2F47</url>
+    <price>74.99</price>
+    <final_price>74.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1280</id>
+  <sku>CRESSI-RONDINE</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée chaussantes Rondine Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-rondine.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="500" path="Plongée &gt; Palmes &gt; Palmes chaussantes"><![CDATA[Palmes chaussantes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée chaussantes Rondine Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée chaussantes Rondine Cressi.</p>]]></description>
+  <price>74.99</price>
+  <final_price>60.74</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>66</salable_qty>
+  <margin_rate>0.51</margin_rate>
+  <sales_30d>63</sales_30d>
+  <created_at>2025-12-30T12:09:49+00:00</created_at>
+  <rating>3.9</rating>
+  <reviews_count>38</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1281</id>
+    <sku>CRESSI-RONDINE-38-39</sku>
+    <ean>3000000012800</ean>
+    <url>https://www.example.com/cressi-rondine.html#taille=38%2F39</url>
+    <price>74.99</price>
+    <final_price>60.74</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1282</id>
+    <sku>CRESSI-RONDINE-40-41</sku>
+    <ean>3000000012801</ean>
+    <url>https://www.example.com/cressi-rondine.html#taille=40%2F41</url>
+    <price>74.99</price>
+    <final_price>60.74</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1283</id>
+    <sku>CRESSI-RONDINE-42-43</sku>
+    <ean>3000000012802</ean>
+    <url>https://www.example.com/cressi-rondine.html#taille=42%2F43</url>
+    <price>74.99</price>
+    <final_price>60.74</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1284</id>
+    <sku>CRESSI-RONDINE-44-45</sku>
+    <ean>3000000012803</ean>
+    <url>https://www.example.com/cressi-rondine.html#taille=44%2F45</url>
+    <price>74.99</price>
+    <final_price>60.74</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1285</id>
+    <sku>CRESSI-RONDINE-46-47</sku>
+    <ean>3000000012804</ean>
+    <url>https://www.example.com/cressi-rondine.html#taille=46%2F47</url>
+    <price>74.99</price>
+    <final_price>60.74</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1290</id>
+  <sku>SEAC-CLIO</sku>
+  <type>configurable</type>
+  <name><![CDATA[Palmes de plongée chaussantes Clio Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-clio.html</url>
+  <image>http://localhost:8080/assets/demo/palme.svg</image>
+  <categories>
+   <category id="500" path="Plongée &gt; Palmes &gt; Palmes chaussantes"><![CDATA[Palmes chaussantes]]></category>
+  </categories>
+  <short_description><![CDATA[Palmes de plongée chaussantes Clio Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Palmes de plongée chaussantes Clio Seac.</p>]]></description>
+  <price>41.99</price>
+  <final_price>41.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>46</salable_qty>
+  <margin_rate>0.5</margin_rate>
+  <sales_30d>6</sales_30d>
+  <created_at>2026-03-18T12:09:49+00:00</created_at>
+  <rating>4.4</rating>
+  <reviews_count>24</reviews_count>
+  <search_keywords><![CDATA[fins, nageoires]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1291</id>
+    <sku>SEAC-CLIO-38-39</sku>
+    <ean>3000000012900</ean>
+    <url>https://www.example.com/seac-clio.html#taille=38%2F39</url>
+    <price>41.99</price>
+    <final_price>41.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1292</id>
+    <sku>SEAC-CLIO-40-41</sku>
+    <ean>3000000012901</ean>
+    <url>https://www.example.com/seac-clio.html#taille=40%2F41</url>
+    <price>41.99</price>
+    <final_price>41.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>3</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1293</id>
+    <sku>SEAC-CLIO-42-43</sku>
+    <ean>3000000012902</ean>
+    <url>https://www.example.com/seac-clio.html#taille=42%2F43</url>
+    <price>41.99</price>
+    <final_price>41.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>10</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1294</id>
+    <sku>SEAC-CLIO-44-45</sku>
+    <ean>3000000012903</ean>
+    <url>https://www.example.com/seac-clio.html#taille=44%2F45</url>
+    <price>41.99</price>
+    <final_price>41.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>8</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1295</id>
+    <sku>SEAC-CLIO-46-47</sku>
+    <ean>3000000012904</ean>
+    <url>https://www.example.com/seac-clio.html#taille=46%2F47</url>
+    <price>41.99</price>
+    <final_price>41.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1300</id>
+  <sku>C4-BIG-EYES</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Big Eyes C4]]></name>
+  <brand><![CDATA[C4]]></brand>
+  <url>https://www.example.com/c4-big-eyes.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Big Eyes C4 : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Big Eyes C4.</p>]]></description>
+  <price>49.99</price>
+  <final_price>49.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>17</salable_qty>
+  <margin_rate>0.36</margin_rate>
+  <sales_30d>18</sales_30d>
+  <created_at>2026-06-28T12:09:49+00:00</created_at>
+  <rating>3.8</rating>
+  <reviews_count>57</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1310</id>
+  <sku>CRESSI-BIG-EYES</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Big Eyes Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-big-eyes.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Big Eyes Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Big Eyes Cressi.</p>]]></description>
+  <price>70.99</price>
+  <final_price>70.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>23</salable_qty>
+  <margin_rate>0.35</margin_rate>
+  <sales_30d>112</sales_30d>
+  <created_at>2026-10-09T12:09:49+00:00</created_at>
+  <rating>4.3</rating>
+  <reviews_count>65</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1320</id>
+  <sku>SOMMAP-BIG-EYES</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Big Eyes Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-big-eyes.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Big Eyes Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Big Eyes Sommap.</p>]]></description>
+  <price>20.99</price>
+  <final_price>17.42</final_price>
+  <in_stock>0</in_stock>
+  <salable_qty>0</salable_qty>
+  <margin_rate>0.23</margin_rate>
+  <sales_30d>48</sales_30d>
+  <created_at>2026-02-09T12:09:49+00:00</created_at>
+  <rating>4.8</rating>
+  <reviews_count>32</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1330</id>
+  <sku>IMERSION-NANO</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Nano Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-nano.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Nano Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Nano Imersion.</p>]]></description>
+  <price>69.99</price>
+  <final_price>69.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>7</salable_qty>
+  <margin_rate>0.26</margin_rate>
+  <sales_30d>46</sales_30d>
+  <created_at>2026-05-02T12:09:49+00:00</created_at>
+  <rating>3.8</rating>
+  <reviews_count>13</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1340</id>
+  <sku>SIGALSUB-NANO</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Nano Sigalsub]]></name>
+  <brand><![CDATA[SIGALSUB]]></brand>
+  <url>https://www.example.com/sigalsub-nano.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Nano Sigalsub : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Nano Sigalsub.</p>]]></description>
+  <price>78.99</price>
+  <final_price>78.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>1</salable_qty>
+  <margin_rate>0.25</margin_rate>
+  <sales_30d>63</sales_30d>
+  <created_at>2026-07-09T12:09:49+00:00</created_at>
+  <rating>3.6</rating>
+  <reviews_count>26</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1350</id>
+  <sku>MARES-NANO</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Nano Mares]]></name>
+  <brand><![CDATA[MARES]]></brand>
+  <url>https://www.example.com/mares-nano.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Nano Mares : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Nano Mares.</p>]]></description>
+  <price>24.99</price>
+  <final_price>24.99</final_price>
+  <in_stock>0</in_stock>
+  <salable_qty>0</salable_qty>
+  <margin_rate>0.21</margin_rate>
+  <sales_30d>116</sales_30d>
+  <created_at>2026-08-02T12:09:49+00:00</created_at>
+  <rating>3.4</rating>
+  <reviews_count>17</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1360</id>
+  <sku>BEUCHAT-X-VISION</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée X-Vision Beuchat]]></name>
+  <brand><![CDATA[BEUCHAT]]></brand>
+  <url>https://www.example.com/beuchat-x-vision.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée X-Vision Beuchat : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée X-Vision Beuchat.</p>]]></description>
+  <price>19.99</price>
+  <final_price>19.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>4</salable_qty>
+  <margin_rate>0.55</margin_rate>
+  <sales_30d>45</sales_30d>
+  <created_at>2026-04-13T12:09:49+00:00</created_at>
+  <rating>4.8</rating>
+  <reviews_count>19</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1370</id>
+  <sku>SEAC-X-VISION</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée X-Vision Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-x-vision.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée X-Vision Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée X-Vision Seac.</p>]]></description>
+  <price>77.99</price>
+  <final_price>77.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>22</salable_qty>
+  <margin_rate>0.19</margin_rate>
+  <sales_30d>87</sales_30d>
+  <created_at>2026-04-27T12:09:49+00:00</created_at>
+  <rating>3.6</rating>
+  <reviews_count>72</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1380</id>
+  <sku>SEAC-FRAMELESS</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Frameless Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-frameless.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Frameless Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Frameless Seac.</p>]]></description>
+  <price>49.99</price>
+  <final_price>49.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>35</salable_qty>
+  <margin_rate>0.31</margin_rate>
+  <sales_30d>37</sales_30d>
+  <created_at>2026-08-25T12:09:49+00:00</created_at>
+  <rating>4.7</rating>
+  <reviews_count>73</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1390</id>
+  <sku>IMERSION-FRAMELESS</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Frameless Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-frameless.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Frameless Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Frameless Imersion.</p>]]></description>
+  <price>93.99</price>
+  <final_price>83.65</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>37</salable_qty>
+  <margin_rate>0.53</margin_rate>
+  <sales_30d>113</sales_30d>
+  <created_at>2026-02-14T12:09:49+00:00</created_at>
+  <rating>3.9</rating>
+  <reviews_count>59</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1400</id>
+  <sku>SIGALSUB-FRAMELESS</sku>
+  <type>simple</type>
+  <name><![CDATA[Masque de plongée Frameless Sigalsub]]></name>
+  <brand><![CDATA[SIGALSUB]]></brand>
+  <url>https://www.example.com/sigalsub-frameless.html</url>
+  <image>http://localhost:8080/assets/demo/masque.svg</image>
+  <categories>
+   <category id="752" path="Plongée &gt; Masques"><![CDATA[Masques]]></category>
+  </categories>
+  <short_description><![CDATA[Masque de plongée Frameless Sigalsub : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Masque de plongée Frameless Sigalsub.</p>]]></description>
+  <price>47.99</price>
+  <final_price>47.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>9</salable_qty>
+  <margin_rate>0.41</margin_rate>
+  <sales_30d>16</sales_30d>
+  <created_at>2026-08-24T12:09:49+00:00</created_at>
+  <rating>4.4</rating>
+  <reviews_count>25</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1410</id>
+  <sku>C4-CAMU-5-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Camu 5 mm C4]]></name>
+  <brand><![CDATA[C4]]></brand>
+  <url>https://www.example.com/c4-camu-5-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Camu 5 mm C4 : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Camu 5 mm C4.</p>]]></description>
+  <price>268.99</price>
+  <final_price>268.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>55</salable_qty>
+  <margin_rate>0.51</margin_rate>
+  <sales_30d>50</sales_30d>
+  <created_at>2026-08-12T12:09:49+00:00</created_at>
+  <rating>4.6</rating>
+  <reviews_count>66</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Camouflage</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1411</id>
+    <sku>C4-CAMU-5-MM-38-39</sku>
+    <ean>3000000014100</ean>
+    <url>https://www.example.com/c4-camu-5-mm.html#taille=38%2F39</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1412</id>
+    <sku>C4-CAMU-5-MM-40-41</sku>
+    <ean>3000000014101</ean>
+    <url>https://www.example.com/c4-camu-5-mm.html#taille=40%2F41</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1413</id>
+    <sku>C4-CAMU-5-MM-42-43</sku>
+    <ean>3000000014102</ean>
+    <url>https://www.example.com/c4-camu-5-mm.html#taille=42%2F43</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1414</id>
+    <sku>C4-CAMU-5-MM-44-45</sku>
+    <ean>3000000014103</ean>
+    <url>https://www.example.com/c4-camu-5-mm.html#taille=44%2F45</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>17</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1415</id>
+    <sku>C4-CAMU-5-MM-46-47</sku>
+    <ean>3000000014104</ean>
+    <url>https://www.example.com/c4-camu-5-mm.html#taille=46%2F47</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>5</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1420</id>
+  <sku>SEAC-BLACK-ICE-7-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Black Ice 7 mm Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-black-ice-7-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Black Ice 7 mm Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Black Ice 7 mm Seac.</p>]]></description>
+  <price>152.99</price>
+  <final_price>152.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>35</salable_qty>
+  <margin_rate>0.45</margin_rate>
+  <sales_30d>56</sales_30d>
+  <created_at>2025-10-24T12:09:49+00:00</created_at>
+  <rating>4.9</rating>
+  <reviews_count>67</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1421</id>
+    <sku>SEAC-BLACK-ICE-7-MM-38-39</sku>
+    <ean>3000000014200</ean>
+    <url>https://www.example.com/seac-black-ice-7-mm.html#taille=38%2F39</url>
+    <price>152.99</price>
+    <final_price>152.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1422</id>
+    <sku>SEAC-BLACK-ICE-7-MM-40-41</sku>
+    <ean>3000000014201</ean>
+    <url>https://www.example.com/seac-black-ice-7-mm.html#taille=40%2F41</url>
+    <price>152.99</price>
+    <final_price>152.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1423</id>
+    <sku>SEAC-BLACK-ICE-7-MM-42-43</sku>
+    <ean>3000000014202</ean>
+    <url>https://www.example.com/seac-black-ice-7-mm.html#taille=42%2F43</url>
+    <price>152.99</price>
+    <final_price>152.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1424</id>
+    <sku>SEAC-BLACK-ICE-7-MM-44-45</sku>
+    <ean>3000000014203</ean>
+    <url>https://www.example.com/seac-black-ice-7-mm.html#taille=44%2F45</url>
+    <price>152.99</price>
+    <final_price>152.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1425</id>
+    <sku>SEAC-BLACK-ICE-7-MM-46-47</sku>
+    <ean>3000000014204</ean>
+    <url>https://www.example.com/seac-black-ice-7-mm.html#taille=46%2F47</url>
+    <price>152.99</price>
+    <final_price>152.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>8</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1430</id>
+  <sku>IMERSION-BLACK-ICE-7-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Black Ice 7 mm Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-black-ice-7-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Black Ice 7 mm Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Black Ice 7 mm Imersion.</p>]]></description>
+  <price>304.99</price>
+  <final_price>304.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>59</salable_qty>
+  <margin_rate>0.26</margin_rate>
+  <sales_30d>17</sales_30d>
+  <created_at>2026-10-09T12:09:49+00:00</created_at>
+  <rating>4.6</rating>
+  <reviews_count>31</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Bleu</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1431</id>
+    <sku>IMERSION-BLACK-ICE-7-MM-38-39</sku>
+    <ean>3000000014300</ean>
+    <url>https://www.example.com/imersion-black-ice-7-mm.html#taille=38%2F39</url>
+    <price>304.99</price>
+    <final_price>304.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>13</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1432</id>
+    <sku>IMERSION-BLACK-ICE-7-MM-40-41</sku>
+    <ean>3000000014301</ean>
+    <url>https://www.example.com/imersion-black-ice-7-mm.html#taille=40%2F41</url>
+    <price>304.99</price>
+    <final_price>304.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1433</id>
+    <sku>IMERSION-BLACK-ICE-7-MM-42-43</sku>
+    <ean>3000000014302</ean>
+    <url>https://www.example.com/imersion-black-ice-7-mm.html#taille=42%2F43</url>
+    <price>304.99</price>
+    <final_price>304.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1434</id>
+    <sku>IMERSION-BLACK-ICE-7-MM-44-45</sku>
+    <ean>3000000014303</ean>
+    <url>https://www.example.com/imersion-black-ice-7-mm.html#taille=44%2F45</url>
+    <price>304.99</price>
+    <final_price>304.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>14</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1435</id>
+    <sku>IMERSION-BLACK-ICE-7-MM-46-47</sku>
+    <ean>3000000014304</ean>
+    <url>https://www.example.com/imersion-black-ice-7-mm.html#taille=46%2F47</url>
+    <price>304.99</price>
+    <final_price>304.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>18</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1440</id>
+  <sku>SIGALSUB-BLACK-ICE-7-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Black Ice 7 mm Sigalsub]]></name>
+  <brand><![CDATA[SIGALSUB]]></brand>
+  <url>https://www.example.com/sigalsub-black-ice-7-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Black Ice 7 mm Sigalsub : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Black Ice 7 mm Sigalsub.</p>]]></description>
+  <price>268.99</price>
+  <final_price>268.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>33</salable_qty>
+  <margin_rate>0.2</margin_rate>
+  <sales_30d>51</sales_30d>
+  <created_at>2026-05-13T12:09:49+00:00</created_at>
+  <rating>3.6</rating>
+  <reviews_count>17</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1441</id>
+    <sku>SIGALSUB-BLACK-ICE-7-MM-38-39</sku>
+    <ean>3000000014400</ean>
+    <url>https://www.example.com/sigalsub-black-ice-7-mm.html#taille=38%2F39</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>20</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1442</id>
+    <sku>SIGALSUB-BLACK-ICE-7-MM-40-41</sku>
+    <ean>3000000014401</ean>
+    <url>https://www.example.com/sigalsub-black-ice-7-mm.html#taille=40%2F41</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1443</id>
+    <sku>SIGALSUB-BLACK-ICE-7-MM-42-43</sku>
+    <ean>3000000014402</ean>
+    <url>https://www.example.com/sigalsub-black-ice-7-mm.html#taille=42%2F43</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1444</id>
+    <sku>SIGALSUB-BLACK-ICE-7-MM-44-45</sku>
+    <ean>3000000014403</ean>
+    <url>https://www.example.com/sigalsub-black-ice-7-mm.html#taille=44%2F45</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1445</id>
+    <sku>SIGALSUB-BLACK-ICE-7-MM-46-47</sku>
+    <ean>3000000014404</ean>
+    <url>https://www.example.com/sigalsub-black-ice-7-mm.html#taille=46%2F47</url>
+    <price>268.99</price>
+    <final_price>268.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1450</id>
+  <sku>IMERSION-PRO-3-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Pro 3 mm Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-pro-3-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Pro 3 mm Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Pro 3 mm Imersion.</p>]]></description>
+  <price>488.99</price>
+  <final_price>488.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>20</salable_qty>
+  <margin_rate>0.23</margin_rate>
+  <sales_30d>42</sales_30d>
+  <created_at>2026-06-16T12:09:49+00:00</created_at>
+  <rating>3</rating>
+  <reviews_count>1</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1451</id>
+    <sku>IMERSION-PRO-3-MM-38-39</sku>
+    <ean>3000000014500</ean>
+    <url>https://www.example.com/imersion-pro-3-mm.html#taille=38%2F39</url>
+    <price>488.99</price>
+    <final_price>488.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>4</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1452</id>
+    <sku>IMERSION-PRO-3-MM-40-41</sku>
+    <ean>3000000014501</ean>
+    <url>https://www.example.com/imersion-pro-3-mm.html#taille=40%2F41</url>
+    <price>488.99</price>
+    <final_price>488.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>15</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1453</id>
+    <sku>IMERSION-PRO-3-MM-42-43</sku>
+    <ean>3000000014502</ean>
+    <url>https://www.example.com/imersion-pro-3-mm.html#taille=42%2F43</url>
+    <price>488.99</price>
+    <final_price>488.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>1</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1454</id>
+    <sku>IMERSION-PRO-3-MM-44-45</sku>
+    <ean>3000000014503</ean>
+    <url>https://www.example.com/imersion-pro-3-mm.html#taille=44%2F45</url>
+    <price>488.99</price>
+    <final_price>488.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1455</id>
+    <sku>IMERSION-PRO-3-MM-46-47</sku>
+    <ean>3000000014504</ean>
+    <url>https://www.example.com/imersion-pro-3-mm.html#taille=46%2F47</url>
+    <price>488.99</price>
+    <final_price>488.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1460</id>
+  <sku>SIGALSUB-PRO-3-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Pro 3 mm Sigalsub]]></name>
+  <brand><![CDATA[SIGALSUB]]></brand>
+  <url>https://www.example.com/sigalsub-pro-3-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Pro 3 mm Sigalsub : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Pro 3 mm Sigalsub.</p>]]></description>
+  <price>296.99</price>
+  <final_price>296.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>45</salable_qty>
+  <margin_rate>0.24</margin_rate>
+  <sales_30d>37</sales_30d>
+  <created_at>2026-04-16T12:09:49+00:00</created_at>
+  <rating>3.3</rating>
+  <reviews_count>59</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1461</id>
+    <sku>SIGALSUB-PRO-3-MM-38-39</sku>
+    <ean>3000000014600</ean>
+    <url>https://www.example.com/sigalsub-pro-3-mm.html#taille=38%2F39</url>
+    <price>296.99</price>
+    <final_price>296.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>11</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1462</id>
+    <sku>SIGALSUB-PRO-3-MM-40-41</sku>
+    <ean>3000000014601</ean>
+    <url>https://www.example.com/sigalsub-pro-3-mm.html#taille=40%2F41</url>
+    <price>296.99</price>
+    <final_price>296.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>9</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1463</id>
+    <sku>SIGALSUB-PRO-3-MM-42-43</sku>
+    <ean>3000000014602</ean>
+    <url>https://www.example.com/sigalsub-pro-3-mm.html#taille=42%2F43</url>
+    <price>296.99</price>
+    <final_price>296.99</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1464</id>
+    <sku>SIGALSUB-PRO-3-MM-44-45</sku>
+    <ean>3000000014603</ean>
+    <url>https://www.example.com/sigalsub-pro-3-mm.html#taille=44%2F45</url>
+    <price>296.99</price>
+    <final_price>296.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>19</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1465</id>
+    <sku>SIGALSUB-PRO-3-MM-46-47</sku>
+    <ean>3000000014604</ean>
+    <url>https://www.example.com/sigalsub-pro-3-mm.html#taille=46%2F47</url>
+    <price>296.99</price>
+    <final_price>296.99</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>6</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1470</id>
+  <sku>MARES-PRO-3-MM</sku>
+  <type>configurable</type>
+  <name><![CDATA[Combinaison néoprène Pro 3 mm Mares]]></name>
+  <brand><![CDATA[MARES]]></brand>
+  <url>https://www.example.com/mares-pro-3-mm.html</url>
+  <image>http://localhost:8080/assets/demo/combi.svg</image>
+  <categories>
+   <category id="177" path="Chasse sous-marine &gt; Combinaisons"><![CDATA[Combinaisons]]></category>
+  </categories>
+  <short_description><![CDATA[Combinaison néoprène Pro 3 mm Mares : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Combinaison néoprène Pro 3 mm Mares.</p>]]></description>
+  <price>384.99</price>
+  <final_price>269.49</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>31</salable_qty>
+  <margin_rate>0.31</margin_rate>
+  <sales_30d>6</sales_30d>
+  <created_at>2025-12-25T12:09:49+00:00</created_at>
+  <rating>4.4</rating>
+  <reviews_count>62</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Chasse</attribute>
+  </attributes>
+  <variants>
+   <variant>
+    <id>1471</id>
+    <sku>MARES-PRO-3-MM-38-39</sku>
+    <ean>3000000014700</ean>
+    <url>https://www.example.com/mares-pro-3-mm.html#taille=38%2F39</url>
+    <price>384.99</price>
+    <final_price>269.49</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>6</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">38/39</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1472</id>
+    <sku>MARES-PRO-3-MM-40-41</sku>
+    <ean>3000000014701</ean>
+    <url>https://www.example.com/mares-pro-3-mm.html#taille=40%2F41</url>
+    <price>384.99</price>
+    <final_price>269.49</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>10</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">40/41</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1473</id>
+    <sku>MARES-PRO-3-MM-42-43</sku>
+    <ean>3000000014702</ean>
+    <url>https://www.example.com/mares-pro-3-mm.html#taille=42%2F43</url>
+    <price>384.99</price>
+    <final_price>269.49</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>3</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">42/43</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1474</id>
+    <sku>MARES-PRO-3-MM-44-45</sku>
+    <ean>3000000014703</ean>
+    <url>https://www.example.com/mares-pro-3-mm.html#taille=44%2F45</url>
+    <price>384.99</price>
+    <final_price>269.49</final_price>
+    <in_stock>0</in_stock>
+    <salable_qty>0</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">44/45</attribute>
+    </attributes>
+   </variant>
+   <variant>
+    <id>1475</id>
+    <sku>MARES-PRO-3-MM-46-47</sku>
+    <ean>3000000014704</ean>
+    <url>https://www.example.com/mares-pro-3-mm.html#taille=46%2F47</url>
+    <price>384.99</price>
+    <final_price>269.49</final_price>
+    <in_stock>1</in_stock>
+    <salable_qty>12</salable_qty>
+    <attributes>
+     <attribute code="taille" label="Taille" filterable="1">46/47</attribute>
+    </attributes>
+   </variant>
+  </variants>
+ </product>
+ <product>
+  <id>1480</id>
+  <sku>CRESSI-DRY</sku>
+  <type>simple</type>
+  <name><![CDATA[Tuba Dry Cressi]]></name>
+  <brand><![CDATA[CRESSI]]></brand>
+  <url>https://www.example.com/cressi-dry.html</url>
+  <image>http://localhost:8080/assets/demo/tuba.svg</image>
+  <categories>
+   <category id="413" path="Plongée &gt; Tubas"><![CDATA[Tubas]]></category>
+  </categories>
+  <short_description><![CDATA[Tuba Dry Cressi : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Tuba Dry Cressi.</p>]]></description>
+  <price>15.99</price>
+  <final_price>15.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>33</salable_qty>
+  <margin_rate>0.52</margin_rate>
+  <sales_30d>71</sales_30d>
+  <created_at>2026-03-28T12:09:49+00:00</created_at>
+  <rating>3.1</rating>
+  <reviews_count>0</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1490</id>
+  <sku>SOMMAP-DRY</sku>
+  <type>simple</type>
+  <name><![CDATA[Tuba Dry Sommap]]></name>
+  <brand><![CDATA[SOMMAP]]></brand>
+  <url>https://www.example.com/sommap-dry.html</url>
+  <image>http://localhost:8080/assets/demo/tuba.svg</image>
+  <categories>
+   <category id="413" path="Plongée &gt; Tubas"><![CDATA[Tubas]]></category>
+  </categories>
+  <short_description><![CDATA[Tuba Dry Sommap : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Tuba Dry Sommap.</p>]]></description>
+  <price>16.99</price>
+  <final_price>16.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>40</salable_qty>
+  <margin_rate>0.43</margin_rate>
+  <sales_30d>37</sales_30d>
+  <created_at>2026-09-08T12:09:49+00:00</created_at>
+  <rating>4.6</rating>
+  <reviews_count>75</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Blanc</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1500</id>
+  <sku>SEAC-FLEX</sku>
+  <type>simple</type>
+  <name><![CDATA[Tuba Flex Seac]]></name>
+  <brand><![CDATA[SEAC]]></brand>
+  <url>https://www.example.com/seac-flex.html</url>
+  <image>http://localhost:8080/assets/demo/tuba.svg</image>
+  <categories>
+   <category id="413" path="Plongée &gt; Tubas"><![CDATA[Tubas]]></category>
+  </categories>
+  <short_description><![CDATA[Tuba Flex Seac : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Tuba Flex Seac.</p>]]></description>
+  <price>12.99</price>
+  <final_price>12.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>33</salable_qty>
+  <margin_rate>0.46</margin_rate>
+  <sales_30d>11</sales_30d>
+  <created_at>2025-12-20T12:09:49+00:00</created_at>
+  <rating>4.6</rating>
+  <reviews_count>20</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+ <product>
+  <id>1510</id>
+  <sku>IMERSION-CLASSIC</sku>
+  <type>simple</type>
+  <name><![CDATA[Tuba Classic Imersion]]></name>
+  <brand><![CDATA[IMERSION]]></brand>
+  <url>https://www.example.com/imersion-classic.html</url>
+  <image>http://localhost:8080/assets/demo/tuba.svg</image>
+  <categories>
+   <category id="413" path="Plongée &gt; Tubas"><![CDATA[Tubas]]></category>
+  </categories>
+  <short_description><![CDATA[Tuba Classic Imersion : modèle fictif pour la démonstration.]]></short_description>
+  <description><![CDATA[<p>Description <strong>HTML</strong> de Tuba Classic Imersion.</p>]]></description>
+  <price>25.99</price>
+  <final_price>25.99</final_price>
+  <in_stock>1</in_stock>
+  <salable_qty>32</salable_qty>
+  <margin_rate>0.48</margin_rate>
+  <sales_30d>110</sales_30d>
+  <created_at>2026-07-10T12:09:49+00:00</created_at>
+  <rating>4.4</rating>
+  <reviews_count>39</reviews_count>
+  <search_keywords><![CDATA[]]></search_keywords>
+  <manual_boost>0</manual_boost>
+  <attributes>
+   <attribute code="couleur" label="Couleur" filterable="1">Noir</attribute>
+   <attribute code="usage" label="Usage" filterable="1">Plongée</attribute>
+  </attributes>
+ </product>
+</catalog>

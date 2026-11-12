@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog version="1.0" type="delta" lang="fr_FR" store="fr" generated_at="2026-11-12T12:09:49+00:00">
+  <product>
+    <sku>C4-PREDATOR</sku>
+    <final_price>373.99</final_price>
+  </product>
+  <product>
+    <sku>CRESSI-PREDATOR</sku>
+    <variants>
+      <variant><sku>CRESSI-PREDATOR-42-43</sku><in_stock>0</in_stock><salable_qty>0</salable_qty></variant>
+    </variants>
+  </product>
+  <product>
+    <sku>INCONNU-999</sku>
+    <in_stock>1</in_stock>
+  </product>
+  <deleted>
+    <sku>IMERSION-CLASSIC</sku>
+  </deleted>
+</catalog>

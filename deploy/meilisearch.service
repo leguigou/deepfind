@@ -1,0 +1,21 @@
+# /etc/systemd/system/meilisearch.service
+# Puis : systemctl daemon-reload && systemctl enable --now meilisearch
+[Unit]
+Description=Meilisearch
+After=network.target
+
+[Service]
+Type=simple
+User=meilisearch
+Group=meilisearch
+WorkingDirectory=/var/lib/meilisearch
+EnvironmentFile=/etc/meilisearch.env
+ExecStart=/usr/local/bin/meilisearch --env production --http-addr 127.0.0.1:7700 --db-path /var/lib/meilisearch/data --dump-dir /var/lib/meilisearch/dumps --snapshot-dir /var/lib/meilisearch/snapshots --no-analytics
+Restart=on-failure
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/meilisearch.env (chmod 600, propriétaire meilisearch) :
+# MEILI_MASTER_KEY=une_cle_longue_et_aleatoire_identique_a_celle_du_.env

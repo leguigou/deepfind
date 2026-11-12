@@ -1,0 +1,25 @@
+{
+  "item_element": "item",
+  "variant_mode": "flat",
+  "parent_match": "id",
+  "fields": {
+    "id": "entity_id",
+    "sku": "sku",
+    "type": "type_id",
+    "parent_id": "parent_id",
+    "name": "name",
+    "brand": {"path": "manufacturer", "transform": ["trim", "uppercase"]},
+    "url": "url_key",
+    "image": "image",
+    "price": "price",
+    "final_price": {"path": "special_price", "transform": ["default:0"]},
+    "in_stock": "is_in_stock",
+    "salable_qty": "qty",
+    "margin_rate": {"path": "marge_pct", "transform": ["to_float", "divide:100"]}
+  },
+  "categories": {"path": "category", "name_path": ".", "separator": ">"},
+  "extra_attributes": {
+    "couleur": {"path": "color", "label": "Couleur", "filterable": true},
+    "taille": {"path": "size", "label": "Taille", "filterable": true}
+  }
+}

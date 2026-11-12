@@ -1,0 +1,5 @@
+.env
+/var/*
+!/var/.gitkeep
+/tests/_tmp/
+/node_modules/

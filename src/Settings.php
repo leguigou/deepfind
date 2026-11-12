@@ -1,0 +1,129 @@
+<?php
+
+declare(strict_types=1);
+
+namespace DeepFind;
+
+use DeepFind\Store\Store;
+
+/**
+ * Paramètres modifiables depuis l'extranet (table settings). Valeurs par défaut ci-dessous.
+ */
+final class Settings
+{
+    public const DEFAULTS = [
+        // Anti-robots
+        'rate_per_minute' => '90',
+        'rate_per_hour' => '1500',
+        'same_query_per_minute' => '15',
+        'burst_multiplier' => '5',
+        'violations_before_block' => '3',
+        'block_minutes' => '60',
+        'block_bad_user_agents' => '1',
+        'bad_user_agents' => 'bot|crawl|spider|slurp|curl|wget|python|scrapy|httpclient|go-http|java/|libwww|okhttp|axios|node-fetch|headless|phantomjs|selenium|puppeteer|playwright',
+        'ip_allowlist' => '',
+        // Classement métier (biz_score, recalculé à chaque import)
+        'w_stock' => '30',
+        'w_margin' => '20',
+        'w_popularity' => '30',
+        'w_new' => '10',
+        'w_manual_boost' => '5',
+        'popularity_ref' => '100',
+        'new_days' => '45',
+        'out_of_stock_last' => '1',
+        // Recherche
+        'posts_limit' => '4',
+        'max_limit' => '48',
+        'cache_ttl' => '30',
+        'facet_values_limit' => '30',
+        // Journaux
+        'log_searches' => '1',
+        'log_retention_days' => '90',
+        // Import
+        'max_drop_percent' => '20',
+    ];
+
+    public const LABELS = [
+        'rate_per_minute' => 'Requêtes max. par IP et par minute',
+        'rate_per_hour' => 'Requêtes max. par IP et par heure',
+        'same_query_per_minute' => 'Même requête max. par IP et par minute',
+        'burst_multiplier' => 'Blocage immédiat si la limite/minute est dépassée × N',
+        'violations_before_block' => 'Minutes en dépassement (sur 1 h) avant blocage auto',
+        'block_minutes' => 'Durée du blocage automatique (minutes)',
+        'block_bad_user_agents' => 'Refuser les user-agents de robots (1/0)',
+        'bad_user_agents' => 'Motifs de user-agents refusés (regex, séparés par |)',
+        'ip_allowlist' => 'IP jamais limitées (séparées par des virgules)',
+        'w_stock' => 'Poids : en stock',
+        'w_margin' => 'Poids : rentabilité (marge 0 à 1)',
+        'w_popularity' => 'Poids : popularité (ventes 30 j)',
+        'w_new' => 'Poids : nouveauté',
+        'w_manual_boost' => 'Poids : par point de boost manuel',
+        'popularity_ref' => 'Ventes 30 j considérées comme « max » de popularité',
+        'new_days' => 'Un produit est « nouveau » pendant N jours',
+        'out_of_stock_last' => 'Ruptures en fin de liste (1/0)',
+        'posts_limit' => 'Nombre d\'articles de blog affichés',
+        'max_limit' => 'Produits max. par page',
+        'cache_ttl' => 'Cache des réponses (secondes, 0 = désactivé)',
+        'facet_values_limit' => 'Valeurs max. par filtre',
+        'log_searches' => 'Journaliser les recherches (1/0)',
+        'log_retention_days' => 'Conservation des journaux (jours)',
+        'max_drop_percent' => 'Import bloqué si le catalogue baisse de plus de N %',
+    ];
+
+    /** @var array<string,string>|null */
+    private static ?array $cache = null;
+
+    /** @return array<string,string> */
+    public static function all(): array
+    {
+        if (self::$cache !== null) {
+            return self::$cache;
+        }
+        $store = Store::get();
+        $cached = PHP_SAPI === 'cli' ? null : $store->get('settings');
+        if (!is_array($cached)) {
+            $cached = self::DEFAULTS;
+            foreach (Db::all('SELECT name, value FROM settings') as $row) {
+                $cached[$row['name']] = (string) $row['value'];
+            }
+            if (PHP_SAPI !== 'cli') {
+                $store->set('settings', $cached, 60);
+            }
+        }
+        return self::$cache = $cached;
+    }
+
+    public static function get(string $name): string
+    {
+        return self::all()[$name] ?? self::DEFAULTS[$name] ?? '';
+    }
+
+    public static function int(string $name): int
+    {
+        return (int) self::get($name);
+    }
+
+    public static function float(string $name): float
+    {
+        return (float) self::get($name);
+    }
+
+    public static function set(string $name, string $value): void
+    {
+        Db::exec('INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', [$name, $value, $value]);
+        self::flush();
+    }
+
+    /** Valeur JSON stockée (ex. libellés d'attributs découverts à l'import). */
+    public static function json(string $name): array
+    {
+        $v = json_decode(self::get($name) ?: '[]', true);
+        return is_array($v) ? $v : [];
+    }
+
+    public static function flush(): void
+    {
+        self::$cache = null;
+        Store::get()->delete('settings');
+    }
+}

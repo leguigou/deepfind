@@ -1,0 +1,96 @@
+/* DeepFind — panneau de résultats. Personnalisable via les variables ci-dessous (à redéfinir dans le thème du site). */
+.df-overlay {
+  --df-accent: #1d2b4f;
+  --df-text: #1d2b4f;
+  --df-muted: #5b6478;
+  --df-sale: #c62828;
+  --df-new: #2e7d32;
+  --df-bg: #ffffff;
+  --df-border: #e7e9ef;
+  --df-hover: #f4f6fa;
+  --df-radius: 8px;
+  position: fixed; left: 0; right: 0; bottom: 0; top: var(--df-top, 0px); z-index: 2147483000;
+  background: rgba(20, 24, 40, .35); font-family: inherit; color: var(--df-text);
+}
+.df-overlay[hidden] { display: none; }
+html.df-lock { overflow: hidden; }
+.df-overlay *, .df-overlay *::before, .df-overlay *::after { box-sizing: border-box; }
+.df-layer {
+  position: absolute; inset: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr);
+  background: var(--df-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, .18);
+}
+.df-close {
+  position: absolute; top: 8px; right: 14px; z-index: 3; width: 34px; height: 34px; border: 0; border-radius: 50%;
+  background: var(--df-hover); color: var(--df-text); font-size: 22px; line-height: 1; cursor: pointer;
+}
+.df-side { border-right: 1px solid var(--df-border); overflow-y: auto; padding: 24px 16px 40px; }
+.df-sec { margin-bottom: 22px; }
+.df-sec h3 { font-size: 17px; font-weight: 700; margin: 0 0 10px; color: var(--df-text); }
+.df-facet { list-style: none; margin: 0; padding: 0; }
+.df-fv {
+  display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 6px;
+  background: none; color: var(--df-text); font: inherit; font-size: 14px; text-align: left; text-transform: uppercase; cursor: pointer;
+}
+.df-fv:hover { background: var(--df-hover); }
+.df-fv.df-on { background: var(--df-accent); color: #fff; }
+.df-fv-count { color: var(--df-muted); font-size: 12px; }
+.df-fv.df-on .df-fv-count { color: rgba(255, 255, 255, .8); }
+.df-more, .df-clear { border: 0; background: none; color: var(--df-accent); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; padding: 4px 8px; }
+.df-clear { margin-bottom: 12px; padding: 0; }
+.df-post { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 6px; color: var(--df-text); text-decoration: none; font-size: 14px; line-height: 1.35; }
+.df-post:hover { background: var(--df-hover); }
+.df-post img { width: 56px; height: 40px; object-fit: cover; border-radius: 4px; flex: 0 0 56px; }
+.df-main { overflow-y: auto; padding: 20px 24px 40px; }
+.df-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 40px 16px 0; }
+.df-title { font-size: 19px; font-weight: 700; margin: 0; color: var(--df-text); }
+.df-tools { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+.df-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; white-space: nowrap; }
+.df-toggle input { accent-color: var(--df-accent); margin: 0; }
+.df-count { color: var(--df-muted); font-size: 12px; }
+.df-sort { padding: 6px 8px; border: 1px solid var(--df-border); border-radius: 6px; background: #fff; color: var(--df-text); font: inherit; }
+.df-see-all { color: var(--df-text); font-size: 14px; text-decoration: none; white-space: nowrap; }
+.df-see-all:hover { text-decoration: underline; }
+.df-see-all[hidden] { display: none; }
+.df-filters-btn { display: none; }
+.df-notice { margin: 0 0 14px; padding: 10px 14px; border-radius: var(--df-radius); background: #eef2fb; font-size: 14px; }
+.df-notice a { color: var(--df-accent); font-weight: 600; }
+.df-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; }
+.df-card {
+  display: flex; flex-direction: column; padding: 12px 12px 16px; border-radius: var(--df-radius); background: #fff;
+  color: var(--df-text); text-decoration: none; box-shadow: 0 1px 6px rgba(20, 30, 60, .10); transition: box-shadow .15s, transform .15s;
+}
+.df-card:hover { box-shadow: 0 6px 20px rgba(20, 30, 60, .16); transform: translateY(-2px); }
+.df-media { position: relative; aspect-ratio: 1 / 1; display: grid; place-items: center; margin-bottom: 10px; overflow: hidden; }
+.df-media img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.df-noimg { background: var(--df-hover); border-radius: 6px; }
+.df-badge { position: absolute; padding: 2px 7px; border-radius: 4px; font-size: 13px; font-weight: 700; color: #fff; }
+.df-badge-sale { right: 0; bottom: 0; background: var(--df-sale); }
+.df-badge-new { left: 0; top: 0; background: var(--df-new); }
+.df-badge-oos { left: 0; bottom: 0; background: #6b7280; }
+.df-oos .df-media img { opacity: .55; }
+.df-brand { font-size: 13px; text-transform: uppercase; color: var(--df-text); margin-bottom: 2px; }
+.df-name {
+  font-size: 15px; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; min-height: 2.8em;
+}
+.df-variant { font-size: 12px; color: var(--df-muted); margin-top: 2px; }
+.df-price { margin-top: auto; padding-top: 12px; font-size: 18px; font-weight: 700; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.df-sale .df-final { color: var(--df-sale); }
+.df-old { font-size: 13px; color: var(--df-muted); font-weight: 400; }
+.df-from { font-size: 13px; font-weight: 400; color: var(--df-muted); }
+.df-empty { padding: 40px 10px; text-align: center; color: var(--df-muted); }
+.df-empty strong { color: var(--df-text); font-size: 17px; }
+.df-loader { padding: 18px; text-align: center; color: var(--df-muted); font-size: 14px; }
+.df-sentinel { height: 1px; }
+
+@media (max-width: 900px) {
+  .df-layer { grid-template-columns: 1fr; }
+  .df-side { display: none; position: absolute; inset: 0 25% 0 0; z-index: 4; background: var(--df-bg); box-shadow: 6px 0 24px rgba(0, 0, 0, .2); }
+  .df-side-open .df-side { display: block; }
+  .df-filters-btn { display: inline-block; padding: 6px 12px; border: 1px solid var(--df-border); border-radius: 6px; background: #fff; font: inherit; cursor: pointer; }
+  .df-main { padding: 14px 16px 40px; }
+  .df-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .df-name { font-size: 14px; }
+  .df-price { font-size: 16px; }
+  .df-head { margin-right: 44px; }
+}

@@ -1,0 +1,225 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/*
+ * Console DeepFind. Utilisation : php bin/console <commande> [options]
+ * Lancez « php bin/console help » pour la liste des commandes.
+ */
+
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+require dirname(__DIR__) . '/src/bootstrap.php';
+
+use DeepFind\Config;
+use DeepFind\Db;
+use DeepFind\Import\Importer;
+use DeepFind\Import\Mapper;
+use DeepFind\Logging\SearchLogger;
+use DeepFind\Meili\MeiliClient;
+use DeepFind\Rules\RulesRepository;
+use DeepFind\Security\ApiKeys;
+use DeepFind\Settings;
+use DeepFind\Store\MysqlStore;
+use DeepFind\Store\Store;
+use DeepFind\Text;
+
+$args = array_slice($argv, 1);
+$cmd = $args[0] ?? 'help';
+$opts = [];
+foreach (array_slice($args, 1) as $a) {
+    if (preg_match('/^--([a-z\-]+)(?:=(.*))?$/', $a, $m)) {
+        $opts[$m[1]] = $m[2] ?? '1';
+    }
+}
+$out = static function (string $s): void {
+    fwrite(STDOUT, $s . PHP_EOL);
+};
+$err = static function (string $s): void {
+    fwrite(STDERR, "\033[31m" . $s . "\033[0m" . PHP_EOL);
+};
+
+try {
+    switch ($cmd) {
+        case 'check':
+            exit(check($out) ? 0 : 1);
+
+        case 'install':
+            $sql = (string) file_get_contents(APP_ROOT . '/database/schema.sql');
+            foreach (array_filter(array_map('trim', preg_split('/;\s*$/m', $sql) ?: [])) as $stmt) {
+                if (preg_replace('/^--.*$/m', '', $stmt) !== '' && trim(preg_replace('/^--.*$/m', '', $stmt) ?? '') !== '') {
+                    Db::pdo()->exec($stmt);
+                }
+            }
+            $out('✔ Tables créées / à jour.');
+            $now = date('Y-m-d H:i:s');
+            foreach (array_filter(array_map('trim', explode(',', Config::get('APP_LANGS', 'fr')))) as $lang) {
+                foreach (['products' => Mapper::defaultProducts(), 'posts' => Mapper::defaultPosts()] as $kind => $mapping) {
+                    $code = ($kind === 'products' ? 'produits_' : 'blog_') . $lang;
+                    if (Db::value('SELECT id FROM sources WHERE code = ?', [$code]) === null) {
+                        Db::insert('sources', [
+                            'code' => $code, 'kind' => $kind, 'lang' => $lang,
+                            'url' => $kind === 'products' ? 'samples/products_fr.xml' : 'samples/blog_fr.xml',
+                            'delta_url' => $kind === 'products' ? 'samples/products_fr_delta.xml' : null,
+                            'mapping' => Text::json($mapping), 'active' => 1, 'created_at' => $now, 'updated_at' => $now,
+                        ]);
+                        $out("✔ Source « $code » créée (pointe vers les fichiers d'exemple : à modifier dans l'extranet).");
+                    }
+                }
+            }
+            $meili = MeiliClient::admin();
+            if ($meili->health()) {
+                $out('✔ Meilisearch joignable (' . Config::get('MEILI_URL', 'http://127.0.0.1:7700') . ').');
+            } else {
+                $err('✘ Meilisearch injoignable : vérifiez MEILI_URL / MEILI_MASTER_KEY et le service meilisearch.');
+            }
+            $out('Étapes suivantes : php bin/console key:create --name="Site" --origins=cabesto.com puis import:run --all');
+            break;
+
+        case 'import:run':
+            $type = ($opts['type'] ?? 'full') === 'delta' ? 'delta' : 'full';
+            $trigger = isset($opts['cron']) ? 'cron' : 'cli';
+            $sources = isset($opts['source'])
+                ? Db::all('SELECT * FROM sources WHERE code = ?', [$opts['source']])
+                : (isset($opts['all']) ? Db::all('SELECT * FROM sources WHERE active = 1 ORDER BY kind DESC, id') : []);
+            if ($sources === []) {
+                $err('Précisez --source=CODE ou --all (sources actives).');
+                exit(1);
+            }
+            $code = 0;
+            foreach ($sources as $s) {
+                if ($type === 'delta' && ($s['kind'] !== 'products' || trim((string) $s['delta_url']) === '')) {
+                    continue;
+                }
+                $run = (new Importer(MeiliClient::admin(), $out))->run($s, $type, $trigger);
+                if (($run['status'] ?? '') !== 'success') {
+                    $code = 2;
+                }
+            }
+            exit($code);
+
+        case 'queue:work':
+            $once = isset($opts['once']);
+            $maxTime = (int) ($opts['max-time'] ?? 3600);
+            $sleep = max(1, (int) ($opts['sleep'] ?? 5));
+            $start = time();
+            Db::exec("UPDATE import_runs SET status = 'failed', message = 'Interrompu (processus arrêté)', finished_at = NOW()
+                      WHERE status = 'running' AND started_at < NOW() - INTERVAL 3 HOUR");
+            do {
+                $run = Db::one("SELECT * FROM import_runs WHERE status = 'queued' ORDER BY id LIMIT 1");
+                if ($run !== null && Db::exec("UPDATE import_runs SET status = 'running' WHERE id = ? AND status = 'queued'", [$run['id']]) === 1) {
+                    $source = Db::one('SELECT * FROM sources WHERE id = ?', [$run['source_id']]);
+                    if ($source === null) {
+                        Db::update('import_runs', ['status' => 'failed', 'message' => 'Source supprimée', 'finished_at' => date('Y-m-d H:i:s')], 'id = ?', [$run['id']]);
+                    } else {
+                        (new Importer(MeiliClient::admin(), $out))->run($source, $run['type'], $run['trigger_by'], (int) $run['id']);
+                    }
+                    continue;
+                }
+                if ($once) {
+                    break;
+                }
+                sleep($sleep);
+                Db::reset();
+            } while (time() - $start < $maxTime);
+            break;
+
+        case 'rules:sync':
+            $langs = isset($opts['lang']) ? [$opts['lang']] : array_filter(array_map('trim', explode(',', Config::get('APP_LANGS', 'fr'))));
+            $meili = MeiliClient::admin();
+            foreach ($langs as $lang) {
+                $syn = RulesRepository::meiliSynonyms($lang);
+                foreach ([Config::productIndex($lang), Config::postIndex($lang)] as $uid) {
+                    if ($meili->getIndex($uid) !== null) {
+                        $meili->waitTask($meili->updateSettings($uid, ['synonyms' => $syn === [] ? new stdClass() : $syn]));
+                        $out("✔ $uid : " . count($syn) . ' synonymes');
+                    }
+                }
+            }
+            RulesRepository::bumpVersion();
+            break;
+
+        case 'rules:import':
+            $lang = $opts['lang'] ?? 'fr';
+            $replace = isset($opts['replace']);
+            foreach (['synonyms' => 'importSynonyms', 'rules' => 'importRules', 'redirects' => 'importRedirects'] as $opt => $method) {
+                if (isset($opts[$opt])) {
+                    [$n, $errors] = RulesRepository::$method($opts[$opt], $lang, $replace);
+                    $out("✔ $opt : $n ligne(s)" . ($errors ? ' — ' . implode(' ; ', $errors) : ''));
+                }
+            }
+            RulesRepository::bumpVersion();
+            break;
+
+        case 'logs:purge':
+            $res = SearchLogger::purge();
+            $res['kv_store'] = MysqlStore::purge();
+            foreach ($res as $t => $n) {
+                $out("$t : $n ligne(s) supprimée(s)");
+            }
+            break;
+
+        case 'key:create':
+            $key = ApiKeys::create($opts['name'] ?? 'Site', $opts['origins'] ?? '', $opts['langs'] ?? 'fr');
+            $out($key);
+            break;
+
+        case 'admin:token':
+            $out('Ajoutez cette ligne dans .env :');
+            $out('ADMIN_TOKEN=' . bin2hex(random_bytes(24)));
+            $out('APP_SECRET=' . bin2hex(random_bytes(32)) . '   # si pas encore défini');
+            break;
+
+        case 'help':
+        default:
+            $out(<<<TXT
+DeepFind — commandes :
+  check                                   Vérifie PHP, extensions, base de données, Meilisearch
+  install                                 Crée/actualise les tables et les sources par défaut
+  admin:token                             Génère un ADMIN_TOKEN et un APP_SECRET
+  key:create --name=.. --origins=..       Crée une clé publique pour le widget
+  import:run --source=CODE|--all [--type=full|delta] [--cron]
+  queue:work [--once] [--sleep=5] [--max-time=3600]   Traite les imports demandés depuis l'extranet
+  rules:sync [--lang=fr]                  Renvoie les synonymes au moteur
+  rules:import --lang=fr [--replace] [--synonyms=f.csv] [--rules=f.csv] [--redirects=f.csv]
+  logs:purge                              Supprime les journaux au-delà de la durée de conservation
+TXT);
+    }
+} catch (Throwable $e) {
+    $err($e::class . ' : ' . $e->getMessage());
+    exit(1);
+}
+
+function check(callable $out): bool
+{
+    $ok = true;
+    $line = static function (bool $good, string $msg, bool $blocking = true) use ($out, &$ok): void {
+        $out(($good ? "\033[32m✔\033[0m " : ($blocking ? "\033[31m✘\033[0m " : "\033[33m!\033[0m ")) . $msg);
+        if (!$good && $blocking) {
+            $ok = false;
+        }
+    };
+    $line(PHP_VERSION_ID >= 80200, 'PHP ' . PHP_VERSION . ' (8.2 minimum, 8.5 recommandé)');
+    foreach (['pdo_mysql', 'curl', 'xmlreader', 'dom', 'simplexml', 'mbstring', 'json', 'zlib'] as $ext) {
+        $line(extension_loaded($ext), "extension $ext");
+    }
+    $line(extension_loaded('apcu'), 'extension apcu (compteurs anti-robots rapides ; sinon Redis ou repli MySQL)', false);
+    $line(extension_loaded('opcache'), 'OPcache (performances)', false);
+    $line(strlen((string) Config::get('ADMIN_TOKEN', '')) >= 32, 'ADMIN_TOKEN défini (32 caractères min.)');
+    $line(!in_array(Config::get('APP_SECRET', ''), ['', 'change-me'], true), 'APP_SECRET défini');
+    try {
+        Db::value('SELECT 1');
+        $line(true, 'Connexion MySQL (' . Config::get('DB_NAME', 'deepfind') . ')');
+        $line(Db::value("SHOW TABLES LIKE 'search_logs'") !== null, 'Tables installées (php bin/console install)');
+    } catch (Throwable $e) {
+        $line(false, 'Connexion MySQL : ' . $e->getMessage());
+    }
+    $line(MeiliClient::admin()->health(), 'Meilisearch joignable sur ' . Config::get('MEILI_URL', 'http://127.0.0.1:7700'));
+    $line(is_writable(Config::varDir('feeds')), 'Dossier var/feeds accessible en écriture');
+    if (PHP_SAPI === 'cli') {
+        $out('Stockage des compteurs (côté web, valeur RATE_STORE) : ' . Config::get('RATE_STORE', 'apcu') . ' — en CLI : ' . Store::get()->name());
+    }
+    return $ok;
+}
