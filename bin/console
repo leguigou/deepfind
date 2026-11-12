@@ -54,6 +54,9 @@ try {
                 }
             }
             $out('✔ Tables créées / à jour.');
+            foreach (DeepFind\Migrations::run() as $col) {
+                $out("✔ Colonne ajoutée : $col");
+            }
             $now = date('Y-m-d H:i:s');
             foreach (array_filter(array_map('trim', explode(',', Config::get('APP_LANGS', 'fr')))) as $lang) {
                 foreach (['products' => Mapper::defaultProducts(), 'posts' => Mapper::defaultPosts()] as $kind => $mapping) {
@@ -101,29 +104,18 @@ try {
             exit($code);
 
         case 'queue:work':
-            $once = isset($opts['once']);
-            $maxTime = (int) ($opts['max-time'] ?? 3600);
-            $sleep = max(1, (int) ($opts['sleep'] ?? 5));
-            $start = time();
-            Db::exec("UPDATE import_runs SET status = 'failed', message = 'Interrompu (processus arrêté)', finished_at = NOW()
-                      WHERE status = 'running' AND started_at < NOW() - INTERVAL 3 HOUR");
-            do {
-                $run = Db::one("SELECT * FROM import_runs WHERE status = 'queued' ORDER BY id LIMIT 1");
-                if ($run !== null && Db::exec("UPDATE import_runs SET status = 'running' WHERE id = ? AND status = 'queued'", [$run['id']]) === 1) {
-                    $source = Db::one('SELECT * FROM sources WHERE id = ?', [$run['source_id']]);
-                    if ($source === null) {
-                        Db::update('import_runs', ['status' => 'failed', 'message' => 'Source supprimée', 'finished_at' => date('Y-m-d H:i:s')], 'id = ?', [$run['id']]);
-                    } else {
-                        (new Importer(MeiliClient::admin(), $out))->run($source, $run['type'], $run['trigger_by'], (int) $run['id']);
-                    }
-                    continue;
-                }
-                if ($once) {
-                    break;
-                }
-                sleep($sleep);
-                Db::reset();
-            } while (time() - $start < $maxTime);
+            workQueue(isset($opts['once']), (int) ($opts['max-time'] ?? 3600), max(1, (int) ($opts['sleep'] ?? 5)), $out);
+            break;
+
+        case 'schedule:run':
+            // À lancer chaque minute par le cron système : déclenche les imports planifiés dans l'extranet.
+            foreach (DeepFind\Import\Scheduler::tick() as $q) {
+                $out('[' . date('H:i') . "] planifié : $q");
+            }
+            if (isset($opts['work'])) {
+                // Sans Supervisor : traite aussi la file d'attente dans la foulée.
+                workQueue(true, 3600, 5, $out);
+            }
             break;
 
         case 'rules:sync':
@@ -181,7 +173,9 @@ DeepFind — commandes :
   admin:token                             Génère un ADMIN_TOKEN et un APP_SECRET
   key:create --name=.. --origins=..       Crée une clé publique pour le widget
   import:run --source=CODE|--all [--type=full|delta] [--cron]
-  queue:work [--once] [--sleep=5] [--max-time=3600]   Traite les imports demandés depuis l'extranet
+  schedule:run [--work]                   À lancer CHAQUE MINUTE par cron : déclenche les imports planifiés
+                                          (--work : traite aussi la file, si Supervisor n'est pas utilisé)
+  queue:work [--once] [--sleep=5] [--max-time=3600]   Traite les imports en file d'attente (Supervisor)
   rules:sync [--lang=fr]                  Renvoie les synonymes au moteur
   rules:import --lang=fr [--replace] [--synonyms=f.csv] [--rules=f.csv] [--redirects=f.csv]
   logs:purge                              Supprime les journaux au-delà de la durée de conservation
@@ -190,6 +184,30 @@ TXT);
 } catch (Throwable $e) {
     $err($e::class . ' : ' . $e->getMessage());
     exit(1);
+}
+
+function workQueue(bool $once, int $maxTime, int $sleep, callable $out): void
+{
+    $start = time();
+    Db::exec("UPDATE import_runs SET status = 'failed', message = 'Interrompu (processus arrêté)', finished_at = NOW()
+              WHERE status = 'running' AND started_at < NOW() - INTERVAL 3 HOUR");
+    do {
+        $run = Db::one("SELECT * FROM import_runs WHERE status = 'queued' ORDER BY id LIMIT 1");
+        if ($run !== null && Db::exec("UPDATE import_runs SET status = 'running' WHERE id = ? AND status = 'queued'", [$run['id']]) === 1) {
+            $source = Db::one('SELECT * FROM sources WHERE id = ?', [$run['source_id']]);
+            if ($source === null) {
+                Db::update('import_runs', ['status' => 'failed', 'message' => 'Source supprimée', 'finished_at' => date('Y-m-d H:i:s')], 'id = ?', [$run['id']]);
+            } else {
+                (new Importer(MeiliClient::admin(), $out))->run($source, $run['type'], $run['trigger_by'], (int) $run['id']);
+            }
+            continue;
+        }
+        if ($once) {
+            break;
+        }
+        sleep($sleep);
+        Db::reset();
+    } while (time() - $start < $maxTime);
 }
 
 function check(callable $out): bool

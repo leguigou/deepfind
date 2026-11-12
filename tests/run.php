@@ -136,6 +136,38 @@ check('origine refusée', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://
 check('origine refusée sans en-tête', ApiKeys::checkOrigin($key, ['HTTP_HOST' => 'search.x']) === null);
 check('même domaine sans Origin (Referer) accepté', ApiKeys::checkOrigin($key, ['HTTP_REFERER' => 'https://search.x/admin/demo', 'HTTP_HOST' => 'search.x']) === '');
 
+// Planification (cron)
+use DeepFind\Import\Cron;
+check('cron : expression valide / invalide', Cron::isValid('*/15 6-23 * * 1-5') && !Cron::isValid('61 * * * *') && !Cron::isValid('* * *'));
+check('cron : correspondance', Cron::matches('*/15 6-23 * * *', new DateTimeImmutable('2026-11-12 23:45')) && !Cron::matches('*/15 6-23 * * *', new DateTimeImmutable('2026-11-12 05:45')));
+check('cron : dimanche = 0 ou 7', Cron::matches('0 9 * * 7', new DateTimeImmutable('2026-11-15 09:00')));
+$nx = Cron::nextRuns('15 3 * * *', 2, new DateTimeImmutable('2026-11-12 13:20'));
+check('cron : prochaines exécutions', count($nx) === 2 && $nx[0]->format('Y-m-d H:i') === '2026-11-13 03:15');
+
+// Mapping visuel : détection des champs du flux
+use DeepFind\Import\FeedInspector;
+use DeepFind\Admin\MappingController;
+$ins = FeedInspector::inspect(APP_ROOT . '/samples/products_fr.xml');
+check('inspection : élément produit détecté', $ins['item'] === 'product' && $ins['scanned'] > 10);
+check('inspection : groupe des variantes détecté', in_array('variants/variant', FeedInspector::repeatedGroups($ins), true));
+check('inspection : attributs par code détectés', isset($ins['codes']['attributes/attribute']['code']['couleur']));
+$opts = FeedInspector::options($ins, '');
+check('inspection : attribut XML proposé', in_array('categories/category/@path', array_column($opts, 'value'), true));
+check('inspection : attribut par code proposé', in_array("attributes/attribute[@code='couleur']", array_column($opts, 'value'), true));
+$insFlat = FeedInspector::inspect(APP_ROOT . '/samples/products_fr_flat.xml');
+$fo = FeedInspector::options($insFlat, '');
+check('inspection flux à plat : élément <item>', $insFlat['item'] === 'item');
+check('pré-sélection : url_key pour l\'URL, special_price pour le prix final, entity_id pour l\'id',
+    FeedInspector::suggest(['url', 'link', 'product_url', 'url_key'], $fo) === 'url_key'
+    && FeedInspector::suggest(['final_price', 'special_price'], $fo) === 'special_price'
+    && FeedInspector::suggest(['id', 'entity_id'], $fo) === 'entity_id');
+check('transformations saisies', MappingController::transforms('to_float, divide:100') === ['to_float', 'divide:100'] && MappingController::transforms('split:,, trim') === ['split:,', 'trim']);
+$codeOpt = new Mapper(['fields' => ['brand' => ['path' => "attributes/attribute[@code='couleur']"]]]);
+$el = null;
+foreach (XmlItemReader::items(APP_ROOT . '/samples/products_fr.xml', ['product'], 1) as [, $el]) {
+}
+check('chemin « attribut par code » lu par le mapping', ($codeOpt->mapProduct($el)['fields']['brand'] ?? '') !== '');
+
 // ---------------------------------------------------------------- Intégration
 $base = getenv('TEST_BASE_URL');
 if ($base) {
@@ -186,6 +218,15 @@ if ($base) {
     check('API : domaine non autorisé => 403', $c === 403);
     [$c] = $get("/api/v1/search?key=$key&q=palme", ['User-Agent: python-requests/2.31']);
     check('API : user-agent de robot => 403', $c === 403);
+    // Planificateur : une seule mise en file par minute, même si lancé deux fois
+    DeepFind\Db::exec("UPDATE import_runs SET status = 'success' WHERE status IN ('queued','running')");
+    DeepFind\Db::exec("UPDATE sources SET cron_full = '* * * * *', scheduled_full_at = NULL WHERE code = 'produits_fr'");
+    $q1 = DeepFind\Import\Scheduler::tick();
+    $q2 = DeepFind\Import\Scheduler::tick();
+    check('planificateur : import mis en file', count($q1) === 1 && str_contains($q1[0], 'produits_fr full'));
+    check('planificateur : pas de doublon dans la même minute', $q2 === []);
+    DeepFind\Db::exec("UPDATE sources SET cron_full = NULL WHERE code = 'produits_fr'");
+    DeepFind\Db::exec("DELETE FROM import_runs WHERE status = 'queued'");
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }

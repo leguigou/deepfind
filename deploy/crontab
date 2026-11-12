@@ -1,9 +1,11 @@
-# crontab -u www-data -e  (heures du serveur ; ajustez selon l'heure de génération des flux Magento)
-# Import complet de toutes les sources actives (produits + blog) chaque nuit
-15 3 * * *    /usr/bin/php8.5 /var/www/deepfind/bin/console import:run --all --type=full --cron >> /var/log/deepfind-import.log 2>&1
-# Mise à jour stock / prix toutes les 15 minutes (sources produits ayant une URL delta)
-*/15 6-23 * * * /usr/bin/php8.5 /var/www/deepfind/bin/console import:run --all --type=delta --cron >> /var/log/deepfind-import.log 2>&1
-# Purge des journaux (durée de conservation réglable dans l'extranet)
+# crontab -u www-data -e
+# Les horaires d'import se règlent dans l'extranet (Flux & mapping › Planification des imports).
+# Le planificateur ci-dessous vérifie chaque minute s'il y a un import à lancer.
+
+# Avec Supervisor (recommandé : deploy/supervisor-worker.conf traite les imports)
+* * * * *     /usr/bin/php8.5 /var/www/deepfind/bin/console schedule:run >> /var/log/deepfind-import.log 2>&1
+# Sans Supervisor : remplacez la ligne précédente par celle-ci (planifie ET exécute)
+# * * * * *   /usr/bin/php8.5 /var/www/deepfind/bin/console schedule:run --work >> /var/log/deepfind-import.log 2>&1
+
+# Purge des journaux de recherche (durée de conservation réglable dans l'extranet)
 40 4 * * *    /usr/bin/php8.5 /var/www/deepfind/bin/console logs:purge >> /var/log/deepfind-import.log 2>&1
-# Uniquement si Supervisor n'est PAS utilisé : traitement des imports manuels toutes les minutes
-# * * * * *   /usr/bin/php8.5 /var/www/deepfind/bin/console queue:work --once >> /var/log/deepfind-import.log 2>&1

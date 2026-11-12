@@ -20,6 +20,8 @@ final class App
         'POST /admin/sources/import' => [SourcesController::class, 'import'],
         'GET /admin/sources/test' => [SourcesController::class, 'test'],
         'POST /admin/sources/test' => [SourcesController::class, 'test'],
+        'GET /admin/sources/mapping' => [MappingController::class, 'edit'],
+        'POST /admin/sources/mapping/save' => [MappingController::class, 'save'],
         'GET /admin/imports' => [SourcesController::class, 'imports'],
         'GET /admin/imports/view' => [SourcesController::class, 'importView'],
         'GET /admin/synonyms' => [RulesController::class, 'synonyms'],

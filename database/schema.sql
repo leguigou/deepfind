@@ -27,6 +27,10 @@ CREATE TABLE IF NOT EXISTS sources (
   auth_header TEXT NULL,
   mapping MEDIUMTEXT NOT NULL,
   active TINYINT(1) NOT NULL DEFAULT 1,
+  cron_full VARCHAR(100) NULL,
+  cron_delta VARCHAR(100) NULL,
+  scheduled_full_at DATETIME NULL,
+  scheduled_delta_at DATETIME NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   UNIQUE KEY uk_code (code)

@@ -75,8 +75,26 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('input[name=ip]', '203.0.113.50');
   await page.click('form[action$="/admin/bots/block"] button.btn');
   check('blocage manuel', (await page.textContent('body')).includes('203.0.113.x'));
+  // Planification d'un flux
   await page.goto(BASE + '/admin/sources/edit?id=1');
-  await page.screenshot({ path: OUT + '/05-source-mapping.png', fullPage: false });
+  await page.selectOption('select[data-cron-preset="cron_delta"]', '*/15 6-23 * * *');
+  check('planification : préréglage recopié', (await page.inputValue('#cron_delta')) === '*/15 6-23 * * *');
+  await page.click('form.form .actions button.btn >> nth=0');
+  check('planification : enregistrée', (await page.inputValue('#cron_delta')) === '*/15 6-23 * * *' && (await page.textContent('body')).includes('Prochaines exécutions'));
+  await page.screenshot({ path: OUT + '/05-source-planification.png', fullPage: true });
+  await page.goto(BASE + '/admin/sources');
+  check('planification : affichée dans la liste', (await page.textContent('table')).includes('Toutes les 15 min de 6 h à 23 h'));
+
+  // Mapping visuel : détection, aller-retour d'enregistrement
+  await page.goto(BASE + '/admin/sources/mapping?id=1');
+  check('mapping visuel : champs détectés', (await page.$$('select[data-sample-select]')).length > 20);
+  check('mapping visuel : SKU pré-rempli', (await page.inputValue('select[name="f[sku][path]"]')) === 'sku');
+  check('mapping visuel : exemple affiché', (await page.textContent('.map-sample')).includes('ex.'));
+  await page.screenshot({ path: OUT + '/09-mapping-visuel.png', fullPage: false });
+  await page.click('.sticky-actions button.btn');
+  check('mapping visuel : enregistré', (await page.textContent('body')).includes('Mapping enregistré'));
+  await page.goto(BASE + '/admin/sources/test?id=1');
+  check('mapping visuel : test du résultat sans rejet', !(await page.textContent('body')).includes('Rejeté'));
 
   // Widget sur la page de démo
   await page.goto(BASE + '/admin/demo');

@@ -24,6 +24,17 @@ final class FeedFetcher
         return self::local($url);
     }
 
+    /** Pour l'extranet : réutilise le dernier téléchargement de moins d'une heure (évite de retélécharger 300 Mo). */
+    public static function cachedOrFetch(array $source, string $type, bool $refresh = false): string
+    {
+        $url = trim((string) ($type === 'delta' ? ($source['delta_url'] ?? '') : ($source['url'] ?? '')));
+        $cache = self::cachePath($source['code'], $type);
+        if (!$refresh && preg_match('#^https?://#i', $url) && is_file($cache) && filemtime($cache) > time() - 3600) {
+            return $cache;
+        }
+        return self::fetch($source, $type);
+    }
+
     /** Dernier fichier téléchargé (utilisé pour le test de mapping sans retélécharger). */
     public static function cachePath(string $code, string $type): string
     {

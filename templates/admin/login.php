@@ -5,14 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Connexion · DeepFind</title>
-<link rel="stylesheet" href="<?= e(url('/assets/admin.css')) ?>?v=2">
-<script src="<?= e(url('/assets/admin.js')) ?>?v=2"></script>
+<link rel="icon" href="<?= e(url('/favicon.svg')) ?>" type="image/svg+xml">
+<link rel="icon" href="<?= e(url('/favicon-32.png')) ?>" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="<?= e(url('/apple-touch-icon.png')) ?>">
+<link rel="stylesheet" href="<?= e(url('/assets/admin.css')) ?>?v=3">
+<script src="<?= e(url('/assets/admin.js')) ?>?v=3"></script>
 </head>
 <body class="login-page">
 <button type="button" class="icon-btn login-theme" data-toggle-theme title="Basculer thème clair / sombre" aria-label="Basculer thème clair / sombre">◐</button>
 <form method="post" action="<?= e(url('/admin/login')) ?>" class="login-box" autocomplete="off">
   <?= csrf_field() ?>
-  <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">Deep<span>Find</span></span></div>
+  <div class="brand"><?= logo_svg() ?><span class="brand-text">Deep<span>Find</span></span></div>
   <p class="muted">Extranet de gestion du moteur de recherche</p>
   <?php if ($error): ?><div class="flash flash-error"><?= e($error) ?></div><?php endif; ?>
   <label>Jeton d'accès

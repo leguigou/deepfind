@@ -42,6 +42,29 @@
     document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
       el.addEventListener('change', function () { el.form.submit(); });
     });
+    // Planification : un choix prédéfini remplit l'expression cron
+    document.querySelectorAll('select[data-cron-preset]').forEach(function (sel) {
+      var input = document.getElementById(sel.getAttribute('data-cron-preset'));
+      sel.addEventListener('change', function () {
+        if (sel.value !== '__custom') { input.value = sel.value; } else { input.focus(); }
+      });
+      input.addEventListener('input', function () {
+        var match = Array.prototype.some.call(sel.options, function (o) { return o.value === input.value.trim(); });
+        sel.value = match ? input.value.trim() : '__custom';
+      });
+    });
+    // Mapping visuel : exemple de valeur du champ choisi
+    function showSample(sel) {
+      var opt = sel.options[sel.selectedIndex];
+      var out = sel.parentNode.querySelector('[data-sample-out]');
+      if (out) { out.textContent = opt && opt.getAttribute('data-sample') ? 'ex. ' + opt.getAttribute('data-sample') : ''; }
+      var row = sel.closest('tr');
+      if (row && row.classList.contains('map-missing') && sel.value) { row.classList.remove('map-missing'); }
+    }
+    document.querySelectorAll('select[data-sample-select]').forEach(function (sel) {
+      showSample(sel);
+      sel.addEventListener('change', function () { showSample(sel); });
+    });
     document.querySelectorAll('code.select').forEach(function (el) {
       el.addEventListener('click', function () {
         var r = document.createRange(); r.selectNodeContents(el);

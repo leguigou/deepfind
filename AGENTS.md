@@ -32,6 +32,9 @@ src/Import/
   Mapper.php                   mapping JSON → champs internes (chemins simples ou XPath, transformations)
   ProductBuilder.php           document final : agrégation parent/enfants, prix « dès », stock, promo, biz_score
   Importer.php                 complet (index _tmp + contrôle de baisse + swap atomique) / delta (fetch + recalcul)
+  FeedInspector.php            analyse d'un flux pour le mapping visuel (chemins, groupes répétés, attributs par code, suggestions)
+  FieldCatalog.php             libellés, aides, champs obligatoires et noms usuels des champs internes
+  Cron.php, Scheduler.php      expressions cron 5 champs ; planificateur (schedule:run chaque minute → file d'attente)
 src/Search/
   SearchRequest.php            validation des paramètres publics
   SearchService.php            UN appel multi-search : principal + injectés (pin/boost) + SKU exact + facettes disjonctives + blog
@@ -41,7 +44,8 @@ src/Rules/RulesRepository.php  synonymes, règles, redirections, import CSV, ver
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
 src/Http/ApiController.php     /api/v1/search, /api/v1/click, /api/v1/health
-src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller, View
+src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
+src/Migrations.php             ajout des colonnes manquantes sur une base existante (appelé par `install`)
 templates/admin/               gabarits PHP (échapper TOUT avec e())
 bin/console                    commandes CLI (install, check, import:run, queue:work, rules:*, logs:purge, key:create)
 deploy/                        vhost Apache, service systemd Meilisearch, Supervisor, crontab
@@ -65,6 +69,9 @@ tests/                         run.sh (unitaires + intégration), run.php, fake-
 - Textes de l'interface et messages : **français**. Commentaires : français, courts, et seulement là où ils expliquent un choix.
 - Classes `final`, méthodes statiques pour les dépôts simples, pas de framework.
 - Nouvelle page d'extranet : ajoutez la route dans `Admin\App::ROUTES`, une méthode de contrôleur, un gabarit `templates/admin/x.php` et une entrée dans le menu `_layout.php`. Utilisez les classes CSS existantes (`card`, `table`, `btn`, `badge-*`, `flash-*`, `grid2`) et les variables de thème (`--surface`, `--text`, `--accent`…) : les deux thèmes fonctionnent alors sans travail supplémentaire.
+- Évolution du schéma : modifiez `database/schema.sql` (nouvelles installations) **et** ajoutez la colonne dans `Migrations::COLUMNS` (installations existantes).
+- Nouveau champ interne : ajoutez aussi son libellé, son aide et ses noms usuels dans `FieldCatalog`, pour le mapping visuel.
+- Logo : `logo_svg()` dans `src/Admin/helpers.php` ; favicons dans `public/` (`favicon.svg`, `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`). Régénérez les PNG et l'ICO si le SVG change.
 - Nouveau paramètre : ajoutez-le à `Settings::DEFAULTS` et `Settings::LABELS`, puis à `SettingsController::GROUPS`.
 - Nouveau champ produit : ajoutez-le à `Mapper::PRODUCT_FIELDS`, puis à `ProductBuilder::build()`. Pour qu'il soit cherchable ou filtrable, ajoutez-le aussi à `IndexSettings::products()`. Pour l'afficher sur le site, ajoutez-le à `SearchService::PUBLIC_FIELDS`, en vérifiant qu'il n'est pas confidentiel.
 

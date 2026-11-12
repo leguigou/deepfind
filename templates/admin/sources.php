@@ -6,7 +6,7 @@
   <p class="muted">Aucune source. Créez d'abord le flux produits FR (format décrit dans le README, section « Formats des flux »).</p>
 <?php else: ?>
 <table class="table">
-  <thead><tr><th>Code</th><th>Type</th><th>Langue</th><th>Flux complet</th><th>Flux delta</th><th>Dernier import</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Code</th><th>Type</th><th>Langue</th><th>Flux complet</th><th>Flux delta</th><th>Planification</th><th>Dernier import</th><th>Actions</th></tr></thead>
   <tbody>
   <?php foreach ($sources as $s): [$st, $at, $n] = array_pad(explode('|', (string) $s['last_run']), 3, ''); ?>
     <tr>
@@ -15,8 +15,13 @@
       <td><?= e(strtoupper($s['lang'])) ?></td>
       <td class="ellipsis"><code><?= e($s['url']) ?></code></td>
       <td class="ellipsis"><?= $s['delta_url'] ? '<code>' . e($s['delta_url']) . '</code>' : '<span class="muted">—</span>' ?></td>
+      <td class="sched-cell"><?php foreach (['full' => 'cron_full', 'delta' => 'cron_delta'] as $t => $col): if ($t === 'delta' && $s['kind'] !== 'products') { continue; }
+          $expr = (string) ($s[$col] ?? ''); $nx = $expr !== '' && $s['active'] ? \DeepFind\Import\Cron::nextRuns($expr, 1) : []; ?>
+          <div><strong><?= $t === 'full' ? 'Complet' : 'Delta' ?></strong> : <?= e(\DeepFind\Import\Cron::describe($expr, $t)) ?><?= $nx ? ' <span class="muted">· prochain ' . e($nx[0]->format('d/m H:i')) . '</span>' : '' ?></div>
+        <?php endforeach; ?></td>
       <td><?= $st ? badge($st) . ' ' . fmt_dt($at) . ($n !== '' ? ' · ' . fmt_n((int) $n) . ' doc.' : '') : '<span class="muted">jamais</span>' ?></td>
       <td class="actions">
+        <a class="btn btn-sm" href="<?= e(url('/admin/sources/mapping', ['id' => $s['id']])) ?>">Mapping</a>
         <a class="btn btn-sm btn-light" href="<?= e(url('/admin/sources/test', ['id' => $s['id']])) ?>">Tester</a>
         <form method="post" action="<?= e(url('/admin/sources/import')) ?>"><?= csrf_field() ?>
           <input type="hidden" name="id" value="<?= (int) $s['id'] ?>"><input type="hidden" name="type" value="full">

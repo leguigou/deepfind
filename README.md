@@ -193,15 +193,17 @@ Conseillé : limitez `/admin` aux IP du siège ou du VPN (bloc commenté dans le
 cp deploy/supervisor-worker.conf /etc/supervisor/conf.d/deepfind-worker.conf && supervisorctl reread && supervisorctl update
 ```
 
-Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`crontab -u www-data -e`). Adaptez les heures à celles de génération des flux Magento.
+Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`crontab -u www-data -e`). Une seule ligne suffit pour les imports : le **planificateur** `schedule:run`, lancé chaque minute. Les horaires de chaque flux se règlent ensuite dans l'extranet (voir 3.7). Sans Supervisor, utilisez la variante `schedule:run --work`, indiquée dans le fichier.
 
 ### 3.7 Premier import
 
 1. Connectez-vous à `https://search.cabesto.com/admin` avec le jeton `ADMIN_TOKEN`.
 2. **Flux & mapping** : remplacez l'URL d'exemple de `produits_fr` par l'URL de votre flux Magento, puis faites de même pour `blog_fr`.
-3. **Tester** : vérifiez que le mapping produit le bon document, sans rien indexer.
-4. **Import complet**, puis suivez l'avancement dans **Imports**.
-5. **Clés & intégration** : créez une clé pour `cabesto.com`, puis testez avec **Démo du widget**.
+3. **Mapping** (mapping visuel) : DeepFind analyse le flux. Pour chaque champ (obligatoires en premier), choisissez à droite le champ du flux correspondant, puis enregistrez. Voir la section 5.
+4. **Tester** : vérifiez que le mapping produit le bon document, sans rien indexer.
+5. **Planification des imports** (dans la fiche du flux) : choisissez par exemple « Chaque nuit à 3 h 15 » pour l'import complet et « Toutes les 15 min de 6 h à 23 h » pour le delta.
+6. **Import complet** pour un premier chargement immédiat, puis suivez l'avancement dans **Imports**.
+7. **Clés & intégration** : créez une clé pour `cabesto.com`, puis testez avec **Démo du widget**.
 
 ## 4. Intégrer le widget sur le site Magento
 
@@ -291,7 +293,28 @@ Même structure que le flux complet, avec seulement le `sku` et les champs modif
 
 Champs : `id`, `title`, `url`, `published_at` (obligatoires), plus `image`, `excerpt`, `content`, `author`, `updated_at`, `categories/category`, `tags/tag`, `related_products/sku`, `enabled`. Seul l'import complet est disponible (le volume est faible).
 
-### Syntaxe du mapping (JSON, modifiable dans l'extranet)
+### Mapping visuel (recommandé)
+
+![Mapping visuel](docs/screenshots/09-mapping-visuel.png)
+
+**Flux & mapping › Mapping** : DeepFind télécharge le flux (ou réutilise le téléchargement de moins d'une heure) et analyse ses 300 premiers éléments.
+
+**Ce qui est détecté :**
+- L'élément qui représente un produit (`<product>`, `<item>`…), modifiable.
+- Le mode des variantes : imbriqué, ou « à plat » si un champ parent est trouvé et qu'il n'y a pas de groupe répété.
+- Le groupe des variantes (ex. `variants/variant`).
+- **Tous les champs** : éléments, attributs XML (`@id`), et attributs identifiés par un code (`attributes/attribute[@code='couleur']`).
+
+**Présentation de l'écran :**
+- **À gauche**, les champs DeepFind : d'abord les **obligatoires** (marqués d'un `*`, surlignés tant qu'ils ne sont pas mappés), puis les **secondaires**.
+- **À droite**, une liste déroulante des champs détectés, avec un **exemple de valeur** et le **taux de présence** (ex. `url_key (22 %)` : présent seulement sur les parents d'un flux à plat).
+- Les champs sont **pré-sélectionnés automatiquement** d'après les noms usuels (badge « auto ») : `url_key` pour l'URL, `special_price` pour le prix final, `manufacturer` pour la marque, `is_in_stock`, `qty`… Vérifiez toujours ces suggestions.
+- Une colonne facultative permet d'ajouter des **transformations** (ex. `to_float, divide:100` pour une marge en %).
+- **Sections suivantes** : variantes, catégories (chemin et identifiant), **attributs filtrables** (liste « par code » détectée, ou champs simples comme `color` et `size`, proposés automatiquement).
+
+Le résultat est enregistré dans le mapping JSON de la source, qui reste modifiable en **mode avancé**.
+
+### Syntaxe du mapping (JSON, mode avancé)
 
 ```json
 "fields": {
@@ -317,12 +340,24 @@ Champs : `id`, `title`, `url`, `published_at` (obligatoires), plus `image`, `exc
 
 ## 6. Utiliser l'extranet
 
+### Planification des imports
+
+Dans la fiche de chaque flux (**Flux & mapping › nom du flux**), section « Planification des imports » :
+- choisissez un préréglage (« Chaque nuit à 3 h 15 », « Toutes les 15 min de 6 h à 23 h »…) ou saisissez une expression cron standard (`minute heure jour mois jour-semaine`, ex. `30 2 * * 1-6`) ;
+- les **3 prochaines exécutions** s'affichent après l'enregistrement, et la liste des flux montre la prochaine ;
+- les horaires sont ceux du serveur (`APP_TIMEZONE`, Europe/Paris par défaut) ;
+- un import n'est lancé que si la source est **active** et si l'import précédent de cette source est terminé (sinon le créneau est sauté) ;
+- l'import delta planifié n'a lieu que si une URL de flux delta est renseignée ;
+- le tableau de bord signale un planificateur arrêté (aucun passage depuis 5 minutes alors que des imports sont planifiés).
+
+### Rubriques
+
 L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas de comptes utilisateurs en V1. Le menu de gauche se replie, et le bouton en bas du menu bascule entre les thèmes sombre et clair ; ces deux choix sont mémorisés.
 
 | Rubrique | À quoi ça sert |
 |---|---|
 | Tableau de bord | État du moteur, nombre de documents, derniers imports, alertes de configuration |
-| Flux & mapping | Sources (URL complet/delta, authentification, mapping JSON), **test du mapping sans indexer**, imports manuels |
+| Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel** (champs détectés dans le flux), mapping JSON avancé, **test du mapping sans indexer**, **planification des imports** (complet/delta), imports manuels |
 | Imports | Historique, rapports (motifs de rejet, exemples de SKU rejetés) |
 | Synonymes & alias | Équivalents (palme = palmes = fins) ou alias à sens unique ; import CSV (`samples/synonymes.csv`) |
 | Règles de résultats | Épingler un SKU à une position, le remonter, le masquer (requête `*` = masqué partout), avec dates de début et de fin ; import CSV (`samples/boosts.csv`). Ne s'applique qu'au tri « pertinence » |
@@ -374,7 +409,8 @@ php bin/console help
 | `install` | Crée ou met à jour les tables (sans risque si relancée) et les sources par défaut |
 | `admin:token` | Génère `ADMIN_TOKEN` et `APP_SECRET` |
 | `key:create --name=… --origins=cabesto.com --langs=fr` | Crée une clé publique |
-| `import:run --all` ou `--source=CODE`, `--type=full\|delta` | Import (en ligne de commande ou par cron) |
+| `schedule:run [--work]` | **À lancer chaque minute par cron** : déclenche les imports planifiés dans l'extranet (`--work` : les exécute aussi, sans Supervisor) |
+| `import:run --all` ou `--source=CODE`, `--type=full\|delta` | Import immédiat en ligne de commande |
 | `queue:work [--once]` | Traite les imports demandés depuis l'extranet |
 | `rules:sync` | Renvoie les synonymes au moteur |
 | `rules:import --lang=fr --synonyms=… --rules=… --redirects=… [--replace]` | Import CSV en ligne de commande |

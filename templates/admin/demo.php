@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Démo du widget · DeepFind</title>
+<link rel="icon" href="<?= e(url('/favicon.svg')) ?>" type="image/svg+xml">
 <link rel="stylesheet" href="<?= e(url('/assets/demo.css')) ?>?v=1">
 </head>
 <body>
@@ -27,7 +28,7 @@
   <?php endif; ?>
   <p><a href="<?= e(url('/admin')) ?>">← Retour à l'extranet</a></p>
 </main>
-<script src="<?= e(url('/assets/admin.js')) ?>?v=2"></script>
+<script src="<?= e(url('/assets/admin.js')) ?>?v=3"></script>
 <?php if ($key !== ''): ?>
 <script src="<?= e(url('/widget/deepfind.js')) ?>?v=1" defer
   data-key="<?= e($key) ?>" data-lang="<?= e($lang) ?>" data-input="#search" data-anchor="#demo-header"

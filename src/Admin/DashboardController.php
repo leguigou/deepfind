@@ -42,6 +42,13 @@ final class DashboardController
         if ((int) Db::value('SELECT COUNT(*) FROM api_keys WHERE active = 1') === 0) {
             $warnings[] = 'Aucune clé publique active : créez-en une dans « Clés & intégration ».';
         }
+        $scheduled = (int) Db::value("SELECT COUNT(*) FROM sources WHERE active = 1 AND (COALESCE(cron_full, '') <> '' OR COALESCE(cron_delta, '') <> '')");
+        $lastTick = (string) (Db::value("SELECT value FROM settings WHERE name = 'scheduler_last_run'") ?? '');
+        if ($scheduled > 0 && ($lastTick === '' || strtotime($lastTick) < time() - 300)) {
+            $warnings[] = 'Des imports sont planifiés mais le planificateur ne tourne pas'
+                . ($lastTick !== '' ? ' (dernier passage : ' . date('d/m H:i', (int) strtotime($lastTick)) . ')' : '')
+                . ' : ajoutez « * * * * * php bin/console schedule:run » à la crontab (voir README).';
+        }
         $stale = (int) Db::value("SELECT COUNT(*) FROM import_runs WHERE status = 'queued' AND created_at < NOW() - INTERVAL 5 MINUTE");
         if ($stale > 0) {
             $warnings[] = $stale . ' import(s) en attente depuis plus de 5 minutes : le worker (Supervisor) ou le cron « queue:work » ne tourne pas ?';

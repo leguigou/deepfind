@@ -18,12 +18,48 @@
   <label>En-têtes HTTP d'authentification (un par ligne), facultatif
     <textarea name="auth_header" rows="2" placeholder="Authorization: Bearer xxxxx"><?= e($source['auth_header']) ?></textarea>
     <small class="muted">Le flux contient des données confidentielles (marge) : protégez son URL côté Magento (jeton, filtrage IP).</small></label>
-  <label class="check"><input type="checkbox" name="active" <?= $source['active'] ? 'checked' : '' ?>> Source active (incluse dans les imports planifiés)</label>
+  <label class="check"><input type="checkbox" name="active" <?= $source['active'] ? 'checked' : '' ?>> Source active (les imports planifiés ne tournent que si la source est active)</label>
 
-  <label>Mapping (JSON) : correspondance entre votre flux et les champs internes
+  <fieldset class="card">
+    <legend>Planification des imports</legend>
+    <p class="muted">Heures du serveur (<?= e(date_default_timezone_get()) ?>). Le planificateur doit tourner chaque minute
+      (<code>* * * * * php bin/console schedule:run</code>, voir README). Format libre : cron standard « minute heure jour mois jour-semaine ».</p>
+    <?php
+    $schedRows = ['cron_full' => ['Import complet', \DeepFind\Import\Cron::PRESETS_FULL]];
+    if ($source['kind'] === 'products') {
+        $schedRows['cron_delta'] = ['Import delta (stock / prix)', \DeepFind\Import\Cron::PRESETS_DELTA];
+    }
+    foreach ($schedRows as $col => [$label, $presets]):
+        $cur = (string) ($source[$col] ?? '');
+        $isPreset = array_key_exists($cur, $presets);
+        $next = \DeepFind\Import\Cron::nextRuns($cur, 3); ?>
+      <div class="grid3 sched-row">
+        <label><?= e($label) ?>
+          <select data-cron-preset="<?= e($col) ?>">
+            <?php foreach ($presets as $expr => $pl): ?><option value="<?= e($expr) ?>" <?= $isPreset && $cur === $expr ? 'selected' : '' ?>><?= e($pl) ?></option><?php endforeach; ?>
+            <option value="__custom" <?= $isPreset ? '' : 'selected' ?>>Personnalisé…</option>
+          </select>
+        </label>
+        <label>Expression cron
+          <input name="<?= e($col) ?>" id="<?= e($col) ?>" value="<?= e($cur) ?>" placeholder="(désactivé)" class="code" spellcheck="false">
+        </label>
+        <div class="muted sched-next"><?php if ($cur === ''): ?>Aucune exécution automatique.<?php elseif ($next): ?>Prochaines exécutions :<br><?= e(implode(' · ', array_map(static fn ($d) => $d->format('d/m H:i'), $next))) ?>
+          <?php else: ?><span class="ko">Expression invalide ou sans exécution dans l'année.</span><?php endif; ?>
+          <?php if ($col === 'cron_delta' && trim((string) $source['delta_url']) === '' && $cur !== ''): ?><br><span class="ko">Aucune URL de flux delta : la planification delta est ignorée.</span><?php endif; ?></div>
+      </div>
+    <?php endforeach; ?>
+  </fieldset>
+
+  <?php if ($source['id']): ?>
+  <div class="flash flash-info">Le plus simple : le <a href="<?= e(url('/admin/sources/mapping', ['id' => $source['id']])) ?>"><strong>mapping visuel</strong></a> analyse le flux et propose ses champs dans des listes déroulantes. Le JSON ci-dessous est le mode avancé.</div>
+  <?php else: ?>
+  <div class="flash flash-info">Enregistrez d'abord la source (code + URL) : le mapping visuel analysera ensuite le flux.</div>
+  <?php endif; ?>
+  <label>Mapping (JSON, mode avancé) : correspondance entre votre flux et les champs internes
     <textarea name="mapping" rows="26" class="code" spellcheck="false"><?= e($source['mapping']) ?></textarea></label>
   <div class="actions">
     <button class="btn">Enregistrer</button>
+    <button class="btn btn-light" name="to_mapping" value="1">Enregistrer et ouvrir le mapping visuel</button>
     <?php if ($source['id']): ?>
       <button class="btn btn-light" formaction="<?= e(url('/admin/sources/test', ['id' => $source['id']])) ?>">Tester ce mapping (sans enregistrer)</button>
     <?php endif; ?>

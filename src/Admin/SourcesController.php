@@ -32,7 +32,7 @@ final class SourcesController
             $kind = ($_GET['kind'] ?? 'products') === 'posts' ? 'posts' : 'products';
             $source = [
                 'id' => 0, 'code' => '', 'kind' => $kind, 'lang' => Auth::lang(), 'url' => '', 'delta_url' => '',
-                'auth_header' => '', 'active' => 1,
+                'auth_header' => '', 'active' => 1, 'cron_full' => '15 3 * * *', 'cron_delta' => null,
                 'mapping' => json_encode($kind === 'posts' ? Mapper::defaultPosts() : Mapper::defaultProducts(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
         } else {
@@ -66,6 +66,17 @@ final class SourcesController
         if (trim((string) ($_POST['url'] ?? '')) === '') {
             $errors[] = 'URL (ou chemin) du flux obligatoire.';
         }
+        $cron = [];
+        foreach (['cron_full' => 'complet', 'cron_delta' => 'delta'] as $col => $label) {
+            $expr = trim((string) preg_replace('/\s+/', ' ', (string) ($_POST[$col] ?? '')));
+            if ($expr !== '' && !\DeepFind\Import\Cron::isValid($expr)) {
+                $errors[] = 'Planification de l\'import ' . $label . ' invalide : « ' . $expr . ' » (format cron : minute heure jour mois jour-semaine).';
+            }
+            $cron[$col] = $expr !== '' ? $expr : null;
+        }
+        if ($kind === 'posts') {
+            $cron['cron_delta'] = null;
+        }
         if ($errors !== []) {
             foreach ($errors as $err) {
                 Auth::flash('error', $err);
@@ -83,7 +94,7 @@ final class SourcesController
             'mapping' => Text::json($mapping),
             'active' => isset($_POST['active']) ? 1 : 0,
             'updated_at' => date('Y-m-d H:i:s'),
-        ];
+        ] + $cron;
         try {
             if ($id > 0) {
                 Db::update('sources', $data, 'id = ?', [$id]);
@@ -96,7 +107,7 @@ final class SourcesController
             return;
         }
         Auth::flash('ok', 'Source enregistrée.');
-        App::back('/admin/sources/edit', ['id' => $id]);
+        App::back(isset($_POST['to_mapping']) ? '/admin/sources/mapping' : '/admin/sources/edit', ['id' => $id]);
     }
 
     public function delete(): void
@@ -145,13 +156,7 @@ final class SourcesController
             $error = 'Mapping JSON invalide : ' . json_last_error_msg();
         } else {
             try {
-                $cache = FeedFetcher::cachePath($source['code'], $type);
-                $url = $type === 'delta' ? (string) $source['delta_url'] : (string) $source['url'];
-                if (preg_match('#^https?://#', $url) && is_file($cache) && filemtime($cache) > time() - 3600 && !isset($_REQUEST['refresh'])) {
-                    $file = $cache;
-                } else {
-                    $file = FeedFetcher::fetch($source, $type);
-                }
+                $file = FeedFetcher::cachedOrFetch($source, $type, isset($_REQUEST['refresh']));
                 $mapper = new Mapper($mapping, $source['kind']);
                 $builder = new ProductBuilder();
                 $names = [$mapper->itemElement()];
