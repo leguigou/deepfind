@@ -19,7 +19,8 @@ final class SourcesController
         $sources = Db::all(
             'SELECT s.*, (SELECT CONCAT(r.status, "|", COALESCE(r.finished_at, r.created_at), "|", r.items_indexed)
                           FROM import_runs r WHERE r.source_id = s.id ORDER BY r.id DESC LIMIT 1) AS last_run
-             FROM sources s ORDER BY s.kind, s.lang, s.code'
+             FROM sources s WHERE s.project_id = ? ORDER BY s.kind, s.lang, s.code',
+            [\DeepFind\Project::id()]
         );
         View::render('sources', ['active' => 'sources', 'sources' => $sources], 'Flux & mapping');
     }
@@ -27,7 +28,7 @@ final class SourcesController
     public function edit(): void
     {
         $id = (int) ($_GET['id'] ?? 0);
-        $source = $id > 0 ? Db::one('SELECT * FROM sources WHERE id = ?', [$id]) : null;
+        $source = $id > 0 ? Db::one('SELECT * FROM sources WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]) : null;
         if ($source === null) {
             $kind = ($_GET['kind'] ?? 'products') === 'posts' ? 'posts' : 'products';
             $source = [
@@ -97,9 +98,9 @@ final class SourcesController
         ] + $cron;
         try {
             if ($id > 0) {
-                Db::update('sources', $data, 'id = ?', [$id]);
+                Db::update('sources', $data, 'id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
             } else {
-                $id = Db::insert('sources', $data + ['created_at' => date('Y-m-d H:i:s')]);
+                $id = Db::insert('sources', $data + ['project_id' => \DeepFind\Project::id(), 'created_at' => date('Y-m-d H:i:s')]);
             }
         } catch (\PDOException $e) {
             Auth::flash('error', str_contains($e->getMessage(), 'Duplicate') ? 'Ce code de source existe déjà.' : $e->getMessage());
@@ -113,7 +114,7 @@ final class SourcesController
     public function delete(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
-        Db::exec('DELETE FROM sources WHERE id = ?', [$id]);
+        Db::exec('DELETE FROM sources WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         Auth::flash('ok', 'Source supprimée (l\'index Meilisearch existant est conservé).');
         App::back('/admin/sources');
     }
@@ -122,7 +123,7 @@ final class SourcesController
     {
         $id = (int) ($_POST['id'] ?? 0);
         $type = ($_POST['type'] ?? 'full') === 'delta' ? 'delta' : 'full';
-        $source = Db::one('SELECT * FROM sources WHERE id = ?', [$id]);
+        $source = Db::one('SELECT * FROM sources WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         if ($source === null) {
             App::back('/admin/sources');
             return;
@@ -143,7 +144,7 @@ final class SourcesController
     public function test(): void
     {
         $id = (int) ($_REQUEST['id'] ?? 0);
-        $source = Db::one('SELECT * FROM sources WHERE id = ?', [$id]);
+        $source = Db::one('SELECT * FROM sources WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         if ($source === null) {
             App::back('/admin/sources');
             return;
@@ -189,7 +190,7 @@ final class SourcesController
 
     public function imports(): void
     {
-        $runs = Db::all('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id ORDER BY r.id DESC LIMIT 100');
+        $runs = Db::all('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ? ORDER BY r.id DESC LIMIT 100', [\DeepFind\Project::id()]);
         View::render('imports', ['active' => 'imports', 'runs' => $runs], 'Historique des imports');
     }
 
@@ -200,7 +201,7 @@ final class SourcesController
         $ids = array_slice(array_filter(array_map('intval', explode(',', (string) ($_GET['ids'] ?? '')))), 0, 50);
         $out = [];
         if ($ids !== []) {
-            $rows = Db::all('SELECT * FROM import_runs WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')', $ids);
+            $rows = Db::all('SELECT r.* FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ? AND r.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')', [\DeepFind\Project::id(), ...$ids]);
             foreach ($rows as $r) {
                 $out[] = \DeepFind\Import\Progress::of($r);
             }
@@ -211,7 +212,7 @@ final class SourcesController
 
     public function importView(): void
     {
-        $run = Db::one('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE r.id = ?', [(int) ($_GET['id'] ?? 0)]);
+        $run = Db::one('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE r.id = ? AND s.project_id = ?', [(int) ($_GET['id'] ?? 0), \DeepFind\Project::id()]);
         if ($run === null) {
             App::back('/admin/imports');
             return;

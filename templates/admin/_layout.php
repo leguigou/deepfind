@@ -4,6 +4,7 @@ use DeepFind\Admin\Auth;
 
 $nav = [
     'dashboard' => ['/admin', 'Tableau de bord'],
+    'projects' => ['/admin/projects', 'Projets'],
     'sources' => ['/admin/sources', 'Flux & mapping'],
     'imports' => ['/admin/imports', 'Imports'],
     'synonyms' => ['/admin/synonyms', 'Synonymes & alias'],
@@ -41,6 +42,18 @@ $nav = [
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
+    <form method="post" action="<?= e(url('/admin/project')) ?>" class="project-switch" title="Projet actif">
+      <?= csrf_field() ?>
+      <input type="hidden" name="back" value="<?= e(substr((string) ($_SERVER['REQUEST_URI'] ?? '/admin'), strlen(rtrim((string) \DeepFind\Config::get('APP_BASE_PATH', ''), '/')))) ?>">
+      <span class="nav-ico project-ico" aria-hidden="true"><?= e(mb_strtoupper(mb_substr(\DeepFind\Project::current()['name'], 0, 1))) ?></span>
+      <label class="project-label"><span class="muted small">Projet</span>
+        <select name="project_id" data-autosubmit aria-label="Projet actif">
+          <?php foreach (\DeepFind\Project::all() as $pj): ?>
+            <option value="<?= (int) $pj['id'] ?>" <?= $pj['id'] === \DeepFind\Project::id() ? 'selected' : '' ?>><?= e($pj['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+    </form>
     <?php foreach ($nav as $k => [$href, $label]): ?>
       <a href="<?= e(url($href)) ?>" class="<?= $active === $k ? 'on' : '' ?>" title="<?= e($label) ?>"><span class="nav-ico" aria-hidden="true"><?= e(mb_substr($label, 0, 1)) ?></span><span class="nav-label"><?= e($label) ?></span></a>
     <?php endforeach; ?>
@@ -68,7 +81,11 @@ $nav = [
     </div>
   </nav>
   <main class="main">
-    <h1><?= e($title) ?></h1>
+    <div class="page-head">
+      <h1><?= e($title) ?></h1>
+      <a class="project-chip <?= \DeepFind\Project::id() === \DeepFind\Project::defaultId() ? 'is-main' : 'is-other' ?>" href="<?= e(url('/admin/projects')) ?>" title="Changer de projet">
+        <?= e(\DeepFind\Project::current()['name']) ?></a>
+    </div>
     <?php foreach ($flash as [$type, $msg]): ?>
       <div class="flash flash-<?= e($type) ?>"><?= e($msg) ?></div>
     <?php endforeach; ?>

@@ -26,14 +26,17 @@ final class SearchLogger
             return null;
         }
         $id = Db::insert('search_logs', [
+            'project_id' => \DeepFind\Project::id(),
             'created_at' => date('Y-m-d H:i:s'),
             'api_key_id' => $e['api_key_id'],
             'lang' => $e['lang'],
             'query' => Text::truncate($e['query'], 255),
             'query_norm' => Text::truncate($e['query_norm'], 255),
             'filters' => $e['filters'] ?: null,
-            'results' => $e['results'],
+            // Aucun produit ne contient tous les mots : 0 résultat (les produits approchants sont comptés à part)
+            'results' => !empty($e['approx']) ? 0 : $e['results'],
             'approx' => !empty($e['approx']) ? 1 : 0,
+            'approx_results' => !empty($e['approx']) ? $e['results'] : 0,
             'took_ms' => min(65535, $e['took_ms']),
             'ip_hash' => $e['ip_hash'],
             'ip_masked' => $e['ip_masked'],
@@ -59,6 +62,7 @@ final class SearchLogger
     public function click(array $c): void
     {
         Db::insert('click_logs', [
+            'project_id' => \DeepFind\Project::id(),
             'created_at' => date('Y-m-d H:i:s'),
             'lang' => $c['lang'],
             'query_norm' => Text::truncate($c['query_norm'], 255),

@@ -46,19 +46,21 @@ final class CacheController
     public function purge(): void
     {
         $scope = ($_POST['scope'] ?? 'results') === 'all' ? 'all' : 'results';
-        $prefixes = ['res:'];
+        // Uniquement les entrées du projet courant (les clés publiques sont communes : purgées avec « tous les caches »)
+        $pid = \DeepFind\Project::id();
+        $prefixes = ['res:' . $pid . ':'];
         if ($scope === 'all') {
             $prefixes = [];
             foreach (self::CATEGORIES as $cat => [, , $purgeable]) {
                 if ($purgeable) {
-                    $prefixes[] = $cat . ':';
+                    $prefixes[] = $cat === 'key' ? 'key:' : $cat . ':' . $pid . ':';
                 }
             }
         }
         $n = Store::get()->purge($prefixes);
         // La nouvelle version rend aussi inaccessibles les entrées d'autres processus (ex. autre pool PHP-FPM).
         CacheVersion::bump();
-        Auth::flash('ok', sprintf('%d entrée(s) supprimée(s). Les prochaines recherches interrogent directement le moteur.', $n));
+        Auth::flash('ok', sprintf('%d entrée(s) du projet supprimée(s). Les prochaines recherches interrogent directement le moteur.', $n));
         App::back('/admin/cache');
     }
 }

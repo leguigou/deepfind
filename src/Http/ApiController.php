@@ -48,12 +48,14 @@ final class ApiController
         $t0 = hrtime(true);
         $ip = ClientIp::resolve($_SERVER);
         $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
-        $req = SearchRequest::fromArray($_GET);
+        $lang = (string) ($_GET['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
 
-        [$key, $cors] = $this->authorize((string) ($_GET['key'] ?? ''), $req->lang);
+        [$key, $cors] = $this->authorize((string) ($_GET['key'] ?? ''), $lang);
         if ($key === null) {
             return;
         }
+        $req = SearchRequest::fromArray($_GET);
         $store = Store::get();
         $deny = (new BotGuard($store))->check($ip, $ua, $req->offset === 0 ? $req->qNorm : '');
         if ($deny !== null) {
@@ -62,7 +64,7 @@ final class ApiController
         }
 
         $ttl = Settings::int('cache_ttl');
-        $cacheKey = 'res:' . \DeepFind\Rules\RulesRepository::version() . ':' . $req->cacheKey(false);
+        $cacheKey = 'res:' . \DeepFind\Project::id() . ':' . \DeepFind\Rules\RulesRepository::version() . ':' . $req->cacheKey(false);
         $data = $ttl > 0 ? $store->get($cacheKey) : null;
         $cached = is_array($data);
         if (!$cached) {
@@ -137,10 +139,12 @@ final class ApiController
     private function authorize(string $publicKey, string $lang): array
     {
         $key = ApiKeys::find($publicKey);
-        if ($key === null || (int) $key['active'] !== 1) {
+        if ($key === null || (int) $key['active'] !== 1 || \DeepFind\Project::find((int) ($key['project_id'] ?? 0)) === null) {
             Response::json(['error' => 'invalid_key'], 401);
             return [null, []];
         }
+        // Toute la suite (paramètres, index, règles, journaux) concerne le projet de cette clé
+        \DeepFind\Project::use((int) $key['project_id']);
         $origin = ApiKeys::checkOrigin($key, $_SERVER);
         if ($origin === null) {
             Response::json(['error' => 'origin_not_allowed'], 403);

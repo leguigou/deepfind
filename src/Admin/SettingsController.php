@@ -10,9 +10,9 @@ use DeepFind\Store\Store;
 final class SettingsController
 {
     public const GROUPS = [
-        'Anti-robots' => ['rate_per_minute', 'rate_per_hour', 'same_query_per_minute', 'burst_multiplier', 'violations_before_block', 'block_minutes', 'block_bad_user_agents', 'bad_user_agents', 'ip_allowlist'],
+        'Anti-robots (commun à tous les projets)' => ['rate_per_minute', 'rate_per_hour', 'same_query_per_minute', 'burst_multiplier', 'violations_before_block', 'block_minutes', 'block_bad_user_agents', 'bad_user_agents', 'ip_allowlist'],
         'Recherche' => ['posts_limit', 'max_limit', 'cache_ttl', 'facet_values_limit'],
-        'Journaux & import' => ['log_searches', 'log_retention_days', 'max_drop_percent'],
+        'Journaux & import' => ['log_searches', 'max_drop_percent', 'log_retention_days'],
     ];
 
     public function index(): void

@@ -21,8 +21,8 @@ final class Boosts
         $today = date('Y-m-d');
         $out = [];
         foreach (Db::all(
-            'SELECT sku, boost FROM product_boosts WHERE lang = ? AND (starts_at IS NULL OR starts_at <= ?) AND (ends_at IS NULL OR ends_at >= ?)',
-            [$lang, $today, $today]
+            'SELECT sku, boost FROM product_boosts WHERE project_id = ? AND lang = ? AND (starts_at IS NULL OR starts_at <= ?) AND (ends_at IS NULL OR ends_at >= ?)',
+            [\DeepFind\Project::id(), $lang, $today, $today]
         ) as $r) {
             $out[mb_strtoupper($r['sku'], 'UTF-8')] = max(-10, min(10, (int) $r['boost']));
         }
@@ -34,8 +34,8 @@ final class Boosts
     {
         $out = [];
         foreach (Db::all(
-            "SELECT doc_id, COUNT(*) AS n FROM click_logs WHERE lang = ? AND doc_type = 'product' AND created_at >= ? GROUP BY doc_id",
-            [$lang, date('Y-m-d H:i:s', time() - $days * 86400)]
+            "SELECT doc_id, COUNT(*) AS n FROM click_logs WHERE project_id = ? AND lang = ? AND doc_type = 'product' AND created_at >= ? GROUP BY doc_id",
+            [\DeepFind\Project::id(), $lang, date('Y-m-d H:i:s', time() - $days * 86400)]
         ) as $r) {
             $out[(string) $r['doc_id']] = (int) $r['n'];
         }
@@ -50,9 +50,9 @@ final class Boosts
         $end = self::date($end);
         $note = Text::truncate(trim($note), 190);
         Db::exec(
-            'INSERT INTO product_boosts (lang, sku, boost, starts_at, ends_at, note, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())
+            'INSERT INTO product_boosts (project_id, lang, sku, boost, starts_at, ends_at, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
              ON DUPLICATE KEY UPDATE boost = ?, starts_at = ?, ends_at = ?, note = ?',
-            [$lang, $sku, $boost, $start, $end, $note, $boost, $start, $end, $note]
+            [\DeepFind\Project::id(), $lang, $sku, $boost, $start, $end, $note, $boost, $start, $end, $note]
         );
     }
 

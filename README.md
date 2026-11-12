@@ -342,6 +342,52 @@ Le résultat est enregistré dans le mapping JSON de la source, qui reste modifi
 
 ## 6. Utiliser l'extranet
 
+### Projets : Production et Test
+
+![Projets](docs/screenshots/20-projets.png)
+
+Le **sélecteur en haut du menu** choisit le projet actif. Un badge en haut à droite de chaque page rappelle sur quel projet vous travaillez : vert pour le premier projet, orange pour les autres.
+
+**Ce que chaque projet a en propre** :
+- les flux, le mapping, la planification et les imports ;
+- les **index de recherche** : `deepfind_products_fr` pour Production, `deepfind_test_products_fr` pour un projet « test » ;
+- les synonymes, règles, redirections et boosts ;
+- la pertinence et les paramètres ;
+- les clés publiques et la démo du widget ;
+- les statistiques, journaux, clics et le cache.
+
+**Commun à tous les projets** : la protection anti-robots (seuils, IP bloquées), la durée de conservation des journaux et le jeton d'accès.
+
+**Mettre en place un projet de test** :
+1. Dans **Projets › Nouveau projet**, saisissez « Cabesto Test », code `test`, avec comme point de départ « Copie de la configuration de Production ».
+2. Ouvrez **Flux & mapping** dans ce projet, puis lancez un **import complet**. Ses flux sont créés inactifs, donc sans import planifié tant que vous ne les activez pas.
+3. Réglez la pertinence, les synonymes, etc. dans Test. Vérifiez le résultat avec l'**aperçu interne** ou la **démo du widget**, qui utilise la clé du projet Test. Vous pouvez aussi utiliser cette clé sur une recette Magento.
+
+**Copier une configuration validée vers Production** : **Projets › Copier sa configuration…**
+1. Choisissez le projet source et le projet cible, puis les éléments à copier : pertinence, paramètres de recherche, synonymes, règles, redirections, boosts, mapping et planification des flux. Les URL des flux ne sont copiées que si vous l'activez.
+2. **« Voir ce qui va changer »** affiche le résumé des différences.
+3. **« Confirmer »** applique la copie. Une **sauvegarde de la cible** est faite juste avant, et les réglages sont envoyés aux index de la cible tout de suite.
+4. Lancez ensuite un recalcul des scores ou un import si des poids, boosts ou mappings ont changé.
+
+**Ce qui n'est jamais copié** : statistiques, journaux, clics, historique des imports, clés publiques, produits indexés.
+
+**Sauvegardes** (**Projets**, partie droite) :
+- une sauvegarde est créée automatiquement avant chaque copie, et vous pouvez en créer une manuellement ;
+- **« Restaurer »** remet la configuration telle qu'elle était, après avoir sauvegardé l'état actuel ;
+- **« Télécharger la configuration (JSON) »** permet de l'archiver.
+
+**Charge sur le serveur** : un projet de test qui indexe tout le catalogue double à peu près la mémoire utilisée par Meilisearch. Ses imports consomment du processeur sur la même machine. Planifiez-les hors des heures de pointe, ou gardez dans Test un flux réduit.
+
+> Les projets servent à tester des **réglages**. Une **nouvelle version de DeepFind** (le code) se teste toujours sur une installation de recette séparée.
+
+**Installation existante** : `php bin/console install` crée le projet « Production » (nom réglable par `DEFAULT_PROJECT_NAME`). Il y rattache vos flux, règles, clés, journaux et paramètres de pertinence, et garde vos index actuels : aucune réindexation n'est nécessaire.
+
+En ligne de commande, l'option `--project=CODE` cible un projet, par exemple :
+
+```bash
+php bin/console import:run --project=test --source=produits_fr
+```
+
 ### Lancer un import manuellement et suivre son avancement
 
 ![Suivi d'un import](docs/screenshots/12-import-termine.png)
@@ -478,6 +524,7 @@ php bin/console help
 
 | Commande | Rôle |
 |---|---|
+| *(option commune)* `--project=CODE` | Projet concerné (par défaut le premier, « prod ») ; `import:run --all` sans `--project` traite les flux actifs de tous les projets |
 | `check` | Vérifie PHP, extensions, base, Meilisearch, droits |
 | `install` | Crée ou met à jour les tables (sans risque si relancée) et les sources par défaut |
 | `admin:token` | Génère `ADMIN_TOKEN` et `APP_SECRET` |

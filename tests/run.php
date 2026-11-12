@@ -261,7 +261,7 @@ if ($base) {
     DeepFind\Settings::set('matching_mode', 'exact_then_approx');
     usleep(300000);
     $logged = DeepFind\Db::one("SELECT results, approx FROM search_logs WHERE query_norm = 'barbe a papa' ORDER BY id LIMIT 1");
-    check('statistiques : recherche comptée « sans résultat exact »', $logged !== null && ((int) $logged['approx'] === 1 || (int) $logged['results'] === 0));
+    check('journal : recherche sans produit exact enregistrée avec 0 résultat', $logged !== null && (int) $logged['results'] === 0);
 
     // Boost extranet : appliqué immédiatement au score du produit
     $meiliT = DeepFind\Meili\MeiliClient::admin();
@@ -301,6 +301,53 @@ if ($base) {
     check('planificateur : pas de doublon dans la même minute', $q2 === []);
     DeepFind\Db::exec("UPDATE sources SET cron_full = NULL WHERE code = 'produits_fr'");
     DeepFind\Db::exec("DELETE FROM import_runs WHERE status = 'queued'");
+    // ================================================================ Projets : isolation complète, copie, sauvegarde
+    $prodId = DeepFind\Project::defaultId();
+    $testId = DeepFind\Project::create('test', 'Cabesto Test');
+    check('projet : préfixe d\'index propre', DeepFind\Project::find($testId)['index_prefix'] === 'deepfind_test_');
+    DeepFind\ConfigTransfer::apply($testId, DeepFind\ConfigTransfer::export($prodId), array_keys(DeepFind\ConfigTransfer::SECTIONS), true);
+    $tSources = DeepFind\Db::all('SELECT * FROM sources WHERE project_id = ?', [$testId]);
+    check('projet : configuration copiée (flux créés inactifs)', count($tSources) >= 2 && (int) $tSources[0]['active'] === 0);
+    $tProd = DeepFind\Db::one("SELECT * FROM sources WHERE project_id = ? AND code = 'produits_fr'", [$testId]);
+    $runT = (new DeepFind\Import\Importer($meiliT))->run($tProd, 'full', 'cli');
+    DeepFind\Project::use($prodId);
+    check('projet : import dans son propre index', $runT['status'] === 'success' && $meiliT->getIndex('deepfind_test_products_fr') !== null);
+    $prodCount = (int) ($meiliT->stats('deepfind_products_fr')['numberOfDocuments'] ?? 0);
+    $testKey = DeepFind\Project::with($testId, static fn () => DeepFind\Security\ApiKeys::create('Test', 'localhost', 'fr'));
+    // Une redirection et un réglage uniquement dans Test
+    DeepFind\Project::with($testId, static function (): void {
+        DeepFind\Rules\RulesRepository::addRedirect('fr', 'bonjour test', 'https://www.example.com/test');
+        DeepFind\Rules\RulesRepository::bumpVersion();
+        DeepFind\Settings::set('matching_mode', 'strict');
+    });
+    [, $rt] = $get("/api/v1/search?key=$testKey&q=" . rawurlencode('bonjour test'));
+    [, $rp] = $get("/api/v1/search?key=$key&q=" . rawurlencode('bonjour test'));
+    check('projet : règle du projet Test sans effet sur Prod', ($rt['redirect'] ?? '') === 'https://www.example.com/test' && ($rp['redirect'] ?? null) === null);
+    [, $bt] = $get("/api/v1/search?key=$testKey&q=" . rawurlencode('barbe à papa'));
+    [, $bpP] = $get("/api/v1/search?key=$key&q=" . rawurlencode('barbe à papa'));
+    check('projet : paramètre du projet Test sans effet sur Prod', ($bt['approximate'] ?? true) === false && $bt['total'] === 0 && DeepFind\Settings::get('matching_mode') === 'exact_then_approx');
+    usleep(300000);
+    check('projet : journaux séparés', (int) DeepFind\Db::value("SELECT COUNT(*) FROM search_logs WHERE project_id = ? AND query_norm = 'bonjour test'", [$testId]) >= 1
+        && (int) DeepFind\Db::value("SELECT COUNT(*) FROM search_logs WHERE project_id = ? AND query_norm = 'bonjour test'", [$prodId]) >= 1);
+    check('projet : index de Prod intact', (int) ($meiliT->stats('deepfind_products_fr')['numberOfDocuments'] ?? 0) === $prodCount);
+
+    // Copie Test → Prod du réglage, avec sauvegarde puis restauration
+    $snap = DeepFind\ConfigTransfer::snapshot($prodId, 'test');
+    DeepFind\ConfigTransfer::apply($prodId, DeepFind\ConfigTransfer::export($testId), ['relevance', 'redirects'], false);
+    DeepFind\Project::use($testId);
+    DeepFind\Project::use($prodId);
+    check('copie : réglage de Test appliqué à Prod', DeepFind\Settings::get('matching_mode') === 'strict');
+    [, $rp2] = $get("/api/v1/search?key=$key&q=" . rawurlencode('bonjour test'));
+    check('copie : redirection copiée, visible immédiatement côté Prod', ($rp2['redirect'] ?? '') === 'https://www.example.com/test');
+    $resume = DeepFind\ConfigTransfer::summary(DeepFind\ConfigTransfer::export($testId), $prodId, ['relevance']);
+    check('copie : résumé sans changement une fois copié', ($resume['relevance']['detail'] ?? ['x']) === []);
+    DeepFind\ConfigTransfer::restore($snap, $prodId);
+    DeepFind\Project::use($testId);
+    DeepFind\Project::use($prodId);
+    check('sauvegarde : restauration', DeepFind\Settings::get('matching_mode') === 'exact_then_approx'
+        && DeepFind\Db::value("SELECT COUNT(*) FROM redirects WHERE project_id = ? AND query = 'bonjour test'", [$prodId]) == 0);
+    file_put_contents(APP_ROOT . '/tests/_tmp/test_project', $testId . ' ' . $testKey);
+
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }

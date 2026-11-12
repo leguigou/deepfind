@@ -50,7 +50,9 @@ src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), 
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
 src/Http/ApiController.php     /api/v1/search, /api/v1/click, /api/v1/health
 src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
-src/Migrations.php             ajout des colonnes manquantes sur une base existante (appelé par `install`)
+src/Project.php                projet courant (session extranet / clé publique API / source importée) ; préfixe d'index par projet
+src/ConfigTransfer.php         export, résumé, copie de configuration entre projets, sauvegardes (config_snapshots), restauration
+src/Migrations.php             ajout des colonnes manquantes sur une base existante (appelé par `install`) ; crée le projet « prod »
 src/CacheVersion.php           version des données (fichier var/cache/data_version) incluse dans TOUTES les clés de cache :
                                CacheVersion::bump() après import / règle / paramètre ⇒ caches obsolètes partout, immédiatement
 templates/admin/               gabarits PHP (échapper TOUT avec e())
@@ -71,6 +73,10 @@ tests/                         run.sh (unitaires + intégration), run.php, fake-
 7. **Les valeurs de filtre Meilisearch** passent toujours par `Search\Filter` ; les codes d'attributs, par `Mapper::code()`.
 8. **Les secrets** (`.env`, clés Meilisearch, jeton d'administration) ne vont ni dans le dépôt, ni dans les journaux, ni dans les réponses.
 
+10. **Projets : toute requête sur sources, synonyms, query_rules, redirects, product_boosts, search_logs, click_logs, api_keys
+    filtre ou renseigne `project_id = Project::id()`** (les import_runs passent par leur source). Les paramètres propres à un projet
+    sont dans `project_settings` (via `Settings`), les communs (anti-robots, `Migrations::GLOBAL_SETTINGS`) dans `settings`.
+    Toute clé de cache dépendant des données inclut `Project::id()`. Les tests d'intégration vérifient l'isolation entre projets.
 9. **Toute modification de données visibles dans la recherche** (import, règle, synonyme, paramètre) doit appeler `CacheVersion::bump()` (directement, ou via `RulesRepository::bumpVersion()` ou `Settings::set()`). Toute nouvelle clé de cache dont le contenu dépend des données doit inclure `CacheVersion::get()`.
 
 ## Conventions

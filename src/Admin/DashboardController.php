@@ -39,7 +39,7 @@ final class DashboardController
         if (Store::get()->name() === 'mysql') {
             $warnings[] = 'Compteurs anti-robots stockés en MySQL (APCu/Redis indisponible) : fonctionnel mais moins rapide.';
         }
-        if ((int) Db::value('SELECT COUNT(*) FROM api_keys WHERE active = 1') === 0) {
+        if ((int) Db::value('SELECT COUNT(*) FROM api_keys WHERE active = 1 AND project_id = ?', [\DeepFind\Project::id()]) === 0) {
             $warnings[] = 'Aucune clé publique active : créez-en une dans « Clés & intégration ».';
         }
         $scheduled = (int) Db::value("SELECT COUNT(*) FROM sources WHERE active = 1 AND (COALESCE(cron_full, '') <> '' OR COALESCE(cron_delta, '') <> '')");
@@ -60,11 +60,12 @@ final class DashboardController
             'indexes' => $indexes,
             'warnings' => $warnings,
             'store' => Store::get()->name(),
-            'runs' => Db::all('SELECT r.*, s.code FROM import_runs r JOIN sources s ON s.id = r.source_id ORDER BY r.id DESC LIMIT 8'),
+            'runs' => Db::all('SELECT r.*, s.code FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ? ORDER BY r.id DESC LIMIT 8', [\DeepFind\Project::id()]),
             'kpi' => Db::one(
                 'SELECT COUNT(*) AS searches, COALESCE(SUM((results = 0 OR approx = 1)), 0) AS zero, COALESCE(AVG(took_ms), 0) AS took,
                         COUNT(DISTINCT ip_hash) AS visitors
-                 FROM search_logs WHERE created_at >= NOW() - INTERVAL 1 DAY AND is_final = 1'
+                 FROM search_logs WHERE project_id = ? AND created_at >= NOW() - INTERVAL 1 DAY AND is_final = 1',
+                [\DeepFind\Project::id()]
             ),
             'blocked' => (int) Db::value('SELECT COUNT(*) FROM ip_blocks WHERE blocked_until IS NULL OR blocked_until > NOW()'),
             'botEvents' => (int) Db::value('SELECT COUNT(*) FROM bot_events WHERE created_at >= NOW() - INTERVAL 1 DAY'),

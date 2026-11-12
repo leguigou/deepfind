@@ -42,6 +42,15 @@ $err = static function (string $s): void {
 };
 
 try {
+    // --project=CODE : projet concerné (par défaut le premier projet, « prod »)
+    if (isset($opts['project']) && !in_array($cmd, ['install', 'check', 'help', 'admin:token'], true)) {
+        $proj = DeepFind\Project::byCode((string) $opts['project']);
+        if ($proj === null) {
+            $err('Projet inconnu : ' . $opts['project'] . ' (codes : ' . implode(', ', array_column(DeepFind\Project::all(), 'code')) . ')');
+            exit(1);
+        }
+        DeepFind\Project::use((int) $proj['id']);
+    }
     switch ($cmd) {
         case 'check':
             exit(check($out) ? 0 : 1);
@@ -55,15 +64,19 @@ try {
             }
             $out('✔ Tables créées / à jour.');
             foreach (DeepFind\Migrations::run() as $col) {
-                $out("✔ Colonne ajoutée : $col");
+                $out("✔ Mise à jour : $col");
             }
+            DeepFind\Project::reload();
+            $pid = DeepFind\Project::defaultId();
+            // Sources d'exemple uniquement pour un projet qui n'a encore aucune source
+            $hasSources = (int) Db::value('SELECT COUNT(*) FROM sources WHERE project_id = ?', [$pid]) > 0;
             $now = date('Y-m-d H:i:s');
             foreach (array_filter(array_map('trim', explode(',', Config::get('APP_LANGS', 'fr')))) as $lang) {
                 foreach (['products' => Mapper::defaultProducts(), 'posts' => Mapper::defaultPosts()] as $kind => $mapping) {
                     $code = ($kind === 'products' ? 'produits_' : 'blog_') . $lang;
-                    if (Db::value('SELECT id FROM sources WHERE code = ?', [$code]) === null) {
+                    if (!$hasSources && Db::value('SELECT id FROM sources WHERE project_id = ? AND code = ?', [$pid, $code]) === null) {
                         Db::insert('sources', [
-                            'code' => $code, 'kind' => $kind, 'lang' => $lang,
+                            'project_id' => $pid, 'code' => $code, 'kind' => $kind, 'lang' => $lang,
                             'url' => $kind === 'products' ? 'samples/products_fr.xml' : 'samples/blog_fr.xml',
                             'delta_url' => $kind === 'products' ? 'samples/products_fr_delta.xml' : null,
                             'mapping' => Text::json($mapping), 'active' => 1, 'created_at' => $now, 'updated_at' => $now,
@@ -84,9 +97,14 @@ try {
         case 'import:run':
             $type = ($opts['type'] ?? 'full') === 'delta' ? 'delta' : 'full';
             $trigger = isset($opts['cron']) ? 'cron' : 'cli';
+            // --source=CODE : source du projet (--project) ; --all : sources actives de tous les projets (ou du projet indiqué)
             $sources = isset($opts['source'])
-                ? Db::all('SELECT * FROM sources WHERE code = ?', [$opts['source']])
-                : (isset($opts['all']) ? Db::all('SELECT * FROM sources WHERE active = 1 ORDER BY kind DESC, id') : []);
+                ? Db::all('SELECT * FROM sources WHERE project_id = ? AND code = ?', [DeepFind\Project::id(), $opts['source']])
+                : (isset($opts['all'])
+                    ? (isset($opts['project'])
+                        ? Db::all('SELECT * FROM sources WHERE active = 1 AND project_id = ? ORDER BY kind DESC, id', [DeepFind\Project::id()])
+                        : Db::all('SELECT * FROM sources WHERE active = 1 ORDER BY project_id, kind DESC, id'))
+                    : []);
             if ($sources === []) {
                 $err('Précisez --source=CODE ou --all (sources actives).');
                 exit(1);
@@ -120,7 +138,7 @@ try {
 
         case 'scores:refresh':
             // Recalcule les scores (poids, boosts, clics) sans relire le flux
-            foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE kind = 'products' GROUP BY lang") as $s) {
+            foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE project_id = ? AND kind = 'products' GROUP BY lang", [DeepFind\Project::id()]) as $s) {
                 if (isset($opts['lang']) && $opts['lang'] !== $s['lang']) {
                     continue;
                 }
@@ -183,6 +201,7 @@ DeepFind — commandes :
   install                                 Crée/actualise les tables et les sources par défaut
   admin:token                             Génère un ADMIN_TOKEN et un APP_SECRET
   key:create --name=.. --origins=..       Crée une clé publique pour le widget
+  Option commune : --project=CODE (projet concerné, par défaut le premier : prod)
   import:run --source=CODE|--all [--type=full|delta] [--cron]
   schedule:run [--work]                   À lancer CHAQUE MINUTE par cron : déclenche les imports planifiés
                                           (--work : traite aussi la file, si Supervisor n'est pas utilisé)

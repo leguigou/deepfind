@@ -30,6 +30,16 @@ final class App
         'POST /admin/boosts/delete' => [BoostsController::class, 'delete'],
         'GET /admin/relevance' => [RelevanceController::class, 'index'],
         'POST /admin/relevance/save' => [RelevanceController::class, 'save'],
+        'POST /admin/project' => [ProjectsController::class, 'switch'],
+        'GET /admin/projects' => [ProjectsController::class, 'index'],
+        'POST /admin/projects/create' => [ProjectsController::class, 'create'],
+        'POST /admin/projects/rename' => [ProjectsController::class, 'rename'],
+        'POST /admin/projects/delete' => [ProjectsController::class, 'delete'],
+        'GET /admin/projects/copy' => [ProjectsController::class, 'copy'],
+        'POST /admin/projects/copy' => [ProjectsController::class, 'copyApply'],
+        'POST /admin/projects/restore' => [ProjectsController::class, 'restore'],
+        'POST /admin/projects/snapshot' => [ProjectsController::class, 'snapshotNow'],
+        'GET /admin/projects/export' => [ProjectsController::class, 'export'],
         'GET /admin/cache' => [CacheController::class, 'index'],
         'POST /admin/cache/purge' => [CacheController::class, 'purge'],
         'GET /admin/synonyms' => [RulesController::class, 'synonyms'],
@@ -84,6 +94,13 @@ final class App
             Response::redirect(url('/admin/login'));
             return;
         }
+        // Projet choisi dans le sélecteur (mémorisé en session)
+        $pid = (int) ($_SESSION['project_id'] ?? 0);
+        if (\DeepFind\Project::find($pid) === null) {
+            $pid = \DeepFind\Project::defaultId();
+            $_SESSION['project_id'] = $pid;
+        }
+        \DeepFind\Project::use($pid);
         if ($path === '/admin/logout' && $method === 'POST') {
             Auth::logout();
             Response::redirect(url('/admin/login'));

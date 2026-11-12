@@ -75,6 +75,17 @@ final class Settings
         'popularity_ref' => 'Ventes 30 j considérées comme « max » de popularité',
         'new_days' => 'Un produit est « nouveau » pendant N jours',
         'out_of_stock_last' => 'Ruptures en fin de liste',
+        'searchable_fields' => 'Ordre des champs cherchables',
+        'matching_mode' => 'Correspondance des mots',
+        'min_relevance' => 'Pertinence minimum',
+        'attribute_first' => 'Priorité au champ où le mot est trouvé',
+        'name_position_weight' => 'Bonus « mot au début du nom »',
+        'rerank_window' => 'Résultats réordonnés',
+        'biz_importance' => 'Importance du score métier',
+        'w_clicks' => 'Poids : clics dans la recherche',
+        'clicks_ref' => 'Clics 30 j considérés comme « max »',
+        'scores_nightly' => 'Recalcul des scores chaque nuit',
+        'scores_cron' => 'Horaire du recalcul des scores',
         'posts_limit' => 'Nombre d\'articles de blog affichés',
         'max_limit' => 'Produits max. par page',
         'cache_ttl' => 'Cache des réponses (secondes, 0 = désactivé)',
@@ -94,18 +105,50 @@ final class Settings
             return self::$cache;
         }
         $store = Store::get();
-        $key = 'settings:' . CacheVersion::get();
+        $pid = Project::id();
+        $key = 'settings:' . $pid . ':' . CacheVersion::get();
         $cached = PHP_SAPI === 'cli' ? null : $store->get($key);
         if (!is_array($cached)) {
             $cached = self::DEFAULTS;
+            // Paramètres communs (anti-robots…) puis paramètres du projet courant
             foreach (Db::all('SELECT name, value FROM settings') as $row) {
-                $cached[$row['name']] = (string) $row['value'];
+                if (self::isGlobal($row['name'])) {
+                    $cached[$row['name']] = (string) $row['value'];
+                }
+            }
+            foreach (Db::all('SELECT name, value FROM project_settings WHERE project_id = ?', [$pid]) as $row) {
+                if (!self::isGlobal($row['name'])) {
+                    $cached[$row['name']] = (string) $row['value'];
+                }
             }
             if (PHP_SAPI !== 'cli') {
                 $store->set($key, $cached, 60);
             }
         }
         return self::$cache = $cached;
+    }
+
+    /** Paramètre commun à tous les projets (protection anti-robots, durée de conservation, état du planificateur). */
+    public static function isGlobal(string $name): bool
+    {
+        return in_array($name, Migrations::GLOBAL_SETTINGS, true);
+    }
+
+    /** @return array<string,string> paramètres propres au projet (pour la copie entre projets) */
+    public static function projectValues(int $projectId): array
+    {
+        $out = [];
+        foreach (Db::all('SELECT name, value FROM project_settings WHERE project_id = ?', [$projectId]) as $r) {
+            if (!self::isGlobal($r['name'])) {
+                $out[$r['name']] = (string) $r['value'];
+            }
+        }
+        return $out;
+    }
+
+    public static function reset(): void
+    {
+        self::$cache = null;
     }
 
     public static function get(string $name): string
@@ -125,7 +168,19 @@ final class Settings
 
     public static function set(string $name, string $value): void
     {
-        Db::exec('INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', [$name, $value, $value]);
+        if (self::isGlobal($name)) {
+            Db::exec('INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', [$name, $value, $value]);
+            self::$cache = null;
+            // Paramètre commun : tous les projets relisent leurs paramètres
+            foreach (array_keys(Project::all()) as $pid) {
+                CacheVersion::bump($pid);
+            }
+            return;
+        }
+        Db::exec(
+            'INSERT INTO project_settings (project_id, name, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = ?',
+            [Project::id(), $name, $value, $value]
+        );
         self::flush();
     }
 

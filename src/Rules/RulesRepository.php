@@ -21,7 +21,7 @@ final class RulesRepository
     public static function meiliSynonyms(string $lang): array
     {
         $map = [];
-        foreach (Db::all('SELECT type, term, synonyms FROM synonyms WHERE lang = ?', [$lang]) as $row) {
+        foreach (Db::all('SELECT type, term, synonyms FROM synonyms WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]) as $row) {
             $term = mb_strtolower(trim($row['term']), 'UTF-8');
             $syns = array_values(array_filter(array_map(static fn ($s) => mb_strtolower(trim($s), 'UTF-8'), explode('|', $row['synonyms'])), 'strlen'));
             if ($term === '' || $syns === []) {
@@ -49,7 +49,7 @@ final class RulesRepository
     public static function compiled(string $lang): array
     {
         $store = Store::get();
-        $key = 'rules:' . $lang . ':' . self::version();
+        $key = 'rules:' . \DeepFind\Project::id() . ':' . $lang . ':' . self::version();
         $cached = $store->get($key);
         if (is_array($cached)) {
             return $cached;
@@ -58,9 +58,9 @@ final class RulesRepository
         $out = ['pins' => [], 'boosts' => [], 'hides' => [], 'hide_all' => [], 'redirects' => []];
         $rows = Db::all(
             'SELECT query, sku, action, position FROM query_rules
-             WHERE lang = ? AND (starts_at IS NULL OR starts_at <= ?) AND (ends_at IS NULL OR ends_at >= ?)
+             WHERE project_id = ? AND lang = ? AND (starts_at IS NULL OR starts_at <= ?) AND (ends_at IS NULL OR ends_at >= ?)
              ORDER BY position IS NULL, position, id',
-            [$lang, $today, $today]
+            [\DeepFind\Project::id(), $lang, $today, $today]
         );
         foreach ($rows as $r) {
             $q = $r['query'];
@@ -77,7 +77,7 @@ final class RulesRepository
                 $out['boosts'][$q][] = $sku;
             }
         }
-        foreach (Db::all('SELECT query, url FROM redirects WHERE lang = ?', [$lang]) as $r) {
+        foreach (Db::all('SELECT query, url FROM redirects WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]) as $r) {
             $out['redirects'][$r['query']] = $r['url'];
         }
         $store->set($key, $out, 300);
@@ -132,7 +132,7 @@ final class RulesRepository
         $n = 0;
         Db::pdo()->beginTransaction();
         if ($replace) {
-            Db::exec('DELETE FROM synonyms WHERE lang = ?', [$lang]);
+            Db::exec('DELETE FROM synonyms WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
         }
         foreach ($rows as $i => $r) {
             $type = ($r['type'] ?? 'equivalent') === 'alias' ? 'alias' : 'equivalent';
@@ -152,7 +152,7 @@ final class RulesRepository
     public static function addSynonym(string $lang, string $type, string $term, string $synonyms): void
     {
         Db::insert('synonyms', [
-            'lang' => $lang, 'type' => $type, 'term' => Text::truncate(trim($term), 190),
+            'project_id' => \DeepFind\Project::id(), 'lang' => $lang, 'type' => $type, 'term' => Text::truncate(trim($term), 190),
             'synonyms' => trim($synonyms), 'created_at' => date('Y-m-d H:i:s'),
         ]);
     }
@@ -165,7 +165,7 @@ final class RulesRepository
         $n = 0;
         Db::pdo()->beginTransaction();
         if ($replace) {
-            Db::exec('DELETE FROM query_rules WHERE lang = ?', [$lang]);
+            Db::exec('DELETE FROM query_rules WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
         }
         foreach ($rows as $i => $r) {
             $q = $r['requete'] ?? $r['query'] ?? '';
@@ -186,6 +186,7 @@ final class RulesRepository
     public static function addRule(string $lang, string $query, string $sku, string $action, ?int $position, string $start, string $end): void
     {
         Db::insert('query_rules', [
+            'project_id' => \DeepFind\Project::id(),
             'lang' => $lang,
             'query' => $query === '*' ? '*' : Text::normalize($query),
             'sku' => trim($sku),
@@ -205,7 +206,7 @@ final class RulesRepository
         $n = 0;
         Db::pdo()->beginTransaction();
         if ($replace) {
-            Db::exec('DELETE FROM redirects WHERE lang = ?', [$lang]);
+            Db::exec('DELETE FROM redirects WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
         }
         foreach ($rows as $i => $r) {
             $q = $r['requete'] ?? $r['query'] ?? '';
@@ -224,8 +225,8 @@ final class RulesRepository
     public static function addRedirect(string $lang, string $query, string $url): void
     {
         Db::exec(
-            'INSERT INTO redirects (lang, query, url, created_at) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE url = ?',
-            [$lang, Text::normalize($query), $url, date('Y-m-d H:i:s'), $url]
+            'INSERT INTO redirects (project_id, lang, query, url, created_at) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE url = ?',
+            [\DeepFind\Project::id(), $lang, Text::normalize($query), $url, date('Y-m-d H:i:s'), $url]
         );
     }
 

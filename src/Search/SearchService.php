@@ -392,7 +392,7 @@ final class SearchService
     private function indexExists(string $uid): bool
     {
         $store = Store::get();
-        $k = 'idx:' . \DeepFind\CacheVersion::get() . ':' . $uid;
+        $k = 'idx:' . \DeepFind\Project::id() . ':' . \DeepFind\CacheVersion::get() . ':' . $uid;
         $v = $store->get($k);
         if ($v === null) {
             $v = $this->meili->getIndex($uid) !== null ? 1 : 0;

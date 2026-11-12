@@ -41,7 +41,7 @@ final class Importer
 
     public static function source(string $code): ?array
     {
-        return Db::one('SELECT * FROM sources WHERE code = ?', [$code]);
+        return Db::one('SELECT * FROM sources WHERE project_id = ? AND code = ?', [\DeepFind\Project::id(), $code]);
     }
 
     public static function queue(int $sourceId, string $type, string $trigger): int
@@ -58,9 +58,11 @@ final class Importer
         if (!in_array($type, ['full', 'delta', 'scores'], true)) {
             throw new \InvalidArgumentException('Type d\'import inconnu : ' . $type);
         }
+        // L'import travaille dans le projet de sa source (index, paramètres, règles, boosts du projet)
+        \DeepFind\Project::use((int) ($source['project_id'] ?? 1));
         $runId ??= self::queue((int) $source['id'], $type, $trigger);
         Db::update('import_runs', ['status' => 'running', 'started_at' => date('Y-m-d H:i:s')], 'id = ?', [$runId]);
-        $lockName = 'deepfind_import_' . $source['code'];
+        $lockName = 'deepfind_import_' . (int) ($source['project_id'] ?? 1) . '_' . $source['code'];
         $locked = (int) Db::value('SELECT GET_LOCK(?, 0)', [$lockName]) === 1;
         $this->report = ['rejects' => [], 'reject_samples' => [], 'read' => 0, 'indexed' => 0, 'rejected' => 0, 'skipped' => 0];
         $this->runId = $runId;

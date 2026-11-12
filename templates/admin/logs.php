@@ -16,7 +16,7 @@
       <td><?= fmt_dt($r['created_at']) ?></td>
       <td><strong><?= e($r['query']) ?></strong></td>
       <td class="ellipsis"><code><?= e($r['filters']) ?></code></td>
-      <td class="num <?= (int) $r['results'] === 0 ? 'ko' : '' ?>"><?= fmt_n($r['results']) ?></td>
+      <td class="num <?= (int) $r['results'] === 0 ? 'ko' : '' ?>"><?= fmt_n($r['results']) ?><?= (int) $r['approx'] ? '<br><small class="muted">' . fmt_n($r['approx_results']) . ' approchants</small>' : '' ?></td>
       <td class="num"><?= (int) $r['took_ms'] ?></td>
       <td><a href="<?= e(url('/admin/logs', ['ip' => $r['ip_hash'], 'days' => $f['days']])) ?>" title="<?= e($r['ip_hash']) ?>"><?= e($r['ip_masked']) ?></a></td>
       <td class="ellipsis"><?= e($r['user_agent']) ?></td>

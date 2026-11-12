@@ -19,7 +19,7 @@ final class RulesController
         $lang = Auth::lang();
         View::render('synonyms', [
             'active' => 'synonyms', 'lang' => $lang,
-            'rows' => Db::all('SELECT * FROM synonyms WHERE lang = ? ORDER BY term', [$lang]),
+            'rows' => Db::all('SELECT * FROM synonyms WHERE project_id = ? AND lang = ? ORDER BY term', [\DeepFind\Project::id(), $lang]),
         ], 'Synonymes & alias');
     }
 
@@ -38,7 +38,7 @@ final class RulesController
 
     public function synonymDelete(): void
     {
-        Db::exec('DELETE FROM synonyms WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
+        Db::exec('DELETE FROM synonyms WHERE id = ? AND project_id = ?', [(int) ($_POST['id'] ?? 0), \DeepFind\Project::id()]);
         $this->sync(Auth::lang());
         App::back('/admin/synonyms');
     }
@@ -87,7 +87,7 @@ final class RulesController
         $lang = Auth::lang();
         View::render('rules', [
             'active' => 'rules', 'lang' => $lang, 'actions' => RulesRepository::ACTIONS,
-            'rows' => Db::all('SELECT * FROM query_rules WHERE lang = ? ORDER BY query, action, position, id', [$lang]),
+            'rows' => Db::all('SELECT * FROM query_rules WHERE project_id = ? AND lang = ? ORDER BY query, action, position, id', [\DeepFind\Project::id(), $lang]),
         ], 'Règles de résultats');
     }
 
@@ -113,7 +113,7 @@ final class RulesController
 
     public function ruleDelete(): void
     {
-        Db::exec('DELETE FROM query_rules WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
+        Db::exec('DELETE FROM query_rules WHERE id = ? AND project_id = ?', [(int) ($_POST['id'] ?? 0), \DeepFind\Project::id()]);
         RulesRepository::bumpVersion();
         $this->backTo('/admin/rules');
     }
@@ -136,7 +136,7 @@ final class RulesController
         $lang = Auth::lang();
         View::render('redirects', [
             'active' => 'redirects', 'lang' => $lang,
-            'rows' => Db::all('SELECT * FROM redirects WHERE lang = ? ORDER BY query', [$lang]),
+            'rows' => Db::all('SELECT * FROM redirects WHERE project_id = ? AND lang = ? ORDER BY query', [\DeepFind\Project::id(), $lang]),
         ], 'Redirections');
     }
 
@@ -156,7 +156,7 @@ final class RulesController
 
     public function redirectDelete(): void
     {
-        Db::exec('DELETE FROM redirects WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
+        Db::exec('DELETE FROM redirects WHERE id = ? AND project_id = ?', [(int) ($_POST['id'] ?? 0), \DeepFind\Project::id()]);
         RulesRepository::bumpVersion();
         App::back('/admin/redirects');
     }

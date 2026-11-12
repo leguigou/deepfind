@@ -25,7 +25,7 @@ final class ApiKeys
         if (is_array($cached)) {
             return $cached['id'] ? $cached : null;
         }
-        $row = Db::one('SELECT id, name, public_key, allowed_origins, langs, active FROM api_keys WHERE public_key = ?', [$publicKey]);
+        $row = Db::one('SELECT id, project_id, name, public_key, allowed_origins, langs, active FROM api_keys WHERE public_key = ?', [$publicKey]);
         $store->set('key:' . $publicKey, $row ?? ['id' => 0], 60);
         return $row;
     }
@@ -34,6 +34,7 @@ final class ApiKeys
     {
         $key = Text::randomKey('pk_');
         Db::insert('api_keys', [
+            'project_id' => \DeepFind\Project::id(),
             'name' => Text::truncate(trim($name), 100),
             'public_key' => $key,
             'allowed_origins' => self::cleanOrigins($origins),

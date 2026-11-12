@@ -22,7 +22,7 @@ final class BoostsController
     public function index(): void
     {
         $lang = Auth::lang();
-        $rows = Db::all('SELECT * FROM product_boosts WHERE lang = ? ORDER BY boost DESC, sku', [$lang]);
+        $rows = Db::all('SELECT * FROM product_boosts WHERE project_id = ? AND lang = ? ORDER BY boost DESC, sku', [\DeepFind\Project::id(), $lang]);
         $info = [];
         if ($rows !== []) {
             try {
@@ -50,7 +50,7 @@ final class BoostsController
         $boost = (int) ($_POST['boost'] ?? 0);
         foreach ($skus as $sku) {
             if ($boost === 0) {
-                Db::exec('DELETE FROM product_boosts WHERE lang = ? AND sku = ?', [$lang, $sku]);
+                Db::exec('DELETE FROM product_boosts WHERE project_id = ? AND lang = ? AND sku = ?', [\DeepFind\Project::id(), $lang, $sku]);
             } else {
                 Boosts::save($lang, $sku, $boost, (string) ($_POST['starts_at'] ?? ''), (string) ($_POST['ends_at'] ?? ''), (string) ($_POST['note'] ?? ''));
             }
@@ -64,7 +64,7 @@ final class BoostsController
     public function delete(): void
     {
         $lang = Auth::lang();
-        $row = Db::one('SELECT sku FROM product_boosts WHERE id = ? AND lang = ?', [(int) ($_POST['id'] ?? 0), $lang]);
+        $row = Db::one('SELECT sku FROM product_boosts WHERE id = ? AND lang = ? AND project_id = ?', [(int) ($_POST['id'] ?? 0), $lang, \DeepFind\Project::id()]);
         if ($row !== null) {
             Db::exec('DELETE FROM product_boosts WHERE id = ?', [(int) $_POST['id']]);
             self::apply($lang, [$row['sku']]);

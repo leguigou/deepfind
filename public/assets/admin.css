@@ -356,3 +356,26 @@ td.actions form { display: inline-flex; gap: 4px; align-items: center; }
 .pv-product, .pv-grid > .table td:nth-child(3) { min-width: 240px; }
 .pv-grid > .table th, .pv-grid > .table td { padding-left: 8px; padding-right: 8px; }
 .pv-grid > .table th { white-space: normal; }
+
+/* ---------- Sélecteur de projet */
+.project-switch { display: flex; align-items: center; gap: 10px; margin: 0 2px 12px; padding: 8px 10px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--border); }
+.project-ico { background: var(--accent-grad) !important; color: #fff !important; }
+.project-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; margin: 0; }
+.project-label select { margin: 0; padding: 4px 6px; font-weight: 700; background: transparent; border-color: transparent; }
+.project-label select:hover { border-color: var(--border); }
+.menu-collapsed .project-label { display: none; }
+.menu-collapsed .project-switch { justify-content: center; padding: 6px 0; }
+@media (max-width: 900px) { .project-label { display: none; } .project-switch { justify-content: center; padding: 6px 0; } }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.page-head h1 { margin: 0; }
+.project-chip { padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1px solid var(--border); text-decoration: none !important; }
+.project-chip.is-main { background: var(--ok-bg); color: var(--ok); }
+.project-chip.is-other { background: var(--warn-bg); color: var(--warn); }
+.row-current td { background: var(--accent-soft); }
+.name-input { min-width: 180px; }
+.danger-details { display: inline-block; }
+.danger-details summary { list-style: none; cursor: pointer; }
+.danger-details summary::-webkit-details-marker { display: none; }
+.danger-details[open] .card { position: absolute; right: 40px; z-index: 10; width: 340px; margin-top: 6px; background: var(--surface-solid); }
+.copy-sections { display: grid; gap: 10px; margin: 6px 0 14px; }

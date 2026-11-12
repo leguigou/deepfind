@@ -23,7 +23,7 @@ final class RelevanceController
 
     public function index(): void
     {
-        $sources = Db::all("SELECT id, code, lang FROM sources WHERE kind = 'products' AND active = 1 ORDER BY lang, code");
+        $sources = Db::all("SELECT id, code, lang FROM sources WHERE project_id = ? AND kind = 'products' AND active = 1 ORDER BY lang, code", [\DeepFind\Project::id()]);
         View::render('relevance', [
             'active' => 'relevance',
             'fields' => Relevance::fields(),
@@ -31,7 +31,7 @@ final class RelevanceController
             'values' => Settings::all(),
             'sources' => $sources,
             'weightsChangedAt' => Settings::get('weights_changed_at'),
-            'lastFull' => (string) (Db::value("SELECT MAX(finished_at) FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.kind = 'products' AND r.type IN ('full','scores') AND r.status = 'success'") ?? ''),
+            'lastFull' => (string) (Db::value("SELECT MAX(finished_at) FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ? AND s.kind = 'products' AND r.type IN ('full','scores') AND r.status = 'success'", [\DeepFind\Project::id()]) ?? ''),
         ], 'Pertinence & classement');
     }
 
@@ -99,8 +99,8 @@ final class RelevanceController
         $queued = [];
         if (isset($_POST['reindex'])) {
             // Recalcul des scores sur les produits déjà indexés (une fois par langue, sans relire les flux)
-            foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE kind = 'products' AND active = 1 GROUP BY lang") as $s) {
-                if (Db::value("SELECT r.id FROM import_runs r JOIN sources x ON x.id = r.source_id WHERE x.lang = ? AND r.status IN ('queued','running') LIMIT 1", [$s['lang']]) === null) {
+            foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE project_id = ? AND kind = 'products' AND active = 1 GROUP BY lang", [\DeepFind\Project::id()]) as $s) {
+                if (Db::value("SELECT r.id FROM import_runs r JOIN sources x ON x.id = r.source_id WHERE x.project_id = ? AND x.lang = ? AND r.status IN ('queued','running') LIMIT 1", [\DeepFind\Project::id(), $s['lang']]) === null) {
                     $queued[] = '#' . Importer::queue((int) $s['id'], 'scores', 'manual') . ' (' . strtoupper($s['lang']) . ')';
                 }
             }

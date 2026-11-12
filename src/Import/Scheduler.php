@@ -45,18 +45,22 @@ final class Scheduler
                 $queued[] = $s['code'] . ' ' . $type . ' #' . $id;
             }
         }
-        // Recalcul des scores chaque nuit (clics des 30 derniers jours, boosts datés) : une fois par langue
-        $scoresCron = trim(\DeepFind\Settings::get('scores_cron'));
-        if (\DeepFind\Settings::get('scores_nightly') === '1' && $scoresCron !== '' && Cron::matches($scoresCron, $minute)) {
+        // Recalcul des scores chaque nuit (clics des 30 derniers jours, boosts datés) : par projet et par langue
+        foreach (array_keys(\DeepFind\Project::all()) as $pid) {
+            \DeepFind\Project::use($pid);
+            $scoresCron = trim(\DeepFind\Settings::get('scores_cron'));
+            if (\DeepFind\Settings::get('scores_nightly') !== '1' || $scoresCron === '' || !Cron::matches($scoresCron, $minute)) {
+                continue;
+            }
             $stamp = $minute->format('Y-m-d H:i:s');
             $claimed = Db::exec(
-                "INSERT INTO settings (name, value) VALUES ('scores_scheduled_at', ?) ON DUPLICATE KEY UPDATE value = IF(value < ?, ?, value)",
-                [$stamp, $stamp, $stamp]
+                'INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = IF(value < ?, ?, value)',
+                ['scores_scheduled_at_' . $pid, $stamp, $stamp, $stamp]
             );
             if ($claimed > 0) {
-                foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE kind = 'products' AND active = 1 GROUP BY lang") as $s) {
-                    if (Db::value("SELECT id FROM import_runs r JOIN sources x ON x.id = r.source_id WHERE x.lang = ? AND r.status IN ('queued','running') LIMIT 1", [$s['lang']]) === null) {
-                        $queued[] = 'scores ' . $s['lang'] . ' #' . Importer::queue((int) $s['id'], 'scores', 'cron');
+                foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE project_id = ? AND kind = 'products' AND active = 1 GROUP BY lang", [$pid]) as $s) {
+                    if (Db::value("SELECT r.id FROM import_runs r JOIN sources x ON x.id = r.source_id WHERE x.project_id = ? AND x.lang = ? AND r.status IN ('queued','running') LIMIT 1", [$pid, $s['lang']]) === null) {
+                        $queued[] = 'scores ' . \DeepFind\Project::current()['code'] . ' ' . $s['lang'] . ' #' . Importer::queue((int) $s['id'], 'scores', 'cron');
                     }
                 }
             }

@@ -22,7 +22,7 @@ final class MappingController
 
     public function edit(): void
     {
-        $source = Db::one('SELECT * FROM sources WHERE id = ?', [(int) ($_GET['id'] ?? 0)]);
+        $source = Db::one('SELECT * FROM sources WHERE id = ? AND project_id = ?', [(int) ($_GET['id'] ?? 0), \DeepFind\Project::id()]);
         if ($source === null) {
             App::back('/admin/sources');
             return;
@@ -193,7 +193,7 @@ final class MappingController
     public function save(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
-        $source = Db::one('SELECT * FROM sources WHERE id = ?', [$id]);
+        $source = Db::one('SELECT * FROM sources WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         if ($source === null) {
             App::back('/admin/sources');
             return;
@@ -255,7 +255,7 @@ final class MappingController
             $mapping['extra_attributes'] = $x === [] ? new \stdClass() : $x;
         }
 
-        Db::update('sources', ['mapping' => Text::json($mapping), 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
+        Db::update('sources', ['mapping' => Text::json($mapping), 'updated_at' => date('Y-m-d H:i:s')], 'id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
 
         $missing = [];
         $f = $mapping['fields'];

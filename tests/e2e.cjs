@@ -177,7 +177,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/10-cache.png', fullPage: false });
   page.once('dialog', (d) => d.accept());
   await page.click('form[action$="/admin/cache/purge"] button.btn >> nth=0');
-  check('cache : purge', (await page.textContent('body')).includes('entrée(s) supprimée(s)'));
+  check('cache : purge', (await page.textContent('body')).includes('supprimée(s)'));
 
   // Import manuel suivi en direct (le worker est lancé par le script de test)
   await page.goto(BASE + '/admin/sources');
@@ -192,6 +192,32 @@ fs.mkdirSync(OUT, { recursive: true });
     check('import : terminé et page actualisée', (await page.textContent('.prog-big')).includes('100') && (await page.textContent('.cards')).includes('Réussi'));
     await page.screenshot({ path: OUT + '/12-import-termine.png', fullPage: false });
   }
+
+  // Projets : sélecteur, isolation dans l'extranet, copie avec résumé, restauration
+  await page.goto(BASE + '/admin/projects');
+  check('projets : liste', (await page.$$eval('input.name-input', (i) => i.map((x) => x.value))).includes('Cabesto Test'));
+  await page.screenshot({ path: OUT + '/20-projets.png', fullPage: false });
+  await Promise.all([page.waitForNavigation(), page.selectOption('.project-switch select', { label: 'Cabesto Test' })]);
+  check('projets : sélecteur → projet Test actif', (await page.textContent('.project-chip')).includes('Cabesto Test'));
+  await page.goto(BASE + '/admin/redirects');
+  check('projets : redirection propre au projet Test', (await page.textContent('table')).includes('bonjour test'));
+  await page.goto(BASE + '/admin/projects/copy');
+  await page.selectOption('select[name=to]', { label: 'Production' });
+  for (const sec of ['search', 'synonyms', 'rules', 'redirects', 'boosts', 'sources']) {
+    await page.click('label.toggle:has(input[value=' + sec + '])');
+  }
+  await Promise.all([page.waitForNavigation(), page.click('form.card button.btn')]);
+  check('copie : résumé des changements', (await page.textContent('body')).includes('Changements dans « Production »'));
+  await page.screenshot({ path: OUT + '/21-copie-resume.png', fullPage: false });
+  page.once('dialog', (d) => d.accept());
+  await Promise.all([page.waitForNavigation(), page.click('form.actions button.btn')]);
+  check('copie : appliquée avec sauvegarde', (await page.textContent('body')).includes('Sauvegarde #'));
+  check('copie : bascule sur le projet cible', (await page.textContent('.project-chip')).includes('Production'));
+  page.once('dialog', (d) => d.accept());
+  await Promise.all([page.waitForNavigation(), page.click('form[action$="/admin/projects/restore"] button >> nth=0')]);
+  check('sauvegarde : restaurée', (await page.textContent('body')).includes('Sauvegarde restaurée'));
+  await page.goto(BASE + '/admin/redirects');
+  check('projets : Production sans la redirection de Test', (await page.textContent('table')).includes('cgv#retours') && !(await page.textContent('table')).includes('bonjour test'));
 
   // Widget sur la page de démo
   await page.goto(BASE + '/admin/demo');

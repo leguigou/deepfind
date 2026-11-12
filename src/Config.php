@@ -72,14 +72,15 @@ final class Config
         return self::get('MEILI_INDEX_PREFIX', 'deepfind_');
     }
 
+    /** Index du projet courant (ex. deepfind_products_fr pour « prod », deepfind_test_products_fr pour « test »). */
     public static function productIndex(string $lang): string
     {
-        return self::indexPrefix() . 'products_' . $lang;
+        return Project::indexPrefix() . 'products_' . $lang;
     }
 
     public static function postIndex(string $lang): string
     {
-        return self::indexPrefix() . 'posts_' . $lang;
+        return Project::indexPrefix() . 'posts_' . $lang;
     }
 
     public static function varDir(string $sub = ''): string

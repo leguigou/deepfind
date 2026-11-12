@@ -24,7 +24,7 @@
     <tr>
       <td><strong><?= e($z['query_norm']) ?></strong></td>
       <td class="num"><?= fmt_n($z['n']) ?></td>
-      <td><?= (int) $z['approx'] ? '<span class="badge badge-warn">' . fmt_n($z['results']) . ' approchant(s)</span>' : '<span class="badge badge-ko">aucun résultat</span>' ?></td>
+      <td><?= (int) $z['approx'] ? '<span class="badge badge-warn">' . '0 résultat · ' . fmt_n($z['approx_results']) . ' approchant(s) proposé(s)</span>' : '<span class="badge badge-ko">aucun résultat</span>' ?></td>
       <td><?= fmt_dt($z['last_at']) ?></td>
       <td>
         <form method="post" action="<?= e(url('/admin/synonyms/add')) ?>" class="inline-form syn-form">

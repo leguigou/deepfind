@@ -14,7 +14,7 @@ final class KeysController
     {
         View::render('keys', [
             'active' => 'keys',
-            'keys' => Db::all('SELECT * FROM api_keys ORDER BY id'),
+            'keys' => Db::all('SELECT * FROM api_keys WHERE project_id = ? ORDER BY id', [\DeepFind\Project::id()]),
             'appUrl' => rtrim((string) Config::get('APP_URL', ''), '/'),
         ], 'Clés & intégration');
     }
@@ -34,7 +34,7 @@ final class KeysController
     public function update(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
-        $row = Db::one('SELECT public_key FROM api_keys WHERE id = ?', [$id]);
+        $row = Db::one('SELECT public_key FROM api_keys WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         if ($row !== null) {
             Db::update('api_keys', [
                 'allowed_origins' => ApiKeys::cleanOrigins((string) ($_POST['origins'] ?? '')),
@@ -50,9 +50,9 @@ final class KeysController
     public function delete(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
-        $row = Db::one('SELECT public_key FROM api_keys WHERE id = ?', [$id]);
+        $row = Db::one('SELECT public_key FROM api_keys WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         if ($row !== null) {
-            Db::exec('DELETE FROM api_keys WHERE id = ?', [$id]);
+            Db::exec('DELETE FROM api_keys WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
             ApiKeys::forget($row['public_key']);
             Auth::flash('ok', 'Clé supprimée.');
         }

@@ -30,10 +30,10 @@ final class PreviewController
         if ($result && $result['products']) {
             $skus = array_column($result['products'], 'sku');
             $in = implode(',', array_fill(0, count($skus), '?'));
-            foreach (Db::all("SELECT sku, boost FROM product_boosts WHERE lang = ? AND sku IN ($in)", [Auth::lang(), ...$skus]) as $b) {
+            foreach (Db::all("SELECT sku, boost FROM product_boosts WHERE project_id = ? AND lang = ? AND sku IN ($in)", [\DeepFind\Project::id(), Auth::lang(), ...$skus]) as $b) {
                 $adminBoosts[mb_strtoupper($b['sku'], 'UTF-8')] = (int) $b['boost'];
             }
-            foreach (Db::all("SELECT id, sku, position FROM query_rules WHERE lang = ? AND query = ? AND action = 'pin'", [Auth::lang(), \DeepFind\Text::normalize((string) ($_GET['q'] ?? ''))]) as $pin) {
+            foreach (Db::all("SELECT id, sku, position FROM query_rules WHERE project_id = ? AND lang = ? AND query = ? AND action = 'pin'", [\DeepFind\Project::id(), Auth::lang(), \DeepFind\Text::normalize((string) ($_GET['q'] ?? ''))]) as $pin) {
                 $pins[mb_strtoupper($pin['sku'], 'UTF-8')] = $pin;
             }
         }
@@ -45,7 +45,7 @@ final class PreviewController
     /** Page de démonstration du widget (simule l'en-tête du site). */
     public function demo(): void
     {
-        $keys = Db::all('SELECT name, public_key, langs FROM api_keys WHERE active = 1 ORDER BY id');
+        $keys = Db::all('SELECT name, public_key, langs FROM api_keys WHERE active = 1 AND project_id = ? ORDER BY id', [\DeepFind\Project::id()]);
         $key = (string) ($_GET['key'] ?? ($keys[0]['public_key'] ?? ''));
         View::render('demo', ['keys' => $keys, 'key' => $key, 'lang' => Auth::lang()], 'Démo du widget', false);
     }
