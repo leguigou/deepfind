@@ -317,10 +317,11 @@ final class SearchService
     private function indexExists(string $uid): bool
     {
         $store = Store::get();
-        $v = $store->get('idx:' . $uid);
+        $k = 'idx:' . \DeepFind\CacheVersion::get() . ':' . $uid;
+        $v = $store->get($k);
         if ($v === null) {
             $v = $this->meili->getIndex($uid) !== null ? 1 : 0;
-            $store->set('idx:' . $uid, $v, $v ? 300 : 30);
+            $store->set($k, $v, $v ? 300 : 30);
         }
         return (bool) $v;
     }

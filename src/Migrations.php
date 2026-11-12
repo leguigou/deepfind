@@ -18,6 +18,15 @@ final class Migrations
             'scheduled_full_at' => 'DATETIME NULL AFTER cron_delta',
             'scheduled_delta_at' => 'DATETIME NULL AFTER scheduled_full_at',
         ],
+        'import_runs' => [
+            'phase' => 'VARCHAR(30) NULL AFTER items_rejected',
+            'items_total' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER phase',
+            'bytes_done' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER items_total',
+            'bytes_total' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER bytes_done',
+            'tasks_done' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER bytes_total',
+            'tasks_total' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER tasks_done',
+            'progress_at' => 'DATETIME NULL AFTER tasks_total',
+        ],
     ];
 
     /** @return list<string> colonnes ajoutées */

@@ -66,6 +66,30 @@ final class XmlItemReader
         }
     }
 
+    /** Compte les éléments sans les décoder (rapide : ~1 s pour 40 Mo). */
+    public static function count(string $file, array $names): int
+    {
+        $uri = self::isGzip($file) ? 'compress.zlib://' . $file : $file;
+        $prev = libxml_use_internal_errors(true);
+        $r = new XMLReader();
+        $n = 0;
+        if ($r->open($uri, 'UTF-8', LIBXML_NONET | LIBXML_COMPACT | LIBXML_PARSEHUGE)) {
+            $ok = @$r->read();
+            while ($ok) {
+                if ($r->nodeType === XMLReader::ELEMENT && in_array($r->localName, $names, true)) {
+                    $n++;
+                    $ok = @$r->next();
+                    continue;
+                }
+                $ok = @$r->read();
+            }
+            $r->close();
+        }
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        return $n;
+    }
+
     public static function isGzip(string $file): bool
     {
         $h = @fopen($file, 'rb');

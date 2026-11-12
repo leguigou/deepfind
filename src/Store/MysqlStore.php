@@ -48,7 +48,30 @@ final class MysqlStore implements KvStore
         return 'mysql';
     }
 
-    public static function purge(): int
+    public function stats(): array
+    {
+        $cats = [];
+        $rows = Db::all(
+            "SELECT SUBSTRING_INDEX(k, ':', 1) AS cat, COUNT(*) AS n, SUM(LENGTH(k) + LENGTH(v)) AS b
+             FROM kv_store WHERE expires_at >= ? GROUP BY cat",
+            [time()]
+        );
+        foreach ($rows as $r) {
+            $cats[$r['cat']] = ['entries' => (int) $r['n'], 'bytes' => (int) $r['b']];
+        }
+        return ['categories' => $cats, 'memory' => null, 'hits' => null, 'misses' => null];
+    }
+
+    public function purge(array $prefixes): int
+    {
+        $n = 0;
+        foreach ($prefixes as $p) {
+            $n += Db::exec('DELETE FROM kv_store WHERE k LIKE ?', [addcslashes($p, '%_\\') . '%']);
+        }
+        return $n;
+    }
+
+    public static function purgeExpired(): int
     {
         return Db::exec('DELETE FROM kv_store WHERE expires_at < ?', [time()]);
     }

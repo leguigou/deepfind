@@ -42,6 +42,48 @@
     document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
       el.addEventListener('change', function () { el.form.submit(); });
     });
+    // Suivi des imports en cours (interrogation toutes les 2 s, arrêt quand tout est terminé)
+    var progEls = document.querySelectorAll('[data-run-progress]');
+    if (progEls.length && window.fetch) {
+      var base = (document.querySelector('link[href*="/assets/admin.css"]') || {}).href || '';
+      var statusUrl = base.replace(/\/assets\/admin\.css.*$/, '/admin/imports/status');
+      var ids = Array.prototype.map.call(progEls, function (n) { return n.getAttribute('data-run-progress'); });
+      var timer = setInterval(poll, 2000);
+      poll();
+      function poll() {
+        fetch(statusUrl + '?ids=' + ids.join(','), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            if (!data) { return; }
+            var stillActive = false;
+            data.runs.forEach(function (run) {
+              document.querySelectorAll('[data-run-progress="' + run.id + '"]').forEach(function (box) {
+                var bar = box.querySelector('.prog-bar span');
+                if (bar) { bar.style.width = run.percent + '%'; }
+                ['percent', 'label', 'detail', 'elapsed', 'eta'].forEach(function (f) {
+                  var el = box.querySelector('[data-f="' + f + '"]');
+                  if (el && run[f] !== null && run[f] !== undefined) { el.textContent = run[f]; }
+                });
+                var w = box.querySelector('[data-f-wrap="eta"]');
+                if (w) { w.hidden = !run.eta; }
+                var steps = box.querySelectorAll('[data-step]');
+                var idx = -1;
+                steps.forEach(function (st, i) { if (st.getAttribute('data-step') === run.phase) { idx = i; } });
+                steps.forEach(function (st, i) {
+                  st.className = run.status === 'success' || (idx >= 0 && i < idx) ? 'done' : (i === idx && run.active ? 'on' : '');
+                });
+              });
+              if (run.active) { stillActive = true; }
+            });
+            if (!stillActive) {
+              clearInterval(timer);
+              setTimeout(function () { window.location.reload(); }, 800);
+            }
+          })
+          .catch(function () { /* nouvel essai au prochain tour */ });
+      }
+    }
+
     // Planification : un choix prédéfini remplit l'expression cron
     document.querySelectorAll('select[data-cron-preset]').forEach(function (sel) {
       var input = document.getElementById(sel.getAttribute('data-cron-preset'));

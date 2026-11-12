@@ -218,6 +218,26 @@ if ($base) {
     check('API : domaine non autorisé => 403', $c === 403);
     [$c] = $get("/api/v1/search?key=$key&q=palme", ['User-Agent: python-requests/2.31']);
     check('API : user-agent de robot => 403', $c === 403);
+    // Cache : une règle ajoutée (autre processus que le serveur web) est visible immédiatement
+    [, $before] = $get("/api/v1/search?key=$key&q=masque&limit=3");
+    [, $again] = $get("/api/v1/search?key=$key&q=masque&limit=3");
+    check('cache : 2e réponse servie depuis le cache', ($again['cached'] ?? false) === true);
+    $first = $before['products'][0]['sku'] ?? '';
+    DeepFind\Rules\RulesRepository::addRule('fr', 'masque', $first, 'hide', null, '', '');
+    DeepFind\Rules\RulesRepository::bumpVersion();
+    [, $after] = $get("/api/v1/search?key=$key&q=masque&limit=3");
+    check('cache : invalidé immédiatement après une modification', $first !== '' && ($after['cached'] ?? true) === false && !in_array($first, array_column($after['products'], 'sku'), true));
+    DeepFind\Db::exec("DELETE FROM query_rules WHERE query = 'masque' AND action = 'hide'");
+    DeepFind\Rules\RulesRepository::bumpVersion();
+
+    // Progression : comptage et étapes enregistrées
+    $run = DeepFind\Db::one("SELECT * FROM import_runs WHERE type = 'full' AND status = 'success' ORDER BY id LIMIT 1");
+    check('progression : total compté et étape finale', (int) $run['items_total'] === (int) $run['items_read'] && $run['phase'] === 'done');
+    $pg = DeepFind\Import\Progress::of(['id' => 1, 'status' => 'running', 'phase' => 'read', 'items_total' => 200, 'items_read' => 100, 'items_indexed' => 90, 'items_rejected' => 0,
+        'bytes_done' => 0, 'bytes_total' => 0, 'tasks_done' => 0, 'tasks_total' => 0, 'started_at' => date('Y-m-d H:i:s', time() - 30), 'finished_at' => null, 'message' => '']);
+    check('progression : pourcentage et temps restant', $pg['percent'] === 43 && $pg['eta'] !== null && $pg['detail'] === '100 / 200 éléments');
+    check('comptage rapide des éléments', DeepFind\Import\XmlItemReader::count(APP_ROOT . '/samples/products_fr_flat.xml', ['item']) === 231);
+
     // Planificateur : une seule mise en file par minute, même si lancé deux fois
     DeepFind\Db::exec("UPDATE import_runs SET status = 'success' WHERE status IN ('queued','running')");
     DeepFind\Db::exec("UPDATE sources SET cron_full = '* * * * *', scheduled_full_at = NULL WHERE code = 'produits_fr'");

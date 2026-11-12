@@ -14,6 +14,7 @@ $nav = [
     'logs' => ['/admin/logs', 'Journal des recherches'],
     'bots' => ['/admin/bots', 'Robots & blocages'],
     'keys' => ['/admin/keys', 'Clés & intégration'],
+    'cache' => ['/admin/cache', 'Cache'],
     'settings' => ['/admin/settings', 'Paramètres'],
 ];
 ?><!doctype html>

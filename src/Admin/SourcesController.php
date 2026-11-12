@@ -132,7 +132,9 @@ final class SourcesController
             Auth::flash('warn', 'Un import est déjà en attente ou en cours pour cette source (#' . $pending . ').');
         } else {
             $runId = Importer::queue($id, $type, 'manual');
-            Auth::flash('ok', 'Import #' . $runId . ' mis en file d\'attente. Il démarre sous une minute (worker ou cron « queue:work »).');
+            Auth::flash('ok', 'Import #' . $runId . ' mis en file d\'attente : suivez son avancement ci-dessous (la page se met à jour toute seule).');
+            App::back('/admin/imports/view', ['id' => $runId]);
+            return;
         }
         App::back('/admin/imports');
     }
@@ -189,6 +191,22 @@ final class SourcesController
     {
         $runs = Db::all('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id ORDER BY r.id DESC LIMIT 100');
         View::render('imports', ['active' => 'imports', 'runs' => $runs], 'Historique des imports');
+    }
+
+    /** Avancement des imports en cours (JSON, interrogé toutes les 2 s par la page). */
+    public function importStatus(): void
+    {
+        session_write_close();
+        $ids = array_slice(array_filter(array_map('intval', explode(',', (string) ($_GET['ids'] ?? '')))), 0, 50);
+        $out = [];
+        if ($ids !== []) {
+            $rows = Db::all('SELECT * FROM import_runs WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')', $ids);
+            foreach ($rows as $r) {
+                $out[] = \DeepFind\Import\Progress::of($r);
+            }
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo Text::json(['runs' => $out]);
     }
 
     public function importView(): void

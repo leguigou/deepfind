@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace DeepFind\Import;
 
 use DeepFind\Db;
-use DeepFind\Settings;
 
 /**
  * Planificateur : lancé chaque minute par le cron système (php bin/console schedule:run).
@@ -46,7 +45,8 @@ final class Scheduler
                 $queued[] = $s['code'] . ' ' . $type . ' #' . $id;
             }
         }
-        Settings::set('scheduler_last_run', $now->format('Y-m-d H:i:s'));
+        $t = $now->format('Y-m-d H:i:s');
+        Db::exec("INSERT INTO settings (name, value) VALUES ('scheduler_last_run', ?) ON DUPLICATE KEY UPDATE value = ?", [$t, $t]);
         return $queued;
     }
 }

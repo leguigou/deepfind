@@ -26,6 +26,13 @@ final class Importer
 
     private array $report = [];
 
+    private int $runId = 0;
+    private string $type = 'full';
+    /** @var array<string,int|string> état d'avancement écrit dans import_runs */
+    private array $prog = [];
+    private float $progAt = 0.0;
+    private int $progLogged = -1;
+
     public function __construct(private readonly MeiliClient $meili, ?callable $logger = null)
     {
         $this->logger = $logger ?? static function (string $m): void {
@@ -56,6 +63,10 @@ final class Importer
         $lockName = 'deepfind_import_' . $source['code'];
         $locked = (int) Db::value('SELECT GET_LOCK(?, 0)', [$lockName]) === 1;
         $this->report = ['rejects' => [], 'reject_samples' => [], 'read' => 0, 'indexed' => 0, 'rejected' => 0, 'skipped' => 0];
+        $this->runId = $runId;
+        $this->type = $type;
+        $this->prog = ['phase' => 'download', 'items_total' => 0, 'bytes_done' => 0, 'bytes_total' => 0, 'tasks_done' => 0, 'tasks_total' => 0];
+        $this->progLogged = -1;
         $start = microtime(true);
         $status = 'success';
         $message = '';
@@ -64,12 +75,22 @@ final class Importer
                 throw new \RuntimeException('Un import est déjà en cours pour cette source.');
             }
             $this->log(sprintf('Import %s de la source %s (%s)', $type, $source['code'], $source['kind']));
-            $file = FeedFetcher::fetch($source, $type);
-            $this->log('Flux : ' . basename($file) . ' (' . round(filesize($file) / 1048576, 1) . ' Mo)');
+            $this->progress('download', [], true);
+            $file = FeedFetcher::fetch($source, $type, function (int $done, int $total): void {
+                $this->progress('download', ['bytes_done' => $done, 'bytes_total' => $total]);
+            });
+            $size = (int) filesize($file);
+            $this->log('Flux : ' . basename($file) . ' (' . round($size / 1048576, 1) . ' Mo)');
             $mapping = json_decode((string) $source['mapping'], true);
             if (!is_array($mapping)) {
                 throw new \RuntimeException('Mapping JSON invalide pour la source ' . $source['code']);
             }
+            // Comptage préalable des éléments (lecture rapide sans décodage) : permet un pourcentage réel.
+            $this->progress('count', ['bytes_done' => $size, 'bytes_total' => $size], true);
+            $itemEl = (string) ($mapping['item_element'] ?? ($source['kind'] === 'posts' ? 'post' : 'product'));
+            $total = XmlItemReader::count($file, [$itemEl]);
+            $this->log(sprintf('%d élément(s) <%s> à traiter', $total, $itemEl));
+            $this->progress('read', ['items_total' => $total], true);
             if ($source['kind'] === 'posts') {
                 if ($type === 'delta') {
                     throw new \RuntimeException('Les articles de blog ne gèrent que l\'import complet.');
@@ -81,6 +102,7 @@ final class Importer
                 $this->deltaProducts($source, $mapping, $file);
             }
             $message = sprintf('%d lus, %d indexés, %d rejetés', $this->report['read'], $this->report['indexed'], $this->report['rejected']);
+            $this->prog['phase'] = 'done';
         } catch (AbortImport $e) {
             $status = 'aborted';
             $message = $e->getMessage();
@@ -94,6 +116,7 @@ final class Importer
             Db::exec('DELETE FROM import_staging WHERE run_id = ?', [$runId]);
         }
         $this->report['duration_s'] = round(microtime(true) - $start, 1);
+        $this->report['memory_peak_mb'] = round(memory_get_peak_usage(true) / 1048576, 1);
         $this->log(strtoupper($status) . ' : ' . $message . ' (' . $this->report['duration_s'] . ' s)');
         Db::update('import_runs', [
             'status' => $status,
@@ -103,6 +126,8 @@ final class Importer
             'items_rejected' => $this->report['rejected'],
             'message' => Text::truncate($message, 2000),
             'report' => Text::json($this->report),
+            'phase' => $status === 'success' ? 'done' : $this->prog['phase'],
+            'progress_at' => date('Y-m-d H:i:s'),
         ], 'id = ?', [$runId]);
         return Db::one('SELECT * FROM import_runs WHERE id = ?', [$runId]) ?? [];
     }
@@ -138,18 +163,20 @@ final class Importer
         if ($mapper->variantMode() === 'nested') {
             foreach (XmlItemReader::items($file, [$mapper->itemElement()]) as [, $el]) {
                 $this->report['read']++;
+                $this->progress('read');
                 $m = $mapper->mapProduct($el);
                 $push($builder->build($m, $m['variants']), (string) ($m['fields']['sku'] ?? ''));
             }
         } else {
             $this->stageFlat($mapper, $file, $runId);
+            $this->progress('group', [], true);
             $this->buildFromStaging($mapper, $builder, $runId, $push);
         }
         if ($batch !== []) {
             $tasks[] = $this->meili->addDocuments($tmp, $batch);
         }
         $this->log('Attente de l\'indexation Meilisearch…');
-        $this->meili->waitTasks($tasks);
+        $this->waitTasks($tasks);
 
         $filterable = [];
         $labels = [];
@@ -185,6 +212,7 @@ final class Importer
         $byKey = $mapper->parentMatch();
         foreach (XmlItemReader::items($file, [$mapper->itemElement()]) as [, $el]) {
             $this->report['read']++;
+            $this->progress('read');
             $m = $mapper->mapProduct($el);
             $parent = trim((string) ($m['fields']['parent_id'] ?? ''));
             $own = trim((string) ($m['fields'][$byKey] ?? ''));
@@ -263,6 +291,7 @@ final class Importer
                 continue;
             }
             $this->report['read']++;
+            $this->progress('read');
             $m = $mapper->mapProduct($el, true);
             $sku = trim((string) ($m['fields']['sku'] ?? ''));
             if ($sku === '') {
@@ -344,7 +373,7 @@ final class Importer
                 $this->report['deleted'] = ($this->report['deleted'] ?? 0) + count($toDelete);
             }
         }
-        $this->meili->waitTasks($tasks);
+        $this->waitTasks($tasks);
         RulesRepository::bumpVersion();
     }
 
@@ -376,6 +405,7 @@ final class Importer
         $batch = [];
         foreach (XmlItemReader::items($file, [$mapper->itemElement()]) as [, $el]) {
             $this->report['read']++;
+            $this->progress('read');
             $f = $mapper->mapPost($el);
             if (isset($f['enabled']) && (int) $f['enabled'] === 0) {
                 $this->report['skipped']++;
@@ -410,12 +440,62 @@ final class Importer
         if ($batch !== []) {
             $tasks[] = $this->meili->addDocuments($tmp, $batch);
         }
-        $this->meili->waitTasks($tasks);
+        $this->waitTasks($tasks);
         $this->swapIfSafe($live, $tmp, IndexSettings::posts($lang, $synonyms));
         RulesRepository::bumpVersion();
     }
 
     // ================================================================== Outils communs
+
+    /** @param list<int> $tasks */
+    private function waitTasks(array $tasks): void
+    {
+        $this->progress('index', ['tasks_done' => 0, 'tasks_total' => count($tasks)], true);
+        foreach ($tasks as $i => $uid) {
+            $this->meili->waitTask($uid, 1800);
+            $this->progress('index', ['tasks_done' => $i + 1]);
+        }
+    }
+
+    /**
+     * Met à jour l'avancement dans import_runs (au plus une fois par seconde, sauf changement d'étape).
+     * Étapes : download, count, read, group, index, swap, done.
+     */
+    private function progress(string $phase, array $values = [], bool $force = false): void
+    {
+        $changed = $phase !== $this->prog['phase'];
+        $this->prog = array_merge($this->prog, $values, ['phase' => $phase]);
+        $total = (int) $this->prog['items_total'];
+        if ($phase === 'read' && $total > 0) {
+            $pct = (int) floor(10 * $this->report['read'] / $total);
+            if ($pct > $this->progLogged) {
+                $this->progLogged = $pct;
+                if ($pct > 0) {
+                    $this->log(sprintf('… lecture %d %% (%d / %d)', $pct * 10, $this->report['read'], $total));
+                }
+            }
+        }
+        $now = microtime(true);
+        if (!$force && !$changed && $now - $this->progAt < 1.0) {
+            return;
+        }
+        $this->progAt = $now;
+        if ($this->runId === 0) {
+            return;
+        }
+        Db::update('import_runs', [
+            'phase' => $phase,
+            'items_total' => $total,
+            'items_read' => $this->report['read'],
+            'items_indexed' => $this->report['indexed'],
+            'items_rejected' => $this->report['rejected'],
+            'bytes_done' => (int) $this->prog['bytes_done'],
+            'bytes_total' => (int) $this->prog['bytes_total'],
+            'tasks_done' => (int) $this->prog['tasks_done'],
+            'tasks_total' => (int) $this->prog['tasks_total'],
+            'progress_at' => date('Y-m-d H:i:s'),
+        ], 'id = ?', [$this->runId]);
+    }
 
     private function prepareTmpIndex(string $tmp, array $settings): void
     {
@@ -429,6 +509,7 @@ final class Importer
     /** Contrôle anti-catastrophe puis bascule atomique de l'index temporaire vers l'index en ligne. */
     private function swapIfSafe(string $live, string $tmp, array $liveSettings): void
     {
+        $this->progress('swap', [], true);
         $newCount = (int) ($this->meili->stats($tmp)['numberOfDocuments'] ?? 0);
         $this->report['index_documents'] = $newCount;
         $liveIndex = $this->meili->getIndex($live);

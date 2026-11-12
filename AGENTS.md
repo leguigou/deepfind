@@ -35,6 +35,7 @@ src/Import/
   FeedInspector.php            analyse d'un flux pour le mapping visuel (chemins, groupes répétés, attributs par code, suggestions)
   FieldCatalog.php             libellés, aides, champs obligatoires et noms usuels des champs internes
   Cron.php, Scheduler.php      expressions cron 5 champs ; planificateur (schedule:run chaque minute → file d'attente)
+  Progress.php                 avancement lisible d'un import (étape, %, temps restant) ; Importer::progress() écrit import_runs ≤ 1×/s
 src/Search/
   SearchRequest.php            validation des paramètres publics
   SearchService.php            UN appel multi-search : principal + injectés (pin/boost) + SKU exact + facettes disjonctives + blog
@@ -46,6 +47,8 @@ src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics,
 src/Http/ApiController.php     /api/v1/search, /api/v1/click, /api/v1/health
 src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
 src/Migrations.php             ajout des colonnes manquantes sur une base existante (appelé par `install`)
+src/CacheVersion.php           version des données (fichier var/cache/data_version) incluse dans TOUTES les clés de cache :
+                               CacheVersion::bump() après import / règle / paramètre ⇒ caches obsolètes partout, immédiatement
 templates/admin/               gabarits PHP (échapper TOUT avec e())
 bin/console                    commandes CLI (install, check, import:run, queue:work, rules:*, logs:purge, key:create)
 deploy/                        vhost Apache, service systemd Meilisearch, Supervisor, crontab
@@ -63,6 +66,8 @@ tests/                         run.sh (unitaires + intégration), run.php, fake-
 6. **Widget** : créez les éléments avec `textContent` ; les URL passent par `safeUrl()` (http/https uniquement). Pas de `innerHTML` avec des données du flux.
 7. **Les valeurs de filtre Meilisearch** passent toujours par `Search\Filter` ; les codes d'attributs, par `Mapper::code()`.
 8. **Les secrets** (`.env`, clés Meilisearch, jeton d'administration) ne vont ni dans le dépôt, ni dans les journaux, ni dans les réponses.
+
+9. **Toute modification de données visibles dans la recherche** (import, règle, synonyme, paramètre) doit appeler `CacheVersion::bump()` (directement, ou via `RulesRepository::bumpVersion()` ou `Settings::set()`). Toute nouvelle clé de cache dont le contenu dépend des données doit inclure `CacheVersion::get()`.
 
 ## Conventions
 

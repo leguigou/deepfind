@@ -340,6 +340,43 @@ Le résultat est enregistré dans le mapping JSON de la source, qui reste modifi
 
 ## 6. Utiliser l'extranet
 
+### Lancer un import manuellement et suivre son avancement
+
+![Suivi d'un import](docs/screenshots/12-import-termine.png)
+
+**Depuis l'extranet :** **Flux & mapping** › bouton **« Import complet »** (ou **« Delta »**) sur la ligne du flux.
+- L'import est mis en file d'attente puis traité **en arrière-plan** par le worker (Supervisor), ou par la tâche cron `schedule:run --work` sans Supervisor. Vous arrivez directement sur sa **page de suivi**, qui se met à jour toute seule toutes les 2 secondes. Vous pouvez la quitter : l'import continue.
+- **Étapes affichées** : téléchargement (Mo reçus / Mo total), comptage des éléments du flux, lecture (`12 000 / 40 000 éléments`), regroupement parents/enfants (flux à plat), indexation dans Meilisearch (lots traités), bascule.
+- Vous voyez aussi le pourcentage global, le temps écoulé et le **temps restant estimé**. La liste **Imports** affiche une barre de progression pour chaque import en cours.
+- **Résultats immédiats** : dès la bascule, la recherche sur le site renvoie les nouveaux résultats. Tous les caches sont invalidés automatiquement (voir « Cache » ci-dessous).
+
+**En ligne de commande** (affiche la progression par tranche de 10 %) :
+
+```bash
+php bin/console import:run --source=produits_fr
+```
+
+**Flux volumineux :** le fichier est téléchargé sur disque, puis lu au fil de l'eau. La mémoire reste constante quelle que soit sa taille.
+- Mesure en test (environ 15 000 produits avec variantes) : **20 Mo de mémoire** pour un flux de **40 Mo**, comptage préalable en moins d'une seconde.
+- La durée totale dépend surtout de l'indexation par Meilisearch, à mesurer sur votre VM.
+- Le rapport d'import (**Imports › détail**) indique la durée et la mémoire maximale utilisée.
+
+### Cache
+
+![Cache](docs/screenshots/10-cache.png)
+
+- Les réponses de recherche sont gardées **30 secondes** par défaut (Paramètres › « Cache des réponses », 0 = désactivé), pour absorber les recherches identiques et les rafales.
+- Les règles, paramètres, clés et l'existence des index sont aussi mis en cache.
+- **Invalidation automatique** : un numéro de version des données change après **chaque import, modification de règle, de synonyme ou de paramètre**. Toutes les entrées en cache deviennent alors obsolètes **instantanément**, y compris celles du serveur web qu'un import lancé en ligne de commande ne peut pas vider lui-même. Le numéro est stocké dans le fichier `var/cache/data_version`, que le serveur web et la ligne de commande doivent pouvoir écrire (utilisateur `www-data`).
+- **Page « Cache »** :
+  - stockage utilisé (APCu, Redis ou MySQL) ;
+  - nombre d'entrées et place occupée, au total et par catégorie (résultats, règles, paramètres, compteurs anti-robots…) ;
+  - mémoire APCu ou Redis utilisée et disponible ;
+  - taux de succès du cache.
+- **Boutons de purge** :
+  - « Vider le cache des résultats » ;
+  - « Vider tous les caches ». Les compteurs anti-robots et les blocages sont conservés, sinon les robots repartiraient de zéro.
+
 ### Planification des imports
 
 Dans la fiche de chaque flux (**Flux & mapping › nom du flux**), section « Planification des imports » :

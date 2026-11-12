@@ -39,8 +39,7 @@ final class SettingsController
                 Settings::set($name, $v);
             }
         }
-        Store::get()->delete('settings');
-        Auth::flash('ok', 'Paramètres enregistrés (pris en compte sous 1 minute).');
+        Auth::flash('ok', 'Paramètres enregistrés (pris en compte immédiatement).');
         App::back('/admin/settings');
     }
 }

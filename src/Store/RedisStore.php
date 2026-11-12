@@ -53,4 +53,41 @@ final class RedisStore implements KvStore
     {
         return 'redis';
     }
+
+    public function stats(): array
+    {
+        $cats = [];
+        $it = null;
+        $this->redis->setOption(\Redis::OPT_SCAN, \Redis::SCAN_RETRY);
+        while (($keys = $this->redis->scan($it, $this->prefix . '*', 500)) !== false) {
+            foreach ($keys as $k) {
+                $cat = strstr(substr($k, strlen($this->prefix)), ':', true) ?: 'autre';
+                $cats[$cat]['entries'] = ($cats[$cat]['entries'] ?? 0) + 1;
+                $cats[$cat]['bytes'] = ($cats[$cat]['bytes'] ?? 0) + (int) $this->redis->strlen($k);
+            }
+        }
+        $info = $this->redis->info('memory');
+        $stats = $this->redis->info('stats');
+        return [
+            'categories' => $cats,
+            'memory' => isset($info['used_memory']) ? ['used' => (int) $info['used_memory'], 'total' => (int) ($info['maxmemory'] ?? 0)] : null,
+            'hits' => isset($stats['keyspace_hits']) ? (int) $stats['keyspace_hits'] : null,
+            'misses' => isset($stats['keyspace_misses']) ? (int) $stats['keyspace_misses'] : null,
+        ];
+    }
+
+    public function purge(array $prefixes): int
+    {
+        $n = 0;
+        $this->redis->setOption(\Redis::OPT_SCAN, \Redis::SCAN_RETRY);
+        foreach ($prefixes as $p) {
+            $it = null;
+            while (($keys = $this->redis->scan($it, $this->prefix . $p . '*', 500)) !== false) {
+                if ($keys !== []) {
+                    $n += (int) $this->redis->del($keys);
+                }
+            }
+        }
+        return $n;
+    }
 }

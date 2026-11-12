@@ -80,14 +80,15 @@ final class Settings
             return self::$cache;
         }
         $store = Store::get();
-        $cached = PHP_SAPI === 'cli' ? null : $store->get('settings');
+        $key = 'settings:' . CacheVersion::get();
+        $cached = PHP_SAPI === 'cli' ? null : $store->get($key);
         if (!is_array($cached)) {
             $cached = self::DEFAULTS;
             foreach (Db::all('SELECT name, value FROM settings') as $row) {
                 $cached[$row['name']] = (string) $row['value'];
             }
             if (PHP_SAPI !== 'cli') {
-                $store->set('settings', $cached, 60);
+                $store->set($key, $cached, 60);
             }
         }
         return self::$cache = $cached;
@@ -124,6 +125,7 @@ final class Settings
     public static function flush(): void
     {
         self::$cache = null;
-        Store::get()->delete('settings');
+        // Nouvelle version : les paramètres et les réponses en cache sont relus immédiatement partout.
+        CacheVersion::bump();
     }
 }

@@ -19,4 +19,13 @@ interface KvStore
     public function delete(string $key): void;
 
     public function name(): string;
+
+    /**
+     * Statistiques par catégorie de clé (premier segment avant « : »).
+     * @return array{categories: array<string, array{entries:int, bytes:int}>, memory: ?array{used:int, total:int}, hits: ?int, misses: ?int}
+     */
+    public function stats(): array;
+
+    /** Supprime les clés commençant par l'un des préfixes ; retourne le nombre de clés supprimées. */
+    public function purge(array $prefixes): int;
 }

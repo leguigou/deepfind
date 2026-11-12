@@ -96,6 +96,28 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.goto(BASE + '/admin/sources/test?id=1');
   check('mapping visuel : test du résultat sans rejet', !(await page.textContent('body')).includes('Rejeté'));
 
+  // Cache : visibilité et purge
+  await page.goto(BASE + '/admin/cache');
+  check('cache : page affichée', (await page.textContent('body')).includes('Résultats en cache'));
+  await page.screenshot({ path: OUT + '/10-cache.png', fullPage: false });
+  page.once('dialog', (d) => d.accept());
+  await page.click('form[action$="/admin/cache/purge"] button.btn >> nth=0');
+  check('cache : purge', (await page.textContent('body')).includes('entrée(s) supprimée(s)'));
+
+  // Import manuel suivi en direct (le worker est lancé par le script de test)
+  await page.goto(BASE + '/admin/sources');
+  page.once('dialog', (d) => d.accept());
+  await page.click('form[action$="/admin/sources/import"] button >> nth=0');
+  check('import : page de suivi ouverte', page.url().includes('/admin/imports/view'));
+  check('import : barre de progression', (await page.$$('.prog-big .prog-bar')).length === 1);
+  await page.screenshot({ path: OUT + '/11-import-en-attente.png', fullPage: false });
+  if (process.env.E2E_WORKER === '1') {
+    await page.waitForFunction(() => /Terminé/.test(document.querySelector('.prog-big [data-f="label"]').textContent), null, { timeout: 60000 });
+    await page.waitForSelector('.cards .badge-ok', { timeout: 15000 });
+    check('import : terminé et page actualisée', (await page.textContent('.prog-big')).includes('100') && (await page.textContent('.cards')).includes('Réussi'));
+    await page.screenshot({ path: OUT + '/12-import-termine.png', fullPage: false });
+  }
+
   // Widget sur la page de démo
   await page.goto(BASE + '/admin/demo');
   await page.fill('#search', 'palme');

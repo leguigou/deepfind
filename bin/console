@@ -147,7 +147,7 @@ try {
 
         case 'logs:purge':
             $res = SearchLogger::purge();
-            $res['kv_store'] = MysqlStore::purge();
+            $res['kv_store'] = MysqlStore::purgeExpired();
             foreach ($res as $t => $n) {
                 $out("$t : $n ligne(s) supprimée(s)");
             }

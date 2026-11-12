@@ -85,22 +85,15 @@ final class RulesRepository
     }
 
     /** Numéro de version des règles : change à chaque modification (invalide les caches). */
+    /** Version des données : voir CacheVersion (change après chaque import ou modification de règle). */
     public static function version(): string
     {
-        $store = Store::get();
-        $v = $store->get('rules_version');
-        if ($v === null) {
-            $v = (string) (Db::value("SELECT value FROM settings WHERE name = 'rules_version'") ?? '1');
-            $store->set('rules_version', $v, 60);
-        }
-        return (string) $v;
+        return \DeepFind\CacheVersion::get();
     }
 
     public static function bumpVersion(): void
     {
-        $v = (string) time();
-        Db::exec("INSERT INTO settings (name, value) VALUES ('rules_version', ?) ON DUPLICATE KEY UPDATE value = ?", [$v, $v]);
-        Store::get()->set('rules_version', $v, 60);
+        \DeepFind\CacheVersion::bump();
     }
 
     // ------------------------------------------------------------------ Import CSV

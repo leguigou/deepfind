@@ -12,14 +12,15 @@ use DeepFind\Config;
 final class FeedFetcher
 {
     /** @param array<string,mixed> $source */
-    public static function fetch(array $source, string $type): string
+    /** @param (callable(int $done, int $total): void)|null $progress */
+    public static function fetch(array $source, string $type, ?callable $progress = null): string
     {
         $url = trim((string) ($type === 'delta' ? ($source['delta_url'] ?? '') : ($source['url'] ?? '')));
         if ($url === '') {
             throw new \RuntimeException('Aucune URL de flux ' . $type . ' configurée pour la source ' . $source['code']);
         }
         if (preg_match('#^https?://#i', $url)) {
-            return self::download($url, (string) ($source['auth_header'] ?? ''), self::cachePath($source['code'], $type));
+            return self::download($url, (string) ($source['auth_header'] ?? ''), self::cachePath($source['code'], $type), $progress);
         }
         return self::local($url);
     }
@@ -61,7 +62,7 @@ final class FeedFetcher
         throw new \RuntimeException('Chemin local non autorisé (voir FEED_LOCAL_DIRS) : ' . $path);
     }
 
-    private static function download(string $url, string $authHeader, string $target): string
+    private static function download(string $url, string $authHeader, string $target, ?callable $progress = null): string
     {
         $tmp = $target . '.part';
         $fh = fopen($tmp, 'wb');
@@ -82,6 +83,13 @@ final class FeedFetcher
             CURLOPT_USERAGENT => 'DeepFind-Importer/1.0',
             CURLOPT_ENCODING => '',
         ]);
+        if ($progress !== null) {
+            curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+            curl_setopt($ch, CURLOPT_XFERINFOFUNCTION, static function ($c, $dlTotal, $dlNow) use ($progress): int {
+                $progress((int) $dlNow, (int) $dlTotal);
+                return 0;
+            });
+        }
         $ok = curl_exec($ch);
         $err = curl_error($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
