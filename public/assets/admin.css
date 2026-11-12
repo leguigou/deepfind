@@ -24,6 +24,7 @@
   --blur: blur(14px);
   --bar-bg: rgba(23, 10, 54, .88);
   --toggle-off: rgba(255, 255, 255, .22);
+  --control-border: rgba(255, 255, 255, .35);
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -51,6 +52,7 @@
   --blur: none;
   --bar-bg: rgba(255, 255, 255, .94);
   --toggle-off: #cfc6e3;
+  --control-border: #b3a7d1;
   color-scheme: light;
 }
 
@@ -272,7 +274,6 @@ button.link { background: none; border: 0; color: var(--link); cursor: pointer; 
 .form label.choice, label.choice { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; margin: 0 0 8px; border-radius: 12px;
   border: 1px solid var(--border); cursor: pointer; font-weight: 400; }
 label.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
-label.choice input { margin-top: 3px; width: 16px; height: 16px; }
 .choice-text { display: flex; flex-direction: column; gap: 2px; }
 .toggle-block { display: flex !important; margin: 6px 0 12px !important; }
 
@@ -305,3 +306,34 @@ td > .toggle { vertical-align: middle; }
 .toggle-thumb { background: #fff; }
 .dim .toggle { opacity: 1; }
 tr.dim td:last-child { opacity: 1; }
+
+/* ---------- Boutons radio personnalisés (plus grands, couleurs du thème) */
+input[type=radio] {
+  -webkit-appearance: none; appearance: none; flex: 0 0 22px; width: 22px; height: 22px; margin: 0; padding: 0;
+  display: inline-grid; place-content: center; border-radius: 50%; border: 2px solid var(--control-border);
+  background: var(--input-bg); cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s;
+}
+input[type=radio]::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: scale(0); transition: transform .15s ease;
+}
+input[type=radio]:hover { border-color: var(--accent); }
+input[type=radio]:checked { border-color: transparent; background: var(--accent-grad); box-shadow: 0 0 0 4px var(--accent-soft); }
+input[type=radio]:checked::before { transform: scale(1); }
+input[type=radio]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.form label.choice, label.choice {
+  display: flex !important; flex-direction: row; align-items: flex-start; gap: 14px; width: 100%;
+  padding: 14px 16px; margin: 0 0 10px; border-radius: 14px; border: 1px solid var(--border);
+  background: var(--surface); cursor: pointer; font-weight: 400; transition: border-color .15s, background .15s;
+}
+label.choice:hover { border-color: var(--accent); }
+label.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+label.choice input[type=radio] { margin-top: 1px; width: 22px; height: 22px; min-width: 22px; }
+.choice-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.choice-text strong { font-size: 14.5px; }
+.choice-text small { font-size: 12.5px; line-height: 1.45; }
+.toggle { position: relative; }
+/* Aperçu interne : tableau large défilable horizontalement, colonne produit lisible */
+.pv-grid > .table { display: block; overflow-x: auto; }
+.pv-grid > .table td:nth-child(3) { min-width: 240px; }
+.pv-grid > .table th, .pv-grid > .table td.num { white-space: nowrap; }

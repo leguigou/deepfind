@@ -5,8 +5,8 @@
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
   <label>Marge min. (0 à 1) <input name="margin_min" value="<?= e($p['margin_min'] ?? '') ?>" size="6" placeholder="0.3"></label>
-  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="in_stock" value="1" <?= !empty($p['in_stock']) ? 'checked' : '' ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">> En stock</span></label>
-  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="on_sale" value="1" <?= !empty($p['on_sale']) ? 'checked' : '' ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">> En promotion</span></label>
+  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="in_stock" value="1" <?= !empty($p['in_stock']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">En stock</span></label>
+  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="on_sale" value="1" <?= !empty($p['on_sale']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">En promotion</span></label>
   <button class="btn">Rechercher</button>
 </form>
 <?php if ($error): ?><div class="flash flash-error"><?= e($error) ?></div><?php endif; ?>

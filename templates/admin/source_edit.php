@@ -18,7 +18,7 @@
   <label>En-têtes HTTP d'authentification (un par ligne), facultatif
     <textarea name="auth_header" rows="2" placeholder="Authorization: Bearer xxxxx"><?= e($source['auth_header']) ?></textarea>
     <small class="muted">Le flux contient des données confidentielles (marge) : protégez son URL côté Magento (jeton, filtrage IP).</small></label>
-  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="active" <?= $source['active'] ? 'checked' : '' ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">> Source active (les imports planifiés ne tournent que si la source est active)</span></label>
+  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="active" <?= $source['active'] ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Source active (les imports planifiés ne tournent que si la source est active)</span></label>
 
   <fieldset class="card">
     <legend>Planification des imports</legend>

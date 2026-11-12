@@ -118,7 +118,7 @@ $tableHead = '<thead><tr><th>Champ DeepFind</th><th></th><th>Champ détecté dan
         <p class="muted">Codes à proposer comme filtres (en plus de ceux marqués filtrables dans le flux) :</p>
         <div class="code-checks">
           <?php foreach ($state['codes'] as $c): ?>
-            <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="<?= e($prefix) ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">[filterable_codes][]" value="<?= e($c) ?>" <?= in_array(\DeepFind\Import\Mapper::code($c), $state['filterable_codes'], true) ? 'checked' : '' ?>> <?= e($c) ?></span></label>
+            <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="<?= e($prefix) ?>[filterable_codes][]" value="<?= e($c) ?>" <?= in_array(\DeepFind\Import\Mapper::code($c), $state['filterable_codes'], true) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text"><?= e($c) ?></span></label>
           <?php endforeach; ?>
         </div>
         <?php endif; ?>

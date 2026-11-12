@@ -2,8 +2,8 @@
   <label>Contient <input name="q" value="<?= e($f['q']) ?>"></label>
   <label>Empreinte IP <input name="ip" value="<?= e($f['ip']) ?>" size="18" pattern="[a-f0-9]{16}"></label>
   <label>Période <select name="days"><?php foreach ([1 => '24 h', 7 => '7 j', 30 => '30 j', 90 => '90 j', 400 => 'Tout'] as $d => $l): ?><option value="<?= $d ?>" <?= (string) $f['days'] === (string) $d ? 'selected' : '' ?>><?= $l ?></option><?php endforeach; ?></select></label>
-  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="zero" value="1" <?= $f['zero'] ? 'checked' : '' ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">> Sans résultat</span></label>
-  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="all" value="1" <?= $f['all'] ? 'checked' : '' ?><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">> Inclure la saisie intermédiaire</span></label>
+  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="zero" value="1" <?= $f['zero'] ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Sans résultat</span></label>
+  <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="all" value="1" <?= $f['all'] ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Inclure la saisie intermédiaire</span></label>
   <button class="btn">Filtrer</button>
   <a class="btn btn-light" href="<?= e(url('/admin/logs/export', $f)) ?>">Exporter CSV</a>
 </form>

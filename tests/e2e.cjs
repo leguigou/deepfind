@@ -37,8 +37,12 @@ fs.mkdirSync(OUT, { recursive: true });
     const resp = await page.goto(BASE + p);
     const txt = await page.textContent('body');
     check('page ' + p, resp.status() === 200 && !/Fatal error|Warning:|Notice:|Deprecated:/.test(txt));
+    // Interrupteurs bien formés (case + piste dans le même libellé, aucun « > » parasite)
+    const badToggles = await page.$$eval('label.toggle', (ls) => ls.filter((l) => !l.querySelector('input[role=switch]') || !l.querySelector('.toggle-track') || /^\s*>/.test(l.textContent)).length);
+    if (badToggles > 0) { check('interrupteurs bien formés sur ' + p, false); }
   }
   await page.goto(BASE + '/admin/preview?q=palme');
+  check('aperçu : interrupteurs de filtre lisibles', (await page.textContent('form.card')).includes('En stock') && !(await page.textContent('form.card')).includes('> En stock'));
   await page.screenshot({ path: OUT + '/02-apercu-interne.png', fullPage: false });
   check('aperçu : produit épinglé en 1er', (await page.textContent('table.table tbody tr:first-child')).includes('C4-PREDATOR'));
 

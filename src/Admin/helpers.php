@@ -94,3 +94,10 @@ function logo_svg(int $size = 28, string $class = 'brand-mark'): string
         . '<circle cx="13.5" cy="13.5" r="2.4" fill="url(#' . $id . ')"/>'
         . '<path d="M21.2 21.2 27.6 27.6" stroke="url(#' . $id . ')" stroke-width="4.2" stroke-linecap="round"/></svg>';
 }
+
+/** URL d'un fichier de public/ avec sa date de modification en version (?v=…) : le navigateur recharge après chaque mise à jour. */
+function asset(string $path): string
+{
+    $file = APP_ROOT . '/public' . $path;
+    return url($path) . '?v=' . (is_file($file) ? filemtime($file) : '1');
+}

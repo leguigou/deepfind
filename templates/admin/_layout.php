@@ -29,8 +29,8 @@ $nav = [
 <link rel="icon" href="<?= e(url('/favicon.svg')) ?>" type="image/svg+xml">
 <link rel="icon" href="<?= e(url('/favicon-32.png')) ?>" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="<?= e(url('/apple-touch-icon.png')) ?>">
-<link rel="stylesheet" href="<?= e(url('/assets/admin.css')) ?>?v=3">
-<script src="<?= e(url('/assets/admin.js')) ?>?v=3"></script>
+<link rel="stylesheet" href="<?= e(asset('/assets/admin.css')) ?>">
+<script src="<?= e(asset('/assets/admin.js')) ?>"></script>
 </head>
 <body>
 <div class="shell">
