@@ -337,3 +337,22 @@ label.choice input[type=radio] { margin-top: 1px; width: 22px; height: 22px; min
 .pv-grid > .table { display: block; overflow-x: auto; }
 .pv-grid > .table td:nth-child(3) { min-width: 240px; }
 .pv-grid > .table th, .pv-grid > .table td.num { white-space: nowrap; }
+
+/* Aperçu : boost et épinglage en ligne */
+.inline-boost { margin: 0; }
+.inline-boost select, td.actions select { width: auto; display: inline-block; margin: 0; padding: 4px 8px; font-size: 13px; }
+.inline-boost select.boost-up { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+.inline-boost select.boost-down { border-color: var(--ko); color: var(--ko); font-weight: 700; }
+td.actions form { display: inline-flex; gap: 4px; align-items: center; }
+
+/* Aperçu : actions sous le nom du produit (pas de défilement horizontal) */
+.pv-grid { grid-template-columns: 220px minmax(0, 1fr); }
+.pv-product { min-width: 280px; }
+.pv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; }
+.pv-actions form { display: inline-flex; gap: 4px; align-items: center; margin: 0; }
+.pv-actions select { width: auto; display: inline-block; margin: 0; padding: 3px 6px; font-size: 12.5px; }
+.pv-label { font-size: 12px; color: var(--muted); }
+.pv-grid > .table td:nth-child(3) { min-width: 280px; }
+.pv-product, .pv-grid > .table td:nth-child(3) { min-width: 240px; }
+.pv-grid > .table th, .pv-grid > .table td { padding-left: 8px; padding-right: 8px; }
+.pv-grid > .table th { white-space: normal; }

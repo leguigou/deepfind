@@ -51,6 +51,67 @@ final class Relevance
         return max(0.0, min(0.99, Settings::float('min_relevance')));
     }
 
+    /** Poids du bonus « mot recherché au début du nom » (0 = désactivé). */
+    public static function namePositionWeight(): float
+    {
+        return max(0.0, min(5.0, Settings::float('name_position_weight')));
+    }
+
+    /** Nombre de premiers résultats réordonnés par DeepFind (bonus de position dans le nom). */
+    public static function rerankWindow(): int
+    {
+        return max(20, min(300, Settings::int('rerank_window')));
+    }
+
+    /** @return list<string> mots significatifs (minuscules, sans accents, sans mots vides) */
+    public static function words(string $text, string $lang): array
+    {
+        $stop = array_flip(IndexSettings::stopWords($lang));
+        $out = [];
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', \DeepFind\Text::normalize($text, 300)) ?: [] as $w) {
+            if ($w !== '' && !isset($stop[$w]) && mb_strlen($w) >= 2) {
+                $out[] = $w;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Bonus de 0 à 1 : pour chaque mot de la recherche trouvé dans le nom, 1 s'il est en 1re position,
+     * 1/2 en 2e, 1/3 en 3e… ; moyenne sur les mots de la recherche.
+     * « pompe paddle » : « Pompe électrique … » → 0,5 ; « Pack Paddle … Pompe … » → (1/2 + 1/9) / 2 ≈ 0,31.
+     */
+    public static function namePositionBonus(array $queryWords, string $name, string $lang): float
+    {
+        if ($queryWords === []) {
+            return 0.0;
+        }
+        $tokens = self::words($name, $lang);
+        $sum = 0.0;
+        foreach ($queryWords as $q) {
+            foreach ($tokens as $pos => $t) {
+                if (self::sameWord($q, $t)) {
+                    $sum += 1 / ($pos + 1);
+                    break;
+                }
+            }
+        }
+        return $sum / count($queryWords);
+    }
+
+    /** Même mot à quelques lettres près : pluriel, début de mot tapé, une faute de frappe sur les mots longs. */
+    private static function sameWord(string $q, string $t): bool
+    {
+        if ($q === $t || str_starts_with($t, $q)) {
+            return true;
+        }
+        $lq = strlen($q);
+        if ($lq >= 4 && strlen($t) >= 4 && (str_starts_with($q, $t) || substr($q, 0, $lq - 1) === substr($t, 0, $lq - 1))) {
+            return true;
+        }
+        return $lq >= 5 && abs($lq - strlen($t)) <= 1 && levenshtein($q, $t) <= 1;
+    }
+
     /** @return list<array{field:string, enabled:bool}> */
     public static function fields(): array
     {

@@ -58,6 +58,8 @@ final class RelevanceController
         $mm = (string) ($_POST['matching_mode'] ?? 'exact_then_approx');
         Settings::set('matching_mode', isset(Relevance::MATCHING[$mm]) ? $mm : 'exact_then_approx');
         Settings::set('min_relevance', (string) max(0, min(0.99, (float) str_replace(',', '.', (string) ($_POST['min_relevance'] ?? '0')))));
+        Settings::set('name_position_weight', (string) max(0, min(5, (float) str_replace(',', '.', (string) ($_POST['name_position_weight'] ?? '0.5')))));
+        Settings::set('rerank_window', (string) max(20, min(300, (int) ($_POST['rerank_window'] ?? 100))));
 
         // 3. Poids (pris en compte au prochain import complet)
         $weightsChanged = false;

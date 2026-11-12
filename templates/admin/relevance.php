@@ -63,6 +63,17 @@ $radios = static function (string $name, array $options, string $current): void 
     </tbody>
   </table>
   <div class="card">
+    <div class="grid4">
+      <label>Bonus « mot recherché au début du nom »
+        <input name="name_position_weight" value="<?= $w('name_position_weight') ?>" inputmode="decimal">
+        <small class="muted">0 = désactivé, 0,5 recommandé, 1 = fort. Un mot de la recherche en 1re position du nom vaut 1, en 2e 1/2, en 3e 1/3…
+          Ex. « pompe paddle » : « Pompe électrique… » passe devant « Pack Paddle … (Pompe…) ».</small>
+      </label>
+      <label>Résultats réordonnés
+        <input name="rerank_window" value="<?= $w('rerank_window') ?>" inputmode="numeric">
+        <small class="muted">Le bonus s'applique aux N premiers résultats (100 = 5 pages du widget).</small>
+      </label>
+    </div>
     <?php $toggle('attribute_first', ($values['attribute_first'] ?? '0') === '1', 'Priorité au champ où le mot est trouvé',
         'Un produit dont le NOM contient le mot passe devant un produit qui ne le contient que dans sa description, même avec moins de fautes de frappe. Recommandé si des produits « hors sujet » remontent à cause de leur description.'); ?>
   </div>

@@ -47,13 +47,18 @@ final class BoostsController
             App::back('/admin/boosts');
             return;
         }
+        $boost = (int) ($_POST['boost'] ?? 0);
         foreach ($skus as $sku) {
-            Boosts::save($lang, $sku, (int) ($_POST['boost'] ?? 0), (string) ($_POST['starts_at'] ?? ''), (string) ($_POST['ends_at'] ?? ''), (string) ($_POST['note'] ?? ''));
+            if ($boost === 0) {
+                Db::exec('DELETE FROM product_boosts WHERE lang = ? AND sku = ?', [$lang, $sku]);
+            } else {
+                Boosts::save($lang, $sku, $boost, (string) ($_POST['starts_at'] ?? ''), (string) ($_POST['ends_at'] ?? ''), (string) ($_POST['note'] ?? ''));
+            }
         }
         [$found, $missing] = self::apply($lang, $skus);
-        Auth::flash($missing ? 'warn' : 'ok', sprintf('Boost enregistré : %d produit(s) mis à jour dans le moteur.', $found)
+        Auth::flash($missing ? 'warn' : 'ok', ($boost === 0 ? 'Boost retiré' : sprintf('Boost %+d enregistré', $boost)) . sprintf(' : %d produit(s) mis à jour dans le moteur.', $found)
             . ($missing ? ' Introuvable(s) dans l\'index : ' . implode(', ', $missing) . ' (appliqué au prochain import).' : ''));
-        App::back('/admin/boosts');
+        App::backTo('/admin/boosts');
     }
 
     public function delete(): void

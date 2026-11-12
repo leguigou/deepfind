@@ -1,6 +1,7 @@
 <?php $sorts = ['relevance' => 'Pertinence', 'price_asc' => 'Prix croissant', 'price_desc' => 'Prix décroissant', 'newest' => 'Nouveautés',
     'margin_desc' => 'Rentabilité (marge)', 'popularity_desc' => 'Ventes 30 j', 'score_desc' => 'Score métier']; ?>
-<p class="muted">Vue réservée à l'équipe : marge, score métier et règles appliquées sont visibles ici mais <strong>jamais envoyés au site public</strong>.</p>
+<p class="muted">Vue réservée à l'équipe : marge, score métier et règles appliquées sont visibles ici mais <strong>jamais envoyés au site public</strong>.
+  <strong>Boost permanent</strong> : fait monter (ou descendre) le produit sur toutes les recherches. <strong>Épingler</strong> : impose une position pour cette recherche uniquement. Effet immédiat, la page se recharge sur la même recherche.</p>
 <form method="get" class="card form inline">
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
@@ -25,24 +26,46 @@
         <?php if (!$result['posts']): ?><li class="muted">Aucun</li><?php endif; ?></ul>
     </aside>
     <table class="table compact">
-      <thead><tr><th>#</th><th></th><th>Produit</th><th>SKU</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num">Ventes 30 j</th><th class="num">Clics 30 j</th><th class="num">Boost</th><th class="num">Pertinence</th><th class="num">Score</th><th>Règle</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j / clics 30 j">Ventes / clics</th><th class="num" title="Pertinence du moteur + bonus « mot au début du nom »">Pertinence</th><th class="num">Score métier</th></tr></thead>
       <tbody>
       <?php foreach ($result['products'] as $i => $pr): ?>
         <tr class="<?= $pr['in_stock'] ? '' : 'dim' ?>">
           <td><?= $i + 1 ?></td>
           <td><?php if ($pr['image']): ?><img class="pv-thumb" src="<?= e($pr['image']) ?>" alt="" loading="lazy"><?php endif; ?></td>
-          <td><a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span></td>
-          <td><code><?= e($pr['sku']) ?></code><?= !empty($pr['matched_variant']) ? '<br><small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?></td>
+          <td class="pv-product">
+            <a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code><?= !empty($pr['matched_variant']) ? ' <small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?>
+            <div class="pv-actions">
+              <span class="pv-label">Boost permanent</span>
+              <?php $cur = $adminBoosts[mb_strtoupper($pr['sku'], 'UTF-8')] ?? 0; ?>
+            <form method="post" action="<?= e(url('/admin/boosts/save')) ?>" class="inline-boost">
+              <?= csrf_field() ?><input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
+              <select name="boost" data-autosubmit aria-label="Boost permanent de <?= e($pr['sku']) ?>" class="<?= $cur > 0 ? 'boost-up' : ($cur < 0 ? 'boost-down' : '') ?>">
+                <?php for ($b = 10; $b >= -10; $b--): ?><option value="<?= $b ?>" <?= $b === $cur ? 'selected' : '' ?>><?= $b === 0 ? 'Aucun' : sprintf('%+d', $b) ?></option><?php endfor; ?>
+              </select>
+              <noscript><button class="btn btn-sm">OK</button></noscript>
+            </form>
+              <?php $pin = $pins[mb_strtoupper($pr['sku'], 'UTF-8')] ?? null; ?>
+            <?php if ($pin): ?>
+              <form method="post" action="<?= e(url('/admin/rules/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $pin['id'] ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
+                <button class="btn btn-sm btn-light" title="Épinglé en position <?= (int) $pin['position'] ?>">📌 <?= (int) $pin['position'] ?> · retirer</button></form>
+            <?php elseif (($p['q'] ?? '') !== ''): ?>
+              <form method="post" action="<?= e(url('/admin/rules/add')) ?>"><?= csrf_field() ?>
+                <input type="hidden" name="query" value="<?= e($p['q']) ?>"><input type="hidden" name="sku" value="<?= e($pr['sku']) ?>">
+                <input type="hidden" name="action" value="pin"><input type="hidden" name="back" value="<?= e($back) ?>">
+                <select name="position" aria-label="Position"><?php for ($pp = 1; $pp <= 10; $pp++): ?><option value="<?= $pp ?>"><?= $pp ?>e</option><?php endfor; ?></select>
+                <button class="btn btn-sm btn-light" title="Afficher ce produit à cette position pour cette recherche">Épingler</button></form>
+            <?php endif; ?>
+            <?= !empty($pr['exact_match']) ? '<span class="badge badge-info">SKU exact</span>' : '' ?>
+            </div>
+          </td>
           <td class="num"><?= $pr['has_price_range'] ? 'dès ' : '' ?><?= fmt_n($pr['final_price'], 2) ?> €<?= $pr['on_sale'] ? '<br><s class="muted">' . fmt_n($pr['price'], 2) . ' €</s> -' . (int) $pr['discount_percent'] . ' %' : '' ?></td>
           <td><?= $pr['in_stock'] ? '<span class="badge badge-ok">' . (int) ($pr['salable_qty'] ?? 0) . '</span>' : '<span class="badge badge-ko">rupture</span>' ?></td>
           <td class="num"><?= fmt_n(100 * (float) ($pr['margin_rate'] ?? 0), 1) ?> %</td>
-          <td class="num"><?= fmt_n($pr['sales_30d'] ?? 0) ?></td>
-          <td class="num"><?= fmt_n($pr['clicks_30d'] ?? 0) ?></td>
-          <td class="num"><?= (int) ($pr['boost_total'] ?? 0) !== 0 ? sprintf('%+d', (int) $pr['boost_total']) : '—' ?></td>
-          <td class="num" title="Score de pertinence texte du moteur (0 à 1)"><?= isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—' ?></td>
-          <td class="num"><?= fmt_n($pr['biz_score'] ?? 0, 1) ?></td>
-          <td><?= !empty($pr['exact_match']) ? '<span class="badge badge-info">SKU exact</span>' : '' ?><?= isset($pr['rule']) ? '<span class="badge badge-warn">' . e($pr['rule']) . '</span>' : '' ?></td>
-          <td><a class="btn btn-sm btn-light" href="<?= e(url('/admin/boosts', ['sku' => $pr['sku']])) ?>">Booster</a></td>
+          <td class="num"><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($pr['clicks_30d'] ?? 0) ?></td>
+          <td class="num" title="Moteur <?= isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—' ?> + début du nom <?= isset($pr['name_position']) ? fmt_n($pr['name_position'], 2) : '—' ?>">
+            <?= isset($pr['final_score']) ? fmt_n($pr['final_score'], 2) : (isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—') ?>
+            <?php if (isset($pr['name_position'])): ?><br><small class="muted">début nom <?= fmt_n($pr['name_position'], 2) ?></small><?php endif; ?></td>
+          <td class="num"><?= fmt_n($pr['biz_score'] ?? 0, 1) ?><?= (int) ($pr['boost_total'] ?? 0) !== 0 ? '<br><small class="muted">boost ' . sprintf('%+d', (int) $pr['boost_total']) . '</small>' : '' ?></td>
         </tr>
       <?php endforeach; ?>
       </tbody>

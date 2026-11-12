@@ -53,6 +53,10 @@ final class SearchService
         $nInj = count($injected);
         $mainOffset = $r->offset === 0 ? 0 : max(0, $r->offset - $nInj);
         $mainLimit = $r->offset === 0 ? max(0, $r->limit - $nInj) : $r->limit;
+        // Bonus « mot au début du nom » : DeepFind réordonne lui-même les N premiers résultats (tri pertinence uniquement).
+        $window = Relevance::rerankWindow();
+        $rerank = $r->sort === 'relevance' && $r->q !== '' && Relevance::namePositionWeight() > 0 && $mainOffset < $window
+            ? ['offset' => $mainOffset, 'limit' => $mainLimit] : null;
 
         $attrLabels = Settings::json('attr_labels_' . $r->lang);
         $facets = ['brand', 'category_names', 'in_stock', 'on_sale', 'final_price'];
@@ -67,9 +71,13 @@ final class SearchService
             return $this->empty($r);
         }
         $queries[] = [
-            'indexUid' => $productIndex, 'q' => $r->q, 'offset' => $mainOffset, 'limit' => $mainLimit,
+            'indexUid' => $productIndex, 'q' => $r->q,
+            'offset' => $rerank ? 0 : $mainOffset, 'limit' => $rerank ? max($window, $mainOffset + $mainLimit) : $mainLimit,
             'filter' => $mainFilter, 'facets' => $facets, 'sort' => $this->sort($r), 'attributesToRetrieve' => $fields,
         ];
+        if ($rerank) {
+            $queries[0]['showRankingScore'] = true;
+        }
         $names[] = 'main';
 
         if ($nInj > 0) {
@@ -123,7 +131,33 @@ final class SearchService
             $results = $this->runQueries($queries, $names, 'last', $internal);
             $approx = (int) ($results['main']['estimatedTotalHits'] ?? 0) > 0;
         }
+        if ($rerank && isset($results['main']['hits'])) {
+            $results['main']['hits'] = array_slice($this->rerank($results['main']['hits'], $r), $rerank['offset'], $rerank['limit']);
+        }
         return $this->format($r, $results, $pins, $boosts, $nInj, $mainOffset, $mainLimit, $attrLabels, $internal, $skuLike, $approx);
+    }
+
+    /**
+     * Réordonne les premiers résultats : pertinence du moteur + bonus quand les mots recherchés sont au début du nom.
+     * Les ruptures restent en fin de liste si l'option est active ; à égalité, l'ordre du moteur est conservé.
+     */
+    private function rerank(array $hits, SearchRequest $r): array
+    {
+        $words = Relevance::words($r->q, $r->lang);
+        if ($words === []) {
+            return $hits;
+        }
+        $weight = Relevance::namePositionWeight();
+        $oosLast = Settings::int('out_of_stock_last') === 1;
+        $keyed = [];
+        foreach ($hits as $i => $h) {
+            $bonus = Relevance::namePositionBonus($words, (string) ($h['name'] ?? ''), $r->lang);
+            $h['_namePosition'] = round($bonus, 3);
+            $h['_finalScore'] = round((float) ($h['_rankingScore'] ?? 1.0) + $weight * $bonus, 4);
+            $keyed[] = [$oosLast ? (int) ($h['in_stock'] ?? 1) : 0, $h['_finalScore'], -$i, $h];
+        }
+        usort($keyed, static fn ($a, $b) => [$b[0], $b[1], $b[2]] <=> [$a[0], $a[1], $a[2]]);
+        return array_map(static fn ($k) => $k[3], $keyed);
     }
 
     /** @return array<string, array> résultats par nom de requête */
@@ -316,6 +350,10 @@ final class SearchService
         }
         if ($internal && isset($h['_rankingScore'])) {
             $p['relevance'] = round((float) $h['_rankingScore'], 3);
+        }
+        if ($internal && isset($h['_namePosition'])) {
+            $p['name_position'] = $h['_namePosition'];
+            $p['final_score'] = $h['_finalScore'];
         }
         foreach (['in_stock', 'on_sale', 'has_price_range', 'is_new'] as $b) {
             if (isset($p[$b])) {

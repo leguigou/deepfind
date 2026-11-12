@@ -25,7 +25,21 @@ final class PreviewController
                 $error = $e->getMessage();
             }
         }
-        View::render('preview', ['active' => 'preview', 'p' => $_GET, 'result' => $result, 'error' => $error], 'Aperçu interne');
+        $adminBoosts = [];
+        $pins = [];
+        if ($result && $result['products']) {
+            $skus = array_column($result['products'], 'sku');
+            $in = implode(',', array_fill(0, count($skus), '?'));
+            foreach (Db::all("SELECT sku, boost FROM product_boosts WHERE lang = ? AND sku IN ($in)", [Auth::lang(), ...$skus]) as $b) {
+                $adminBoosts[mb_strtoupper($b['sku'], 'UTF-8')] = (int) $b['boost'];
+            }
+            foreach (Db::all("SELECT id, sku, position FROM query_rules WHERE lang = ? AND query = ? AND action = 'pin'", [Auth::lang(), \DeepFind\Text::normalize((string) ($_GET['q'] ?? ''))]) as $pin) {
+                $pins[mb_strtoupper($pin['sku'], 'UTF-8')] = $pin;
+            }
+        }
+        $back = '/admin/preview?' . http_build_query(array_intersect_key($_GET, array_flip(['q', 'sort', 'margin_min', 'in_stock', 'on_sale'])));
+        View::render('preview', ['active' => 'preview', 'p' => $_GET, 'result' => $result, 'error' => $error,
+            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back], 'Aperçu interne');
     }
 
     /** Page de démonstration du widget (simule l'en-tête du site). */

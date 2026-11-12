@@ -56,6 +56,11 @@ foreach (XmlItemReader::items($gtmp, ['item']) as [, $gel]) {
 }
 unlink($gtmp);
 check('flux Google (g:availability) : stock lu correctement', $gvals === [0, 1], json_encode($gvals));
+$pw = DeepFind\Search\Relevance::words('pompe paddle', 'fr');
+check('bonus début du nom : « Pompe électrique… » devant « Pack Paddle … Pompe »',
+    DeepFind\Search\Relevance::namePositionBonus($pw, 'Pompe électrique Haute Pression Pour Sup Gonflable', 'fr')
+    > DeepFind\Search\Relevance::namePositionBonus($pw, 'Pack Paddle Gonflable Regent Horizon (sup. Pompe. Pagaie. Leash)', 'fr'));
+check('bonus début du nom : pluriel et accents', DeepFind\Search\Relevance::namePositionBonus(['palme'], 'Palmes de plongée', 'fr') === 1.0);
 check('pertinence : priorité au champ', DeepFind\Search\Relevance::rankingRules('low', true)[2] === 'attribute');
 check('pertinence : importance du score métier', DeepFind\Search\Relevance::rankingRules('low')[6] === 'biz_score:desc' && DeepFind\Search\Relevance::rankingRules('high')[2] === 'biz_score:desc');
 check('transform divide:100', Mapper::transform(['to_float', 'divide:100'], '42') === 0.42);

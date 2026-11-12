@@ -148,10 +148,22 @@ fs.mkdirSync(OUT, { recursive: true });
   check('stats : produits cliqués', (await page.textContent('body')).includes('Produits les plus cliqués'));
   await page.screenshot({ path: OUT + '/15-stats.png', fullPage: false });
 
-  // Boosts produits
+  // Aperçu : boost permanent et épinglage sans quitter la page
   await page.goto(BASE + '/admin/preview?q=masque');
-  await page.click('a:has-text("Booster") >> nth=0');
-  check('aperçu → boost : SKU pré-rempli', (await page.inputValue('input[name=sku]')) !== '');
+  const firstSku = (await page.textContent('table.table tbody tr:nth-child(3) code')).trim();
+  await Promise.all([page.waitForNavigation(), page.selectOption('table.table tbody tr:nth-child(3) select[name=boost]', '10')]);
+  check('aperçu : boost en ligne, retour sur la même recherche', page.url().includes('/admin/preview') && page.url().includes('q=masque') && (await page.textContent('body')).includes('Boost +10 enregistré'));
+  check('aperçu : produit boosté remonté', (await page.textContent('table.table tbody tr:first-child code')).trim() === firstSku || (await page.textContent('table.table tbody tr:nth-child(2) code')).trim() === firstSku);
+  await Promise.all([page.waitForNavigation(), page.selectOption('table.table tbody tr:has(code:text-is("' + firstSku + '")) select[name=boost]', '0')]);
+  check('aperçu : boost retiré', (await page.textContent('body')).includes('Boost retiré'));
+  await Promise.all([page.waitForNavigation(), page.click('table.table tbody tr:nth-child(4) button:has-text("Épingler")')]);
+  check('aperçu : épinglage en ligne', page.url().includes('q=masque') && (await page.textContent('table.table tbody tr:first-child')).includes('retirer'));
+  await page.screenshot({ path: OUT + '/19-apercu-boost-epingle.png', fullPage: false });
+  await Promise.all([page.waitForNavigation(), page.click('table.table tbody button:has-text("retirer") >> nth=0')]);
+
+  // Boosts produits
+  await page.goto(BASE + '/admin/boosts?sku=SEAC-X-VISION');
+  check('boosts : SKU pré-rempli', (await page.inputValue('input[name=sku]')) === 'SEAC-X-VISION');
   await page.selectOption('select[name=boost]', '8');
   await page.click('form[action$="/admin/boosts/save"] button.btn');
   check('boost : enregistré et appliqué', (await page.textContent('body')).includes('mis à jour dans le moteur') && (await page.textContent('table')).includes('+8'));

@@ -108,14 +108,14 @@ final class RulesController
             RulesRepository::bumpVersion();
             Auth::flash('ok', 'Règle ajoutée (active immédiatement).');
         }
-        App::back('/admin/rules');
+        $this->backTo('/admin/rules');
     }
 
     public function ruleDelete(): void
     {
         Db::exec('DELETE FROM query_rules WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
         RulesRepository::bumpVersion();
-        App::back('/admin/rules');
+        $this->backTo('/admin/rules');
     }
 
     public function ruleImport(): void
@@ -177,12 +177,7 @@ final class RulesController
     /** Retour vers la page d'origine (ex. statistiques) si elle est indiquée et interne à l'extranet. */
     private function backTo(string $default): void
     {
-        $back = (string) ($_POST['back'] ?? '');
-        if (preg_match('#^/admin/[a-z/]*(\?[\w=&%.\-]*)?$#', $back)) {
-            \DeepFind\Http\Response::redirect(url($back));
-            return;
-        }
-        App::back($default);
+        App::backTo($default);
     }
 
     private function upload(): ?string

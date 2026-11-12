@@ -422,6 +422,11 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
 
    Un seuil **« Pertinence minimum »** (0 à 1) peut écarter les produits trop peu pertinents. Réglez-le en regardant la colonne « Pertinence » de l'aperçu interne.
 1. **Importance des champs dans la recherche texte** : numérotez les champs (nom, marque, SKU, mots-clés, catégories, attributs, descriptions). Un mot trouvé dans un champ bien classé fait remonter le produit. Un champ peut être rendu non cherchable. *Appliqué immédiatement au moteur.*
+   - **Bonus « mot recherché au début du nom »** (0,5 par défaut) : DeepFind réordonne les 100 premiers résultats.
+     - Un mot de la recherche en 1re position du nom vaut 1, en 2e 1/2, en 3e 1/3…
+     - Exemple : pour « pompe paddle », « Pompe électrique… » passe devant « Pack Paddle … (Pompe…) ».
+     - La pagination reste cohérente : pas de doublon d'une page à l'autre.
+     - L'aperçu interne affiche ce bonus et le score final de chaque produit.
    - **Pas de poids chiffré par champ** : Meilisearch classe par *ordre* des champs, pas par poids.
    - Pour que cet ordre compte plus, activez **« Priorité au champ où le mot est trouvé »** : un produit dont le nom contient le mot passe alors devant un produit qui ne le contient que dans sa description.
 2. **Score métier** : un poids par critère. Mettez 0 pour ignorer un critère.
@@ -430,7 +435,10 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
    - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
 
 **Boosts produits** (menu dédié) : un produit passe en avant (+1 à +10) ou en retrait (-1 à -10) sur toutes les recherches, avec dates de début et de fin facultatives. Appliqué immédiatement.
-- Raccourci : bouton **« Booster »** sur chaque produit de l'aperçu interne.
+- **Directement dans l'aperçu interne**, sur chaque produit :
+  - un sélecteur **« Boost permanent »** (-10 à +10, « Aucun » pour retirer), qui agit sur toutes les recherches ;
+  - un bouton **« Épingler »**, avec choix de la position, qui agit sur la recherche en cours uniquement.
+  - La page se recharge sur la même recherche, déjà réordonnée.
 - Pour imposer une position sur une requête précise, utilisez plutôt les règles « Épingler » ou « Remonter ».
 3. **Importance du score métier face à la pertinence** : *faible* (il ne départage que des produits aussi pertinents, recommandé), *moyenne* ou *forte*. Interrupteur **Ruptures en fin de liste**. *Appliqué immédiatement.*
 

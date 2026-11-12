@@ -136,4 +136,15 @@ final class App
     {
         Response::redirect(url($path, $query));
     }
+
+    /** Retour vers la page indiquée dans le champ « back » (interne à l'extranet), sinon vers $default. */
+    public static function backTo(string $default): void
+    {
+        $back = (string) ($_POST['back'] ?? '');
+        if (preg_match('#^/admin/[a-z/]*(\?[\w=&%.+\-\[\]]*)?$#', $back)) {
+            Response::redirect(url($back));
+            return;
+        }
+        self::back($default);
+    }
 }

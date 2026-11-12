@@ -16,6 +16,12 @@ final class IndexSettings
         'en' => ['the', 'a', 'an', 'of', 'for', 'and', 'with', 'in', 'on', 'to'],
     ];
 
+    /** @return list<string> */
+    public static function stopWords(string $lang): array
+    {
+        return self::STOP_WORDS[$lang] ?? [];
+    }
+
     /** @param list<string> $filterableAttrCodes */
     public static function products(string $lang, array $filterableAttrCodes, array $synonyms): array
     {

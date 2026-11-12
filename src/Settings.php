@@ -35,6 +35,8 @@ final class Settings
         'matching_mode' => 'exact_then_approx',
         'min_relevance' => '0',
         'attribute_first' => '0',
+        'name_position_weight' => '0.5',
+        'rerank_window' => '100',
         'w_clicks' => '20',
         'clicks_ref' => '50',
         'scores_nightly' => '1',
