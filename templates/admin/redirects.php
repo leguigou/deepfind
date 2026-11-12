@@ -3,7 +3,7 @@
   <form method="post" action="<?= e(url('/admin/redirects/add')) ?>" class="card form">
     <?= csrf_field() ?>
     <h3>Ajouter</h3>
-    <label>Requête <input name="query" required placeholder="retour"></label>
+    <label>Requête <input name="query" required placeholder="retour" value="<?= e($_GET['query'] ?? '') ?>"></label>
     <label>URL <input name="url" type="url" required placeholder="https://www.cabesto.com/cgv#retours"></label>
     <button class="btn">Enregistrer</button>
   </form>

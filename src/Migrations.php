@@ -18,6 +18,9 @@ final class Migrations
             'scheduled_full_at' => 'DATETIME NULL AFTER cron_delta',
             'scheduled_delta_at' => 'DATETIME NULL AFTER scheduled_full_at',
         ],
+        'search_logs' => [
+            'approx' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER results',
+        ],
         'import_runs' => [
             'phase' => 'VARCHAR(30) NULL AFTER items_rejected',
             'items_total' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER phase',
@@ -29,10 +32,27 @@ final class Migrations
         ],
     ];
 
-    /** @return list<string> colonnes ajoutées */
+    /** Colonnes ENUM à élargir : table => [colonne => [valeur requise, nouvelle définition]] */
+    private const ENUMS = [
+        'import_runs' => ['type' => ['scores', "ENUM('full','delta','scores') NOT NULL"]],
+    ];
+
+    /** @return list<string> colonnes ajoutées ou modifiées */
     public static function run(): array
     {
         $added = [];
+        foreach (self::ENUMS as $table => $cols) {
+            foreach ($cols as $col => [$needle, $def]) {
+                $type = (string) (Db::value(
+                    'SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                    [$table, $col]
+                ) ?? '');
+                if ($type !== '' && !str_contains($type, "'" . $needle . "'")) {
+                    Db::pdo()->exec("ALTER TABLE `$table` MODIFY `$col` $def");
+                    $added[] = "$table.$col (+$needle)";
+                }
+            }
+        }
         foreach (self::COLUMNS as $table => $columns) {
             foreach ($columns as $col => $def) {
                 $exists = Db::value(

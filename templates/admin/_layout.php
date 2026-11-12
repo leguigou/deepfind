@@ -10,6 +10,7 @@ $nav = [
     'rules' => ['/admin/rules', 'Règles de résultats'],
     'redirects' => ['/admin/redirects', 'Redirections'],
     'relevance' => ['/admin/relevance', 'Pertinence & classement'],
+    'boosts' => ['/admin/boosts', 'Boosts produits'],
     'preview' => ['/admin/preview', 'Aperçu interne'],
     'stats' => ['/admin/stats', 'Statistiques'],
     'logs' => ['/admin/logs', 'Journal des recherches'],

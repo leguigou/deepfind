@@ -33,6 +33,24 @@ final class Relevance
         'high' => ['Forte', 'À nombre de mots trouvés égal, le score métier passe avant les fautes de frappe et la proximité des mots.'],
     ];
 
+    public const MATCHING = [
+        'exact_then_approx' => ['Exacts, sinon approchants signalés (recommandé)', 'Tous les mots doivent être trouvés. Si aucun produit ne correspond, des produits approchants sont proposés avec la mention « Aucun résultat exact », et la recherche compte comme « sans résultat » dans les statistiques.'],
+        'strict' => ['Exacts uniquement', 'Tous les mots doivent être trouvés, sinon « Aucun résultat ». Le plus précis, mais une recherche longue ou mal orthographiée peut ne rien donner.'],
+        'loose' => ['Le plus de résultats possible', 'Le moteur retire des mots jusqu\'à trouver des produits : il affiche presque toujours quelque chose, même sans rapport (« barbe à papa » → produits contenant « barbe »…).'],
+    ];
+
+    public static function matchingMode(): string
+    {
+        $v = Settings::get('matching_mode');
+        return isset(self::MATCHING[$v]) ? $v : 'exact_then_approx';
+    }
+
+    /** Seuil de pertinence minimum (0 à 1) sous lequel un produit n'est pas renvoyé ; 0 = désactivé. */
+    public static function minScore(): float
+    {
+        return max(0.0, min(0.99, Settings::float('min_relevance')));
+    }
+
     /** @return list<array{field:string, enabled:bool}> */
     public static function fields(): array
     {
@@ -67,12 +85,18 @@ final class Relevance
     }
 
     /** @return list<string> */
-    public static function rankingRules(?string $importance = null): array
+    public static function rankingRules(?string $importance = null, ?bool $fieldFirst = null): array
     {
-        return match ($importance ?? self::importance()) {
+        $rules = match ($importance ?? self::importance()) {
             'high' => ['words', 'sort', 'biz_score:desc', 'typo', 'proximity', 'attribute', 'exactness'],
             'medium' => ['words', 'sort', 'typo', 'proximity', 'biz_score:desc', 'attribute', 'exactness'],
             default => ['words', 'sort', 'typo', 'proximity', 'attribute', 'exactness', 'biz_score:desc'],
         };
+        // « Priorité au champ où le mot est trouvé » : l'ordre des champs compte juste après le nombre de mots trouvés.
+        if ($fieldFirst ?? Settings::get('attribute_first') === '1') {
+            $rules = array_values(array_diff($rules, ['attribute']));
+            array_splice($rules, array_search('sort', $rules, true) + 1, 0, ['attribute']);
+        }
+        return $rules;
     }
 }

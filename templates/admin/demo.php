@@ -30,7 +30,7 @@
 </main>
 <script src="<?= e(url('/assets/admin.js')) ?>?v=3"></script>
 <?php if ($key !== ''): ?>
-<script src="<?= e(url('/widget/deepfind.js')) ?>?v=1" defer
+<script src="<?= e(url('/widget/deepfind.js')) ?>?v=2" defer
   data-key="<?= e($key) ?>" data-lang="<?= e($lang) ?>" data-input="#search" data-anchor="#demo-header"
   data-api="<?= e(url('/api/v1')) ?>" data-results-url=""></script>
 <?php endif; ?>

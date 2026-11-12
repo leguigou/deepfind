@@ -36,12 +36,16 @@ src/Import/
   FieldCatalog.php             libellés, aides, champs obligatoires et noms usuels des champs internes
   Cron.php, Scheduler.php      expressions cron 5 champs ; planificateur (schedule:run chaque minute → file d'attente)
   Progress.php                 avancement lisible d'un import (étape, %, temps restant) ; Importer::progress() écrit import_runs ≤ 1×/s
+                               type d'exécution « scores » = Importer::refreshScores() (relit l'index, recalcule biz_score, sans flux)
 src/Search/
   SearchRequest.php            validation des paramètres publics
   SearchService.php            UN appel multi-search : principal + injectés (pin/boost) + SKU exact + facettes disjonctives + blog
   IndexSettings.php            réglages des index (searchable, filterable, rankingRules, typo, synonymes)
   Filter.php                   échappement des valeurs de filtre Meilisearch
 src/Rules/RulesRepository.php  synonymes, règles, redirections, import CSV, version des règles (invalide les caches)
+src/Rules/Boosts.php           boosts extranet (product_boosts) et clics 30 j → appliqués par ProductBuilder::applySignals()
+src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
+                               seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
 src/Http/ApiController.php     /api/v1/search, /api/v1/click, /api/v1/health

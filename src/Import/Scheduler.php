@@ -45,6 +45,22 @@ final class Scheduler
                 $queued[] = $s['code'] . ' ' . $type . ' #' . $id;
             }
         }
+        // Recalcul des scores chaque nuit (clics des 30 derniers jours, boosts datés) : une fois par langue
+        $scoresCron = trim(\DeepFind\Settings::get('scores_cron'));
+        if (\DeepFind\Settings::get('scores_nightly') === '1' && $scoresCron !== '' && Cron::matches($scoresCron, $minute)) {
+            $stamp = $minute->format('Y-m-d H:i:s');
+            $claimed = Db::exec(
+                "INSERT INTO settings (name, value) VALUES ('scores_scheduled_at', ?) ON DUPLICATE KEY UPDATE value = IF(value < ?, ?, value)",
+                [$stamp, $stamp, $stamp]
+            );
+            if ($claimed > 0) {
+                foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE kind = 'products' AND active = 1 GROUP BY lang") as $s) {
+                    if (Db::value("SELECT id FROM import_runs r JOIN sources x ON x.id = r.source_id WHERE x.lang = ? AND r.status IN ('queued','running') LIMIT 1", [$s['lang']]) === null) {
+                        $queued[] = 'scores ' . $s['lang'] . ' #' . Importer::queue((int) $s['id'], 'scores', 'cron');
+                    }
+                }
+            }
+        }
         $t = $now->format('Y-m-d H:i:s');
         Db::exec("INSERT INTO settings (name, value) VALUES ('scheduler_last_run', ?) ON DUPLICATE KEY UPDATE value = ?", [$t, $t]);
         return $queued;

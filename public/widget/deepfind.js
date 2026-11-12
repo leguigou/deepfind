@@ -32,12 +32,14 @@
       seeAll: 'Tout voir', sort: 'Trier', relevance: 'Pertinence', priceAsc: 'Prix croissant', priceDesc: 'Prix décroissant', newest: 'Nouveautés',
       none: 'Aucun résultat pour', tryOther: 'Vérifiez l\'orthographe ou essayez un terme plus général.', from: 'dès', outOfStock: 'Rupture',
       isNew: 'Nouveau', close: 'Fermer', busy: 'Trop de recherches en peu de temps, patientez quelques secondes…', error: 'Recherche momentanément indisponible.',
-      goTo: 'Voir la page', showFilters: 'Filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…' },
+      goTo: 'Voir la page', showFilters: 'Filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…',
+      approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
       isNew: 'New', close: 'Close', busy: 'Too many searches, please wait a few seconds…', error: 'Search temporarily unavailable.',
-      goTo: 'Go to page', showFilters: 'Filters', clear: 'Clear filters', results: 'results', loading: 'Loading…' }
+      goTo: 'Go to page', showFilters: 'Filters', clear: 'Clear filters', results: 'results', loading: 'Loading…',
+      approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products' }
   };
   var t = T[cfg.lang] || T.fr;
   var money;
@@ -47,7 +49,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=1';
+  css.href = base + '/widget/deepfind.css?v=2';
   document.head.appendChild(css);
 
   // ------------------------------------------------------------------ Utilitaires DOM
@@ -203,9 +205,12 @@
       grid.textContent = '';
       state.ids = {};
       main.scrollTop = 0;
-      showNotice(state.redirect ? t.goTo + ' « ' + state.q + ' » →' : null, state.redirect);
+      if (state.redirect) { showNotice(t.goTo + ' « ' + state.q + ' » →', state.redirect); }
+      else if (data.approximate) { showNotice(t.approx.replace('%s', state.q), null); }
+      else { showNotice(null, null); }
+      notice.classList.toggle('df-notice-approx', !!data.approximate && !state.redirect);
       renderSide(data);
-      title.textContent = t.products + ' (' + state.total + ')';
+      title.textContent = (data.approximate ? t.approxTitle : t.products) + ' (' + state.total + ')';
       tgStock.count.textContent = data.toggles && data.toggles.in_stock ? ' (' + data.toggles.in_stock + ')' : '';
       tgSale.count.textContent = data.toggles && data.toggles.on_sale ? ' (' + data.toggles.on_sale + ')' : '';
       var more = state.total - (data.products || []).length;

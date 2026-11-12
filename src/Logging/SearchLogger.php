@@ -33,6 +33,7 @@ final class SearchLogger
             'query_norm' => Text::truncate($e['query_norm'], 255),
             'filters' => $e['filters'] ?: null,
             'results' => $e['results'],
+            'approx' => !empty($e['approx']) ? 1 : 0,
             'took_ms' => min(65535, $e['took_ms']),
             'ip_hash' => $e['ip_hash'],
             'ip_masked' => $e['ip_masked'],

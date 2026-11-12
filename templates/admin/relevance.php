@@ -2,25 +2,53 @@
 use DeepFind\Search\Relevance;
 $w = static fn (string $k) => e($values[$k] ?? '');
 $pending = $weightsChangedAt !== '' && ($lastFull === '' || $lastFull < $weightsChangedAt);
+$toggle = static function (string $name, bool $on, string $title, string $help): void { ?>
+    <label class="toggle toggle-block">
+      <input type="checkbox" role="switch" name="<?= e($name) ?>" value="1" <?= $on ? 'checked' : '' ?>>
+      <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+      <span class="toggle-text"><strong><?= e($title) ?></strong><small class="muted"><?= e($help) ?></small></span>
+    </label>
+<?php };
+$radios = static function (string $name, array $options, string $current): void {
+    foreach ($options as $k => [$label, $help]): ?>
+      <label class="choice">
+        <input type="radio" name="<?= e($name) ?>" value="<?= e($k) ?>" <?= $current === $k ? 'checked' : '' ?>>
+        <span class="choice-text"><strong><?= e($label) ?></strong><small class="muted"><?= e($help) ?></small></span>
+      </label>
+    <?php endforeach;
+};
 ?>
 <div class="card explain">
   <h3>Comment un produit est classé</h3>
   <ol>
-    <li><strong>Nombre de mots de la recherche trouvés</strong> dans le produit (toujours en premier).</li>
-    <li><strong>Tri choisi par le visiteur</strong> (prix, nouveautés) ; sinon, si l'option est cochée, les <strong>ruptures passent en fin de liste</strong>.</li>
+    <li><strong>Correspondance des mots</strong> : tous les mots de la recherche doivent être trouvés (réglage 1).</li>
+    <li><strong>Tri choisi par le visiteur</strong> (prix, nouveautés) ; sinon, si l'option est activée, les <strong>ruptures passent en fin de liste</strong>.</li>
     <li><strong>Fautes de frappe</strong> (moins il y en a, mieux c'est) et <strong>proximité</strong> des mots entre eux.</li>
-    <li><strong>Champ où le mot a été trouvé</strong> : l'ordre ci-dessous (un mot dans le nom compte plus que dans la description).</li>
+    <li><strong>Champ où le mot a été trouvé</strong> : l'ordre du réglage 2 (un mot dans le nom compte plus que dans la description).</li>
     <li><strong>Exactitude</strong> (mot complet plutôt que début de mot).</li>
-    <li><strong>Score métier</strong> : stock, marge, popularité, nouveauté, boost manuel. Sa place dans cette liste se règle plus bas (« Importance du score métier »).</li>
+    <li><strong>Score métier</strong> : stock, marge, popularité, clics, nouveauté, boosts (réglages 3 et 4).</li>
   </ol>
-  <p class="muted">Les produits épinglés ou remontés par une <a href="<?= e(url('/admin/rules')) ?>">règle</a> passent avant tout cela. Vérifiez l'effet de vos réglages dans l'<a href="<?= e(url('/admin/preview')) ?>">aperçu interne</a>, qui affiche le score de chaque produit.</p>
+  <p class="muted">Les produits épinglés ou remontés par une <a href="<?= e(url('/admin/rules')) ?>">règle</a> passent avant tout cela. Vérifiez l'effet de vos réglages dans l'<a href="<?= e(url('/admin/preview')) ?>">aperçu interne</a> (pertinence et score de chaque produit).</p>
 </div>
 
-<form method="post" action="<?= e(url('/admin/relevance/save')) ?>" class="form">
+<form method="post" action="<?= e(url('/admin/relevance/save')) ?>" class="form has-fixed-actions">
   <?= csrf_field() ?>
 
-  <h2>1. Importance des champs dans la recherche texte</h2>
-  <p class="muted">Numérotez de 1 (le plus important) au dernier ; décochez un champ pour qu'il ne soit plus cherchable. Appliqué <strong>immédiatement</strong> au moteur.</p>
+  <h2>1. Correspondance des mots</h2>
+  <div class="card">
+    <?php $radios('matching_mode', Relevance::MATCHING, (string) ($values['matching_mode'] ?? 'exact_then_approx')); ?>
+    <div class="grid4">
+      <label>Pertinence minimum (0 à 1)
+        <input name="min_relevance" value="<?= $w('min_relevance') ?>" inputmode="decimal">
+        <small class="muted">Écarte les produits trop peu pertinents. 0 = désactivé. Réglez-le en regardant la colonne « Pertinence » de l'aperçu interne (ex. 0,5).</small>
+      </label>
+    </div>
+    <p class="muted small">Appliqué immédiatement.</p>
+  </div>
+
+  <h2>2. Importance des champs dans la recherche texte</h2>
+  <p class="muted">Numérotez de 1 (le plus important) au dernier ; décochez un champ pour qu'il ne soit plus cherchable.
+    <strong>Pas de poids chiffré par champ</strong> : Meilisearch classe uniquement par <em>ordre</em> des champs. Pour que cet ordre pèse davantage, activez l'option ci-dessous. Appliqué immédiatement.</p>
   <table class="table compact rel-fields">
     <thead><tr><th class="num">Rang</th><th>Champ</th><th>Rôle</th><th>Cherchable</th></tr></thead>
     <tbody>
@@ -34,40 +62,43 @@ $pending = $weightsChangedAt !== '' && ($lastFull === '' || $lastFull < $weights
     <?php endforeach; ?>
     </tbody>
   </table>
+  <div class="card">
+    <?php $toggle('attribute_first', ($values['attribute_first'] ?? '0') === '1', 'Priorité au champ où le mot est trouvé',
+        'Un produit dont le NOM contient le mot passe devant un produit qui ne le contient que dans sa description, même avec moins de fautes de frappe. Recommandé si des produits « hors sujet » remontent à cause de leur description.'); ?>
+  </div>
 
-  <h2>2. Score métier : ce que vous voulez mettre en avant</h2>
-  <?php if ($pending): ?><div class="flash flash-warn">Des poids ont été modifiés le <?= fmt_dt($weightsChangedAt) ?> mais aucun import complet n'a eu lieu depuis : ils ne sont pas encore appliqués.</div><?php endif; ?>
-  <p class="muted">Score = stock × poids + marge (0 à 1) × poids + popularité (0 à 1) × poids + nouveauté × poids + boost manuel (-10 à +10) × poids.
-    Mettez 0 pour ignorer un critère. Calculé pendant l'import : appliqué au <strong>prochain import complet</strong>.</p>
+  <h2>3. Score métier : ce que vous voulez mettre en avant</h2>
+  <?php if ($pending): ?><div class="flash flash-warn">Des poids ont été modifiés le <?= fmt_dt($weightsChangedAt) ?> mais les scores n'ont pas encore été recalculés.</div><?php endif; ?>
+  <p class="muted">Score = stock × poids + marge (0 à 1) × poids + popularité (0 à 1) × poids + clics (0 à 1) × poids + nouveauté × poids + boost (-10 à +10) × poids.
+    Mettez 0 pour ignorer un critère. Les boosts par produit se gèrent dans <a href="<?= e(url('/admin/boosts')) ?>">Boosts produits</a>.</p>
   <div class="card grid4 weights">
     <label>En stock <input name="w_stock" value="<?= $w('w_stock') ?>" inputmode="decimal"><small class="muted">points si le produit est en stock</small></label>
     <label>Rentabilité <input name="w_margin" value="<?= $w('w_margin') ?>" inputmode="decimal"><small class="muted">× taux de marge (0,40 → 40 % du poids)</small></label>
-    <label>Popularité <input name="w_popularity" value="<?= $w('w_popularity') ?>" inputmode="decimal"><small class="muted">× ventes 30 j (échelle logarithmique)</small></label>
+    <label>Popularité (ventes) <input name="w_popularity" value="<?= $w('w_popularity') ?>" inputmode="decimal"><small class="muted">× ventes 30 j du flux (échelle logarithmique)</small></label>
+    <label>Clics dans la recherche <input name="w_clicks" value="<?= $w('w_clicks') ?>" inputmode="decimal"><small class="muted">× clics 30 j sur le produit depuis le widget</small></label>
     <label>Nouveauté <input name="w_new" value="<?= $w('w_new') ?>" inputmode="decimal"><small class="muted">points si créé il y a moins de N jours</small></label>
-    <label>Boost manuel <input name="w_manual_boost" value="<?= $w('w_manual_boost') ?>" inputmode="decimal"><small class="muted">× champ « manual_boost » du flux</small></label>
-    <label>Ventes 30 j = popularité max. <input name="popularity_ref" value="<?= $w('popularity_ref') ?>" inputmode="decimal"><small class="muted">au-delà, popularité plafonnée à 1</small></label>
+    <label>Boost (par niveau) <input name="w_manual_boost" value="<?= $w('w_manual_boost') ?>" inputmode="decimal"><small class="muted">× boost du flux + boost de l'extranet</small></label>
+    <label>Ventes 30 j = popularité max. <input name="popularity_ref" value="<?= $w('popularity_ref') ?>" inputmode="decimal"><small class="muted">au-delà, plafonnée à 1</small></label>
+    <label>Clics 30 j = max. <input name="clicks_ref" value="<?= $w('clicks_ref') ?>" inputmode="decimal"><small class="muted">au-delà, plafonnés à 1</small></label>
     <label>« Nouveau » pendant (jours) <input name="new_days" value="<?= $w('new_days') ?>" inputmode="numeric"><small class="muted">aussi le badge « Nouveau » du widget</small></label>
   </div>
-
-  <h2>3. Importance du score métier face à la pertinence</h2>
   <div class="card">
-    <?php foreach (Relevance::IMPORTANCE as $k => [$label, $help]): ?>
-      <label class="check radio-line"><input type="radio" name="biz_importance" value="<?= e($k) ?>" <?= $importance === $k ? 'checked' : '' ?>>
-        <span><strong><?= e($label) ?></strong><br><span class="muted"><?= e($help) ?></span></span></label>
-    <?php endforeach; ?>
-    <label class="toggle">
-      <input type="checkbox" role="switch" name="out_of_stock_last" value="1" <?= ($values['out_of_stock_last'] ?? '1') === '1' ? 'checked' : '' ?>>
-      <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-      <span class="toggle-text"><strong>Ruptures en fin de liste</strong>
-        <small class="muted">À pertinence égale (même nombre de mots trouvés), les produits en stock passent toujours devant.</small></span>
-    </label>
-    <p class="muted small">Appliqué immédiatement au moteur.</p>
+    <?php $toggle('scores_nightly', ($values['scores_nightly'] ?? '1') === '1', 'Recalcul automatique des scores chaque nuit (4 h 30)',
+        'Prend en compte les clics des 30 derniers jours, les boosts datés et les poids modifiés, sans retélécharger les flux.'); ?>
   </div>
 
-  <div class="actions sticky-actions">
+  <h2>4. Importance du score métier face à la pertinence</h2>
+  <div class="card">
+    <?php $radios('biz_importance', Relevance::IMPORTANCE, $importance); ?>
+    <?php $toggle('out_of_stock_last', ($values['out_of_stock_last'] ?? '1') === '1', 'Ruptures en fin de liste',
+        'À pertinence égale (mêmes mots trouvés), les produits en stock passent toujours devant.'); ?>
+    <p class="muted small">Appliqué immédiatement.</p>
+  </div>
+
+  <div class="fixed-actions sticky-actions">
     <button class="btn">Enregistrer</button>
     <?php if ($sources): ?>
-    <button class="btn btn-light" name="reindex" value="1" data-confirm="Enregistrer puis lancer un import complet des flux produits actifs pour recalculer le score métier ?">Enregistrer et recalculer maintenant (import complet)</button>
+    <button class="btn btn-light" name="reindex" value="1">Enregistrer et recalculer les scores</button>
     <?php endif; ?>
   </div>
 </form>

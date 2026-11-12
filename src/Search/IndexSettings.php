@@ -20,7 +20,7 @@ final class IndexSettings
     public static function products(string $lang, array $filterableAttrCodes, array $synonyms): array
     {
         $filterable = [
-            'sku', 'all_skus', 'all_eans', 'brand', 'category_names', 'category_ids', 'in_stock', 'on_sale',
+            'id', 'sku', 'all_skus', 'all_eans', 'brand', 'category_names', 'category_ids', 'in_stock', 'on_sale',
             'final_price', 'margin_rate', 'type', 'is_new',
         ];
         foreach ($filterableAttrCodes as $code) {

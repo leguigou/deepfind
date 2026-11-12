@@ -20,9 +20,31 @@ final class ProductBuilder
     /** @var array<string,float> */
     private array $w;
 
-    public function __construct(?array $weights = null, private readonly ?int $now = null)
+    /**
+     * @param array<string,int>|null $boosts boosts saisis dans l'extranet (SKU majuscules => -10..10)
+     * @param array<string,int>|null $clicks clics sur 30 jours (identifiant de document => nombre)
+     */
+    public function __construct(?array $weights = null, private readonly ?int $now = null, private readonly ?array $boosts = null, private readonly ?array $clicks = null)
     {
         $this->w = $weights ?? self::weightsFromSettings();
+    }
+
+    /** Builder pour une langue : charge les boosts de l'extranet et les clics des 30 derniers jours. */
+    public static function forLang(string $lang): self
+    {
+        return new self(null, null, \DeepFind\Rules\Boosts::active($lang), \DeepFind\Rules\Boosts::clicks($lang));
+    }
+
+    /** Applique les signaux extranet (boost, clics) à un document existant ; sans effet si non chargés. */
+    public function applySignals(array $doc): array
+    {
+        if ($this->boosts !== null) {
+            $doc['admin_boost'] = $this->boosts[mb_strtoupper((string) $doc['sku'], 'UTF-8')] ?? 0;
+        }
+        if ($this->clicks !== null) {
+            $doc['clicks_30d'] = $this->clicks[(string) $doc['id']] ?? 0;
+        }
+        return $doc;
     }
 
     public static function weightsFromSettings(): array
@@ -33,6 +55,8 @@ final class ProductBuilder
             'popularity' => Settings::float('w_popularity'),
             'new' => Settings::float('w_new'),
             'boost' => Settings::float('w_manual_boost'),
+            'clicks' => Settings::float('w_clicks'),
+            'clicks_ref' => max(1.0, Settings::float('clicks_ref')),
             'popularity_ref' => max(1.0, Settings::float('popularity_ref')),
             'new_days' => max(0.0, Settings::float('new_days')),
         ];
@@ -153,7 +177,7 @@ final class ProductBuilder
             'variants' => $vars,
         ];
 
-        $doc = $this->computeDerived($doc);
+        $doc = $this->computeDerived($this->applySignals($doc));
         if ($doc['final_price'] <= 0) {
             return 'prix manquant ou nul';
         }
@@ -230,12 +254,17 @@ final class ProductBuilder
         $now = $this->now ?? time();
         $doc['is_new'] = $doc['created_ts'] > 0 && ($now - $doc['created_ts']) < $this->w['new_days'] * 86400 ? 1 : 0;
         $pop = $doc['sales_30d'] > 0 ? min(1.0, log(1 + $doc['sales_30d']) / log(1 + $this->w['popularity_ref'])) : 0.0;
+        $clicks = (int) ($doc['clicks_30d'] ?? 0);
+        $clickPop = $clicks > 0 ? min(1.0, log(1 + $clicks) / log(1 + ($this->w['clicks_ref'] ?? 50.0))) : 0.0;
+        // Boost total = boost du flux + boost saisi dans l'extranet, borné à -10..+10
+        $doc['boost_total'] = max(-10, min(10, (int) $doc['manual_boost'] + (int) ($doc['admin_boost'] ?? 0)));
         $doc['biz_score'] = round(
             $this->w['stock'] * $doc['in_stock']
             + $this->w['margin'] * max(0.0, (float) $doc['margin_rate'])
             + $this->w['popularity'] * $pop
+            + ($this->w['clicks'] ?? 0.0) * $clickPop
             + $this->w['new'] * $doc['is_new']
-            + $this->w['boost'] * $doc['manual_boost'],
+            + $this->w['boost'] * $doc['boost_total'],
             3
         );
         $doc['updated_ts'] = $now;

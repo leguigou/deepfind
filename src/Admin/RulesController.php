@@ -33,7 +33,7 @@ final class RulesController
             RulesRepository::addSynonym(Auth::lang(), ($_POST['type'] ?? '') === 'alias' ? 'alias' : 'equivalent', $term, $syn);
             $this->sync(Auth::lang());
         }
-        App::back('/admin/synonyms');
+        $this->backTo('/admin/synonyms');
     }
 
     public function synonymDelete(): void
@@ -151,7 +151,7 @@ final class RulesController
             RulesRepository::bumpVersion();
             Auth::flash('ok', 'Redirection enregistrée.');
         }
-        App::back('/admin/redirects');
+        $this->backTo('/admin/redirects');
     }
 
     public function redirectDelete(): void
@@ -173,6 +173,17 @@ final class RulesController
     }
 
     // ------------------------------------------------------------
+
+    /** Retour vers la page d'origine (ex. statistiques) si elle est indiquée et interne à l'extranet. */
+    private function backTo(string $default): void
+    {
+        $back = (string) ($_POST['back'] ?? '');
+        if (preg_match('#^/admin/[a-z/]*(\?[\w=&%.\-]*)?$#', $back)) {
+            \DeepFind\Http\Response::redirect(url($back));
+            return;
+        }
+        App::back($default);
+    }
 
     private function upload(): ?string
     {

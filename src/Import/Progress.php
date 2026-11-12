@@ -11,6 +11,7 @@ final class Progress
         'download' => 'Téléchargement du flux',
         'count' => 'Comptage des éléments',
         'read' => 'Lecture et préparation des produits',
+        'score' => 'Recalcul des scores',
         'group' => 'Regroupement parents / enfants',
         'index' => 'Indexation dans le moteur',
         'swap' => 'Bascule vers le nouvel index',
@@ -19,7 +20,7 @@ final class Progress
 
     /** Bornes [début, fin] de chaque étape dans la barre globale (en %). */
     private const SPANS = [
-        'download' => [0, 10], 'count' => [10, 12], 'read' => [12, 75], 'group' => [75, 80],
+        'download' => [0, 10], 'count' => [10, 12], 'read' => [12, 75], 'score' => [2, 85], 'group' => [75, 80],
         'index' => [80, 97], 'swap' => [97, 99], 'done' => [100, 100],
     ];
 
@@ -46,7 +47,7 @@ final class Progress
                 ? sprintf('%s / %s', self::mb((int) $run['bytes_done']), self::mb((int) $run['bytes_total']))
                 : self::mb((int) $run['bytes_done']) . ' reçus',
             'count' => 'Lecture rapide du fichier (' . self::mb((int) $run['bytes_total']) . ')',
-            'read' => $total > 0 ? sprintf('%s / %s éléments', number_format($read, 0, ',', ' '), number_format($total, 0, ',', ' ')) : number_format($read, 0, ',', ' ') . ' éléments',
+            'read', 'score' => $total > 0 ? sprintf('%s / %s éléments', number_format($read, 0, ',', ' '), number_format($total, 0, ',', ' ')) : number_format($read, 0, ',', ' ') . ' éléments',
             'group' => number_format((int) $run['items_indexed'], 0, ',', ' ') . ' produits construits',
             'index' => sprintf('lot %d / %d traité par Meilisearch', (int) $run['tasks_done'], (int) $run['tasks_total']),
             'swap' => 'Contrôle du nombre de produits puis mise en ligne instantanée',
@@ -60,7 +61,7 @@ final class Progress
         [$a, $b] = self::SPANS[$phase] ?? [0, 0];
         $ratio = match ($phase) {
             'download' => (int) $run['bytes_total'] > 0 ? (int) $run['bytes_done'] / (int) $run['bytes_total'] : 0.5,
-            'read' => $total > 0 ? min(1, $read / $total) : 0,
+            'read', 'score' => $total > 0 ? min(1, $read / $total) : 0,
             'index' => (int) $run['tasks_total'] > 0 ? (int) $run['tasks_done'] / (int) $run['tasks_total'] : 0,
             default => 0.5,
         };

@@ -136,9 +136,13 @@ final class MeiliClient
     }
 
     /** @return list<array<string,mixed>> */
-    public function fetchDocuments(string $uid, string $filter, int $limit = 1000): array
+    public function fetchDocuments(string $uid, string $filter, int $limit = 1000, int $offset = 0): array
     {
-        $res = $this->request('POST', '/indexes/' . rawurlencode($uid) . '/documents/fetch', ['filter' => $filter, 'limit' => $limit]);
+        $body = ['limit' => $limit, 'offset' => $offset];
+        if ($filter !== '') {
+            $body['filter'] = $filter;
+        }
+        $res = $this->request('POST', '/indexes/' . rawurlencode($uid) . '/documents/fetch', $body);
         return $res['results'] ?? [];
     }
 

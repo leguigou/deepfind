@@ -81,7 +81,7 @@ final class ApiController
         if ($req->offset === 0) {
             (new SearchLogger($store))->log([
                 'api_key_id' => (int) $key['id'], 'lang' => $req->lang, 'query' => $req->q, 'query_norm' => $req->qNorm,
-                'filters' => $req->filtersSummary(), 'results' => (int) $data['total'], 'took_ms' => $tookMs,
+                'filters' => $req->filtersSummary(), 'results' => (int) $data['total'], 'approx' => !empty($data['approximate']), 'took_ms' => $tookMs,
                 'ip_hash' => ClientIp::hash($ip), 'ip_masked' => ClientIp::mask($ip), 'user_agent' => $ua,
                 'sid' => self::sid($_GET['sid'] ?? ''),
             ]);

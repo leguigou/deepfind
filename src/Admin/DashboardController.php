@@ -62,7 +62,7 @@ final class DashboardController
             'store' => Store::get()->name(),
             'runs' => Db::all('SELECT r.*, s.code FROM import_runs r JOIN sources s ON s.id = r.source_id ORDER BY r.id DESC LIMIT 8'),
             'kpi' => Db::one(
-                'SELECT COUNT(*) AS searches, COALESCE(SUM(results = 0), 0) AS zero, COALESCE(AVG(took_ms), 0) AS took,
+                'SELECT COUNT(*) AS searches, COALESCE(SUM((results = 0 OR approx = 1)), 0) AS zero, COALESCE(AVG(took_ms), 0) AS took,
                         COUNT(DISTINCT ip_hash) AS visitors
                  FROM search_logs WHERE created_at >= NOW() - INTERVAL 1 DAY AND is_final = 1'
             ),

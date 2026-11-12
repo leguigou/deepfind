@@ -22,6 +22,7 @@
   --input-bg: rgba(255, 255, 255, .07);
   --shadow: 0 10px 30px rgba(8, 2, 30, .45);
   --blur: blur(14px);
+  --bar-bg: rgba(23, 10, 54, .88);
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -47,6 +48,7 @@
   --input-bg: #ffffff;
   --shadow: 0 6px 20px rgba(60, 30, 120, .08);
   --blur: none;
+  --bar-bg: rgba(255, 255, 255, .94);
   color-scheme: light;
 }
 
@@ -137,7 +139,7 @@ input, select, textarea {
   width: 100%; display: block; margin-top: 4px; padding: 8px 10px; font: inherit; color: var(--text);
   background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px;
 }
-input[type=checkbox] { width: auto; display: inline; margin: 0; accent-color: var(--accent); }
+input[type=checkbox], input[type=radio] { width: auto; display: inline; margin: 0; accent-color: var(--accent); flex: 0 0 auto; }
 input[type=file] { padding: 6px; }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
 select option { background: var(--surface-solid); color: var(--text); }
@@ -263,3 +265,27 @@ button.link { background: none; border: 0; color: var(--link); cursor: pointer; 
 .toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 .toggle-text { display: flex; flex-direction: column; }
 .toggle-text small { margin-top: 2px; }
+
+/* ---------- Choix (boutons radio) et interrupteurs en bloc */
+.form label.choice, label.choice { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; margin: 0 0 8px; border-radius: 12px;
+  border: 1px solid var(--border); cursor: pointer; font-weight: 400; }
+label.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+label.choice input { margin-top: 3px; width: 16px; height: 16px; }
+.choice-text { display: flex; flex-direction: column; gap: 2px; }
+.toggle-block { display: flex !important; margin: 6px 0 12px !important; }
+
+/* ---------- Barre d'actions fixée en bas de la fenêtre */
+.fixed-actions, .sticky-actions {
+  position: fixed; left: 248px; right: 0; bottom: 0; z-index: 30; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 12px 32px; margin: 0; background: var(--bar-bg); border-top: 1px solid var(--border);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 -8px 24px rgba(0, 0, 0, .18);
+  transition: left .2s ease;
+}
+.menu-collapsed .fixed-actions, .menu-collapsed .sticky-actions { left: 68px; }
+.main:has(.fixed-actions, .sticky-actions) { padding-bottom: 96px; }
+@media (max-width: 900px) {
+  .fixed-actions, .sticky-actions { left: 68px; padding: 10px 16px; }
+}
+.syn-form { margin: 0; flex-wrap: nowrap; }
+.syn-form input[name=synonyms] { min-width: 200px; }
+.zero-table td { vertical-align: middle; }

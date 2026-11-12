@@ -121,7 +121,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('.sticky-actions button.btn >> nth=0');
   const relTxt = await page.textContent('body');
   check('pertinence : appliquée au moteur', relTxt.includes('appliqués à'));
-  check('pertinence : avertissement poids (import requis)', relTxt.includes('prochain import complet'));
+  check('pertinence : avertissement poids (recalcul requis)', relTxt.includes('prochain recalcul des scores'));
   check('pertinence : nouvel ordre enregistré', (await page.inputValue('input[name="fields[brand][pos]"]')) === '1');
   await page.screenshot({ path: OUT + '/13-pertinence.png', fullPage: false });
   await page.fill('input[name="fields[brand][pos]"]', '2');
@@ -131,6 +131,29 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('.sticky-actions button.btn >> nth=0');
   await page.goto(BASE + '/admin/sources/test?id=1');
   check('mapping visuel : test du résultat sans rejet', !(await page.textContent('body')).includes('Rejeté'));
+
+  // Statistiques : ajout d'un synonyme depuis une requête sans résultat exact
+  await page.goto(BASE + '/admin/stats');
+  const synForms = await page.$$('form.syn-form');
+  check('stats : formulaire de synonyme sur les requêtes sans résultat', synForms.length > 0);
+  if (synForms.length) {
+    await page.fill('form.syn-form >> nth=0 >> input[name=synonyms]', 'palme');
+    await page.click('form.syn-form >> nth=0 >> button');
+    check('stats : synonyme ajouté et retour sur les statistiques', page.url().includes('/admin/stats') && (await page.textContent('body')).includes('synonymes envoyée'));
+  }
+  check('stats : produits cliqués', (await page.textContent('body')).includes('Produits les plus cliqués'));
+  await page.screenshot({ path: OUT + '/15-stats.png', fullPage: false });
+
+  // Boosts produits
+  await page.goto(BASE + '/admin/preview?q=masque');
+  await page.click('a:has-text("Booster") >> nth=0');
+  check('aperçu → boost : SKU pré-rempli', (await page.inputValue('input[name=sku]')) !== '');
+  await page.selectOption('select[name=boost]', '8');
+  await page.click('form[action$="/admin/boosts/save"] button.btn');
+  check('boost : enregistré et appliqué', (await page.textContent('body')).includes('mis à jour dans le moteur') && (await page.textContent('table')).includes('+8'));
+  await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
+  page.once('dialog', (d) => d.accept());
+  await page.click('form[action$="/admin/boosts/delete"] button');
 
   // Cache : visibilité et purge
   await page.goto(BASE + '/admin/cache');

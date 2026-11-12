@@ -18,7 +18,7 @@ final class SearchService
 {
     private const PUBLIC_FIELDS = ['id', 'sku', 'name', 'brand', 'url', 'image', 'image_hover', 'price', 'final_price',
         'has_price_range', 'on_sale', 'discount_percent', 'in_stock', 'rating', 'reviews_count', 'is_new'];
-    private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'type', 'category_names'];
+    private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'boost_total', 'clicks_30d', 'type', 'category_names'];
     private const POST_FIELDS = ['id', 'title', 'url', 'image', 'excerpt', 'published_ts'];
 
     public function __construct(private readonly MeiliClient $meili)
@@ -111,11 +111,43 @@ final class SearchService
             $names[] = 'posts';
         }
 
+        // Correspondance des mots (page Pertinence) :
+        //   exact_then_approx : tous les mots doivent être trouvés ; si aucun produit, résultats « approchants » signalés comme tels ;
+        //   strict            : tous les mots, sinon aucun résultat ;
+        //   loose             : le moteur retire des mots jusqu'à trouver quelque chose (ancien comportement).
+        $mode = Relevance::matchingMode();
+        $results = $this->runQueries($queries, $names, $mode === 'loose' ? 'last' : 'all', $internal);
+        $approx = false;
+        if ($mode === 'exact_then_approx' && $r->q !== '' && (int) ($results['main']['estimatedTotalHits'] ?? 0) === 0
+            && empty($results['sku']['hits']) && empty($results['injected']['hits'])) {
+            $results = $this->runQueries($queries, $names, 'last', $internal);
+            $approx = (int) ($results['main']['estimatedTotalHits'] ?? 0) > 0;
+        }
+        return $this->format($r, $results, $pins, $boosts, $nInj, $mainOffset, $mainLimit, $attrLabels, $internal, $skuLike, $approx);
+    }
+
+    /** @return array<string, array> résultats par nom de requête */
+    private function runQueries(array $queries, array $names, string $strategy, bool $internal): array
+    {
+        $threshold = Relevance::minScore();
+        foreach ($queries as &$q) {
+            if (($q['q'] ?? '') === '') {
+                continue; // requêtes par filtre (SKU exact, produits épinglés) : pas concernées
+            }
+            $q['matchingStrategy'] = $strategy;
+            if ($threshold > 0) {
+                $q['rankingScoreThreshold'] = $threshold;
+            }
+            if ($internal) {
+                $q['showRankingScore'] = true;
+            }
+        }
+        unset($q);
         $results = [];
         foreach ($this->meili->multiSearch($queries) as $i => $res) {
             $results[$names[$i]] = $res;
         }
-        return $this->format($r, $results, $pins, $boosts, $nInj, $mainOffset, $mainLimit, $attrLabels, $internal, $skuLike);
+        return $results;
     }
 
     /** @return array<string, string|list<string>> clauses de filtre par groupe (combinées en ET) */
@@ -167,7 +199,7 @@ final class SearchService
         };
     }
 
-    private function format(SearchRequest $r, array $res, array $pins, array $boosts, int $nInj, int $mainOffset, int $mainLimit, array $attrLabels, bool $internal, bool $skuLike): array
+    private function format(SearchRequest $r, array $res, array $pins, array $boosts, int $nInj, int $mainOffset, int $mainLimit, array $attrLabels, bool $internal, bool $skuLike, bool $approx = false): array
     {
         $main = $res['main'] ?? [];
         $hits = array_map(fn ($h) => $this->product($h, $internal), $main['hits'] ?? []);
@@ -258,6 +290,8 @@ final class SearchService
             'limit' => $r->limit,
             'next_offset' => $r->offset + $r->limit,
             'has_more' => ($mainOffset + $mainLimit) < $mainTotal,
+            // true : aucun produit ne contient tous les mots ; produits « approchants » (comptés « sans résultat exact »)
+            'approximate' => $approx,
             'redirect' => RulesRepository::compiled($r->lang)['redirects'][$r->qNorm] ?? null,
             'products' => $hits,
             'facets' => $facets,
@@ -279,6 +313,9 @@ final class SearchService
             if (array_key_exists($f, $h)) {
                 $p[$f] = $h[$f];
             }
+        }
+        if ($internal && isset($h['_rankingScore'])) {
+            $p['relevance'] = round((float) $h['_rankingScore'], 3);
         }
         foreach (['in_stock', 'on_sale', 'has_price_range', 'is_new'] as $b) {
             if (isset($p[$b])) {
@@ -310,7 +347,7 @@ final class SearchService
     private function empty(SearchRequest $r): array
     {
         return ['query' => $r->q, 'lang' => $r->lang, 'total' => 0, 'offset' => $r->offset, 'limit' => $r->limit,
-            'next_offset' => $r->offset + $r->limit, 'has_more' => false, 'redirect' => null, 'products' => [], 'facets' => [],
+            'next_offset' => $r->offset + $r->limit, 'has_more' => false, 'approximate' => false, 'redirect' => null, 'products' => [], 'facets' => [],
             'toggles' => ['in_stock' => 0, 'on_sale' => 0], 'price_range' => null, 'posts' => [], 'posts_total' => 0, 'engine_ms' => 0];
     }
 

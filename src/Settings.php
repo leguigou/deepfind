@@ -32,6 +32,13 @@ final class Settings
         'new_days' => '45',
         'out_of_stock_last' => '1',
         'biz_importance' => 'low',
+        'matching_mode' => 'exact_then_approx',
+        'min_relevance' => '0',
+        'attribute_first' => '0',
+        'w_clicks' => '20',
+        'clicks_ref' => '50',
+        'scores_nightly' => '1',
+        'scores_cron' => '30 4 * * *',
         'searchable_fields' => '',
         // Recherche
         'posts_limit' => '4',
@@ -46,7 +53,7 @@ final class Settings
     ];
 
     /** Paramètres marche/arrêt (affichés sous forme d'interrupteur) */
-    public const BOOLEANS = ['block_bad_user_agents', 'out_of_stock_last', 'log_searches'];
+    public const BOOLEANS = ['block_bad_user_agents', 'out_of_stock_last', 'log_searches', 'attribute_first', 'scores_nightly'];
 
     public const LABELS = [
         'rate_per_minute' => 'Requêtes max. par IP et par minute',

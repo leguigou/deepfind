@@ -56,6 +56,7 @@ foreach (XmlItemReader::items($gtmp, ['item']) as [, $gel]) {
 }
 unlink($gtmp);
 check('flux Google (g:availability) : stock lu correctement', $gvals === [0, 1], json_encode($gvals));
+check('pertinence : priorité au champ', DeepFind\Search\Relevance::rankingRules('low', true)[2] === 'attribute');
 check('pertinence : importance du score métier', DeepFind\Search\Relevance::rankingRules('low')[6] === 'biz_score:desc' && DeepFind\Search\Relevance::rankingRules('high')[2] === 'biz_score:desc');
 check('transform divide:100', Mapper::transform(['to_float', 'divide:100'], '42') === 0.42);
 check('transform split', Mapper::transform(['split:|'], 'a| b |c') === ['a', 'b', 'c']);
@@ -243,6 +244,40 @@ if ($base) {
     check('cache : invalidé immédiatement après une modification', $first !== '' && ($after['cached'] ?? true) === false && !in_array($first, array_column($after['products'], 'sku'), true));
     DeepFind\Db::exec("DELETE FROM query_rules WHERE query = 'masque' AND action = 'hide'");
     DeepFind\Rules\RulesRepository::bumpVersion();
+
+    // Correspondance des mots : « barbe à papa » (aucun produit) => approchants signalés, ou rien en mode strict
+    [, $bp] = $get("/api/v1/search?key=$key&q=" . rawurlencode('barbe à papa') . "&sid=sidbarbe00001");
+    check('recherche sans produit : résultats marqués « approchants » (ou aucun)', ($bp['approximate'] ?? false) === true || $bp['total'] === 0, json_encode(['t' => $bp['total'], 'a' => $bp['approximate'] ?? null]));
+    [, $ok] = $get("/api/v1/search?key=$key&q=palme");
+    check('recherche normale : pas « approchant »', ($ok['approximate'] ?? true) === false && $ok['total'] > 0);
+    DeepFind\Settings::set('matching_mode', 'strict');
+    [, $bp2] = $get("/api/v1/search?key=$key&q=" . rawurlencode('barbe à papa'));
+    check('mode strict : aucun résultat', $bp2['total'] === 0 && ($bp2['approximate'] ?? true) === false);
+    DeepFind\Settings::set('matching_mode', 'exact_then_approx');
+    usleep(300000);
+    $logged = DeepFind\Db::one("SELECT results, approx FROM search_logs WHERE query_norm = 'barbe a papa' ORDER BY id LIMIT 1");
+    check('statistiques : recherche comptée « sans résultat exact »', $logged !== null && ((int) $logged['approx'] === 1 || (int) $logged['results'] === 0));
+
+    // Boost extranet : appliqué immédiatement au score du produit
+    $meiliT = DeepFind\Meili\MeiliClient::admin();
+    $docB = $meiliT->fetchDocuments('deepfind_products_fr', 'sku = "SEAC-X-VISION"', 1)[0] ?? null;
+    DeepFind\Rules\Boosts::save('fr', 'SEAC-X-VISION', 10, '', '', 'test');
+    DeepFind\Admin\BoostsController::apply('fr', ['SEAC-X-VISION']);
+    $docA = $meiliT->fetchDocuments('deepfind_products_fr', 'sku = "SEAC-X-VISION"', 1)[0] ?? null;
+    check('boost : score augmenté immédiatement', $docB && $docA && (int) $docA['boost_total'] === 10 && $docA['biz_score'] > $docB['biz_score']);
+    DeepFind\Db::exec("DELETE FROM product_boosts WHERE sku = 'SEAC-X-VISION'");
+
+    // Recalcul des scores (sans flux) : les clics font monter le produit
+    $target = $meiliT->fetchDocuments('deepfind_products_fr', 'sku = "C4-GHOST"', 1)[0] ?? null;
+    for ($i = 0; $i < 40; $i++) {
+        DeepFind\Db::insert('click_logs', ['created_at' => date('Y-m-d H:i:s'), 'lang' => 'fr', 'query_norm' => 'palme', 'doc_type' => 'product', 'doc_id' => $target['id'], 'position' => 3, 'ip_hash' => 'testtesttesttest']);
+    }
+    $srcFr = DeepFind\Db::one("SELECT * FROM sources WHERE code = 'produits_fr'");
+    $runS = (new DeepFind\Import\Importer($meiliT))->run($srcFr, 'scores', 'cli');
+    $after = $meiliT->fetchDocuments('deepfind_products_fr', 'sku = "C4-GHOST"', 1)[0] ?? null;
+    check('recalcul des scores : terminé sans relire le flux', $runS['status'] === 'success' && (int) $runS['items_read'] === 50);
+    check('recalcul des scores : clics pris en compte', (int) ($after['clicks_30d'] ?? 0) === 40 && $after['biz_score'] > $target['biz_score']);
+    DeepFind\Db::exec("DELETE FROM click_logs WHERE ip_hash = 'testtesttesttest'");
 
     // Progression : comptage et étapes enregistrées
     $run = DeepFind\Db::one("SELECT * FROM import_runs WHERE type = 'full' AND status = 'success' ORDER BY id LIMIT 1");

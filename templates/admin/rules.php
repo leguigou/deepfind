@@ -4,7 +4,7 @@
   <form method="post" action="<?= e(url('/admin/rules/add')) ?>" class="card form">
     <?= csrf_field() ?>
     <h3>Ajouter une règle</h3>
-    <label>Requête <input name="query" required placeholder="palme"></label>
+    <label>Requête <input name="query" required placeholder="palme" value="<?= e($_GET['query'] ?? '') ?>"></label>
     <label>SKU parent (plusieurs possibles, séparés par des espaces) <input name="sku" required placeholder="C4-PREDATOR"></label>
     <div class="grid2">
       <label>Action <select name="action"><?php foreach ($actions as $k => $l): ?><option value="<?= e($k) ?>"><?= e($l) ?></option><?php endforeach; ?></select></label>

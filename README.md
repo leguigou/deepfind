@@ -210,7 +210,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=1" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=2" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search, input[name=q]"
@@ -402,7 +402,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Règles de résultats | Épingler un SKU à une position, le remonter, le masquer (requête `*` = masqué partout), avec dates de début et de fin ; import CSV (`samples/boosts.csv`). Ne s'applique qu'au tri « pertinence » |
 | Redirections | Requête → page (ex. « retour » → CGV) ; import CSV |
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
-| Statistiques | Top requêtes, recherches sans résultat (export CSV), clics, évolution par jour |
+| Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
+| Boosts produits | Mise en avant ou en retrait d'un produit sur toutes les recherches, appliquée immédiatement |
 | Journal des recherches | Détail filtrable et exportable |
 | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
 | Clés & intégration | Clés publiques, domaines autorisés, code à copier |
@@ -414,10 +415,23 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 
 La page **Pertinence & classement** regroupe tout ce qui fait remonter un produit :
 
+0. **Correspondance des mots**, en trois modes :
+   - *Exacts, sinon approchants signalés* (par défaut) : tous les mots doivent être trouvés. Sinon, des produits approchants sont proposés avec la mention « Aucun résultat exact », et la recherche compte comme « sans résultat exact » dans les statistiques.
+   - *Exacts uniquement* : tous les mots, sinon aucun résultat.
+   - *Le plus de résultats possible* : le moteur retire des mots, au risque de résultats sans rapport (« barbe à papa » → « barbe »…).
+
+   Un seuil **« Pertinence minimum »** (0 à 1) peut écarter les produits trop peu pertinents. Réglez-le en regardant la colonne « Pertinence » de l'aperçu interne.
 1. **Importance des champs dans la recherche texte** : numérotez les champs (nom, marque, SKU, mots-clés, catégories, attributs, descriptions). Un mot trouvé dans un champ bien classé fait remonter le produit. Un champ peut être rendu non cherchable. *Appliqué immédiatement au moteur.*
-2. **Score métier** : un poids par critère (en stock, rentabilité, popularité sur 30 jours, nouveauté, boost manuel du flux). Mettez 0 pour ignorer un critère.
+   - **Pas de poids chiffré par champ** : Meilisearch classe par *ordre* des champs, pas par poids.
+   - Pour que cet ordre compte plus, activez **« Priorité au champ où le mot est trouvé »** : un produit dont le nom contient le mot passe alors devant un produit qui ne le contient que dans sa description.
+2. **Score métier** : un poids par critère. Mettez 0 pour ignorer un critère.
+   - **Critères** : en stock, rentabilité, popularité (ventes 30 jours du flux), **clics dans la recherche sur 30 jours** (les produits les plus cliqués remontent), nouveauté, boosts (flux + extranet).
    - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
-   - Le score est calculé à l'import : *appliqué au prochain import complet*. Le bouton « Enregistrer et recalculer maintenant » le lance tout de suite, et la page signale des poids modifiés mais pas encore appliqués.
+   - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
+
+**Boosts produits** (menu dédié) : un produit passe en avant (+1 à +10) ou en retrait (-1 à -10) sur toutes les recherches, avec dates de début et de fin facultatives. Appliqué immédiatement.
+- Raccourci : bouton **« Booster »** sur chaque produit de l'aperçu interne.
+- Pour imposer une position sur une requête précise, utilisez plutôt les règles « Épingler » ou « Remonter ».
 3. **Importance du score métier face à la pertinence** : *faible* (il ne départage que des produits aussi pertinents, recommandé), *moyenne* ou *forte*. Interrupteur **Ruptures en fin de liste**. *Appliqué immédiatement.*
 
 **Ordre de classement :**
@@ -463,6 +477,7 @@ php bin/console help
 | `schedule:run [--work]` | **À lancer chaque minute par cron** : déclenche les imports planifiés dans l'extranet (`--work` : les exécute aussi, sans Supervisor) |
 | `import:run --all` ou `--source=CODE`, `--type=full\|delta` | Import immédiat en ligne de commande |
 | `queue:work [--once]` | Traite les imports demandés depuis l'extranet |
+| `scores:refresh [--lang=fr]` | Recalcule les scores métier (poids, boosts, clics) sans relire les flux |
 | `rules:sync` | Renvoie les synonymes au moteur |
 | `rules:import --lang=fr --synonyms=… --rules=… --redirects=… [--replace]` | Import CSV en ligne de commande |
 | `logs:purge` | Purge des journaux |

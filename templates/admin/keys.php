@@ -36,7 +36,7 @@
 
 <h2>Intégration sur le site (Magento)</h2>
 <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème :</p>
-<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=1" defer
+<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=2" defer
   data-key="<?= e($keys[0]['public_key'] ?? 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search, input[name=q]"

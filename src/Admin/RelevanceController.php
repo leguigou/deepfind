@@ -19,7 +19,7 @@ use DeepFind\Text;
  */
 final class RelevanceController
 {
-    public const WEIGHTS = ['w_stock', 'w_margin', 'w_popularity', 'w_new', 'w_manual_boost', 'popularity_ref', 'new_days'];
+    public const WEIGHTS = ['w_stock', 'w_margin', 'w_popularity', 'w_clicks', 'w_new', 'w_manual_boost', 'popularity_ref', 'clicks_ref', 'new_days'];
 
     public function index(): void
     {
@@ -31,7 +31,7 @@ final class RelevanceController
             'values' => Settings::all(),
             'sources' => $sources,
             'weightsChangedAt' => Settings::get('weights_changed_at'),
-            'lastFull' => (string) (Db::value("SELECT MAX(finished_at) FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.kind = 'products' AND r.type = 'full' AND r.status = 'success'") ?? ''),
+            'lastFull' => (string) (Db::value("SELECT MAX(finished_at) FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.kind = 'products' AND r.type IN ('full','scores') AND r.status = 'success'") ?? ''),
         ], 'Pertinence & classement');
     }
 
@@ -53,6 +53,11 @@ final class RelevanceController
         $imp = (string) ($_POST['biz_importance'] ?? 'low');
         Settings::set('biz_importance', isset(Relevance::IMPORTANCE[$imp]) ? $imp : 'low');
         Settings::set('out_of_stock_last', isset($_POST['out_of_stock_last']) ? '1' : '0');
+        Settings::set('attribute_first', isset($_POST['attribute_first']) ? '1' : '0');
+        Settings::set('scores_nightly', isset($_POST['scores_nightly']) ? '1' : '0');
+        $mm = (string) ($_POST['matching_mode'] ?? 'exact_then_approx');
+        Settings::set('matching_mode', isset(Relevance::MATCHING[$mm]) ? $mm : 'exact_then_approx');
+        Settings::set('min_relevance', (string) max(0, min(0.99, (float) str_replace(',', '.', (string) ($_POST['min_relevance'] ?? '0')))));
 
         // 3. Poids (pris en compte au prochain import complet)
         $weightsChanged = false;
@@ -91,10 +96,14 @@ final class RelevanceController
 
         $queued = [];
         if (isset($_POST['reindex'])) {
-            foreach (Db::all("SELECT id, code FROM sources WHERE kind = 'products' AND active = 1") as $s) {
-                if (Db::value("SELECT id FROM import_runs WHERE source_id = ? AND status IN ('queued','running')", [$s['id']]) === null) {
-                    $queued[] = '#' . Importer::queue((int) $s['id'], 'full', 'manual') . ' (' . $s['code'] . ')';
+            // Recalcul des scores sur les produits déjà indexés (une fois par langue, sans relire les flux)
+            foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE kind = 'products' AND active = 1 GROUP BY lang") as $s) {
+                if (Db::value("SELECT r.id FROM import_runs r JOIN sources x ON x.id = r.source_id WHERE x.lang = ? AND r.status IN ('queued','running') LIMIT 1", [$s['lang']]) === null) {
+                    $queued[] = '#' . Importer::queue((int) $s['id'], 'scores', 'manual') . ' (' . strtoupper($s['lang']) . ')';
                 }
+            }
+            if ($queued !== []) {
+                Settings::set('weights_applied_at', date('Y-m-d H:i:s'));
             }
         }
 
@@ -104,9 +113,9 @@ final class RelevanceController
             Auth::flash('ok', sprintf('Réglages enregistrés et appliqués à %d index (Meilisearch recalcule le classement en arrière-plan, quelques secondes à quelques minutes).', $applied));
         }
         if ($queued !== []) {
-            Auth::flash('ok', 'Import complet mis en file d\'attente pour recalculer le score métier : ' . implode(', ', $queued) . '.');
+            Auth::flash('ok', 'Recalcul des scores mis en file d\'attente ' . implode(', ', $queued) . ' : suivez-le dans « Imports » (quelques secondes à quelques minutes).');
         } elseif ($weightsChanged) {
-            Auth::flash('warn', 'Les poids du score métier ont changé : ils s\'appliqueront au prochain import complet (bouton « Enregistrer et recalculer maintenant » pour le lancer tout de suite).');
+            Auth::flash('warn', 'Les poids du score métier ont changé : ils s\'appliqueront au prochain recalcul des scores (chaque nuit si activé, au prochain import, ou bouton « Enregistrer et recalculer les scores »).');
         }
         App::back('/admin/relevance');
     }

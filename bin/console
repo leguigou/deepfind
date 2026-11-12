@@ -118,6 +118,17 @@ try {
             }
             break;
 
+        case 'scores:refresh':
+            // Recalcule les scores (poids, boosts, clics) sans relire le flux
+            foreach (Db::all("SELECT MIN(id) AS id, lang FROM sources WHERE kind = 'products' GROUP BY lang") as $s) {
+                if (isset($opts['lang']) && $opts['lang'] !== $s['lang']) {
+                    continue;
+                }
+                $src = Db::one('SELECT * FROM sources WHERE id = ?', [$s['id']]);
+                (new Importer(MeiliClient::admin(), $out))->run($src, 'scores', 'cli');
+            }
+            break;
+
         case 'rules:sync':
             $langs = isset($opts['lang']) ? [$opts['lang']] : array_filter(array_map('trim', explode(',', Config::get('APP_LANGS', 'fr'))));
             $meili = MeiliClient::admin();
@@ -176,6 +187,7 @@ DeepFind — commandes :
   schedule:run [--work]                   À lancer CHAQUE MINUTE par cron : déclenche les imports planifiés
                                           (--work : traite aussi la file, si Supervisor n'est pas utilisé)
   queue:work [--once] [--sleep=5] [--max-time=3600]   Traite les imports en file d'attente (Supervisor)
+  scores:refresh [--lang=fr]              Recalcule les scores métier (poids, boosts, clics) sans relire les flux
   rules:sync [--lang=fr]                  Renvoie les synonymes au moteur
   rules:import --lang=fr [--replace] [--synonyms=f.csv] [--rules=f.csv] [--redirects=f.csv]
   logs:purge                              Supprime les journaux au-delà de la durée de conservation

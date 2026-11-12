@@ -16,6 +16,7 @@
     <?php $phases = \DeepFind\Import\Progress::PHASES; unset($phases['done']);
     if ($run['kind'] === 'posts' || $run['type'] === 'delta') { unset($phases['group']); }
     if ($run['type'] === 'delta') { unset($phases['swap']); }
+    if ($run['type'] === 'scores') { $phases = ['score' => $phases['score'], 'index' => $phases['index']]; } else { unset($phases['score']); }
     $cur = array_search((string) ($run['phase'] ?? ''), array_keys($phases), true);
     $i = 0; foreach ($phases as $k => $l): ?>
       <li data-step="<?= e($k) ?>" class="<?= $run['status'] === 'success' || ($cur !== false && $i < $cur) ? 'done' : ($cur === $i && $pg['active'] ? 'on' : '') ?>"><?= e($l) ?></li>

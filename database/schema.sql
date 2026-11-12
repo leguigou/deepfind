@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS sources (
 CREATE TABLE IF NOT EXISTS import_runs (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   source_id INT UNSIGNED NOT NULL,
-  type ENUM('full','delta') NOT NULL,
+  type ENUM('full','delta','scores') NOT NULL,
   status ENUM('queued','running','success','failed','aborted') NOT NULL,
   trigger_by ENUM('cron','manual','cli') NOT NULL,
   created_at DATETIME NOT NULL,
@@ -94,6 +94,19 @@ CREATE TABLE IF NOT EXISTS query_rules (
   KEY idx_lang_query (lang, query)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Boosts de produits saisis dans l'extranet (-10 à +10), ajoutés au boost du flux dans le score métier
+CREATE TABLE IF NOT EXISTS product_boosts (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  lang CHAR(2) NOT NULL,
+  sku VARCHAR(190) NOT NULL,
+  boost TINYINT NOT NULL,
+  starts_at DATE NULL,
+  ends_at DATE NULL,
+  note VARCHAR(190) NOT NULL DEFAULT '',
+  created_at DATETIME NOT NULL,
+  UNIQUE KEY uk_lang_sku (lang, sku)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS redirects (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   lang CHAR(2) NOT NULL,
@@ -113,6 +126,7 @@ CREATE TABLE IF NOT EXISTS search_logs (
   query_norm VARCHAR(255) NOT NULL,
   filters VARCHAR(500) NULL,
   results INT UNSIGNED NOT NULL DEFAULT 0,
+  approx TINYINT(1) NOT NULL DEFAULT 0,
   took_ms SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   ip_hash CHAR(16) NOT NULL,
   ip_masked VARCHAR(64) NOT NULL,

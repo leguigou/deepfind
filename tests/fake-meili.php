@@ -244,7 +244,15 @@ function search(array $idx, array $q): array
     if ($words !== []) {
         $all = count($words);
         $full = array_filter($hits, static fn ($h) => $h['m'] === $all);
-        $hits = $full ?: $hits;
+        // matchingStrategy « all » : tous les mots obligatoires ; « last » (défaut) : repli sur les correspondances partielles
+        $hits = ($q['matchingStrategy'] ?? 'last') === 'all' ? array_values($full) : ($full ?: $hits);
+        foreach ($hits as &$h) {
+            $h['score'] = max(0, $h['m'] / $all - 0.1 * $h['typo']);
+        }
+        unset($h);
+        if (isset($q['rankingScoreThreshold'])) {
+            $hits = array_values(array_filter($hits, static fn ($h) => $h['score'] >= (float) $q['rankingScoreThreshold']));
+        }
     }
     usort($hits, static function ($a, $b) use ($sort, $custom) {
         if ($a['m'] !== $b['m']) {
@@ -289,8 +297,13 @@ function search(array $idx, array $q): array
     $offset = (int) ($q['offset'] ?? 0);
     $limit = (int) ($q['limit'] ?? 20);
     $fields = $q['attributesToRetrieve'] ?? null;
-    $page = array_map(static function ($h) use ($fields) {
-        return $fields ? array_intersect_key($h['doc'], array_flip($fields)) : $h['doc'];
+    $withScore = !empty($q['showRankingScore']);
+    $page = array_map(static function ($h) use ($fields, $withScore) {
+        $d = $fields ? array_intersect_key($h['doc'], array_flip($fields)) : $h['doc'];
+        if ($withScore) {
+            $d['_rankingScore'] = $h['score'] ?? 1.0;
+        }
+        return $d;
     }, array_slice($hits, $offset, $limit));
     $res = ['indexUid' => $q['indexUid'] ?? '', 'hits' => $page, 'query' => $q['q'] ?? '', 'processingTimeMs' => (int) ((microtime(true) - $t0) * 1000),
         'limit' => $limit, 'offset' => $offset, 'estimatedTotalHits' => count($hits)];
@@ -395,7 +408,7 @@ if (preg_match('#^/indexes/([^/]+)(/.*)?$#', $path, $m)) {
                 $res[] = $doc;
             }
         }
-        out(['results' => array_slice($res, 0, (int) ($body['limit'] ?? 20)), 'total' => count($res)]);
+        out(['results' => array_slice($res, (int) ($body['offset'] ?? 0), (int) ($body['limit'] ?? 20)), 'total' => count($res)]);
     } elseif ($sub === '/search') {
         out(search($idx, $body + ['indexUid' => $uid]));
     } else {

@@ -55,7 +55,7 @@ final class Importer
     /** Lance un import et retourne la ligne import_runs finale. */
     public function run(array $source, string $type, string $trigger = 'cli', ?int $runId = null): array
     {
-        if (!in_array($type, ['full', 'delta'], true)) {
+        if (!in_array($type, ['full', 'delta', 'scores'], true)) {
             throw new \InvalidArgumentException('Type d\'import inconnu : ' . $type);
         }
         $runId ??= self::queue((int) $source['id'], $type, $trigger);
@@ -75,6 +75,10 @@ final class Importer
                 throw new \RuntimeException('Un import est déjà en cours pour cette source.');
             }
             $this->log(sprintf('Import %s de la source %s (%s)', $type, $source['code'], $source['kind']));
+            if ($type === 'scores') {
+                $this->refreshScores((string) $source['lang']);
+                throw new ScoresDone();
+            }
             $this->progress('download', [], true);
             $file = FeedFetcher::fetch($source, $type, function (int $done, int $total): void {
                 $this->progress('download', ['bytes_done' => $done, 'bytes_total' => $total]);
@@ -102,6 +106,9 @@ final class Importer
                 $this->deltaProducts($source, $mapping, $file);
             }
             $message = sprintf('%d lus, %d indexés, %d rejetés', $this->report['read'], $this->report['indexed'], $this->report['rejected']);
+            $this->prog['phase'] = 'done';
+        } catch (ScoresDone) {
+            $message = sprintf('%d produits relus, %d scores mis à jour', $this->report['read'], $this->report['indexed']);
             $this->prog['phase'] = 'done';
         } catch (AbortImport $e) {
             $status = 'aborted';
@@ -140,7 +147,7 @@ final class Importer
         $live = Config::productIndex($lang);
         $tmp = $live . '_tmp';
         $mapper = new Mapper($mapping, 'products');
-        $builder = new ProductBuilder();
+        $builder = ProductBuilder::forLang($lang);
         $synonyms = RulesRepository::meiliSynonyms($lang);
 
         $this->prepareTmpIndex($tmp, IndexSettings::products($lang, [], $synonyms));
@@ -280,7 +287,7 @@ final class Importer
             throw new \RuntimeException('Index ' . $live . ' absent : lancez d\'abord un import complet.');
         }
         $mapper = new Mapper($mapping, 'products');
-        $builder = new ProductBuilder();
+        $builder = ProductBuilder::forLang($source['lang']);
         $changes = [];
         $deletes = [];
         foreach (XmlItemReader::items($file, [$mapper->itemElement(), $mapper->deleteElement()]) as [$name, $el]) {
@@ -361,7 +368,7 @@ final class Importer
             $out = [];
             foreach (array_keys($touched) as $id) {
                 if (!isset($toDelete[$id])) {
-                    $out[] = $builder->computeDerived($docs[$id]);
+                    $out[] = $builder->computeDerived($builder->applySignals($docs[$id]));
                 }
             }
             if ($out !== []) {
@@ -447,6 +454,44 @@ final class Importer
 
     // ================================================================== Outils communs
 
+    /**
+     * Recalcule le score métier de tous les produits déjà indexés (poids, boosts de l'extranet, clics),
+     * sans retélécharger ni relire le flux. Lancé chaque nuit et depuis l'extranet.
+     */
+    public function refreshScores(string $lang): void
+    {
+        $live = Config::productIndex($lang);
+        if ($this->meili->getIndex($live) === null) {
+            throw new \RuntimeException('Index ' . $live . ' absent : lancez d\'abord un import complet.');
+        }
+        $total = (int) ($this->meili->stats($live)['numberOfDocuments'] ?? 0);
+        $this->progress('score', ['items_total' => $total], true);
+        $builder = ProductBuilder::forLang($lang);
+        $tasks = [];
+        for ($offset = 0; $offset < $total + 1000; $offset += 1000) {
+            $docs = $this->meili->fetchDocuments($live, '', 1000, $offset);
+            if ($docs === []) {
+                break;
+            }
+            $out = [];
+            foreach ($docs as $doc) {
+                $this->report['read']++;
+                $before = $doc['biz_score'] ?? null;
+                $doc = $builder->computeDerived($builder->applySignals($doc));
+                if ($before === null || abs((float) $before - (float) $doc['biz_score']) > 0.0005) {
+                    $out[] = $doc;
+                }
+            }
+            $this->progress('score');
+            if ($out !== []) {
+                $tasks[] = $this->meili->addDocuments($live, $out);
+                $this->report['indexed'] += count($out);
+            }
+        }
+        $this->waitTasks($tasks);
+        RulesRepository::bumpVersion();
+    }
+
     /** @param list<int> $tasks */
     private function waitTasks(array $tasks): void
     {
@@ -466,7 +511,7 @@ final class Importer
         $changed = $phase !== $this->prog['phase'];
         $this->prog = array_merge($this->prog, $values, ['phase' => $phase]);
         $total = (int) $this->prog['items_total'];
-        if ($phase === 'read' && $total > 0) {
+        if (($phase === 'read' || $phase === 'score') && $total > 0) {
             $pct = (int) floor(10 * $this->report['read'] / $total);
             if ($pct > $this->progLogged) {
                 $this->progLogged = $pct;
