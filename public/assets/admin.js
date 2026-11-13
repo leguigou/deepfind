@@ -86,6 +86,22 @@
         label();
       });
     });
+    var navigation = document.querySelector('[data-nav-groups]');
+    if (navigation) {
+      var groups = Array.from(navigation.querySelectorAll('[data-nav-group]'));
+      var activeGroup = navigation.querySelector('.contains-active');
+      var lastGroup = read('df-nav-group');
+      var currentGroup = activeGroup || groups.find(function (group) { return group.dataset.navGroup === lastGroup; });
+      if (currentGroup) {
+        groups.forEach(function (group) { group.open = group === currentGroup; });
+      }
+      if (activeGroup) { write('df-nav-group', activeGroup.dataset.navGroup); }
+      groups.forEach(function (group) {
+        group.querySelector('summary').addEventListener('click', function () {
+          if (!group.open) { write('df-nav-group', group.dataset.navGroup); }
+        });
+      });
+    }
     document.querySelectorAll('[data-toggle-menu]').forEach(function (b) {
       b.addEventListener('click', function () {
         var collapsed = root.classList.toggle('menu-collapsed');
