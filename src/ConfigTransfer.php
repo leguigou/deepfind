@@ -31,6 +31,7 @@ final class ConfigTransfer
         'rules' => 'Règles de résultats (épingler, remonter, masquer)',
         'redirects' => 'Redirections',
         'boosts' => 'Boosts produits',
+        'boost_rules' => 'Règles de boost (conditions et termes)',
         'sources' => 'Flux : mapping et planification des imports',
     ];
 
@@ -49,6 +50,7 @@ final class ConfigTransfer
             'rules' => $strip(Db::all('SELECT * FROM query_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'redirects' => $strip(Db::all('SELECT * FROM redirects WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'boosts' => $strip(Db::all('SELECT * FROM product_boosts WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
+            'boost_rules' => $strip(Db::all('SELECT * FROM boost_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'sources' => $strip(
                 Db::all('SELECT code, kind, lang, url, delta_url, auth_header, mapping, active, cron_full, cron_delta FROM sources WHERE project_id = ? ORDER BY id', [$pid]),
                 []
@@ -122,7 +124,7 @@ final class ConfigTransfer
                     $msgs[] = self::SECTIONS[$sec] . ' : copié';
                 }
             }
-            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boosts' => 'product_boosts'] as $sec => $table) {
+            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boosts' => 'product_boosts', 'boost_rules' => 'boost_rules'] as $sec => $table) {
                 if (!in_array($sec, $sections, true)) {
                     continue;
                 }
@@ -226,7 +228,9 @@ final class ConfigTransfer
             throw new \RuntimeException('Sauvegarde illisible.');
         }
         self::snapshot($pid, 'Avant restauration de la sauvegarde #' . $snapshotId);
-        return self::apply($pid, $data, array_keys(self::SECTIONS), true, true);
+        // Sauvegarde antérieure à une section (ex. règles de boost) : cette section est laissée telle quelle.
+        $sections = array_values(array_filter(array_keys(self::SECTIONS), static fn ($sec) => array_key_exists($sec, $data)));
+        return self::apply($pid, $data, $sections, true, true);
     }
 
     /** Valeur lisible pour le résumé de copie. */

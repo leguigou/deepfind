@@ -99,6 +99,17 @@ final class Relevance
         return $sum / count($queryWords);
     }
 
+    /** Vrai si le mot (normalisé) correspond à l'un des mots recherchés, à quelques lettres près. */
+    public static function matchesAny(array $queryWords, string $word): bool
+    {
+        foreach ($queryWords as $q) {
+            if (self::sameWord($q, $word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Même mot à quelques lettres près : pluriel, début de mot tapé, une faute de frappe sur les mots longs. */
     private static function sameWord(string $q, string $t): bool
     {

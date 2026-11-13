@@ -3,6 +3,8 @@
  * <script src="https://search.example.com/widget/deepfind.js" defer
  *         data-key="pk_…" data-lang="fr" data-input="#search" data-anchor="header"
  *         data-results-url="https://www.example.com/catalogsearch/result/?q="></script>
+ * data-native="keep"   : laisse fonctionner l'autocomplétion d'origine du site (par défaut : elle est neutralisée)
+ * data-hide=".panneau" : sélecteurs CSS supplémentaires de panneaux d'origine à masquer
  */
 (function () {
   'use strict';
@@ -23,8 +25,14 @@
     locale: ds.locale || 'fr-FR',
     minChars: parseInt(ds.minChars || '2', 10),
     pageSize: Math.min(48, parseInt(ds.pageSize || '20', 10)),
-    debounce: parseInt(ds.debounce || '180', 10)
+    debounce: parseInt(ds.debounce || '180', 10),
+    // Autocomplétion d'origine du site (Magento…) : neutralisée par défaut pour ne pas s'ouvrir en même temps
+    blockNative: ds.native !== 'keep',
+    hide: ds.hide || ''
   };
+  // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
+  var NATIVE_PANELS = '#search_autocomplete, .search-autocomplete, .amsearch-results, .amsearch-wrapper-block .amsearch-results, '
+    + '.mst-searchautocomplete__autocomplete, .smile-elasticsuite-autocomplete-result';
   if (!cfg.key) { console.warn('[DeepFind] data-key manquant'); return; }
 
   var T = {
@@ -385,26 +393,57 @@
     }, cfg.debounce);
   }
 
-  function bind(input) {
-    if (input.__df) { return; }
-    input.__df = true;
-    input.setAttribute('autocomplete', 'off');
-    input.addEventListener('input', onInput);
-    input.addEventListener('focus', function () {
+  // Gestionnaires du champ de recherche, par type d'événement
+  var handlers = {
+    input: onInput,
+    focus: function (ev) {
+      var input = ev.target;
       activeInput = input;
       if (input.value.trim().length >= cfg.minChars && state.q === input.value.trim() && grid.childNodes.length) { open(); }
-    });
-    input.addEventListener('keydown', function (ev) {
+    },
+    keydown: function (ev) {
+      var input = ev.target;
       if (ev.key === 'Escape') { close(); }
       if (ev.key === 'Enter') {
         var q = input.value.trim();
         if (state.redirect && q === state.q) { ev.preventDefault(); window.location.href = state.redirect; return; }
         if (cfg.resultsUrl && q) { ev.preventDefault(); window.location.href = cfg.resultsUrl + encodeURIComponent(q); }
       }
+    }
+  };
+
+  function bind(input) {
+    if (input.__df) { return; }
+    input.__df = true;
+    input.setAttribute('autocomplete', 'off');
+    if (!cfg.blockNative) {
+      Object.keys(handlers).forEach(function (type) { input.addEventListener(type, handlers[type]); });
+    }
+  }
+
+  /*
+   * Neutralise l'autocomplétion d'origine : les événements du champ sont interceptés tout en haut (window, phase de capture),
+   * traités par DeepFind, puis arrêtés avant d'atteindre les scripts du site (jQuery, Alpine/Hyvä, Knockout…).
+   * Le comportement par défaut du navigateur (saisie, curseur, envoi du formulaire) n'est pas touché.
+   */
+  function blockNative() {
+    var types = ['focus', 'focusin', 'focusout', 'blur', 'click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend',
+      'keydown', 'keyup', 'keypress', 'input', 'change', 'paste', 'cut', 'compositionstart', 'compositionend', 'search'];
+    types.forEach(function (type) {
+      window.addEventListener(type, function (ev) {
+        var target = ev.target;
+        if (!target || !target.__df) { return; }
+        if (handlers[type]) { handlers[type](ev); }
+        ev.stopImmediatePropagation();
+      }, true);
     });
+    var hide = document.createElement('style');
+    hide.textContent = NATIVE_PANELS + (cfg.hide ? ', ' + cfg.hide : '') + ' { display: none !important; }';
+    document.head.appendChild(hide);
   }
 
   function init() {
+    if (cfg.blockNative) { blockNative(); }
     document.querySelectorAll(cfg.input).forEach(bind);
     // Champs ajoutés plus tard (thèmes Magento qui reconstruisent l'en-tête)
     if (window.MutationObserver) {

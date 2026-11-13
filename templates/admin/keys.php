@@ -36,7 +36,7 @@
 
 <h2>Intégration sur le site (Magento)</h2>
 <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème :</p>
-<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=2" defer
+<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=3" defer
   data-key="<?= e($keys[0]['public_key'] ?? 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search, input[name=q]"
@@ -52,5 +52,7 @@
     <tr><td><code>data-results-url</code></td><td>Page « Tout voir » (la requête est ajoutée à la fin). Vide = bouton masqué</td></tr>
     <tr><td><code>data-currency</code>, <code>data-locale</code></td><td>Format des prix (EUR, fr-FR par défaut)</td></tr>
     <tr><td><code>data-min-chars</code>, <code>data-page-size</code></td><td>Caractères avant recherche (2), produits par page (20)</td></tr>
+    <tr><td><code>data-native</code></td><td>Par défaut, l'autocomplétion d'origine du site (Magento…) est neutralisée pour ne pas s'ouvrir en même temps. <code>keep</code> = la laisser fonctionner</td></tr>
+    <tr><td><code>data-hide</code></td><td>Sélecteurs CSS supplémentaires de panneaux d'origine à masquer (ex. <code>.mon-popup-recherche</code>)</td></tr>
   </tbody>
 </table>

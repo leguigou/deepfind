@@ -28,6 +28,11 @@ final class App
         'GET /admin/boosts' => [BoostsController::class, 'index'],
         'POST /admin/boosts/save' => [BoostsController::class, 'save'],
         'POST /admin/boosts/delete' => [BoostsController::class, 'delete'],
+        'GET /admin/boost-rules' => [BoostRulesController::class, 'index'],
+        'GET /admin/boost-rules/values' => [BoostRulesController::class, 'values'],
+        'POST /admin/boost-rules/save' => [BoostRulesController::class, 'save'],
+        'POST /admin/boost-rules/toggle' => [BoostRulesController::class, 'toggle'],
+        'POST /admin/boost-rules/delete' => [BoostRulesController::class, 'delete'],
         'GET /admin/relevance' => [RelevanceController::class, 'index'],
         'POST /admin/relevance/save' => [RelevanceController::class, 'save'],
         'POST /admin/project' => [ProjectsController::class, 'switch'],
@@ -68,6 +73,7 @@ final class App
         'GET /admin/settings' => [SettingsController::class, 'index'],
         'POST /admin/settings/save' => [SettingsController::class, 'save'],
         'GET /admin/preview' => [PreviewController::class, 'preview'],
+        'POST /admin/preview/toggle' => [PreviewController::class, 'toggle'],
         'GET /admin/demo' => [PreviewController::class, 'demo'],
     ];
 

@@ -6,6 +6,7 @@ namespace DeepFind\Search;
 
 use DeepFind\Config;
 use DeepFind\Meili\MeiliClient;
+use DeepFind\Rules\BoostRules;
 use DeepFind\Rules\RulesRepository;
 use DeepFind\Settings;
 use DeepFind\Store\Store;
@@ -20,6 +21,14 @@ final class SearchService
         'has_price_range', 'on_sale', 'discount_percent', 'in_stock', 'rating', 'reviews_count', 'is_new'];
     private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'boost_total', 'clicks_30d', 'type', 'category_names'];
     private const POST_FIELDS = ['id', 'title', 'url', 'image', 'excerpt', 'published_ts'];
+    // Aperçu interne uniquement : fiche détaillée et champs où la recherche a été trouvée.
+    private const DETAIL_FIELDS = ['short_description', 'description', 'ean', 'all_skus', 'all_eans', 'category_paths', 'category_terms',
+        'search_keywords', 'attr', 'attr_values', 'variants', 'created_ts', 'admin_boost'];
+
+    /** @var list<string> mots de la recherche en cours (aperçu interne) */
+    private array $words = [];
+    /** @var array<string, string> libellés des attributs */
+    private array $attrLabels = [];
 
     public function __construct(private readonly MeiliClient $meili)
     {
@@ -31,6 +40,7 @@ final class SearchService
         $postIndex = Config::postIndex($r->lang);
         $rules = RulesRepository::compiled($r->lang);
         $q = $r->qNorm;
+        $this->words = $internal ? Relevance::words($r->q, $r->lang) : [];
 
         // Épingler / remonter : uniquement en tri « pertinence » (un tri par prix demandé par le visiteur reste respecté).
         $withRules = $q !== '' && $r->sort === 'relevance';
@@ -55,7 +65,10 @@ final class SearchService
         $mainLimit = $r->offset === 0 ? max(0, $r->limit - $nInj) : $r->limit;
         // Bonus « mot au début du nom » : DeepFind réordonne lui-même les N premiers résultats (tri pertinence uniquement).
         $window = Relevance::rerankWindow();
-        $rerank = $r->sort === 'relevance' && $r->q !== '' && Relevance::namePositionWeight() > 0 && $mainOffset < $window
+        // Règles de boost (page « Règles de boost ») : appliquées au même réordonnancement.
+        $boostRules = $r->sort === 'relevance' ? BoostRules::forQuery($r->lang, $r->q) : [];
+        $rerank = $r->sort === 'relevance' && $mainOffset < $window
+            && (($r->q !== '' && Relevance::namePositionWeight() > 0) || $boostRules !== [])
             ? ['offset' => $mainOffset, 'limit' => $mainLimit] : null;
 
         $attrLabels = Settings::json('attr_labels_' . $r->lang);
@@ -63,7 +76,8 @@ final class SearchService
         foreach (array_keys($attrLabels) as $code) {
             $facets[] = 'attr.' . $code;
         }
-        $fields = $internal ? [...self::PUBLIC_FIELDS, ...self::INTERNAL_FIELDS] : self::PUBLIC_FIELDS;
+        $this->attrLabels = $attrLabels;
+        $fields = $internal ? [...self::PUBLIC_FIELDS, ...self::INTERNAL_FIELDS, ...self::DETAIL_FIELDS] : self::PUBLIC_FIELDS;
 
         $queries = [];
         $names = [];
@@ -73,7 +87,9 @@ final class SearchService
         $queries[] = [
             'indexUid' => $productIndex, 'q' => $r->q,
             'offset' => $rerank ? 0 : $mainOffset, 'limit' => $rerank ? max($window, $mainOffset + $mainLimit) : $mainLimit,
-            'filter' => $mainFilter, 'facets' => $facets, 'sort' => $this->sort($r), 'attributesToRetrieve' => $fields,
+            'filter' => $mainFilter, 'facets' => $facets, 'sort' => $this->sort($r),
+            // Champs des conditions : lus pour le calcul uniquement, product() ne renvoie que la liste blanche.
+            'attributesToRetrieve' => $boostRules !== [] ? array_values(array_unique([...$fields, ...BoostRules::DOC_FIELDS])) : $fields,
         ];
         if ($rerank) {
             $queries[0]['showRankingScore'] = true;
@@ -113,6 +129,13 @@ final class SearchService
             }
         }
 
+        // Aperçu interne : produits désactivés (masqués de toutes les recherches) qui correspondraient à cette recherche.
+        if ($internal && $rules['hide_all'] !== []) {
+            $queries[] = ['indexUid' => $productIndex, 'q' => $r->q, 'limit' => 50, 'attributesToRetrieve' => $fields,
+                'filter' => [...array_values($groups), Filter::in('all_skus', $rules['hide_all'])]];
+            $names[] = 'disabled';
+        }
+
         $withPosts = $r->withPosts && $r->offset === 0 && $r->q !== '' && Settings::int('posts_limit') > 0 && $this->indexExists($postIndex);
         if ($withPosts) {
             $queries[] = ['indexUid' => $postIndex, 'q' => $r->q, 'limit' => Settings::int('posts_limit'), 'attributesToRetrieve' => self::POST_FIELDS];
@@ -132,7 +155,7 @@ final class SearchService
             $approx = (int) ($results['main']['estimatedTotalHits'] ?? 0) > 0;
         }
         if ($rerank && isset($results['main']['hits'])) {
-            $results['main']['hits'] = array_slice($this->rerank($results['main']['hits'], $r), $rerank['offset'], $rerank['limit']);
+            $results['main']['hits'] = array_slice($this->rerank($results['main']['hits'], $r, $boostRules), $rerank['offset'], $rerank['limit']);
         }
         return $this->format($r, $results, $pins, $boosts, $nInj, $mainOffset, $mainLimit, $attrLabels, $internal, $skuLike, $approx);
     }
@@ -141,19 +164,23 @@ final class SearchService
      * Réordonne les premiers résultats : pertinence du moteur + bonus quand les mots recherchés sont au début du nom.
      * Les ruptures restent en fin de liste si l'option est active ; à égalité, l'ordre du moteur est conservé.
      */
-    private function rerank(array $hits, SearchRequest $r): array
+    private function rerank(array $hits, SearchRequest $r, array $boostRules = []): array
     {
         $words = Relevance::words($r->q, $r->lang);
-        if ($words === []) {
+        if ($words === [] && $boostRules === []) {
             return $hits;
         }
         $weight = Relevance::namePositionWeight();
         $oosLast = Settings::int('out_of_stock_last') === 1;
         $keyed = [];
         foreach ($hits as $i => $h) {
-            $bonus = Relevance::namePositionBonus($words, (string) ($h['name'] ?? ''), $r->lang);
+            $bonus = $words === [] ? 0.0 : Relevance::namePositionBonus($words, (string) ($h['name'] ?? ''), $r->lang);
+            [$factor, $applied] = $boostRules === [] ? [1.0, []] : BoostRules::factor($boostRules, $h);
             $h['_namePosition'] = round($bonus, 3);
-            $h['_finalScore'] = round((float) ($h['_rankingScore'] ?? 1.0) + $weight * $bonus, 4);
+            $h['_boostFactor'] = $factor;
+            $h['_boostRules'] = $applied;
+            // Pertinence × coefficient des règles de boost (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste)
+            $h['_finalScore'] = round(((float) ($h['_rankingScore'] ?? 1.0) + $weight * $bonus) * $factor, 4);
             $keyed[] = [$oosLast ? (int) ($h['in_stock'] ?? 1) : 0, $h['_finalScore'], -$i, $h];
         }
         usort($keyed, static fn ($a, $b) => [$b[0], $b[1], $b[2]] <=> [$a[0], $a[1], $a[2]]);
@@ -174,6 +201,7 @@ final class SearchService
             }
             if ($internal) {
                 $q['showRankingScore'] = true;
+                $q['showMatchesPosition'] = true;
             }
         }
         unset($q);
@@ -337,7 +365,7 @@ final class SearchService
             'posts' => $posts,
             'posts_total' => (int) ($res['posts']['estimatedTotalHits'] ?? 0),
             'engine_ms' => (int) ($main['processingTimeMs'] ?? 0),
-        ];
+        ] + ($internal ? ['disabled' => array_map(fn ($h) => $this->product($h, true), $res['disabled']['hits'] ?? [])] : []);
     }
 
     private function product(array $h, bool $internal): array
@@ -355,12 +383,108 @@ final class SearchService
             $p['name_position'] = $h['_namePosition'];
             $p['final_score'] = $h['_finalScore'];
         }
+        if ($internal && !empty($h['_boostRules'])) {
+            $p['boost_factor'] = round((float) $h['_boostFactor'], 3);
+            $p['boost_rules'] = $h['_boostRules'];
+        }
         foreach (['in_stock', 'on_sale', 'has_price_range', 'is_new'] as $b) {
             if (isset($p[$b])) {
                 $p[$b] = (bool) $p[$b];
             }
         }
+        if ($internal) {
+            $p['details'] = array_intersect_key($h, array_flip(self::DETAIL_FIELDS));
+            $p['matched'] = $this->matched($h);
+        }
         return $p;
+    }
+
+    /**
+     * Champs où la recherche a été trouvée (aperçu interne) : positions renvoyées par le moteur (showMatchesPosition),
+     * sinon repli sur une comparaison mot à mot (fautes de frappe et synonymes non détectés dans ce cas).
+     * @return list<array{field:string, label:string, values:list<string>}>
+     */
+    private function matched(array $h): array
+    {
+        if ($this->words === []) {
+            return [];
+        }
+        $positions = $h['_matchesPosition'] ?? null;
+        $keys = is_array($positions) ? array_keys($positions) : Relevance::searchableAttributes();
+        $out = [];
+        foreach ($keys as $key) {
+            $key = (string) $key;
+            $field = (string) preg_replace('/[.\[].*$/', '', $key);
+            $raw = $h[$field] ?? null;
+            if ($raw === null || $raw === '' || $raw === []) {
+                continue;
+            }
+            $list = is_array($raw) ? array_values(array_filter($raw, 'is_scalar')) : [$raw];
+            $indices = [];
+            foreach (is_array($positions) ? ($positions[$key] ?? []) : [] as $pos) {
+                foreach ((array) ($pos['indices'] ?? []) as $i) {
+                    $indices[(int) $i] = true;
+                }
+            }
+            $values = [];
+            foreach ($list as $i => $v) {
+                $v = (string) $v;
+                if ($indices !== [] ? isset($indices[$i]) : $this->hasWord($v)) {
+                    $values[] = $v;
+                }
+            }
+            if ($values === [] && is_array($positions)) {
+                $values = array_map('strval', array_slice($list, 0, 3)); // trouvé par le moteur (faute de frappe, synonyme…)
+            }
+            if ($values === []) {
+                continue;
+            }
+            $values = array_values(array_unique(array_map(fn ($v) => $this->excerpt($v), array_slice($values, 0, 8))));
+            if ($field === 'attr_values' && is_array($h['attr'] ?? null)) {
+                $values = array_map(fn ($v) => $this->attrLabel($h['attr'], $v), $values);
+            }
+            $out[] = ['field' => $field, 'label' => Relevance::FIELDS[$field][0] ?? $field, 'values' => $values];
+        }
+        return $out;
+    }
+
+    private function hasWord(string $text): bool
+    {
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', \DeepFind\Text::normalize($text, 5000)) ?: [] as $w) {
+            if ($w !== '' && Relevance::matchesAny($this->words, $w)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Extrait d'environ 160 caractères autour du premier mot trouvé (descriptions longues). */
+    private function excerpt(string $text): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        if (mb_strlen($text, 'UTF-8') <= 160) {
+            return $text;
+        }
+        $start = 0;
+        foreach ($this->words as $w) {
+            $p = mb_stripos(\DeepFind\Text::normalize($text, 5000), $w, 0, 'UTF-8');
+            if ($p !== false) {
+                $start = max(0, $p - 50);
+                break;
+            }
+        }
+        return ($start > 0 ? '… ' : '') . mb_substr($text, $start, 160, 'UTF-8') . ' …';
+    }
+
+    /** « Jaune » → « Couleur : Jaune » quand la valeur appartient à un attribut connu. */
+    private function attrLabel(array $attr, string $value): string
+    {
+        foreach ($attr as $code => $vals) {
+            if (in_array($value, (array) $vals, true)) {
+                return ($this->attrLabels[$code] ?? $code) . ' : ' . $value;
+            }
+        }
+        return $value;
     }
 
     private function facet(string $code, string $label, array $dist, array $selected, bool $alpha): array

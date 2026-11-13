@@ -210,7 +210,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=2" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=3" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search, input[name=q]"
@@ -219,11 +219,12 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 ```
 
 - Le widget s'accroche au champ de recherche existant et ouvre le panneau sous l'en-tête.
+- **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », « Recent Searches »…) : neutralisée par défaut. Le widget intercepte les événements du champ avant les scripts du site, qui ne s'ouvrent donc plus ; les panneaux connus (`#search_autocomplete`, Amasty, Mirasvit, Smile ElasticSuite) sont en plus masqués. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"` (clic droit sur le panneau › Inspecter pour trouver son `id` ou sa `class`). Pour garder l'autocomplétion d'origine : `data-native="keep"`. La touche Entrée envoie toujours le formulaire du site (ou va vers `data-results-url`).
 - Il charge ses styles tout seul (`deepfind.css`). Les couleurs se changent via les variables `--df-*` du fichier CSS.
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
 - **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez `?v=1` en `?v=2` pour forcer le rechargement par les navigateurs.
+- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=3` en `?v=4`) pour forcer le rechargement par les navigateurs.
 
 ## 5. Formats des flux et mapping
 
@@ -450,6 +451,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
 | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | Boosts produits | Mise en avant ou en retrait d'un produit sur toutes les recherches, appliquée immédiatement |
+| Règles de boost | Coefficient (×1,5, ×0,5…) appliqué aux produits qui remplissent des conditions (marque, catégorie, attribut, prix, stock, marge…), sur toutes les recherches ou seulement sur certains termes (correspondance exacte ou large). Visible dans l'aperçu interne |
 | Journal des recherches | Détail filtrable et exportable |
 | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
 | Clés & intégration | Clés publiques, domaines autorisés, code à copier |
@@ -479,6 +481,8 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
    - **Critères** : en stock, rentabilité, popularité (ventes 30 jours du flux), **clics dans la recherche sur 30 jours** (les produits les plus cliqués remontent), nouveauté, boosts (flux + extranet).
    - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
    - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
+
+**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
 
 **Boosts produits** (menu dédié) : un produit passe en avant (+1 à +10) ou en retrait (-1 à -10) sur toutes les recherches, avec dates de début et de fin facultatives. Appliqué immédiatement.
 - **Directement dans l'aperçu interne**, sur chaque produit :

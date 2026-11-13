@@ -140,6 +140,23 @@ CREATE TABLE IF NOT EXISTS product_boosts (
   UNIQUE KEY uk_project_lang_sku (project_id, lang, sku)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Règles de boost : multiplient la pertinence des produits qui remplissent les conditions (toutes ou au moins une),
+-- sur toutes les recherches ou seulement sur certains termes (correspondance exacte ou large).
+CREATE TABLE IF NOT EXISTS boost_rules (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  boost DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+  terms TEXT NOT NULL,
+  match_all TINYINT(1) NOT NULL DEFAULT 1,
+  conditions TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS redirects (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   project_id INT UNSIGNED NOT NULL DEFAULT 1,

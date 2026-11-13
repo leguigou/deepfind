@@ -44,6 +44,7 @@ src/Search/
   Filter.php                   échappement des valeurs de filtre Meilisearch
 src/Rules/RulesRepository.php  synonymes, règles, redirections, import CSV, version des règles (invalide les caches)
 src/Rules/Boosts.php           boosts extranet (product_boosts) et clics 30 j → appliqués par ProductBuilder::applySignals()
+src/Rules/BoostRules.php       règles de boost (boost_rules) : termes exacts/larges + conditions → coefficient appliqué par SearchService::rerank()
 src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
