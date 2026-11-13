@@ -440,7 +440,7 @@ Dans la fiche de chaque flux (**Flux & mapping › nom du flux**), section « Pl
 
 ### Rubriques
 
-L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas de comptes utilisateurs en V1. Le menu de gauche se replie, et le bouton en bas du menu bascule entre les thèmes sombre et clair ; ces deux choix sont mémorisés.
+L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion est mémorisée pendant 10 jours à partir de la saisie du jeton, même après fermeture du navigateur. Le bouton « Se déconnecter » révoque le cookie de ce navigateur. Il n'y a pas de comptes utilisateurs en V1. Le menu de gauche se replie, et le bouton en bas du menu bascule entre les thèmes sombre et clair ; ces deux choix sont mémorisés.
 
 | Rubrique | À quoi ça sert |
 |---|---|

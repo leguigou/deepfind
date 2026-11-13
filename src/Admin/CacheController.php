@@ -22,6 +22,7 @@ final class CacheController
         'blk' => ['Blocages (copie)', 'Copie des IP bloquées, relue en base toutes les 60 s', false],
         'last' => ['Frappe en cours', 'Dernière recherche de chaque visiteur (statistiques « recherche finale »)', false],
         'login' => ['Tentatives de connexion', 'Protection de la page de connexion de l\'extranet', false],
+        'admin-remember' => ['Connexions mémorisées', 'Cookies de connexion de l\'extranet valides 10 jours', false],
     ];
 
     public function index(): void
