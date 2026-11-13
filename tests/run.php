@@ -326,26 +326,22 @@ if ($base) {
 
     // Anciens « boosts produits » convertis en règles de boost ; boost rapide d'un produit ; période des règles
     $meiliT = DeepFind\Meili\MeiliClient::admin();
-    DeepFind\Db::exec("INSERT INTO product_boosts (project_id, lang, sku, boost, starts_at, ends_at, note, created_at) VALUES (1, 'fr', 'seac-x-vision', 10, NULL, '2099-12-31', 'salon', NOW())");
+    DeepFind\Db::exec("INSERT INTO product_boosts (project_id, lang, sku, boost, starts_at, ends_at, note, created_at) VALUES
+        (1, 'fr', 'seac-x-vision', 10, NULL, '2099-12-31', 'salon', NOW()), (1, 'fr', 'C4-GHOST', 5, NULL, '2000-01-01', '', NOW()),
+        (1, 'fr', 'C4-PREDATOR', -10, '2099-01-01', NULL, '', NOW())");
     $nMig = DeepFind\Rules\BoostRules::migrateProductBoosts();
     $mig = DeepFind\Rules\BoostRules::productRule('fr', 'SEAC-X-VISION');
-    check('migration : boost produit +10 converti en règle ×2 (dates gardées)', $nMig === 1 && $mig !== null && abs($mig['boost'] - 2.0) < 0.001 && $mig['ends_at'] === '2099-12-31'
-        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM product_boosts') === 0);
+    $fut = DeepFind\Rules\BoostRules::productRule('fr', 'C4-PREDATOR');
+    check('migration : boost produit +10 converti en règle ×2, date de fin rappelée dans le nom', $mig !== null && abs($mig['boost'] - 2.0) < 0.001 && str_contains($mig['name'], '31/12/2099') && $mig['active']);
+    check('migration : boost terminé non repris, boost à venir en règle inactive ×0,5', $nMig === 2 && DeepFind\Rules\BoostRules::productRule('fr', 'C4-GHOST') === null
+        && $fut !== null && !$fut['active'] && abs($fut['boost'] - 0.5) < 0.001 && (int) DeepFind\Db::value('SELECT COUNT(*) FROM product_boosts') === 0);
+    DeepFind\Db::exec('DELETE FROM boost_rules');
     DeepFind\Rules\BoostRules::setProductBoost('fr', 'SEAC-X-VISION', 1.0);
     check('boost rapide : coefficient 1 = règle supprimée', DeepFind\Rules\BoostRules::productRule('fr', 'SEAC-X-VISION') === null);
     DeepFind\Rules\BoostRules::setProductBoost('fr', 'SEAC-X-VISION', 3);
     DeepFind\Rules\BoostRules::setProductBoost('fr', 'SEAC-X-VISION', 5);
     check('boost rapide : une seule règle par produit, modifiée', (int) DeepFind\Db::value("SELECT COUNT(*) FROM boost_rules WHERE name = 'Produit SEAC-X-VISION'") === 1
         && abs(DeepFind\Rules\BoostRules::productBoosts('fr')['SEAC-X-VISION'] - 5.0) < 0.001);
-    check('période : programmée / terminée / en cours', DeepFind\Rules\BoostRules::period(['starts_at' => '2099-01-01', 'ends_at' => null]) === 'scheduled'
-        && DeepFind\Rules\BoostRules::period(['starts_at' => null, 'ends_at' => '2000-01-01']) === 'expired'
-        && DeepFind\Rules\BoostRules::period(['starts_at' => '2000-01-01', 'ends_at' => '2099-01-01']) === 'current');
-    DeepFind\Db::exec("UPDATE boost_rules SET ends_at = '2000-01-01'");
-    DeepFind\CacheVersion::bump();
-    check('période : règle terminée non appliquée', DeepFind\Rules\BoostRules::active('fr') === []);
-    [, $errDates] = DeepFind\Rules\BoostRules::sanitize(['name' => 'x', 'boost' => 2, 'starts_at' => '2026-05-10', 'ends_at' => '2026-05-01',
-        'conditions' => [['field' => 'brand', 'values' => ['C4']]]], 'fr');
-    check('période : fin avant début refusée', $errDates !== []);
     DeepFind\Db::exec('DELETE FROM boost_rules');
     DeepFind\CacheVersion::bump();
 

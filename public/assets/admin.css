@@ -425,6 +425,7 @@ input.br-boost { max-width: 130px; }
 .br-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .br-row .toggle { margin: 0; }
 .br-terms { display: flex; flex-direction: column; gap: 8px; }
+.br-terms[hidden] { display: none; }
 .br-term-input { display: grid; grid-template-columns: minmax(170px, 230px) 1fr auto; gap: 8px; align-items: center; }
 .br-term-input select, .br-term-input input { margin: 0; }
 .br-section label.check { margin: 0; font-weight: 400; }
@@ -450,9 +451,6 @@ input.br-boost { max-width: 130px; }
 .ms-add { margin-top: 8px; }
 .pv-boost-rule { white-space: nowrap; }
 @media (max-width: 640px) { .br-term-input, .br-num-line { grid-template-columns: 1fr; } }
-.br-dates { margin-top: 4px; }
-.br-dates label { margin: 0 0 8px; }
-.br-period { white-space: nowrap; }
 
 /* Fenêtres de confirmation / information (DeepFindUI) */
 dialog.modal-confirm { width: min(460px, calc(100vw - 32px)); }

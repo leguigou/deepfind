@@ -282,8 +282,6 @@
       f('active').checked = !!rule.active;
       f('name').value = rule.name || '';
       f('boost').value = rule.boost;
-      f('starts_at').value = rule.starts_at || '';
-      f('ends_at').value = rule.ends_at || '';
       f('terms_enabled').checked = state.terms.length > 0;
       termsBox.hidden = state.terms.length === 0;
       f('term').value = '';
@@ -308,11 +306,9 @@
       var conds = [];
       condsBox.querySelectorAll('.br-cond').forEach(function (r) { var c = r.getCondition && r.getCondition(); if (c) { conds.push(c); } });
       if (!conds.length) { ev.preventDefault(); window.DeepFindUI.alert('Ajoutez au moins une condition (champ + valeurs).'); return; }
-      if (f('starts_at').value && f('ends_at').value && f('ends_at').value < f('starts_at').value) { ev.preventDefault(); window.DeepFindUI.alert('La date de fin est antérieure à la date de début.'); return; }
       if (f('terms_enabled').checked && !state.terms.length) { ev.preventDefault(); window.DeepFindUI.alert('Ajoutez au moins un terme de recherche, ou désactivez « Termes de recherche ».'); return; }
       form.querySelector('input[name=payload]').value = JSON.stringify({
         id: state.id, name: f('name').value, active: f('active').checked, boost: f('boost').value,
-        starts_at: f('starts_at').value, ends_at: f('ends_at').value,
         terms_enabled: f('terms_enabled').checked, terms: state.terms,
         match: form.querySelector('input[name=br_match]:checked').value, conditions: conds
       });

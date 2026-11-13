@@ -14,7 +14,7 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
 
 <div class="table-scroll">
 <table class="table br-table">
-  <thead><tr><th>Statut</th><th>Nom</th><th class="num">Boost</th><th>Termes de recherche</th><th>Conditions</th><th>Période</th><th></th></tr></thead>
+  <thead><tr><th>Statut</th><th>Nom</th><th class="num">Boost</th><th>Termes de recherche</th><th>Conditions</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($rules as $r): ?>
     <tr class="<?= $r['active'] ? '' : 'dim-soft' ?>">
@@ -30,9 +30,6 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
         <div class="chips"><?php foreach ($r['terms'] as $t): ?><span class="chip" title="<?= $t['match'] === 'broad' ? 'Correspondance large' : 'Correspondance exacte' ?>"><span class="chip-ico"><?= $t['match'] === 'broad' ? '≈' : '=' ?></span><?= e($t['term']) ?></span><?php endforeach; ?></div>
       <?php endif; ?></td>
       <td class="br-desc"><?= e(BoostRules::describe($r, $lang)) ?></td>
-      <td class="br-period"><?php $per = BoostRules::period($r); ?>
-        <?= $r['starts_at'] || $r['ends_at'] ? e(($r['starts_at'] ? date('d/m/Y', strtotime($r['starts_at'])) : '…') . ' → ' . ($r['ends_at'] ? date('d/m/Y', strtotime($r['ends_at'])) : '…')) : '<span class="muted">Permanente</span>' ?>
-        <?= $per === 'scheduled' ? '<br><span class="badge badge-info">programmée</span>' : ($per === 'expired' ? '<br><span class="badge badge-warn">terminée</span>' : '') ?></td>
       <td class="actions">
         <button type="button" class="btn btn-sm btn-light" data-br-open data-rule="<?= e(\DeepFind\Text::json($r)) ?>">Modifier</button>
         <form method="post" action="<?= e(url('/admin/boost-rules/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
@@ -40,7 +37,7 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
       </td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$rules): ?><tr><td colspan="7" class="muted">Aucune règle. Exemple : « Plongée en avant sur palme » — boost 1,5, terme ≈ palme, condition Catégorie : Plongée.</td></tr><?php endif; ?>
+  <?php if (!$rules): ?><tr><td colspan="6" class="muted">Aucune règle. Exemple : « Plongée en avant sur palme » — boost 1,5, terme ≈ palme, condition Catégorie : Plongée.</td></tr><?php endif; ?>
   </tbody>
 </table>
 </div>
@@ -63,11 +60,6 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
       <label>Boost
         <input data-f="boost" type="number" step="0.1" min="0" max="10" value="1" class="br-boost" required>
         <small class="muted">Coefficient appliqué à la pertinence : 1 = neutre, 2 = deux fois plus, 0,5 = moitié moins, 0 = en fin de liste.</small></label>
-
-      <div class="grid2 br-dates">
-        <label>Date de début <small class="muted">(facultative)</small><input type="date" data-f="starts_at"></label>
-        <label>Date de fin <small class="muted">(facultative, incluse)</small><input type="date" data-f="ends_at"></label>
-      </div>
 
       <div class="br-section">
         <div class="br-row">

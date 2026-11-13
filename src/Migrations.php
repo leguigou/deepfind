@@ -17,7 +17,6 @@ final class Migrations
         'query_rules' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirects' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
-        'boost_rules' => ['starts_at' => 'DATE NULL AFTER conditions', 'ends_at' => 'DATE NULL AFTER starts_at'],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'sources' => [
             'project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',

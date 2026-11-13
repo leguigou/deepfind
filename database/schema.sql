@@ -152,8 +152,6 @@ CREATE TABLE IF NOT EXISTS boost_rules (
   terms TEXT NOT NULL,
   match_all TINYINT(1) NOT NULL DEFAULT 1,
   conditions TEXT NOT NULL,
-  starts_at DATE NULL,
-  ends_at DATE NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang)

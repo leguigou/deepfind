@@ -163,17 +163,16 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/19-apercu-boost-epingle.png', fullPage: false });
   await Promise.all([page.waitForNavigation(), page.click('table.table tbody button:has-text("retirer") >> nth=0')]);
 
-  // Règles de boost : création dans la fenêtre, avec dates
+  // Règles de boost : création dans la fenêtre
   await page.goto(BASE + '/admin/boost-rules');
   await page.click('button[data-br-open]:not([data-rule])');
   await page.fill('[data-f=name]', 'Test e2e');
   await page.fill('[data-f=boost]', '2');
-  await page.fill('[data-f=starts_at]', '2020-01-01');
   await page.selectOption('.br-cond select.br-field', 'brand');
   await page.click('.ms-toggle');
   await page.locator('.ms-list .ms-item').first().click();
   await Promise.all([page.waitForNavigation(), page.click('.modal-foot button.btn:not(.btn-light)')]);
-  check('règles de boost : règle enregistrée avec période', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('01/01/2020'));
+  check('règles de boost : règle enregistrée', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('×2'));
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
   await page.click('form[action$="/admin/boost-rules/delete"] button');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
