@@ -72,6 +72,8 @@ final class App
         'POST /admin/settings/save' => [SettingsController::class, 'save'],
         'GET /admin/preview' => [PreviewController::class, 'preview'],
         'POST /admin/preview/toggle' => [PreviewController::class, 'toggle'],
+        'GET /admin/disabled' => [PreviewController::class, 'disabledList'],
+        'POST /admin/disabled/enable-all' => [PreviewController::class, 'enableAll'],
         'GET /admin/demo' => [PreviewController::class, 'demo'],
     ];
 

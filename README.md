@@ -451,6 +451,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Redirections | Requête → page (ex. « retour » → CGV) ; import CSV |
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
 | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
+| Produits désactivés | Liste de tous les produits retirés des recherches (bouton « Désactiver » de l'aperçu), avec filtre, « Activer » et « Tout réactiver ». Dans l'aperçu, l'interrupteur « Désactivés » affiche ceux qui correspondent à la recherche ; les filtres de gauche (marques, catégories, attributs) sont cliquables |
 | Règles de boost | Coefficient (×1,5, ×0,5…) appliqué aux produits qui remplissent des conditions (marque, catégorie, attribut, prix, stock, marge…), sur toutes les recherches ou seulement sur certains termes (correspondance exacte ou large). Visible dans l'aperçu interne |
 | Journal des recherches | Détail filtrable et exportable |
 | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |

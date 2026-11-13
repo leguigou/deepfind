@@ -45,10 +45,54 @@ final class PreviewController
         foreach (Db::all("SELECT id, sku FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide'", [\DeepFind\Project::id(), Auth::lang()]) as $d) {
             $disabledRules[mb_strtoupper($d['sku'], 'UTF-8')] = (int) $d['id'];
         }
-        $back = '/admin/preview?' . http_build_query(array_intersect_key($_GET, array_flip(['q', 'sort', 'margin_min', 'in_stock', 'on_sale'])));
+        // Paramètres conservés après une action (boost, épinglage, désactivation) : recherche, tri, interrupteurs et filtres de gauche
+        $keep = array_intersect_key($_GET, array_flip(['q', 'sort', 'margin_min', 'in_stock', 'on_sale', 'show_disabled', 'brand', 'category', 'attr']));
+        $back = '/admin/preview?' . http_build_query($keep);
         View::render('preview', ['active' => 'preview', 'p' => $_GET, 'result' => $result, 'error' => $error,
-            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back, 'disabledRules' => $disabledRules, 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . Auth::lang()),
+            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back, 'keep' => $keep, 'disabledRules' => $disabledRules, 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . Auth::lang()),
             'words' => \DeepFind\Search\Relevance::words((string) ($_GET['q'] ?? ''), Auth::lang())], 'Aperçu interne');
+    }
+
+    /** Tous les produits désactivés (masqués de toutes les recherches), avec filtre et réactivation. */
+    public function disabledList(): void
+    {
+        $lang = Auth::lang();
+        $rows = Db::all("SELECT sku, MIN(created_at) AS created_at FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide' GROUP BY sku ORDER BY created_at DESC",
+            [\DeepFind\Project::id(), $lang]);
+        $info = [];
+        $error = null;
+        try {
+            $meili = MeiliClient::admin();
+            $index = \DeepFind\Config::productIndex($lang);
+            foreach (array_chunk(array_map(static fn ($r) => mb_strtoupper($r['sku'], 'UTF-8'), $rows), 100) as $chunk) {
+                foreach ($meili->fetchDocuments($index, \DeepFind\Search\Filter::in('all_skus', $chunk), count($chunk) * 2) as $d) {
+                    foreach ($d['all_skus'] ?? [$d['sku']] as $s) {
+                        $info[mb_strtoupper((string) $s, 'UTF-8')] ??= $d;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $error = 'Moteur indisponible : noms et prix non affichés (' . $e->getMessage() . ').';
+        }
+        $filter = trim((string) ($_GET['f'] ?? ''));
+        if ($filter !== '') {
+            $needle = \DeepFind\Text::normalize($filter);
+            $rows = array_values(array_filter($rows, static function ($r) use ($info, $needle) {
+                $d = $info[mb_strtoupper($r['sku'], 'UTF-8')] ?? [];
+                return str_contains(\DeepFind\Text::normalize($r['sku'] . ' ' . ($d['name'] ?? '') . ' ' . ($d['brand'] ?? ''), 500), $needle);
+            }));
+        }
+        $back = '/admin/disabled' . ($filter !== '' ? '?' . http_build_query(['f' => $filter]) : '');
+        View::render('disabled', ['active' => 'disabled', 'rows' => $rows, 'info' => $info, 'filter' => $filter, 'error' => $error, 'back' => $back], 'Produits désactivés');
+    }
+
+    /** Réactive tous les produits désactivés (projet et langue courants). */
+    public function enableAll(): void
+    {
+        $n = Db::exec("DELETE FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide'", [\DeepFind\Project::id(), Auth::lang()]);
+        RulesRepository::bumpVersion();
+        Auth::flash('ok', sprintf('%d produit(s) réactivé(s).', $n));
+        App::back('/admin/disabled');
     }
 
     /**
