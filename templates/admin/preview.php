@@ -1,7 +1,7 @@
 <?php $sorts = ['relevance' => 'Pertinence', 'price_asc' => 'Prix croissant', 'price_desc' => 'Prix décroissant', 'newest' => 'Nouveautés',
     'margin_desc' => 'Rentabilité (marge)', 'popularity_desc' => 'Ventes 30 j', 'score_desc' => 'Score métier']; ?>
 <p class="muted">Vue réservée à l'équipe : marge, score métier et règles appliquées sont visibles ici mais <strong>jamais envoyés au site public</strong>.
-  <strong>Boost</strong> : multiplie la pertinence du produit sur toutes les recherches (crée une <a href="<?= e(url('/admin/boost-rules')) ?>">règle de boost</a> « Produit SKU »). <strong>Épingler</strong> : impose une position pour cette recherche uniquement. <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index). <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
+  <strong>Boost</strong> : multiplie la pertinence du produit sur toutes les recherches (crée une <a href="<?= e(url('/admin/boost-rules')) ?>">règle de boost</a> « Produit SKU »). <strong>Épingler</strong> : place le produit à cette position pour cette recherche exacte (<a href="<?= e(url('/admin/custom-results')) ?>">résultat personnalisé</a> « Recherche « … » »). <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index). <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
 <form method="get" class="card form inline">
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
@@ -21,6 +21,16 @@
     <?php if ($nDis > 0): ?> · <a href="<?= e(url('/admin/preview', $showDis ? array_diff_key($keep, ['show_disabled' => 1]) : $keep + ['show_disabled' => 1])) ?>" class="badge badge-ko"><?= $nDis ?> désactivé(s) correspondant(s)<?= $showDis ? ', inclus dans la liste : masquer' : ' : afficher dans la liste' ?></a><?php endif; ?>
     · <a href="<?= e(url('/admin/disabled')) ?>">liste complète des désactivés (<?= count($disabledRules) ?>)</a>
     <?= $result['redirect'] ? ' · redirection : <a href="' . e($result['redirect']) . '">' . e($result['redirect']) . '</a>' : '' ?></p>
+  <?php if (!empty($result['banner'])): $bn = $result['banner']; ?>
+    <div class="card pv-banner">
+      <div class="pv-banner-head"><span class="badge badge-info">Bannière</span> <a href="<?= e(url('/admin/banners/edit', ['id' => $bn['id']])) ?>"><?= e($bn['name'] ?? '') ?></a></div>
+      <?php if ($bn['mode'] === 'visual'): ?>
+        <img src="<?= e($bn['desktop']) ?>" alt="<?= e($bn['alt']) ?>" class="pv-banner-img">
+      <?php else: ?>
+        <div class="pv-banner-html"><?= $bn['html'] /* HTML nettoyé à l'enregistrement (HtmlSanitizer) */ ?></div>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
   <div class="pv-grid">
     <aside class="card pv-facets">
       <?php
@@ -76,12 +86,12 @@
             </form>
               <?php $pin = $pins[mb_strtoupper($pr['sku'], 'UTF-8')] ?? null; ?>
             <?php if ($pin): ?>
-              <form method="post" action="<?= e(url('/admin/rules/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $pin['id'] ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
-                <button class="btn btn-sm btn-light" title="Épinglé en position <?= (int) $pin['position'] ?>">📌 <?= (int) $pin['position'] ?> · retirer</button></form>
+              <form method="post" action="<?= e(url('/admin/custom-results/unpin')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $pin['id'] ?>"><input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
+                <button class="btn btn-sm btn-light" title="Position <?= (int) $pin['position'] ?> dans le résultat personnalisé « <?= e($pin['name']) ?> »">📌 <?= (int) $pin['position'] ?> · retirer</button></form>
             <?php elseif (($p['q'] ?? '') !== ''): ?>
-              <form method="post" action="<?= e(url('/admin/rules/add')) ?>"><?= csrf_field() ?>
+              <form method="post" action="<?= e(url('/admin/custom-results/pin')) ?>"><?= csrf_field() ?>
                 <input type="hidden" name="query" value="<?= e($p['q']) ?>"><input type="hidden" name="sku" value="<?= e($pr['sku']) ?>">
-                <input type="hidden" name="action" value="pin"><input type="hidden" name="back" value="<?= e($back) ?>">
+                <input type="hidden" name="back" value="<?= e($back) ?>">
                 <select name="position" aria-label="Position"><?php for ($pp = 1; $pp <= 10; $pp++): ?><option value="<?= $pp ?>"><?= $pp ?>e</option><?php endfor; ?></select>
                 <button class="btn btn-sm btn-light" title="Afficher ce produit à cette position pour cette recherche">Épingler</button></form>
             <?php endif; ?>

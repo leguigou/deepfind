@@ -3,3 +3,6 @@
 !/var/.gitkeep
 /tests/_tmp/
 /node_modules/
+
+# Images téléversées depuis l'extranet (bannières)
+public/uploads/

@@ -106,3 +106,10 @@ html.df-lock { overflow: hidden; }
   .df-head { margin-right: 44px; }
 }
 .df-notice.df-notice-approx { background: #fff4e5; color: #7a4b00; }
+
+/* Bannière en haut des résultats */
+.df-banner { margin: 0 0 16px; border-radius: var(--df-radius); overflow: hidden; }
+.df-banner[hidden] { display: none; }
+.df-banner img { display: block; max-width: 100%; height: auto; }
+.df-banner-img { width: 100%; object-fit: cover; }
+.df-banner a { color: inherit; }

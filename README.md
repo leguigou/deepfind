@@ -210,7 +210,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=3" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=4" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -225,7 +225,7 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
 - **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=3` en `?v=4`) pour forcer le rechargement par les navigateurs.
+- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=4` en `?v=5`) pour forcer le rechargement par les navigateurs.
 
 ## 5. Formats des flux et mapping
 
@@ -447,8 +447,9 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel** (champs détectés dans le flux), mapping JSON avancé, **test du mapping sans indexer**, **planification des imports** (complet/delta), imports manuels |
 | Imports | Historique, rapports (motifs de rejet, exemples de SKU rejetés) |
 | Synonymes & alias | Équivalents (palme = palmes = fins) ou alias à sens unique ; import CSV (`samples/synonymes.csv`) |
-| Règles de résultats | Épingler un SKU à une position, le remonter, le masquer (requête `*` = masqué partout), avec dates de début et de fin ; import CSV (`samples/boosts.csv`). Ne s'applique qu'au tri « pertinence » |
-| Redirections | Requête → page (ex. « retour » → CGV) ; import CSV |
+| Résultats personnalisés | Pour des termes de recherche (correspondance exacte ou large), en continu ou sur une période : produits **affichés en premier** (ou **uniquement** ces produits) et produits **exclus**, choisis un par un (dans l'ordre voulu) ou par règle (marque, catégorie, attribut, stock, prix…). Suivi **impressions** (recherches où le résultat s'applique, journal des recherches activé), **clics** sur ses produits et **CTR**. « Épingler » dans l'aperçu crée ou complète un résultat « Recherche « … » ». Import CSV des anciennes règles (`samples/boosts.csv`), converties automatiquement par `install`. Ordre imposé en tri « pertinence » uniquement |
+| Redirections | Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur une période. Un lien vers la page est proposé en haut des résultats ; en **redirection automatique**, la recherche validée (Entrée, loupe) ouvre directement la page. Import CSV `requete;url` (`samples/redirections.csv`). Les anciennes redirections sont converties par `install` (automatiques, correspondance exacte) |
+| Bannières | Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTML (scripts, événements et liens javascript: retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi **affichages**, **clics**, **CTR**. Images stockées dans `public/uploads/banners/` (à sauvegarder et à rendre accessible en écriture par PHP) |
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
 | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | Produits désactivés | Liste de tous les produits retirés des recherches (bouton « Désactiver » de l'aperçu), avec filtre, « Activer » et « Tout réactiver ». Dans l'aperçu, l'interrupteur « Désactivés » affiche ceux qui correspondent à la recherche ; les filtres de gauche (marques, catégories, attributs) sont cliquables |
@@ -483,9 +484,9 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
    - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
    - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
 
-**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des dates de début et de fin facultatives, des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
+**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
 
-**Boost rapide d'un produit** : dans l'aperçu interne, la liste « Boost » de chaque produit crée une règle « Produit SKU » (toutes les recherches). Les anciens « Boosts produits » sont convertis automatiquement en règles par `php bin/console install` (+n → ×(1 + n/10), -n → ×(1 - n/20)) ; lancez ensuite `scores:refresh` pour retirer leur ancien bonus du score métier.
+**Boost rapide d'un produit** : dans l'aperçu interne, la liste « Boost » de chaque produit crée une règle « Produit SKU » (toutes les recherches). Les anciens « Boosts produits » sont convertis automatiquement en règles par `php bin/console install` (+n → ×(1 + n/10), -n → ×(1 - n/20)). Les règles n'ayant pas de dates, un boost déjà terminé n'est pas repris, un boost à venir devient une règle inactive, et une date de fin est rappelée dans le nom de la règle ; lancez ensuite `scores:refresh` pour retirer leur ancien bonus du score métier.
 - **Directement dans l'aperçu interne**, sur chaque produit :
   - un sélecteur **« Boost permanent »** (-10 à +10, « Aucun » pour retirer), qui agit sur toutes les recherches ;
   - un bouton **« Épingler »**, avec choix de la position, qui agit sur la recherche en cours uniquement.

@@ -64,7 +64,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=3';
+  css.href = base + '/widget/deepfind.css?v=4';
   document.head.appendChild(css);
 
   // ------------------------------------------------------------------ Utilitaires DOM
@@ -140,13 +140,16 @@
   var sentinel = el('div', 'df-sentinel');
   main.appendChild(head);
   main.appendChild(notice);
+  var bannerBox = el('div', 'df-banner');
+  bannerBox.hidden = true;
+  main.appendChild(bannerBox);
   main.appendChild(grid);
   main.appendChild(empty);
   main.appendChild(loader);
   main.appendChild(sentinel);
 
   // ------------------------------------------------------------------ État
-  var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, ids: {} };
+  var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, ids: {} };
   var controller = null;
   var cache = new Map();
   var timer = null;
@@ -217,12 +220,81 @@
   }
 
   // ------------------------------------------------------------------ Rendu
+  // ------------------------------------------------------------------ Bannière (haut des résultats)
+  var BANNER_TAGS = { A: 1, IMG: 1, PICTURE: 1, SOURCE: 1, DIV: 1, SPAN: 1, P: 1, STRONG: 1, B: 1, EM: 1, I: 1, U: 1, BR: 1, H2: 1, H3: 1, H4: 1, UL: 1, OL: 1, LI: 1, SMALL: 1 };
+  var BANNER_ATTRS = { href: 1, target: 1, rel: 1, src: 1, srcset: 1, sizes: 1, media: 1, alt: 1, title: 1, width: 1, height: 1, class: 1, style: 1, loading: 1 };
+  // HTML déjà nettoyé par le serveur ; refiltré ici (balises / attributs autorisés, liens http(s) ou relatifs) avant insertion
+  function cleanNode(src) {
+    if (src.nodeType === 3) { return document.createTextNode(src.nodeValue); }
+    if (src.nodeType !== 1 || !BANNER_TAGS[src.tagName]) {
+      var frag = document.createDocumentFragment();
+      if (src.nodeType === 1 && !/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|FORM|SVG|TEMPLATE)$/.test(src.tagName)) {
+        Array.prototype.forEach.call(src.childNodes, function (c) { frag.appendChild(cleanNode(c)); });
+      }
+      return frag;
+    }
+    var n = document.createElement(src.tagName.toLowerCase());
+    Array.prototype.forEach.call(src.attributes, function (a) {
+      var name = a.name.toLowerCase();
+      var v = a.value;
+      if (!BANNER_ATTRS[name]) { return; }
+      if ((name === 'href' || name === 'src') && !/^(https?:\/\/|\/(?!\/)|#)/i.test(v.trim())) { return; }
+      if ((name === 'srcset' || name === 'style') && /javascript:|url\s*\(|expression/i.test(v)) { return; }
+      n.setAttribute(name, v);
+    });
+    if (n.tagName === 'A' && n.getAttribute('target') === '_blank') { n.setAttribute('rel', 'noopener'); }
+    Array.prototype.forEach.call(src.childNodes, function (c) { n.appendChild(cleanNode(c)); });
+    return n;
+  }
+  function renderBanner(b) {
+    bannerBox.textContent = '';
+    bannerBox.hidden = !b;
+    if (!b) { return; }
+    if (b.mode === 'code') {
+      var doc = new DOMParser().parseFromString('<body>' + String(b.html || '') + '</body>', 'text/html');
+      Array.prototype.forEach.call(doc.body.childNodes, function (c) { bannerBox.appendChild(cleanNode(c)); });
+    } else {
+      var desktop = safeUrl(b.desktop);
+      if (!desktop) { bannerBox.hidden = true; return; }
+      var pic = el('picture');
+      var mobile = safeUrl(b.mobile);
+      if (mobile && mobile !== desktop) {
+        var srcEl = el('source');
+        srcEl.media = '(max-width: 900px)';
+        srcEl.srcset = mobile;
+        pic.appendChild(srcEl);
+      }
+      var img = el('img', 'df-banner-img');
+      img.src = desktop;
+      img.alt = b.alt || '';
+      pic.appendChild(img);
+      var link = safeUrl(b.link);
+      var wrap = link ? el('a', 'df-banner-link') : el('div');
+      if (link) {
+        wrap.href = link;
+        if (b.new_window) { wrap.target = '_blank'; wrap.rel = 'noopener'; }
+      }
+      wrap.appendChild(pic);
+      bannerBox.appendChild(wrap);
+    }
+    bannerBox.__dfBanner = b.id;
+  }
+  // Clic sur un lien de la bannière (y compris clic molette) : mesuré comme les clics produits
+  function bannerClick(ev) {
+    if ((ev.type === 'auxclick' && ev.button !== 1) || !ev.target.closest || !ev.target.closest('a') || !bannerBox.__dfBanner) { return; }
+    track('banner', bannerBox.__dfBanner, 0);
+  }
+  bannerBox.addEventListener('click', bannerClick);
+  bannerBox.addEventListener('auxclick', bannerClick);
+
   function render(data, append) {
     state.total = data.total || 0;
     state.offset = data.next_offset || 0;
     state.hasMore = !!data.has_more;
     state.redirect = safeUrl(data.redirect);
+    state.redirectAuto = !!data.redirect_auto;
     if (!append) {
+      renderBanner(data.banner || null);
       grid.textContent = '';
       state.ids = {};
       main.scrollTop = 0;
@@ -295,7 +367,7 @@
     price.appendChild(el('span', 'df-final', fmt(final)));
     if (regular > final + 0.005) { price.appendChild(el('s', 'df-old', fmt(regular))); }
     a.appendChild(price);
-    onOpen(a, function () { track('product', p.id, position); });
+    onOpen(a, function () { track('product', p.id, position, p.cr); });
     return a;
   }
 
@@ -367,9 +439,10 @@
     a.addEventListener('auxclick', function (ev) { if (ev.button === 1) { fn(); } });
   }
 
-  function track(type, id, position) {
+  function track(type, id, position, cr) {
     try {
       var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, q: state.q, doc_type: type, doc_id: id, position: String(position), sid: sid });
+      if (cr) { body.set('cr', String(cr)); } // produit mis en avant par un résultat personnalisé
       if (navigator.sendBeacon) { navigator.sendBeacon(cfg.api + '/click', body); }
       else { fetch(cfg.api + '/click', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }); }
     } catch (e) { /* sans importance */ }
@@ -453,6 +526,9 @@
     keydown: function (ev) {
       if (ev.key === 'Escape') { close(); }
       if (ev.key !== 'Enter') { return; }
+      // Redirection automatique : prioritaire, même si la touche Entrée n'ouvre pas la page de résultats
+      var typed = ev.target.value.trim();
+      if (state.redirect && state.redirectAuto && typed === state.q) { ev.preventDefault(); window.location.href = state.redirect; return; }
       if (!enterSubmit) {
         // Entrée désactivée : on reste sur la fenêtre DeepFind (recherche lancée tout de suite)
         ev.preventDefault();
@@ -477,7 +553,7 @@
     var q = input.value.trim();
     if (!q) { return false; }
     var url = '';
-    if (state.redirect && q === state.q) {
+    if (state.redirect && state.redirectAuto && q === state.q) {
       url = state.redirect;
     } else if (cfg.resultsUrl) {
       url = cfg.resultsUrl + encodeURIComponent(q);

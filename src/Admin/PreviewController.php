@@ -37,9 +37,8 @@ final class PreviewController
                     $adminBoosts[$k] = $quick[$k];
                 }
             }
-            foreach (Db::all("SELECT id, sku, position FROM query_rules WHERE project_id = ? AND lang = ? AND query = ? AND action = 'pin'", [\DeepFind\Project::id(), Auth::lang(), \DeepFind\Text::normalize((string) ($_GET['q'] ?? ''))]) as $pin) {
-                $pins[mb_strtoupper($pin['sku'], 'UTF-8')] = $pin;
-            }
+            // Produits choisis un par un dans un résultat personnalisé de cette recherche (position = rang dans sa liste)
+            $pins = \DeepFind\Rules\CustomResults::pinsFor(Auth::lang(), (string) ($_GET['q'] ?? ''));
         }
         // Clics réels des 30 derniers jours (le chiffre de l'index n'est mis à jour qu'au recalcul des scores)
         $liveClicks = [];

@@ -28,7 +28,9 @@ final class ConfigTransfer
         'relevance' => 'Pertinence & score métier (ordre des champs, correspondance, poids, bonus début du nom…)',
         'search' => 'Paramètres de recherche et d\'import (cache, articles affichés, seuil de sécurité…)',
         'synonyms' => 'Synonymes & alias',
-        'rules' => 'Règles de résultats (épingler, remonter, masquer)',
+        'rules' => 'Produits désactivés',
+        'custom_results' => 'Résultats personnalisés',
+        'banners' => 'Bannières',
         'redirects' => 'Redirections',
         'boost_rules' => 'Règles de boost (conditions et termes)',
         'sources' => 'Flux : mapping et planification des imports',
@@ -47,7 +49,9 @@ final class ConfigTransfer
             'search' => $pick(self::SEARCH_SETTINGS),
             'synonyms' => $strip(Db::all('SELECT * FROM synonyms WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'rules' => $strip(Db::all('SELECT * FROM query_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
-            'redirects' => $strip(Db::all('SELECT * FROM redirects WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
+            'custom_results' => $strip(Db::all('SELECT * FROM custom_results WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
+            'banners' => $strip(Db::all('SELECT * FROM banners WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
+            'redirects' => $strip(Db::all('SELECT * FROM redirections WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'boost_rules' => $strip(Db::all('SELECT * FROM boost_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'sources' => $strip(
                 Db::all('SELECT code, kind, lang, url, delta_url, auth_header, mapping, active, cron_full, cron_delta FROM sources WHERE project_id = ? ORDER BY id', [$pid]),
@@ -122,13 +126,17 @@ final class ConfigTransfer
                     $msgs[] = self::SECTIONS[$sec] . ' : copié';
                 }
             }
-            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boost_rules' => 'boost_rules'] as $sec => $table) {
+            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirections', 'boost_rules' => 'boost_rules', 'custom_results' => 'custom_results', 'banners' => 'banners'] as $sec => $table) {
                 if (!in_array($sec, $sections, true)) {
                     continue;
                 }
                 Db::exec("DELETE FROM `$table` WHERE project_id = ?", [$to]);
+                if ($sec === 'redirects') {
+                    Db::exec('DELETE FROM redirects WHERE project_id = ?', [$to]);
+                }
                 foreach ($data[$sec] ?? [] as $row) {
-                    Db::insert($table, ['project_id' => $to] + $row);
+                    // Sauvegarde antérieure : redirections à l'ancien format (requête → URL), converties juste après
+                    Db::insert($sec === 'redirects' && isset($row['query']) ? 'redirects' : $table, ['project_id' => $to] + $row);
                 }
                 $msgs[] = self::SECTIONS[$sec] . ' : ' . count($data[$sec] ?? []) . ' élément(s)';
             }
@@ -163,6 +171,13 @@ final class ConfigTransfer
         } catch (\Throwable $e) {
             $pdo->rollBack();
             throw $e;
+        }
+        // Ancienne sauvegarde : ses règles de résultats (hors produits désactivés) deviennent des résultats personnalisés
+        if (\DeepFind\Rules\CustomResults::migrateQueryRules() > 0) {
+            $msgs[] = 'Anciennes règles de résultats converties en résultats personnalisés';
+        }
+        if (\DeepFind\Rules\Redirections::migrateLegacy() > 0) {
+            $msgs[] = 'Anciennes redirections converties';
         }
         $msgs[] = self::applyToEngine($to);
         return $msgs;

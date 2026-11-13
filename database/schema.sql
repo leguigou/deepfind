@@ -152,6 +152,66 @@ CREATE TABLE IF NOT EXISTS boost_rules (
   terms TEXT NOT NULL,
   match_all TINYINT(1) NOT NULL DEFAULT 1,
   conditions TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Résultats personnalisés : pour certains termes de recherche, produits mis en avant (ou seuls affichés) et produits exclus,
+-- choisis un par un ou par règle (conditions), en continu ou sur une période.
+CREATE TABLE IF NOT EXISTS custom_results (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  starts_at DATE NULL,
+  ends_at DATE NULL,
+  mode ENUM('first','only') NOT NULL DEFAULT 'first',
+  terms TEXT NOT NULL,
+  include_items TEXT NOT NULL,
+  include_rules TEXT NOT NULL,
+  exclude_items TEXT NOT NULL,
+  exclude_rules TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Bannières affichées en haut des résultats : image ordinateur / mobile + lien, ou HTML (nettoyé) ; par termes ou par défaut.
+CREATE TABLE IF NOT EXISTS banners (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  starts_at DATE NULL,
+  ends_at DATE NULL,
+  terms TEXT NOT NULL,
+  mode ENUM('visual','code') NOT NULL DEFAULT 'visual',
+  image_desktop VARCHAR(500) NOT NULL DEFAULT '',
+  image_mobile VARCHAR(500) NOT NULL DEFAULT '',
+  alt VARCHAR(190) NOT NULL DEFAULT '',
+  link_url VARCHAR(500) NOT NULL DEFAULT '',
+  new_window TINYINT(1) NOT NULL DEFAULT 0,
+  html TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Redirections : pour certains termes (exacts ou larges), en continu ou sur une période, un lien vers une page est proposé
+-- en haut des résultats ; en mode automatique, la recherche validée (Entrée, loupe) ouvre directement la page.
+CREATE TABLE IF NOT EXISTS redirections (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  auto TINYINT(1) NOT NULL DEFAULT 1,
+  url VARCHAR(500) NOT NULL,
+  terms TEXT NOT NULL,
   starts_at DATE NULL,
   ends_at DATE NULL,
   created_at DATETIME NOT NULL,
@@ -159,6 +219,7 @@ CREATE TABLE IF NOT EXISTS boost_rules (
   KEY idx_project_lang (project_id, lang)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Ancien format (une requête exacte = une URL), converti dans « redirections » par install / import CSV / restauration
 CREATE TABLE IF NOT EXISTS redirects (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   project_id INT UNSIGNED NOT NULL DEFAULT 1,
@@ -188,6 +249,8 @@ CREATE TABLE IF NOT EXISTS search_logs (
   user_agent VARCHAR(255) NOT NULL DEFAULT '',
   sid VARCHAR(32) NULL,
   is_final TINYINT(1) NOT NULL DEFAULT 1,
+  custom_ids VARCHAR(255) NULL,
+  banner_id INT UNSIGNED NULL,
   KEY idx_created (created_at),
   KEY idx_project_created (project_id, created_at),
   KEY idx_query (query_norm(100), created_at),
@@ -200,14 +263,16 @@ CREATE TABLE IF NOT EXISTS click_logs (
   created_at DATETIME NOT NULL,
   lang CHAR(2) NOT NULL,
   query_norm VARCHAR(255) NOT NULL,
-  doc_type ENUM('product','post') NOT NULL,
+  doc_type ENUM('product','post','banner') NOT NULL,
   doc_id VARCHAR(190) NOT NULL,
   position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   ip_hash CHAR(16) NOT NULL,
   sid VARCHAR(32) NULL,
+  custom_result_id INT UNSIGNED NULL,
   KEY idx_created (created_at),
   KEY idx_project_created (project_id, created_at),
-  KEY idx_query (query_norm(100), created_at)
+  KEY idx_query (query_norm(100), created_at),
+  KEY idx_custom (custom_result_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ip_blocks (

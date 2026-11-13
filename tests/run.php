@@ -229,7 +229,21 @@ if ($base) {
     sort($sorted);
     check('API : tri prix croissant', $prices === $sorted);
     [, $d] = $get("/api/v1/search?key=$key&q=retour");
-    check('API : redirection', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours');
+    check('API : redirection (ancien format converti, automatique)', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours' && ($d['redirect_auto'] ?? false) === true);
+    $RD = DeepFind\Rules\Redirections::class;
+    [$rdl, $rdErr] = $RD::sanitize(['name' => 'Livraison', 'active' => true, 'auto' => false, 'url' => 'https://www.example.com/livraison',
+        'terms' => [['term' => 'livraison', 'match' => 'broad']]]);
+    $rdId = $RD::save('fr', $rdl, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('délai de livraison') . "&limit=3");
+    check('redirection : terme large, lien proposé (non automatique)', $rdErr === [] && ($d['redirect'] ?? '') === 'https://www.example.com/livraison' && ($d['redirect_auto'] ?? true) === false);
+    $rdl['starts_at'] = '2099-01-01';
+    $rdl['ends_at'] = '2099-12-31';
+    $RD::save('fr', $rdl, $rdId);
+    [, $d] = $get("/api/v1/search?key=$key&q=livraison&limit=3");
+    check('redirection : période à venir → pas encore active', ($d['redirect'] ?? null) === null);
+    [, $rdBad] = $RD::sanitize(['name' => 'x', 'url' => 'javascript:alert(1)', 'terms' => []]);
+    check('redirection : URL non http(s) et sans terme refusée', count($rdBad) === 2);
+    $RD::delete($rdId, 'fr');
     [, $d] = $get("/api/v1/search?key=$key&q=nageoire");
     check('API : synonymes', $d['total'] > 0);
     [$c] = $get("/api/v1/search?key=pk_00000000000000000000000000000000&q=palme");
@@ -274,6 +288,112 @@ if ($base) {
     DeepFind\Rules\RulesRepository::bumpVersion();
     [, $pub] = $get("/api/v1/search?key=$key&q=palme&limit=48");
     check('réactivation : produit de retour dans la recherche', in_array($off, array_column($pub['products'], 'sku'), true));
+
+    // Résultats personnalisés : produits en premier (ordre choisi), uniquement les sélectionnés, exclusions, période, suivi
+    $CR = DeepFind\Rules\CustomResults::class;
+    // le jeu d'exemple a déjà un résultat « masque » (converti depuis samples/boosts.csv) : mis de côté pendant ces tests
+    $savedMasque = array_values(array_filter($CR::all('fr'), static fn ($c) => in_array('masque', array_column($c['terms'], 'term'), true)));
+    foreach ($savedMasque as $c) {
+        $CR::delete($c['id'], 'fr');
+    }
+    [, $nat] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    $natSkus = array_column($nat['products'], 'sku');
+    $last = end($natSkus);
+    $beforeLast = $natSkus[count($natSkus) - 2] ?? '';
+    [$crFirst] = $CR::sanitize(['name' => 'Test en premier', 'active' => true, 'mode' => 'first', 'terms' => [['term' => 'masque', 'match' => 'exact']],
+        'include_items' => [$last, $beforeLast]], 'fr');
+    $idFirst = $CR::save('fr', $crFirst, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0&sid=sidcr000000000001");
+    check('résultat perso : produits choisis en premier, dans l\'ordre', array_slice(array_column($d['products'], 'sku'), 0, 2) === [$last, $beforeLast]
+        && count($d['products']) === count($natSkus), json_encode(array_slice(array_column($d['products'], 'sku'), 0, 3)));
+    check('résultat perso : identifiant de suivi sur les produits mis en avant, rien d\'interne exposé', ($d['products'][0]['cr'] ?? 0) === $idFirst
+        && !isset($d['products'][2]['cr']) && !array_key_exists('_cr', $d));
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0&sort=price_asc");
+    check('résultat perso : ordre imposé ignoré si le visiteur trie par prix', ($d['products'][0]['sku'] ?? '') !== $last || $natSkus[0] === $last);
+    // suivi : 1 impression (recherche finale journalisée) et 1 clic sur un produit mis en avant
+    $ch = curl_init($base . '/api/v1/click');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_NOPROXY => '*', CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Origin: http://localhost:8080', 'User-Agent: Mozilla/5.0 Tests'],
+        CURLOPT_POSTFIELDS => http_build_query(['key' => $key, 'lang' => 'fr', 'q' => 'masque', 'doc_type' => 'product', 'doc_id' => 'x', 'position' => 1, 'sid' => 'sidcr000000000001', 'cr' => $idFirst])]);
+    curl_exec($ch);
+    usleep(300000);
+    $st = $CR::stats('fr', [$idFirst], 30)[$idFirst];
+    // 2 recherches où le résultat s'appliquait (dont le tri par prix), 1 clic sur un produit mis en avant
+    check('résultat perso : impressions, clics et CTR', $st['impressions'] === 2 && $st['clicks'] === 1 && $st['ctr'] === 50.0, json_encode($st));
+
+    // mode « uniquement » avec une règle (marque) + exclusion par règle ; terme large
+    $brand = $nat['products'][0]['brand'] ?? '';
+    [$crOnly, $errOnly] = $CR::sanitize(['name' => 'Test uniquement', 'active' => true, 'mode' => 'only', 'terms' => [['term' => 'masque', 'match' => 'broad']],
+        'include_rules' => [['match' => 'all', 'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => [$brand]]]]]], 'fr');
+    $CR::delete($idFirst, 'fr');
+    $idOnly = $CR::save('fr', $crOnly, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('masque plongée') . "&limit=48&posts=0");
+    $brands = array_values(array_unique(array_column($d['products'], 'brand')));
+    check('résultat perso « uniquement » (terme large, règle marque) : seulement la marque choisie', $errOnly === [] && $brands === [$brand] && $d['total'] >= 1, json_encode($brands));
+    $crOnly['exclude_rules'] = [['match_all' => true, 'conditions' => [['field' => 'final_price', 'op' => 'gte', 'value' => 0]]]];
+    $CR::save('fr', $crOnly, $idOnly);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    check('résultat perso : exclusion par règle (prix ≥ 0 → plus rien)', $d['total'] === 0 && $d['products'] === []);
+    // période terminée : sans effet
+    $crOnly['starts_at'] = '2000-01-01';
+    $crOnly['ends_at'] = '2000-12-31';
+    $CR::save('fr', $crOnly, $idOnly);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    check('résultat perso : période terminée sans effet', array_column($d['products'], 'sku') === $natSkus);
+    [, $errs] = $CR::sanitize(['name' => 'x', 'mode' => 'only', 'terms' => [['term' => 'a', 'match' => 'exact']]], 'fr');
+    check('résultat perso : « uniquement » sans produit refusé', $errs !== []);
+    // épingler depuis l'aperçu : position dans la liste, retrait
+    $CR::delete($idOnly, 'fr');
+    $pid = $CR::pin('fr', 'masque', $last, 1);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    $pins = $CR::pinsFor('fr', 'masque');
+    check('épingler (aperçu) : produit en 1re position', ($d['products'][0]['sku'] ?? '') === $last && ($pins[mb_strtoupper($last)]['position'] ?? 0) === 1);
+    $CR::unpin('fr', $pid, $last);
+    check('retirer l\'épinglage : résultat vide supprimé', $CR::find($pid, 'fr') === null);
+    foreach ($savedMasque as $c) {
+        $CR::save('fr', $c, null);
+    }
+
+    // Bannières : sélection par termes, bannière par défaut, période, HTML nettoyé, suivi affichages / clics / CTR
+    $BN = DeepFind\Rules\Banners::class;
+    [$bDef] = $BN::sanitize(['name' => 'Défaut', 'active' => true, 'is_default' => true, 'mode' => 'visual', 'image_desktop' => 'https://cdn.example/def.jpg'], 'fr');
+    $idDef = $BN::save('fr', $bDef, null);
+    [$bPal, $errPal] = $BN::sanitize(['name' => 'Palmes', 'active' => true, 'mode' => 'visual', 'terms' => [['term' => 'palme', 'match' => 'broad']],
+        'image_desktop' => 'https://cdn.example/d.jpg', 'image_mobile' => 'https://cdn.example/m.jpg', 'link_url' => 'https://www.example.com/palmes', 'new_window' => true], 'fr');
+    $idPal = $BN::save('fr', $bPal, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('palmes de plongée') . "&limit=5&sid=sidbanner00000001");
+    check('bannière : choisie par terme large, image mobile et lien envoyés', $errPal === [] && ($d['banner']['id'] ?? 0) === $idPal
+        && ($d['banner']['mobile'] ?? '') === 'https://cdn.example/m.jpg' && ($d['banner']['new_window'] ?? false) === true && !isset($d['banner']['name']));
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=5");
+    check('bannière : par défaut quand aucune ne correspond', ($d['banner']['id'] ?? 0) === $idDef);
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=5&offset=5");
+    check('bannière : pas sur les pages suivantes', ($d['banner'] ?? null) === null);
+    $ch = curl_init($base . '/api/v1/click');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_NOPROXY => '*', CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Origin: http://localhost:8080', 'User-Agent: Mozilla/5.0 Tests'],
+        CURLOPT_POSTFIELDS => http_build_query(['key' => $key, 'lang' => 'fr', 'q' => 'palmes de plongée', 'doc_type' => 'banner', 'doc_id' => $idPal, 'position' => 0, 'sid' => 'sidbanner00000001'])]);
+    curl_exec($ch);
+    usleep(300000);
+    $bs = $BN::stats('fr', [$idPal], 30)[$idPal];
+    check('bannière : affichages, clics, CTR', $bs['impressions'] === 1 && $bs['clicks'] === 1 && $bs['ctr'] === 100.0, json_encode($bs));
+    [$bCode] = $BN::sanitize(['name' => 'Code', 'active' => true, 'mode' => 'code', 'terms' => [['term' => 'tuba', 'match' => 'exact']],
+        'html' => '<a href="javascript:alert(1)" onclick="x()">A</a><script>alert(1)</script><img src="https://cdn.example/t.jpg" onerror="y()" alt="T">'], 'fr');
+    check('bannière HTML : scripts, événements et javascript: retirés', $bCode !== null && !preg_match('/script|onclick|onerror|javascript/i', $bCode['html'])
+        && str_contains($bCode['html'], 'https://cdn.example/t.jpg'));
+    $bPal['starts_at'] = '2000-01-01';
+    $bPal['ends_at'] = '2000-01-31';
+    $BN::save('fr', $bPal, $idPal);
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=5");
+    check('bannière : période terminée → bannière par défaut', ($d['banner']['id'] ?? 0) === $idDef);
+    [, $errB] = $BN::sanitize(['name' => 'x', 'mode' => 'visual', 'terms' => [], 'image_desktop' => 'javascript:alert(1)'], 'fr');
+    check('bannière : sans terme ni défaut, ou image non http(s), refusée', count($errB) === 2, json_encode($errB));
+    DeepFind\Db::exec('DELETE FROM banners');
+    DeepFind\Db::exec("DELETE FROM search_logs WHERE sid = 'sidbanner00000001'");
+    DeepFind\Db::exec("DELETE FROM click_logs WHERE doc_type = 'banner'");
+    DeepFind\CacheVersion::bump();
+    DeepFind\Db::exec("DELETE FROM search_logs WHERE sid = 'sidcr000000000001'");
+    DeepFind\Db::exec('DELETE FROM click_logs WHERE custom_result_id IS NOT NULL');
+    DeepFind\CacheVersion::bump();
 
     // Règles de boost : termes exacts / larges, conditions toutes / au moins une, effet sur l'ordre
     $BR = DeepFind\Rules\BoostRules::class;
@@ -326,26 +446,22 @@ if ($base) {
 
     // Anciens « boosts produits » convertis en règles de boost ; boost rapide d'un produit ; période des règles
     $meiliT = DeepFind\Meili\MeiliClient::admin();
-    DeepFind\Db::exec("INSERT INTO product_boosts (project_id, lang, sku, boost, starts_at, ends_at, note, created_at) VALUES (1, 'fr', 'seac-x-vision', 10, NULL, '2099-12-31', 'salon', NOW())");
+    DeepFind\Db::exec("INSERT INTO product_boosts (project_id, lang, sku, boost, starts_at, ends_at, note, created_at) VALUES
+        (1, 'fr', 'seac-x-vision', 10, NULL, '2099-12-31', 'salon', NOW()), (1, 'fr', 'C4-GHOST', 5, NULL, '2000-01-01', '', NOW()),
+        (1, 'fr', 'C4-PREDATOR', -10, '2099-01-01', NULL, '', NOW())");
     $nMig = DeepFind\Rules\BoostRules::migrateProductBoosts();
     $mig = DeepFind\Rules\BoostRules::productRule('fr', 'SEAC-X-VISION');
-    check('migration : boost produit +10 converti en règle ×2 (dates gardées)', $nMig === 1 && $mig !== null && abs($mig['boost'] - 2.0) < 0.001 && $mig['ends_at'] === '2099-12-31'
-        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM product_boosts') === 0);
+    $fut = DeepFind\Rules\BoostRules::productRule('fr', 'C4-PREDATOR');
+    check('migration : boost produit +10 converti en règle ×2, date de fin rappelée dans le nom', $mig !== null && abs($mig['boost'] - 2.0) < 0.001 && str_contains($mig['name'], '31/12/2099') && $mig['active']);
+    check('migration : boost terminé non repris, boost à venir en règle inactive ×0,5', $nMig === 2 && DeepFind\Rules\BoostRules::productRule('fr', 'C4-GHOST') === null
+        && $fut !== null && !$fut['active'] && abs($fut['boost'] - 0.5) < 0.001 && (int) DeepFind\Db::value('SELECT COUNT(*) FROM product_boosts') === 0);
+    DeepFind\Db::exec('DELETE FROM boost_rules');
     DeepFind\Rules\BoostRules::setProductBoost('fr', 'SEAC-X-VISION', 1.0);
     check('boost rapide : coefficient 1 = règle supprimée', DeepFind\Rules\BoostRules::productRule('fr', 'SEAC-X-VISION') === null);
     DeepFind\Rules\BoostRules::setProductBoost('fr', 'SEAC-X-VISION', 3);
     DeepFind\Rules\BoostRules::setProductBoost('fr', 'SEAC-X-VISION', 5);
     check('boost rapide : une seule règle par produit, modifiée', (int) DeepFind\Db::value("SELECT COUNT(*) FROM boost_rules WHERE name = 'Produit SEAC-X-VISION'") === 1
         && abs(DeepFind\Rules\BoostRules::productBoosts('fr')['SEAC-X-VISION'] - 5.0) < 0.001);
-    check('période : programmée / terminée / en cours', DeepFind\Rules\BoostRules::period(['starts_at' => '2099-01-01', 'ends_at' => null]) === 'scheduled'
-        && DeepFind\Rules\BoostRules::period(['starts_at' => null, 'ends_at' => '2000-01-01']) === 'expired'
-        && DeepFind\Rules\BoostRules::period(['starts_at' => '2000-01-01', 'ends_at' => '2099-01-01']) === 'current');
-    DeepFind\Db::exec("UPDATE boost_rules SET ends_at = '2000-01-01'");
-    DeepFind\CacheVersion::bump();
-    check('période : règle terminée non appliquée', DeepFind\Rules\BoostRules::active('fr') === []);
-    [, $errDates] = DeepFind\Rules\BoostRules::sanitize(['name' => 'x', 'boost' => 2, 'starts_at' => '2026-05-10', 'ends_at' => '2026-05-01',
-        'conditions' => [['field' => 'brand', 'values' => ['C4']]]], 'fr');
-    check('période : fin avant début refusée', $errDates !== []);
     DeepFind\Db::exec('DELETE FROM boost_rules');
     DeepFind\CacheVersion::bump();
 
@@ -393,8 +509,9 @@ if ($base) {
     $testKey = DeepFind\Project::with($testId, static fn () => DeepFind\Security\ApiKeys::create('Test', 'localhost', 'fr'));
     // Une redirection et un réglage uniquement dans Test
     DeepFind\Project::with($testId, static function (): void {
-        DeepFind\Rules\RulesRepository::addRedirect('fr', 'bonjour test', 'https://www.example.com/test');
-        DeepFind\Rules\RulesRepository::bumpVersion();
+        [$red] = DeepFind\Rules\Redirections::sanitize(['name' => 'Bonjour', 'active' => true, 'auto' => true, 'url' => 'https://www.example.com/test',
+            'terms' => [['term' => 'bonjour test', 'match' => 'exact']]]);
+        DeepFind\Rules\Redirections::save('fr', $red, null);
         DeepFind\Settings::set('matching_mode', 'strict');
     });
     [, $rt] = $get("/api/v1/search?key=$testKey&q=" . rawurlencode('bonjour test'));
@@ -422,7 +539,7 @@ if ($base) {
     DeepFind\Project::use($testId);
     DeepFind\Project::use($prodId);
     check('sauvegarde : restauration', DeepFind\Settings::get('matching_mode') === 'exact_then_approx'
-        && DeepFind\Db::value("SELECT COUNT(*) FROM redirects WHERE project_id = ? AND query = 'bonjour test'", [$prodId]) == 0);
+        && DeepFind\Db::value("SELECT COUNT(*) FROM redirections WHERE project_id = ? AND terms LIKE '%bonjour test%'", [$prodId]) == 0);
     file_put_contents(APP_ROOT . '/tests/_tmp/test_project', $testId . ' ' . $testKey);
 
     [$c, $d] = $get('/api/v1/health');

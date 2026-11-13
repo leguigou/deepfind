@@ -7,6 +7,8 @@ namespace DeepFind\Search;
 use DeepFind\Config;
 use DeepFind\Meili\MeiliClient;
 use DeepFind\Rules\BoostRules;
+use DeepFind\Rules\Banners;
+use DeepFind\Rules\CustomResults;
 use DeepFind\Rules\RulesRepository;
 use DeepFind\Settings;
 use DeepFind\Store\Store;
@@ -29,6 +31,10 @@ final class SearchService
     private array $words = [];
     /** @var array<string, true> SKU désactivés partout (aperçu interne : produits signalés « désactivé ») */
     private array $hideAll = [];
+    /** @var array<string,int> SKU mis en avant => résultat personnalisé (suivi des clics) */
+    private array $owner = [];
+    /** @var array<int,string> noms des résultats personnalisés appliqués (aperçu interne) */
+    private array $crNames = [];
     /** @var array<string, string> libellés des attributs */
     private array $attrLabels = [];
 
@@ -47,21 +53,43 @@ final class SearchService
         $q = $r->qNorm;
         $this->words = $internal ? Relevance::words($r->q, $r->lang) : [];
 
-        // Épingler / remonter : uniquement en tri « pertinence » (un tri par prix demandé par le visiteur reste respecté).
-        $withRules = $q !== '' && $r->sort === 'relevance';
-        $pins = $withRules ? ($rules['pins'][$q] ?? []) : [];
-        $boosts = $withRules ? ($rules['boosts'][$q] ?? []) : [];
+        // Résultats personnalisés (termes de la recherche) : produits mis en avant ou seuls affichés, produits exclus.
+        // L'ordre imposé ne vaut qu'en tri « pertinence » (un tri par prix demandé par le visiteur reste respecté).
+        $relevance = $r->sort === 'relevance';
+        $plan = CustomResults::plan($q !== '' ? CustomResults::forQuery($r->lang, $r->q) : []);
+        $only = $plan['only'];
+        $this->owner = $plan['item_owner'];
+        $this->crNames = $plan['names'];
         $withDisabled = $withDisabled && $internal;
         $this->hideAll = $internal ? array_fill_keys(array_map(static fn ($s) => mb_strtoupper((string) $s, 'UTF-8'), $rules['hide_all']), true) : [];
-        $hides = array_values(array_unique(array_merge($q !== '' ? ($rules['hides'][$q] ?? []) : [], $withDisabled ? [] : $rules['hide_all'])));
-        $injected = array_values(array_unique(array_merge($boosts, array_column($pins, 'sku'))));
-        $injected = array_values(array_diff($injected, $hides));
+        $hides = array_values(array_unique(array_merge($q !== '' ? ($rules['hides'][$q] ?? []) : [], $plan['exclude_items'], $withDisabled ? [] : $rules['hide_all'])));
 
         $groups = $this->userFilterGroups($r, $internal);
         $base = array_values($groups);
         if ($hides !== []) {
             $base[] = Filter::notIn('all_skus', $hides);
         }
+        foreach ($plan['exclude_filters'] as $ex) {
+            $base[] = $ex;
+        }
+        if ($only) {
+            // Uniquement les produits sélectionnés (un par un ou par règle), quels que soient les mots
+            $base[] = [...($plan['include_items'] ? [Filter::in('all_skus', $plan['include_items'])] : []), ...$plan['include_filters']];
+        }
+        $injected = $relevance ? array_values(array_diff($plan['include_items'], $hides)) : [];
+        if ($relevance && !$only && $plan['include_filters'] !== [] && $r->offset >= 0 && $this->indexExists($productIndex)) {
+            // Mode « en premier » : produits des règles d'inclusion placés après les produits choisis un par un
+            $pre = $this->meili->multiSearch([['indexUid' => $productIndex, 'q' => '', 'limit' => CustomResults::RULE_ITEMS_MAX,
+                'filter' => [...$base, $plan['include_filters']], 'sort' => ['biz_score:desc'], 'attributesToRetrieve' => ['sku']]]);
+            foreach ($pre[0]['hits'] ?? [] as $h) {
+                $sku = mb_strtoupper((string) $h['sku'], 'UTF-8');
+                if (!in_array($sku, $injected, true)) {
+                    $injected[] = $sku;
+                    $this->owner[$sku] ??= (int) $plan['rule_owner'];
+                }
+            }
+        }
+        $mainQ = $only ? '' : $r->q;
         $mainFilter = $base;
         if ($injected !== []) {
             $mainFilter[] = Filter::notIn('all_skus', $injected);
@@ -92,7 +120,7 @@ final class SearchService
             return $this->empty($r);
         }
         $queries[] = [
-            'indexUid' => $productIndex, 'q' => $r->q,
+            'indexUid' => $productIndex, 'q' => $mainQ,
             'offset' => $rerank ? 0 : $mainOffset, 'limit' => $rerank ? max($window, $mainOffset + $mainLimit) : $mainLimit,
             'filter' => $mainFilter, 'facets' => $facets, 'sort' => $this->sort($r),
             // Champs des conditions : lus pour le calcul uniquement, product() ne renvoie que la liste blanche.
@@ -111,7 +139,7 @@ final class SearchService
             $names[] = 'injected';
         }
 
-        $skuLike = $r->offset === 0 && self::looksLikeSku($r->q);
+        $skuLike = $r->offset === 0 && !$only && self::looksLikeSku($r->q);
         if ($skuLike) {
             $code = mb_strtoupper(str_replace(' ', '', $r->q), 'UTF-8');
             $queries[] = [
@@ -131,7 +159,7 @@ final class SearchService
                 if ($hides !== []) {
                     $f[] = Filter::notIn('all_skus', $hides);
                 }
-                $queries[] = ['indexUid' => $productIndex, 'q' => $r->q, 'limit' => 0, 'filter' => $f, 'facets' => [$field]];
+                $queries[] = ['indexUid' => $productIndex, 'q' => $mainQ, 'limit' => 0, 'filter' => $f, 'facets' => [$field]];
                 $names[] = 'facet:' . $field;
             }
         }
@@ -164,7 +192,27 @@ final class SearchService
         if ($rerank && isset($results['main']['hits'])) {
             $results['main']['hits'] = array_slice($this->rerank($results['main']['hits'], $r, $boostRules), $rerank['offset'], $rerank['limit']);
         }
-        return $this->format($r, $results, $pins, $boosts, $nInj, $mainOffset, $mainLimit, $attrLabels, $internal, $skuLike, $approx);
+        $out = $this->format($r, $results, $injected, $nInj, $mainOffset, $mainLimit, $attrLabels, $internal, $skuLike, $approx);
+        if ($only && $plan['ids'] !== []) {
+            // Mode « uniquement » : tous les produits affichés viennent du résultat personnalisé (suivi des clics)
+            $owner = $plan['rule_owner'] ?? $plan['ids'][0];
+            foreach ($out['products'] as &$p) {
+                $p['cr'] ??= $owner;
+                if ($internal) {
+                    $p['rule'] ??= 'résultat perso : ' . ($this->crNames[$p['cr']] ?? '');
+                }
+            }
+            unset($p);
+        }
+        // Résultats personnalisés appliqués (journal des recherches → impressions) ; retiré de la réponse publique par l'API
+        $out['_cr'] = $plan['ids'];
+        // Bannière en haut des résultats (première page seulement)
+        $banner = $r->offset === 0 ? Banners::forQuery($r->lang, $r->q) : null;
+        $out['banner'] = $banner ? Banners::payload($banner) : null;
+        if ($internal && $banner) {
+            $out['banner']['name'] = $banner['name'];
+        }
+        return $out;
     }
 
     /**
@@ -268,7 +316,7 @@ final class SearchService
         };
     }
 
-    private function format(SearchRequest $r, array $res, array $pins, array $boosts, int $nInj, int $mainOffset, int $mainLimit, array $attrLabels, bool $internal, bool $skuLike, bool $approx = false): array
+    private function format(SearchRequest $r, array $res, array $injected, int $nInj, int $mainOffset, int $mainLimit, array $attrLabels, bool $internal, bool $skuLike, bool $approx = false): array
     {
         $main = $res['main'] ?? [];
         $hits = array_map(fn ($h) => $this->product($h, $internal), $main['hits'] ?? []);
@@ -283,24 +331,20 @@ final class SearchService
             }
             $foundInj = count($res['injected']['hits'] ?? []);
             if ($r->offset === 0) {
+                // Produits mis en avant, dans l'ordre choisi (un par un, puis par règle)
                 $used = [];
                 $top = [];
-                foreach ($boosts as $sku) {
-                    if (isset($bySku[$sku]) && !isset($used[$bySku[$sku]['id']])) {
-                        $used[$bySku[$sku]['id']] = true;
-                        $top[] = $this->product($bySku[$sku], $internal) + ($internal ? ['rule' => 'boost'] : []);
-                    }
-                }
-                $hits = array_merge($top, $hits);
-                usort($pins, static fn ($a, $b) => $a['position'] <=> $b['position']);
-                foreach ($pins as $p) {
-                    $h = $bySku[$p['sku']] ?? null;
+                foreach ($injected as $i => $sku) {
+                    $h = $bySku[$sku] ?? null;
                     if ($h === null || isset($used[$h['id']])) {
                         continue;
                     }
                     $used[$h['id']] = true;
-                    array_splice($hits, min(count($hits), $p['position'] - 1), 0, [$this->product($h, $internal) + ($internal ? ['rule' => 'pin #' . $p['position']] : [])]);
+                    $cr = $this->owner[$sku] ?? null;
+                    $top[] = $this->product($h, $internal) + ($cr !== null ? ['cr' => $cr] : [])
+                        + ($internal ? ['rule' => 'résultat perso : ' . ($this->crNames[$cr] ?? '') . ' #' . (count($top) + 1)] : []);
                 }
+                $hits = array_merge($top, $hits);
             }
         }
 
@@ -361,7 +405,9 @@ final class SearchService
             'has_more' => ($mainOffset + $mainLimit) < $mainTotal,
             // true : aucun produit ne contient tous les mots ; produits « approchants » (comptés « sans résultat exact »)
             'approximate' => $approx,
-            'redirect' => RulesRepository::compiled($r->lang)['redirects'][$r->qNorm] ?? null,
+            'redirect' => ($redir = \DeepFind\Rules\Redirections::forQuery($r->lang, $r->q)) ? $redir['url'] : null,
+            // automatique : la recherche validée (Entrée, loupe) ouvre directement la page ; sinon, lien proposé en haut des résultats
+            'redirect_auto' => $redir ? $redir['auto'] : false,
             'products' => $hits,
             'facets' => $facets,
             'toggles' => [
