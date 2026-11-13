@@ -42,7 +42,7 @@ use DeepFind\Rules\CustomResults;
   <form method="post" action="<?= e(url('/admin/redirects/import')) ?>" enctype="multipart/form-data" class="form">
     <?= csrf_field() ?>
     <p class="muted">Colonnes : <code>requete;url</code> (voir <code>samples/redirections.csv</code>). Chaque ligne devient une redirection automatique en correspondance exacte.</p>
-    <label>Fichier <input type="file" name="csv" accept=".csv,text/csv" required></label>
+    <?= file_field('csv', '.csv,text/csv', 'Fichier CSV, 5 Mo maximum') ?>
     <label class="check"><input type="checkbox" name="replace" value="1"> Remplacer toutes les redirections de cette langue</label>
     <button class="btn btn-light">Importer</button>
   </form>
