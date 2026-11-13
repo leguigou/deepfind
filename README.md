@@ -450,6 +450,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
 | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | Boosts produits | Mise en avant ou en retrait d'un produit sur toutes les recherches, appliquée immédiatement |
+| Règles de boost | Coefficient (×1,5, ×0,5…) appliqué aux produits qui remplissent des conditions (marque, catégorie, attribut, prix, stock, marge…), sur toutes les recherches ou seulement sur certains termes (correspondance exacte ou large). Visible dans l'aperçu interne |
 | Journal des recherches | Détail filtrable et exportable |
 | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
 | Clés & intégration | Clés publiques, domaines autorisés, code à copier |
@@ -479,6 +480,8 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
    - **Critères** : en stock, rentabilité, popularité (ventes 30 jours du flux), **clics dans la recherche sur 30 jours** (les produits les plus cliqués remontent), nouveauté, boosts (flux + extranet).
    - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
    - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
+
+**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
 
 **Boosts produits** (menu dédié) : un produit passe en avant (+1 à +10) ou en retrait (-1 à -10) sur toutes les recherches, avec dates de début et de fin facultatives. Appliqué immédiatement.
 - **Directement dans l'aperçu interne**, sur chaque produit :

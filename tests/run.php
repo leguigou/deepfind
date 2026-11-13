@@ -270,6 +270,42 @@ if ($base) {
     [, $pub] = $get("/api/v1/search?key=$key&q=palme&limit=48");
     check('réactivation : produit de retour dans la recherche', in_array($off, array_column($pub['products'], 'sku'), true));
 
+    // Règles de boost : termes exacts / larges, conditions toutes / au moins une, effet sur l'ordre
+    $BR = DeepFind\Rules\BoostRules::class;
+    $qw = DeepFind\Search\Relevance::words('palmes de plongée', 'fr');
+    check('boost : terme large « palme » couvre « palmes de plongée »', $BR::termsMatch([['term' => 'palme', 'match' => 'broad']], 'palmes de plongee', $qw, 'fr'));
+    check('boost : terme exact « palme » ne couvre pas « palmes de plongée »', !$BR::termsMatch([['term' => 'palme', 'match' => 'exact']], 'palmes de plongee', $qw, 'fr'));
+    check('boost : sans terme = toutes les recherches', $BR::termsMatch([], 'masque', ['masque'], 'fr'));
+    $doc = ['brand' => 'Cressi', 'category_names' => ['Palmes', 'Plongée'], 'final_price' => 80, 'margin_rate' => 0.4, 'in_stock' => 1, 'attr' => ['couleur' => ['Jaune']]];
+    $rule = ['match_all' => true, 'conditions' => [['field' => 'category_names', 'values' => ['plongée']], ['field' => 'final_price', 'op' => 'gte', 'value' => 50]]];
+    check('boost : toutes les conditions remplies', $BR::matches($rule, $doc));
+    $rule['conditions'][] = ['field' => 'attr.couleur', 'values' => ['Noir']];
+    check('boost : une condition manquante => non', !$BR::matches($rule, $doc));
+    check('boost : « au moins une » condition => oui', $BR::matches(['match_all' => false] + $rule, $doc));
+    check('boost : marge en %', $BR::matches(['match_all' => true, 'conditions' => [['field' => 'margin_rate', 'op' => 'gte', 'value' => 35]]], $doc)
+        && $BR::matches(['match_all' => true, 'conditions' => [['field' => 'in_stock', 'values' => ['1']]]], $doc));
+    [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => []], 'fr');
+    check('boost : règle sans condition refusée', $bad === null && $errs !== []);
+
+    [, $base] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0");
+    $brands = array_column($base['products'], 'brand');
+    $target = end($brands); // marque du dernier produit : la remonter
+    [$rule] = $BR::sanitize(['name' => 'Test remontée', 'active' => true, 'boost' => '10', 'terms_enabled' => true,
+        'terms' => [['term' => 'palme', 'match' => 'broad']], 'match' => 'all', 'conditions' => [['field' => 'brand', 'values' => [$target]]]], 'fr');
+    $BR::save('fr', $rule, null);
+    [, $boosted] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0");
+    // 1re position = épinglage (règle de résultats), la 2e doit être un produit de la marque boostée
+    check('boost : marque remontée en tête (après l\'épinglé)', ($boosted['products'][1]['brand'] ?? '') === $target, json_encode(array_slice(array_column($boosted['products'], 'brand'), 0, 4)));
+    check('boost : marge et attributs toujours absents de l\'API', !str_contains(json_encode($boosted), 'margin') && !str_contains(json_encode($boosted), '"attr"'));
+    $int = $svc->search(DeepFind\Search\SearchRequest::fromArray(['q' => 'palme', 'lang' => 'fr', 'limit' => 48], true), true);
+    check('boost : règle affichée dans l\'aperçu interne', ($int['products'][1]['boost_rules'][0]['name'] ?? '') === 'Test remontée');
+    DeepFind\Db::exec('UPDATE boost_rules SET active = 0');
+    DeepFind\CacheVersion::bump();
+    [, $inactive] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0");
+    check('boost : règle inactive sans effet', array_column($inactive['products'], 'sku') === array_column($base['products'], 'sku'));
+    DeepFind\Db::exec('DELETE FROM boost_rules');
+    DeepFind\CacheVersion::bump();
+
     // Correspondance des mots : « barbe à papa » (aucun produit) => approchants signalés, ou rien en mode strict
     [, $bp] = $get("/api/v1/search?key=$key&q=" . rawurlencode('barbe à papa') . "&sid=sidbarbe00001");
     check('recherche sans produit : résultats marqués « approchants » (ou aucun)', ($bp['approximate'] ?? false) === true || $bp['total'] === 0, json_encode(['t' => $bp['total'], 'a' => $bp['approximate'] ?? null]));

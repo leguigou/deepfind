@@ -28,7 +28,7 @@
     <div class="pv-results">
     <div class="table-scroll">
     <table class="table compact pv-table">
-      <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j / clics 30 j">Ventes / clics</th><th class="num" title="Pertinence du moteur + bonus « mot au début du nom »">Pertinence</th><th class="num">Score métier</th></tr></thead>
+      <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j / clics 30 j">Ventes / clics</th><th class="num" title="(Pertinence du moteur + bonus « mot au début du nom ») × règles de boost">Pertinence</th><th class="num">Score métier</th></tr></thead>
       <tbody>
       <?php foreach ($result['products'] as $i => $pr): ?>
         <tr class="<?= $pr['in_stock'] ? '' : 'dim' ?>">
@@ -64,13 +64,14 @@
             <button type="button" class="btn btn-sm btn-light" data-dialog-open="pv-d-<?= $i ?>">Détails</button>
             <?= !empty($pr['exact_match']) ? '<span class="badge badge-info">SKU exact</span>' : '' ?>
             <?= !empty($pr['rule']) ? '<span class="badge badge-info">' . e($pr['rule']) . '</span>' : '' ?>
+            <?php foreach ($pr['boost_rules'] ?? [] as $br): ?><span class="badge <?= $br['boost'] >= 1 ? 'badge-ok' : 'badge-ko' ?> pv-boost-rule" title="Règle de boost">×<?= e(rtrim(rtrim(number_format($br['boost'], 2, ',', ''), '0'), ',')) ?> <?= e($br['name']) ?></span><?php endforeach; ?>
             </div>
           </td>
           <td class="num"><?= $pr['has_price_range'] ? 'dès ' : '' ?><?= fmt_n($pr['final_price'], 2) ?> €<?= $pr['on_sale'] ? '<br><s class="muted">' . fmt_n($pr['price'], 2) . ' €</s> -' . (int) $pr['discount_percent'] . ' %' : '' ?></td>
           <td><?= $pr['in_stock'] ? '<span class="badge badge-ok">' . (int) ($pr['salable_qty'] ?? 0) . '</span>' : '<span class="badge badge-ko">rupture</span>' ?></td>
           <td class="num"><?= fmt_n(100 * (float) ($pr['margin_rate'] ?? 0), 1) ?> %</td>
           <td class="num"><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($pr['clicks_30d'] ?? 0) ?></td>
-          <td class="num" title="Moteur <?= isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—' ?> + début du nom <?= isset($pr['name_position']) ? fmt_n($pr['name_position'], 2) : '—' ?>">
+          <td class="num" title="Moteur <?= isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—' ?> + début du nom <?= isset($pr['name_position']) ? fmt_n($pr['name_position'], 2) : '—' ?><?= isset($pr['boost_factor']) ? ', × règles de boost ' . fmt_n($pr['boost_factor'], 2) : '' ?>">
             <?= isset($pr['final_score']) ? fmt_n($pr['final_score'], 2) : (isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—') ?>
             <?php if (isset($pr['name_position'])): ?><br><small class="muted">début nom <?= fmt_n($pr['name_position'], 2) ?></small><?php endif; ?></td>
           <td class="num"><?= fmt_n($pr['biz_score'] ?? 0, 1) ?><?= (int) ($pr['boost_total'] ?? 0) !== 0 ? '<br><small class="muted">boost ' . sprintf('%+d', (int) $pr['boost_total']) . '</small>' : '' ?></td>

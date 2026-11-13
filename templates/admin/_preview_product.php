@@ -35,6 +35,12 @@ $variants = is_array($d['variants'] ?? null) ? $d['variants'] : [];
       </table>
     <?php endif; ?>
 
+    <?php if (!empty($pr['boost_rules'])): ?>
+      <h3>Règles de boost appliquées</h3>
+      <ul class="plain"><?php foreach ($pr['boost_rules'] as $br): ?><li><strong>×<?= e(rtrim(rtrim(number_format($br['boost'], 2, ',', ''), '0'), ',')) ?></strong> <?= e($br['name']) ?></li><?php endforeach; ?>
+        <?php if (count($pr['boost_rules']) > 1): ?><li class="muted">Coefficient total : ×<?= fmt_n($pr['boost_factor'] ?? 1, 2) ?></li><?php endif; ?></ul>
+    <?php endif; ?>
+
     <h3>Informations</h3>
     <dl class="kv-grid">
       <dt>Prix</dt><dd><?= !empty($pr['has_price_range']) ? 'dès ' : '' ?><?= fmt_n($pr['final_price'] ?? 0, 2) ?> €<?= !empty($pr['on_sale']) ? ' <s class="muted">' . fmt_n($pr['price'], 2) . ' €</s> -' . (int) $pr['discount_percent'] . ' %' : '' ?></dd>
