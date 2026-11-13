@@ -37,6 +37,7 @@ final class App
         'GET /admin/projects' => [ProjectsController::class, 'index'],
         'POST /admin/projects/create' => [ProjectsController::class, 'create'],
         'POST /admin/projects/rename' => [ProjectsController::class, 'rename'],
+        'POST /admin/projects/active' => [ProjectsController::class, 'active'],
         'POST /admin/projects/delete' => [ProjectsController::class, 'delete'],
         'GET /admin/projects/copy' => [ProjectsController::class, 'copy'],
         'POST /admin/projects/copy' => [ProjectsController::class, 'copyApply'],

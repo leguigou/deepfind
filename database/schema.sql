@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS projects (
   code VARCHAR(20) NOT NULL,
   name VARCHAR(100) NOT NULL,
   index_prefix VARCHAR(60) NOT NULL,
+  -- 0 : le widget ne s'active pas sur le site (la recherche d'origine du site reste en place)
+  active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL,
   UNIQUE KEY uk_code (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

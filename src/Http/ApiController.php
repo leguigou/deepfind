@@ -20,6 +20,7 @@ use DeepFind\Text;
  * API publique appelée par le widget :
  *   GET  /api/v1/search?key=pk_…&q=palme&lang=fr&offset=0&limit=20&brand[]=C4&in_stock=1&on_sale=1&sort=price_asc&sid=…
  *   POST /api/v1/click   (key, q, lang, doc_type, doc_id, position, sid)
+ *   GET  /api/v1/config?key=pk_…&lang=fr   (le widget ne prend la main que si « enabled » est vrai)
  *   GET  /api/v1/health
  */
 final class ApiController
@@ -30,6 +31,7 @@ final class ApiController
             match (true) {
                 $path === '/api/v1/search' && in_array($method, ['GET', 'HEAD'], true) => $this->search(),
                 $path === '/api/v1/click' && $method === 'POST' => $this->click(),
+                $path === '/api/v1/config' && in_array($method, ['GET', 'HEAD'], true) => $this->config(),
                 $path === '/api/v1/health' => $this->health(),
                 $method === 'OPTIONS' => $this->preflight(),
                 default => Response::json(['error' => 'not_found'], 404),
@@ -53,6 +55,10 @@ final class ApiController
 
         [$key, $cors] = $this->authorize((string) ($_GET['key'] ?? ''), $lang);
         if ($key === null) {
+            return;
+        }
+        if (!\DeepFind\Project::isActive()) {
+            Response::json(['error' => 'project_disabled'], 403, $cors);
             return;
         }
         $req = SearchRequest::fromArray($_GET);
@@ -105,6 +111,10 @@ final class ApiController
         if ($key === null) {
             return;
         }
+        if (!\DeepFind\Project::isActive()) {
+            Response::noContent($cors);
+            return;
+        }
         $ip = ClientIp::resolve($_SERVER);
         $store = Store::get();
         if ((new BotGuard($store))->check($ip, (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), '', 'click') !== null) {
@@ -123,6 +133,24 @@ final class ApiController
             'sid' => self::sid($p['sid'] ?? ''),
             'custom_result_id' => max(0, (int) ($p['cr'] ?? 0)),
         ]);
+    }
+
+    /**
+     * Configuration du widget, demandée avant toute prise en main de la page : projet actif ou non, comportement de la touche Entrée.
+     * Courte mise en cache navigateur : la désactivation d'un projet est prise en compte en une minute au plus.
+     */
+    private function config(): void
+    {
+        $lang = (string) ($_GET['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($_GET['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        Response::json([
+            'enabled' => \DeepFind\Project::isActive(),
+            'enter_submit' => Settings::int('widget_enter_submit') === 1,
+        ], 200, $cors + ['Cache-Control' => 'private, max-age=60']);
     }
 
     private function health(): void

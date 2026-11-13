@@ -12,6 +12,7 @@ final class Migrations
 {
     /** table => [colonne => définition] */
     private const COLUMNS = [
+        'projects' => ['active' => 'TINYINT(1) NOT NULL DEFAULT 1 AFTER index_prefix'],
         'api_keys' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'synonyms' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'query_rules' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],

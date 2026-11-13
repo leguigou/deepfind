@@ -64,8 +64,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=4';
-  document.head.appendChild(css);
+  css.href = base + '/widget/deepfind.css?v=5'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -655,11 +654,50 @@
     }
   }
 
+  // ------------------------------------------------------------------ Démarrage
+  /*
+   * Le widget ne prend la main (fenêtre de recherche, neutralisation de l'autocomplétion d'origine) que si l'API confirme
+   * que le projet est actif. Projet désactivé dans l'extranet, ou API injoignable : rien n'est modifié, la recherche
+   * d'origine du site fonctionne normalement. La réponse est gardée 5 min dans la session pour décider sans attendre.
+   */
+  var started = false;
+  var cfgKey = 'df-cfg:' + cfg.key + ':' + cfg.lang;
+  function readCfg() {
+    try { var v = JSON.parse(window.sessionStorage.getItem(cfgKey) || 'null'); return v && Date.now() - v.t < 300000 ? v : null; } catch (e) { return null; }
+  }
+  function writeCfg(c) {
+    try { window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, t: Date.now() })); } catch (e) { /* stockage indisponible */ }
+  }
+  function applyCfg(c) {
+    if (cfg.enter === null && c && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
+  }
+  function fetchCfg() {
+    return fetch(cfg.api + '/config?key=' + encodeURIComponent(cfg.key) + '&lang=' + encodeURIComponent(cfg.lang), { credentials: 'omit', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+      .then(function (c) { writeCfg(c); applyCfg(c); return c; });
+  }
+  function activate() {
+    if (started) { return; }
+    started = true;
+    document.head.appendChild(css);
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+  }
+
   window.DeepFind = {
     config: cfg,
-    open: function (q) { if (q) { state.q = q; resetFilters(); } open(); search(false); },
+    isActive: function () { return started; },
+    open: function (q) { if (!started) { return; } if (q) { state.q = q; resetFilters(); } open(); search(false); },
     close: close
   };
 
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+  var known = readCfg();
+  if (known) {
+    applyCfg(known);
+    if (known.enabled) { activate(); }
+    fetchCfg().catch(function () { /* nouvel essai à la prochaine page */ });
+  } else {
+    fetchCfg().then(function (c) {
+      if (c.enabled) { activate(); } else { console.info('[DeepFind] projet désactivé : la recherche du site reste inchangée'); }
+    }).catch(function () { console.warn('[DeepFind] API injoignable : la recherche du site reste inchangée'); });
+  }
 })();

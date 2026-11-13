@@ -210,13 +210,14 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=4" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=5" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
   data-results-url="https://www.cabesto.com/fr/catalogsearch/result/?q="></script>
 ```
 
+- **Activation** : au chargement, le widget demande à l'API (`/api/v1/config`) si le projet de la clé est actif. Il ne prend la main (fenêtre de recherche, neutralisation de l'autocomplétion d'origine) que si c'est le cas. **Projet désactivé** (page Projets) ou **API injoignable** : rien n'est modifié, la recherche d'origine du site fonctionne normalement. La réponse est gardée 1 min par le navigateur et 5 min dans la session du visiteur.
 - Le widget s'accroche au champ de recherche existant. La fenêtre s'ouvre **juste sous la barre de recherche** (écart réglable : `data-gap="12"`), le reste de la page est assombri et la barre reste mise en avant et utilisable. Un clic sur le fond sombre ferme la fenêtre. Pour l'ouvrir sous un autre élément : `data-position="anchor" data-anchor="header.page-header"`.
 - **Touche Entrée** : ouvre la page de résultats du site (Paramètres › Widget sur le site), ou, si ce réglage est désactivé, laisse seulement la fenêtre DeepFind. `data-enter="off"` / `"on"` force le comportement sur une page.
 - **Clics** : chaque ouverture d'un produit ou d'un article depuis la fenêtre (clic, Ctrl/Cmd + clic, clic molette) est enregistrée. Les clics des 30 derniers jours entrent dans le score métier au recalcul (import, recalcul nocturne ou « Recalculer les scores »).
@@ -225,7 +226,7 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
 - **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=4` en `?v=5`) pour forcer le rechargement par les navigateurs.
+- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=5` en `?v=6`) pour forcer le rechargement par les navigateurs.
 
 ## 5. Formats des flux et mapping
 
