@@ -81,7 +81,7 @@ $radios = static function (string $name, array $options, string $current): void 
   <h2>3. Score métier : ce que vous voulez mettre en avant</h2>
   <?php if ($pending): ?><div class="flash flash-warn">Des poids ont été modifiés le <?= fmt_dt($weightsChangedAt) ?> mais les scores n'ont pas encore été recalculés.</div><?php endif; ?>
   <p class="muted">Score = stock × poids + marge (0 à 1) × poids + popularité (0 à 1) × poids + clics (0 à 1) × poids + nouveauté × poids + boost (-10 à +10) × poids.
-    Mettez 0 pour ignorer un critère. Les boosts par produit se gèrent dans <a href="<?= e(url('/admin/boosts')) ?>">Boosts produits</a>.</p>
+    Mettez 0 pour ignorer un critère. Pour mettre en avant des produits, utilisez les <a href="<?= e(url('/admin/boost-rules')) ?>">règles de boost</a>.</p>
   <div class="card grid4 weights">
     <label>En stock <input name="w_stock" value="<?= $w('w_stock') ?>" inputmode="decimal"><small class="muted">points si le produit est en stock</small></label>
     <label>Rentabilité <input name="w_margin" value="<?= $w('w_margin') ?>" inputmode="decimal"><small class="muted">× taux de marge (0,40 → 40 % du poids)</small></label>

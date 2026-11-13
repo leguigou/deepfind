@@ -17,6 +17,7 @@ final class Migrations
         'query_rules' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirects' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
+        'boost_rules' => ['starts_at' => 'DATE NULL AFTER conditions', 'ends_at' => 'DATE NULL AFTER starts_at'],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'sources' => [
             'project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',
@@ -119,6 +120,11 @@ final class Migrations
                     $added[] = "$table.$name";
                 }
             }
+        }
+        // « Boosts produits » remplacés par les règles de boost : chaque boost devient une règle « SKU » sur toutes les recherches.
+        $n = \DeepFind\Rules\BoostRules::migrateProductBoosts();
+        if ($n > 0) {
+            $added[] = $n . ' boost(s) produit converti(s) en règles de boost (lancez scores:refresh pour retirer l\'ancien bonus du score métier)';
         }
         if (in_array('search_logs.approx_results', $added, true)) {
             $n = Db::exec('UPDATE search_logs SET approx_results = results, results = 0 WHERE approx = 1 AND results > 0');

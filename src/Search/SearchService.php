@@ -23,7 +23,7 @@ final class SearchService
     private const POST_FIELDS = ['id', 'title', 'url', 'image', 'excerpt', 'published_ts'];
     // Aperçu interne uniquement : fiche détaillée et champs où la recherche a été trouvée.
     private const DETAIL_FIELDS = ['short_description', 'description', 'ean', 'all_skus', 'all_eans', 'category_paths', 'category_terms',
-        'search_keywords', 'attr', 'attr_values', 'variants', 'created_ts', 'admin_boost'];
+        'search_keywords', 'attr', 'attr_values', 'variants', 'created_ts'];
 
     /** @var list<string> mots de la recherche en cours (aperçu interne) */
     private array $words = [];

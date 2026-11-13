@@ -9,16 +9,27 @@
   --df-border: #e7e9ef;
   --df-hover: #f4f6fa;
   --df-radius: 8px;
-  position: fixed; left: 0; right: 0; bottom: 0; top: var(--df-top, 0px); z-index: 2147483000;
-  background: rgba(20, 24, 40, .35); font-family: inherit; color: var(--df-text);
+  --df-backdrop: rgba(12, 16, 32, .62);
+  --df-max: 1440px;
+  --df-margin: 16px;
+  position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; font-family: inherit; color: var(--df-text);
 }
+/* Fond sombre sur toute la page, sauf la barre de recherche (trou calculé par le widget) */
+.df-backdrop { position: absolute; inset: 0; background: var(--df-backdrop); pointer-events: auto; animation: df-fade .15s ease-out; }
+.df-ring { position: absolute; pointer-events: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .55), 0 8px 30px rgba(0, 0, 0, .35); }
+.df-ring[hidden] { display: none; }
+@keyframes df-fade { from { opacity: 0; } to { opacity: 1; } }
 .df-overlay[hidden] { display: none; }
 html.df-lock { overflow: hidden; }
 .df-overlay *, .df-overlay *::before, .df-overlay *::after { box-sizing: border-box; }
 .df-layer {
-  position: absolute; inset: 0; display: grid; grid-template-columns: 280px minmax(0, 1fr);
-  background: var(--df-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, .18);
+  position: absolute; top: var(--df-top, 0px); bottom: var(--df-margin);
+  left: max(var(--df-margin), calc((100% - var(--df-max)) / 2)); right: max(var(--df-margin), calc((100% - var(--df-max)) / 2));
+  display: grid; grid-template-columns: 280px minmax(0, 1fr); pointer-events: auto; overflow: hidden;
+  background: var(--df-bg); border-radius: 14px; box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
+  animation: df-rise .18s ease-out;
 }
+@keyframes df-rise { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .df-close {
   position: absolute; top: 8px; right: 14px; z-index: 3; width: 34px; height: 34px; border: 0; border-radius: 50%;
   background: var(--df-hover); color: var(--df-text); font-size: 22px; line-height: 1; cursor: pointer;
@@ -84,7 +95,7 @@ html.df-lock { overflow: hidden; }
 .df-sentinel { height: 1px; }
 
 @media (max-width: 900px) {
-  .df-layer { grid-template-columns: 1fr; }
+  .df-layer { grid-template-columns: 1fr; left: 0; right: 0; bottom: 0; border-radius: 14px 14px 0 0; }
   .df-side { display: none; position: absolute; inset: 0 25% 0 0; z-index: 4; background: var(--df-bg); box-shadow: 6px 0 24px rgba(0, 0, 0, .2); }
   .df-side-open .df-side { display: block; }
   .df-filters-btn { display: inline-block; padding: 6px 12px; border: 1px solid var(--df-border); border-radius: 6px; background: #fff; font: inherit; cursor: pointer; }

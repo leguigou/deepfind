@@ -44,6 +44,9 @@ final class BoostRules
 
     public const OPS = ['gte' => '≥', 'lte' => '≤'];
 
+    /** Coefficients proposés pour le boost rapide d'un produit (aperçu interne). */
+    public const QUICK = ['0' => '×0 (fin de liste)', '0.5' => '×0,5', '0.75' => '×0,75', '1' => 'Aucun', '1.25' => '×1,25', '1.5' => '×1,5', '2' => '×2', '3' => '×3', '5' => '×5'];
+
     /** Champs du document à récupérer pour évaluer les conditions. */
     public const DOC_FIELDS = ['brand', 'category_names', 'type', 'sku', 'all_skus', 'in_stock', 'on_sale', 'is_new', 'final_price',
         'discount_percent', 'margin_rate', 'sales_30d', 'attr'];
@@ -76,7 +79,9 @@ final class BoostRules
         if (is_array($cached)) {
             return $cached;
         }
-        $rules = array_values(array_filter(self::all($lang), static fn ($r) => $r['active'] && $r['conditions'] !== [] && abs($r['boost'] - 1.0) > 0.0001));
+        $today = date('Y-m-d');
+        $rules = array_values(array_filter(self::all($lang), static fn ($r) => $r['active'] && $r['conditions'] !== [] && abs($r['boost'] - 1.0) > 0.0001
+            && self::period($r, $today) === 'current'));
         $store->set($key, $rules, 300);
         return $rules;
     }
@@ -91,7 +96,28 @@ final class BoostRules
             'terms' => json_decode((string) $row['terms'], true) ?: [],
             'match_all' => (int) $row['match_all'] === 1,
             'conditions' => json_decode((string) $row['conditions'], true) ?: [],
+            'starts_at' => $row['starts_at'] ?? null,
+            'ends_at' => $row['ends_at'] ?? null,
         ];
+    }
+
+    /** « current » (en cours), « scheduled » (pas encore commencée) ou « expired » (terminée). */
+    public static function period(array $rule, ?string $today = null): string
+    {
+        $today ??= date('Y-m-d');
+        if (!empty($rule['starts_at']) && $rule['starts_at'] > $today) {
+            return 'scheduled';
+        }
+        if (!empty($rule['ends_at']) && $rule['ends_at'] < $today) {
+            return 'expired';
+        }
+        return 'current';
+    }
+
+    private static function date(mixed $v): ?string
+    {
+        $v = trim((string) $v);
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && strtotime($v) !== false ? $v : null;
     }
 
     /**
@@ -148,6 +174,11 @@ final class BoostRules
                 $conds[] = ['field' => $field, 'values' => $values];
             }
         }
+        $start = self::date($in['starts_at'] ?? '');
+        $end = self::date($in['ends_at'] ?? '');
+        if ($start !== null && $end !== null && $end < $start) {
+            $errors[] = 'La date de fin est antérieure à la date de début.';
+        }
         if ($conds === [] && $errors === []) {
             $errors[] = 'Ajoutez au moins une condition (sinon la règle boosterait tous les produits de la même façon).';
         }
@@ -156,7 +187,7 @@ final class BoostRules
         }
         return [[
             'name' => $name, 'active' => !empty($in['active']), 'boost' => round($boost, 2), 'terms' => array_values($terms),
-            'match_all' => ($in['match'] ?? 'all') !== 'any', 'conditions' => $conds,
+            'match_all' => ($in['match'] ?? 'all') !== 'any', 'conditions' => $conds, 'starts_at' => $start, 'ends_at' => $end,
         ], []];
     }
 
@@ -165,7 +196,8 @@ final class BoostRules
         $row = [
             'name' => $rule['name'], 'active' => $rule['active'] ? 1 : 0, 'boost' => $rule['boost'],
             'terms' => Text::json($rule['terms']), 'match_all' => $rule['match_all'] ? 1 : 0,
-            'conditions' => Text::json($rule['conditions']), 'updated_at' => date('Y-m-d H:i:s'),
+            'conditions' => Text::json($rule['conditions']), 'starts_at' => $rule['starts_at'] ?? null, 'ends_at' => $rule['ends_at'] ?? null,
+            'updated_at' => date('Y-m-d H:i:s'),
         ];
         if ($id) {
             Db::update('boost_rules', $row, 'id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]);
@@ -173,6 +205,95 @@ final class BoostRules
             Db::insert('boost_rules', $row + ['project_id' => \DeepFind\Project::id(), 'lang' => $lang, 'created_at' => $row['updated_at']]);
         }
         \DeepFind\CacheVersion::bump();
+    }
+
+    /** Nom de la règle créée par le boost rapide d'un produit (aperçu interne). */
+    public static function productRuleName(string $sku): string
+    {
+        return 'Produit ' . mb_strtoupper(trim($sku), 'UTF-8');
+    }
+
+    /** Règle « boost rapide » d'un produit : sans terme, une seule condition SKU = ce produit. */
+    public static function productRule(string $lang, string $sku): ?array
+    {
+        $sku = mb_strtoupper(trim($sku), 'UTF-8');
+        foreach (self::all($lang) as $r) {
+            if (self::quickSku($r) === $sku) {
+                return $r;
+            }
+        }
+        return null;
+    }
+
+    /** @return array<string, float> SKU => coefficient des règles « boost rapide » */
+    public static function productBoosts(string $lang): array
+    {
+        $out = [];
+        foreach (self::all($lang) as $r) {
+            $sku = self::quickSku($r);
+            if ($sku !== null && !isset($out[$sku])) {
+                $out[$sku] = $r['boost'];
+            }
+        }
+        return $out;
+    }
+
+    private static function quickSku(array $r): ?string
+    {
+        if ($r['terms'] !== [] || count($r['conditions']) !== 1 || ($r['conditions'][0]['field'] ?? '') !== 'sku' || count($r['conditions'][0]['values'] ?? []) !== 1) {
+            return null;
+        }
+        return mb_strtoupper((string) $r['conditions'][0]['values'][0], 'UTF-8');
+    }
+
+    /** Boost rapide : crée, modifie ou supprime (coefficient 1) la règle du produit. */
+    public static function setProductBoost(string $lang, string $sku, float $boost): void
+    {
+        $sku = mb_strtoupper(trim($sku), 'UTF-8');
+        $existing = self::productRule($lang, $sku);
+        if (abs($boost - 1.0) < 0.0001) {
+            if ($existing !== null) {
+                Db::exec('DELETE FROM boost_rules WHERE id = ? AND project_id = ?', [$existing['id'], \DeepFind\Project::id()]);
+                \DeepFind\CacheVersion::bump();
+            }
+            return;
+        }
+        $rule = $existing ?? ['name' => self::productRuleName($sku), 'terms' => [], 'match_all' => true,
+            'conditions' => [['field' => 'sku', 'values' => [$sku]]], 'starts_at' => null, 'ends_at' => null];
+        $rule['active'] = true;
+        $rule['boost'] = max(self::BOOST_MIN, min(self::BOOST_MAX, round($boost, 2)));
+        self::save($lang, $rule, $existing['id'] ?? null);
+    }
+
+    /**
+     * Conversion des anciens « boosts produits » (-10 à +10, points de score métier) en règles de boost :
+     * +n → ×(1 + n/10) (+10 = ×2), -n → ×(1 - n/20) (-10 = ×0,5). Dates et note conservées. Rejouable.
+     */
+    public static function migrateProductBoosts(): int
+    {
+        $exists = Db::value("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_boosts'");
+        if ($exists === null) {
+            return 0;
+        }
+        $n = 0;
+        foreach (Db::all('SELECT * FROM product_boosts ORDER BY id') as $b) {
+            $v = (int) $b['boost'];
+            $sku = mb_strtoupper(trim((string) $b['sku']), 'UTF-8');
+            $now = date('Y-m-d H:i:s');
+            Db::insert('boost_rules', [
+                'project_id' => (int) $b['project_id'], 'lang' => $b['lang'],
+                'name' => mb_substr(self::productRuleName($sku) . (trim((string) $b['note']) !== '' ? ' — ' . trim((string) $b['note']) : ''), 0, 190, 'UTF-8'),
+                'active' => 1, 'boost' => round($v >= 0 ? 1 + $v / 10 : 1 + $v / 20, 2), 'terms' => '[]', 'match_all' => 1,
+                'conditions' => Text::json([['field' => 'sku', 'values' => [$sku]]]),
+                'starts_at' => $b['starts_at'], 'ends_at' => $b['ends_at'], 'created_at' => $now, 'updated_at' => $now,
+            ]);
+            Db::exec('DELETE FROM product_boosts WHERE id = ?', [$b['id']]);
+            $n++;
+        }
+        if ($n > 0) {
+            \DeepFind\CacheVersion::bump();
+        }
+        return $n;
     }
 
     // ------------------------------------------------------------------ Application

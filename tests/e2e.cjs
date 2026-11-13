@@ -106,7 +106,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // Paramètres : interrupteurs marche/arrêt
   await page.goto(BASE + '/admin/settings');
-  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 2);
+  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 3);
   await page.click('label.toggle:has(input[name=block_bad_user_agents])');
   await page.click('form.form > button.btn');
   check('interrupteur : désactivé et enregistré', (await page.isChecked('input[name=block_bad_user_agents][type=checkbox]')) === false);
@@ -151,25 +151,30 @@ fs.mkdirSync(OUT, { recursive: true });
   // Aperçu : boost permanent et épinglage sans quitter la page
   await page.goto(BASE + '/admin/preview?q=masque');
   const firstSku = (await page.textContent('table.table tbody tr:nth-child(3) code')).trim();
-  await Promise.all([page.waitForNavigation(), page.selectOption('table.table tbody tr:nth-child(3) select[name=boost]', '10')]);
-  check('aperçu : boost en ligne, retour sur la même recherche', page.url().includes('/admin/preview') && page.url().includes('q=masque') && (await page.textContent('body')).includes('Boost +10 enregistré'));
+  await Promise.all([page.waitForNavigation(), page.selectOption('table.table tbody tr:nth-child(3) select[name=boost]', '5')]);
+  check('aperçu : boost en ligne, retour sur la même recherche', page.url().includes('/admin/preview') && page.url().includes('q=masque') && (await page.textContent('body')).includes('Boost ×5 enregistré'));
   check('aperçu : produit boosté remonté', (await page.textContent('table.table tbody tr:first-child code')).trim() === firstSku || (await page.textContent('table.table tbody tr:nth-child(2) code')).trim() === firstSku);
-  await Promise.all([page.waitForNavigation(), page.selectOption('table.table tbody tr:has(code:text-is("' + firstSku + '")) select[name=boost]', '0')]);
-  check('aperçu : boost retiré', (await page.textContent('body')).includes('Boost retiré'));
+  await Promise.all([page.waitForNavigation(), page.selectOption('table.table tbody tr:has(code:text-is("' + firstSku + '")) select[name=boost]', '1')]);
+  check('aperçu : boost retiré', /Boost de .* retiré/.test(await page.textContent('body')));
   await Promise.all([page.waitForNavigation(), page.click('table.table tbody tr:nth-child(4) button:has-text("Épingler")')]);
   check('aperçu : épinglage en ligne', page.url().includes('q=masque') && (await page.textContent('table.table tbody tr:first-child')).includes('retirer'));
   await page.screenshot({ path: OUT + '/19-apercu-boost-epingle.png', fullPage: false });
   await Promise.all([page.waitForNavigation(), page.click('table.table tbody button:has-text("retirer") >> nth=0')]);
 
-  // Boosts produits
-  await page.goto(BASE + '/admin/boosts?sku=SEAC-X-VISION');
-  check('boosts : SKU pré-rempli', (await page.inputValue('input[name=sku]')) === 'SEAC-X-VISION');
-  await page.selectOption('select[name=boost]', '8');
-  await page.click('form[action$="/admin/boosts/save"] button.btn');
-  check('boost : enregistré et appliqué', (await page.textContent('body')).includes('mis à jour dans le moteur') && (await page.textContent('table')).includes('+8'));
+  // Règles de boost : création dans la fenêtre, avec dates
+  await page.goto(BASE + '/admin/boost-rules');
+  await page.click('button[data-br-open]:not([data-rule])');
+  await page.fill('[data-f=name]', 'Test e2e');
+  await page.fill('[data-f=boost]', '2');
+  await page.fill('[data-f=starts_at]', '2020-01-01');
+  await page.selectOption('.br-cond select.br-field', 'brand');
+  await page.click('.ms-toggle');
+  await page.locator('.ms-list .ms-item').first().click();
+  await Promise.all([page.waitForNavigation(), page.click('.modal-foot button.btn:not(.btn-light)')]);
+  check('règles de boost : règle enregistrée avec période', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('01/01/2020'));
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
   page.once('dialog', (d) => d.accept());
-  await page.click('form[action$="/admin/boosts/delete"] button');
+  await Promise.all([page.waitForNavigation(), page.click('form[action$="/admin/boost-rules/delete"] button')]);
 
   // Cache : visibilité et purge
   await page.goto(BASE + '/admin/cache');
@@ -203,7 +208,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('projets : redirection propre au projet Test', (await page.textContent('table')).includes('bonjour test'));
   await page.goto(BASE + '/admin/projects/copy');
   await page.selectOption('select[name=to]', { label: 'Production' });
-  for (const sec of ['search', 'synonyms', 'rules', 'redirects', 'boosts', 'sources']) {
+  for (const sec of ['search', 'synonyms', 'rules', 'redirects', 'boost_rules', 'sources']) {
     await page.click('label.toggle:has(input[value=' + sec + '])');
   }
   await Promise.all([page.waitForNavigation(), page.click('form.card button.btn')]);

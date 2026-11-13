@@ -213,12 +213,13 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 <script src="https://search.cabesto.com/widget/deepfind.js?v=3" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
-  data-input="#search, input[name=q]"
-  data-anchor="header.page-header"
-  data-results-url="https://www.cabesto.com/catalogsearch/result/?q="></script>
+  data-input="#search"
+  data-results-url="https://www.cabesto.com/fr/catalogsearch/result/?q="></script>
 ```
 
-- Le widget s'accroche au champ de recherche existant et ouvre le panneau sous l'en-tête.
+- Le widget s'accroche au champ de recherche existant. La fenêtre s'ouvre **juste sous la barre de recherche** (écart réglable : `data-gap="12"`), le reste de la page est assombri et la barre reste mise en avant et utilisable. Un clic sur le fond sombre ferme la fenêtre. Pour l'ouvrir sous un autre élément : `data-position="anchor" data-anchor="header.page-header"`.
+- **Touche Entrée** : ouvre la page de résultats du site (Paramètres › Widget sur le site), ou, si ce réglage est désactivé, laisse seulement la fenêtre DeepFind. `data-enter="off"` / `"on"` force le comportement sur une page.
+- **Clics** : chaque ouverture d'un produit ou d'un article depuis la fenêtre (clic, Ctrl/Cmd + clic, clic molette) est enregistrée. Les clics des 30 derniers jours entrent dans le score métier au recalcul (import, recalcul nocturne ou « Recalculer les scores »).
 - **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », « Recent Searches »…) : neutralisée par défaut. Le widget intercepte les événements du champ avant les scripts du site, qui ne s'ouvrent donc plus ; les panneaux connus (`#search_autocomplete`, Amasty, Mirasvit, Smile ElasticSuite) sont en plus masqués. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"` (clic droit sur le panneau › Inspecter pour trouver son `id` ou sa `class`). Pour garder l'autocomplétion d'origine : `data-native="keep"`. La touche Entrée envoie toujours le formulaire du site (ou va vers `data-results-url`).
 - Il charge ses styles tout seul (`deepfind.css`). Les couleurs se changent via les variables `--df-*` du fichier CSS.
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
@@ -365,7 +366,7 @@ Le **sélecteur en haut du menu** choisit le projet actif. Un badge en haut à d
 3. Réglez la pertinence, les synonymes, etc. dans Test. Vérifiez le résultat avec l'**aperçu interne** ou la **démo du widget**, qui utilise la clé du projet Test. Vous pouvez aussi utiliser cette clé sur une recette Magento.
 
 **Copier une configuration validée vers Production** : **Projets › Copier sa configuration…**
-1. Choisissez le projet source et le projet cible, puis les éléments à copier : pertinence, paramètres de recherche, synonymes, règles, redirections, boosts, mapping et planification des flux. Les URL des flux ne sont copiées que si vous l'activez.
+1. Choisissez le projet source et le projet cible, puis les éléments à copier : pertinence, paramètres de recherche, synonymes, règles, redirections, règles de boost, mapping et planification des flux. Les URL des flux ne sont copiées que si vous l'activez.
 2. **« Voir ce qui va changer »** affiche le résumé des différences.
 3. **« Confirmer »** applique la copie. Une **sauvegarde de la cible** est faite juste avant, et les réglages sont envoyés aux index de la cible tout de suite.
 4. Lancez ensuite un recalcul des scores ou un import si des poids, boosts ou mappings ont changé.
@@ -450,7 +451,6 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Redirections | Requête → page (ex. « retour » → CGV) ; import CSV |
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
 | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
-| Boosts produits | Mise en avant ou en retrait d'un produit sur toutes les recherches, appliquée immédiatement |
 | Règles de boost | Coefficient (×1,5, ×0,5…) appliqué aux produits qui remplissent des conditions (marque, catégorie, attribut, prix, stock, marge…), sur toutes les recherches ou seulement sur certains termes (correspondance exacte ou large). Visible dans l'aperçu interne |
 | Journal des recherches | Détail filtrable et exportable |
 | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
@@ -482,9 +482,9 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
    - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
    - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
 
-**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
+**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des dates de début et de fin facultatives, des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
 
-**Boosts produits** (menu dédié) : un produit passe en avant (+1 à +10) ou en retrait (-1 à -10) sur toutes les recherches, avec dates de début et de fin facultatives. Appliqué immédiatement.
+**Boost rapide d'un produit** : dans l'aperçu interne, la liste « Boost » de chaque produit crée une règle « Produit SKU » (toutes les recherches). Les anciens « Boosts produits » sont convertis automatiquement en règles par `php bin/console install` (+n → ×(1 + n/10), -n → ×(1 - n/20)) ; lancez ensuite `scores:refresh` pour retirer leur ancien bonus du score métier.
 - **Directement dans l'aperçu interne**, sur chaque produit :
   - un sélecteur **« Boost permanent »** (-10 à +10, « Aucun » pour retirer), qui agit sur toutes les recherches ;
   - un bouton **« Épingler »**, avec choix de la position, qui agit sur la recherche en cours uniquement.

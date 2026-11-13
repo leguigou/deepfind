@@ -40,6 +40,21 @@ final class BoostRulesController
         App::backTo('/admin/boost-rules');
     }
 
+    /** Boost rapide d'un produit depuis l'aperçu interne (règle « Produit SKU » sur toutes les recherches). */
+    public function product(): void
+    {
+        $sku = trim((string) ($_POST['sku'] ?? ''));
+        $boost = (float) str_replace(',', '.', (string) ($_POST['boost'] ?? '1'));
+        if ($sku === '') {
+            Auth::flash('error', 'SKU manquant.');
+        } else {
+            BoostRules::setProductBoost(Auth::lang(), $sku, $boost);
+            Auth::flash('ok', abs($boost - 1) < 0.0001 ? sprintf('Boost de %s retiré.', $sku)
+                : sprintf('Boost ×%s enregistré pour %s (règle « %s », effet immédiat).', str_replace('.', ',', (string) $boost), $sku, BoostRules::productRuleName($sku)));
+        }
+        App::backTo('/admin/boost-rules');
+    }
+
     public function toggle(): void
     {
         Db::exec('UPDATE boost_rules SET active = 1 - active, updated_at = ? WHERE id = ? AND project_id = ? AND lang = ?',

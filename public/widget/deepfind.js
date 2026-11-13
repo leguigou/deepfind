@@ -5,6 +5,8 @@
  *         data-results-url="https://www.example.com/catalogsearch/result/?q="></script>
  * data-native="keep"   : laisse fonctionner l'autocomplétion d'origine du site (par défaut : elle est neutralisée)
  * data-hide=".panneau" : sélecteurs CSS supplémentaires de panneaux d'origine à masquer
+ * data-position="anchor" : panneau sous data-anchor (par défaut : juste sous la barre de recherche, avec data-gap px d'écart)
+ * data-enter="off"     : la touche Entrée n'ouvre pas la page de résultats (sinon : réglage de l'extranet, Paramètres › Widget)
  */
 (function () {
   'use strict';
@@ -28,8 +30,13 @@
     debounce: parseInt(ds.debounce || '180', 10),
     // Autocomplétion d'origine du site (Magento…) : neutralisée par défaut pour ne pas s'ouvrir en même temps
     blockNative: ds.native !== 'keep',
-    hide: ds.hide || ''
+    hide: ds.hide || '',
+    position: ds.position === 'anchor' ? 'anchor' : 'input',
+    gap: parseInt(ds.gap || '12', 10),
+    // Entrée → page de résultats : data-enter (on/off) prioritaire, sinon réglage renvoyé par l'API
+    enter: ds.enter === 'off' ? false : (ds.enter === 'on' ? true : null)
   };
+  var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
   var NATIVE_PANELS = '#search_autocomplete, .search-autocomplete, .amsearch-results, .amsearch-wrapper-block .amsearch-results, '
     + '.mst-searchautocomplete__autocomplete, .smile-elasticsuite-autocomplete-result';
@@ -57,7 +64,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=2';
+  css.href = base + '/widget/deepfind.css?v=3';
   document.head.appendChild(css);
 
   // ------------------------------------------------------------------ Utilitaires DOM
@@ -73,6 +80,11 @@
   // ------------------------------------------------------------------ Structure du panneau
   var overlay = el('div', 'df-overlay');
   overlay.hidden = true;
+  // Fond sombre sur toute la page, percé à l'emplacement de la barre de recherche (qui reste cliquable et mise en avant)
+  var backdrop = el('div', 'df-backdrop');
+  var ring = el('div', 'df-ring');
+  overlay.appendChild(backdrop);
+  overlay.appendChild(ring);
   var layer = el('div', 'df-layer');
   layer.setAttribute('role', 'dialog');
   layer.setAttribute('aria-label', t.products);
@@ -180,6 +192,7 @@
         return r.json();
       });
     p.then(function (data) {
+      if (cfg.enter === null && data && data.widget) { enterSubmit = data.widget.enter_submit !== false; }
       if (id !== state.reqId) { return; }
       if (!cached) { cache.set(url, data); if (cache.size > 60) { cache.delete(cache.keys().next().value); } }
       render(data, append);
@@ -282,7 +295,7 @@
     price.appendChild(el('span', 'df-final', fmt(final)));
     if (regular > final + 0.005) { price.appendChild(el('s', 'df-old', fmt(regular))); }
     a.appendChild(price);
-    a.addEventListener('click', function () { track('product', p.id, position); });
+    onOpen(a, function () { track('product', p.id, position); });
     return a;
   }
 
@@ -341,11 +354,17 @@
         var im = safeUrl(p.image);
         if (im) { var img = el('img'); img.src = im; img.alt = ''; img.loading = 'lazy'; a.appendChild(img); }
         a.appendChild(el('span', null, p.title));
-        a.addEventListener('click', function () { track('post', p.id, i + 1); });
+        onOpen(a, function () { track('post', p.id, i + 1); });
         ps.appendChild(a);
       });
       side.appendChild(ps);
     }
+  }
+
+  // Ouverture d'un lien : clic (y compris Ctrl/Cmd + clic) et clic molette (nouvel onglet)
+  function onOpen(a, fn) {
+    a.addEventListener('click', fn);
+    a.addEventListener('auxclick', function (ev) { if (ev.button === 1) { fn(); } });
   }
 
   function track(type, id, position) {
@@ -357,11 +376,41 @@
   }
 
   // ------------------------------------------------------------------ Ouverture / fermeture
+  // Barre de recherche à mettre en avant : le cadre qui contient le champ (bouton loupe compris), sans remonter plus haut
+  function searchBox(input) {
+    var box = input;
+    var r = input.getBoundingClientRect();
+    for (var n = input.parentElement, i = 0; n && i < 3; n = n.parentElement, i++) {
+      var nr = n.getBoundingClientRect();
+      if (nr.height > r.height * 1.6 || nr.width > r.width * 1.3) { break; }
+      box = n; r = nr;
+    }
+    return box;
+  }
   function position() {
-    var anchor = (cfg.anchor && document.querySelector(cfg.anchor)) || activeInput;
-    var top = anchor ? Math.max(0, Math.round(anchor.getBoundingClientRect().bottom)) : 0;
-    if (top > window.innerHeight * 0.6) { top = 0; }
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    var spot = activeInput ? searchBox(activeInput).getBoundingClientRect() : null;
+    var anchor = cfg.position === 'anchor' && cfg.anchor ? document.querySelector(cfg.anchor) : null;
+    var top = anchor ? Math.round(anchor.getBoundingClientRect().bottom) : (spot ? Math.round(spot.bottom + cfg.gap) : 0);
+    if (top < 0 || top > h * 0.6) { top = 0; }
     overlay.style.setProperty('--df-top', top + 'px');
+    if (!spot || spot.bottom <= 0 || spot.top >= h) {
+      backdrop.style.clipPath = '';
+      ring.hidden = true;
+      return;
+    }
+    var pad = 4;
+    var x = Math.round(spot.left - pad), y = Math.round(spot.top - pad), sw = Math.round(spot.width + 2 * pad), sh = Math.round(spot.height + 2 * pad);
+    var rad = Math.min(sh / 2, (parseFloat(getComputedStyle(activeInput).borderTopLeftRadius) || 0) + pad);
+    // Plein écran moins un rectangle arrondi (règle evenodd) : le trou laisse passer clics et saisie
+    var hole = 'M' + (x + rad) + ' ' + y + 'H' + (x + sw - rad) + 'A' + rad + ' ' + rad + ' 0 0 1 ' + (x + sw) + ' ' + (y + rad)
+      + 'V' + (y + sh - rad) + 'A' + rad + ' ' + rad + ' 0 0 1 ' + (x + sw - rad) + ' ' + (y + sh)
+      + 'H' + (x + rad) + 'A' + rad + ' ' + rad + ' 0 0 1 ' + x + ' ' + (y + sh - rad)
+      + 'V' + (y + rad) + 'A' + rad + ' ' + rad + ' 0 0 1 ' + (x + rad) + ' ' + y + 'Z';
+    backdrop.style.clipPath = 'path(evenodd, "M0 0H' + w + 'V' + h + 'H0Z' + hole + '")';
+    ring.hidden = false;
+    ring.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + sw + 'px;height:' + sh + 'px;border-radius:' + rad + 'px';
   }
   function open() {
     if (!overlay.parentNode) { document.body.appendChild(overlay); }
@@ -402,15 +451,46 @@
       if (input.value.trim().length >= cfg.minChars && state.q === input.value.trim() && grid.childNodes.length) { open(); }
     },
     keydown: function (ev) {
-      var input = ev.target;
       if (ev.key === 'Escape') { close(); }
-      if (ev.key === 'Enter') {
-        var q = input.value.trim();
-        if (state.redirect && q === state.q) { ev.preventDefault(); window.location.href = state.redirect; return; }
-        if (cfg.resultsUrl && q) { ev.preventDefault(); window.location.href = cfg.resultsUrl + encodeURIComponent(q); }
+      if (ev.key !== 'Enter') { return; }
+      if (!enterSubmit) {
+        // Entrée désactivée : on reste sur la fenêtre DeepFind (recherche lancée tout de suite)
+        ev.preventDefault();
+        var q = ev.target.value.trim();
+        if (q.length >= cfg.minChars) {
+          clearTimeout(timer);
+          if (q !== state.q) { resetFilters(); state.q = q; search(false); }
+          open();
+        }
+        return;
       }
+      if (goToResults(ev.target)) { ev.preventDefault(); }
     }
   };
+
+  /**
+   * Page à ouvrir pour la recherche validée (Entrée, bouton loupe) : redirection DeepFind, sinon data-results-url,
+   * sinon (autocomplétion d'origine neutralisée) l'adresse du formulaire du site, que son propre script ne gère plus.
+   * @return boolean vrai si la navigation est prise en charge
+   */
+  function goToResults(input) {
+    var q = input.value.trim();
+    if (!q) { return false; }
+    var url = '';
+    if (state.redirect && q === state.q) {
+      url = state.redirect;
+    } else if (cfg.resultsUrl) {
+      url = cfg.resultsUrl + encodeURIComponent(q);
+    } else if (cfg.blockNative && input.form && (input.form.method || 'get').toLowerCase() === 'get') {
+      try {
+        var u = new URL(input.form.getAttribute('action') || window.location.href, window.location.href);
+        u.searchParams.set(input.name || 'q', q);
+        url = u.toString();
+      } catch (e) { url = ''; }
+    }
+    if (url) { window.location.href = url; }
+    return !!url;
+  }
 
   function bind(input) {
     if (input.__df) { return; }
@@ -426,6 +506,24 @@
    * traités par DeepFind, puis arrêtés avant d'atteindre les scripts du site (jQuery, Alpine/Hyvä, Knockout…).
    * Le comportement par défaut du navigateur (saisie, curseur, envoi du formulaire) n'est pas touché.
    */
+  /**
+   * Bouton loupe du site : son script le désactive tant qu'il « voit » un champ vide, et il ne voit plus la saisie.
+   * DeepFind l'active dès qu'il y a du texte (et le rend pleinement visible), le désactive si le champ est vide.
+   */
+  function syncButtons(input) {
+    var form = input.form;
+    if (!form) { return; }
+    var buttons = Array.prototype.filter.call(form.elements, function (e) {
+      return (e.tagName === 'BUTTON' && (e.getAttribute('type') || 'submit') === 'submit') || (e.tagName === 'INPUT' && e.type === 'submit');
+    });
+    var empty = !input.value.trim();
+    buttons.forEach(function (b) {
+      b.disabled = empty;
+      b.setAttribute('aria-disabled', empty ? 'true' : 'false');
+      b.style.opacity = empty ? '' : '1';
+    });
+  }
+
   function blockNative() {
     var types = ['focus', 'focusin', 'focusout', 'blur', 'click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend',
       'keydown', 'keyup', 'keypress', 'input', 'change', 'paste', 'cut', 'compositionstart', 'compositionend', 'search'];
@@ -434,9 +532,19 @@
         var target = ev.target;
         if (!target || !target.__df) { return; }
         if (handlers[type]) { handlers[type](ev); }
+        if (type === 'input' || type === 'change' || type === 'paste' || type === 'cut') { setTimeout(function () { syncButtons(target); }, 0); }
         ev.stopImmediatePropagation();
       }, true);
     });
+    // Bouton loupe : le formulaire du site est envoyé par DeepFind (son script d'origine n'a plus l'état de la recherche)
+    window.addEventListener('submit', function (ev) {
+      var form = ev.target;
+      var input = null;
+      Array.prototype.forEach.call((form && form.elements) || [], function (e) { if (e.__df && !input) { input = e; } });
+      if (!input) { return; }
+      ev.stopImmediatePropagation();
+      if (!input.value.trim() || goToResults(input)) { ev.preventDefault(); } // champ vide : rien, comme sur le site
+    }, true);
     var hide = document.createElement('style');
     hide.textContent = NATIVE_PANELS + (cfg.hide ? ', ' + cfg.hide : '') + ' { display: none !important; }';
     document.head.appendChild(hide);
@@ -451,7 +559,9 @@
         .observe(document.body, { childList: true, subtree: true });
     }
     closeBtn.addEventListener('click', close);
-    overlay.addEventListener('mousedown', function (ev) { if (ev.target === overlay) { close(); } });
+    // Clic sur le fond sombre : ferme la fenêtre sans déclencher ce qui se trouve dessous
+    backdrop.addEventListener('mousedown', function (ev) { ev.preventDefault(); close(); });
+    backdrop.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); });
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !overlay.hidden) { close(); } });
     window.addEventListener('resize', function () { if (!overlay.hidden) { position(); } });
     tgStock.input.addEventListener('change', function () { search(false); });

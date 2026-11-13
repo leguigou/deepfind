@@ -75,6 +75,7 @@ final class ApiController
         }
         $tookMs = (int) round((hrtime(true) - $t0) / 1e6);
         $data['took_ms'] = $tookMs;
+        $data['widget'] = ['enter_submit' => Settings::int('widget_enter_submit') === 1];
         $data['cached'] = $cached;
         Response::json($data, 200, $cors + ['Cache-Control' => 'private, max-age=30', 'Server-Timing' => 'app;dur=' . $tookMs]);
 
