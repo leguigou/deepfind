@@ -12,7 +12,7 @@
 <script src="<?= e(asset('/assets/admin.js')) ?>"></script>
 </head>
 <body class="login-page">
-<button type="button" class="icon-btn login-theme" data-toggle-theme title="Basculer thème clair / sombre" aria-label="Basculer thème clair / sombre">◐</button>
+<button type="button" class="icon-btn login-theme" data-toggle-theme title="Basculer thème clair / sombre" aria-label="Basculer thème clair / sombre"><?= admin_theme_icons() ?></button>
 <form method="post" action="<?= e(url('/admin/login')) ?>" class="login-box" autocomplete="off">
   <?= csrf_field() ?>
   <div class="brand"><?= logo_svg() ?><span class="brand-text">Deep<span>Find</span></span></div>

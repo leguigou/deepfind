@@ -3,24 +3,24 @@
 use DeepFind\Admin\Auth;
 
 $nav = [
-    'dashboard' => ['/admin', 'Tableau de bord'],
-    'projects' => ['/admin/projects', 'Projets'],
-    'sources' => ['/admin/sources', 'Flux & mapping'],
-    'imports' => ['/admin/imports', 'Imports'],
-    'synonyms' => ['/admin/synonyms', 'Synonymes & alias'],
-    'custom_results' => ['/admin/custom-results', 'Résultats personnalisés'],
-    'banners' => ['/admin/banners', 'Bannières'],
-    'redirects' => ['/admin/redirects', 'Redirections'],
-    'relevance' => ['/admin/relevance', 'Pertinence & classement'],
-    'boost_rules' => ['/admin/boost-rules', 'Règles de boost'],
-    'preview' => ['/admin/preview', 'Aperçu interne'],
-    'disabled' => ['/admin/disabled', 'Produits désactivés'],
-    'stats' => ['/admin/stats', 'Statistiques'],
-    'logs' => ['/admin/logs', 'Journal des recherches'],
-    'bots' => ['/admin/bots', 'Robots & blocages'],
-    'keys' => ['/admin/keys', 'Clés & intégration'],
-    'cache' => ['/admin/cache', 'Cache'],
-    'settings' => ['/admin/settings', 'Paramètres'],
+    'dashboard' => ['/admin', 'Tableau de bord', 'dashboard'],
+    'projects' => ['/admin/projects', 'Projets', 'folder'],
+    'sources' => ['/admin/sources', 'Flux & mapping', 'hierarchy'],
+    'imports' => ['/admin/imports', 'Imports', 'download'],
+    'synonyms' => ['/admin/synonyms', 'Synonymes & alias', 'tag'],
+    'custom_results' => ['/admin/custom-results', 'Résultats personnalisés', 'bars'],
+    'banners' => ['/admin/banners', 'Bannières', 'speakerphone'],
+    'redirects' => ['/admin/redirects', 'Redirections', 'redirect'],
+    'relevance' => ['/admin/relevance', 'Pertinence & classement', 'layers'],
+    'boost_rules' => ['/admin/boost-rules', 'Règles de boost', 'rocket'],
+    'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
+    'disabled' => ['/admin/disabled', 'Produits désactivés', 'archive'],
+    'stats' => ['/admin/stats', 'Statistiques', 'chart-pie'],
+    'logs' => ['/admin/logs', 'Journal des recherches', 'file-search'],
+    'bots' => ['/admin/bots', 'Robots & blocages', 'robot-face'],
+    'keys' => ['/admin/keys', 'Clés & intégration', 'key'],
+    'cache' => ['/admin/cache', 'Cache', 'database'],
+    'settings' => ['/admin/settings', 'Paramètres', 'settings'],
 ];
 ?><!doctype html>
 <html lang="fr">
@@ -41,45 +41,45 @@ $nav = [
     <div class="side-head">
       <div class="brand"><?= logo_svg() ?><span class="brand-text">Deep<span>Find</span></span></div>
       <button type="button" class="icon-btn" data-toggle-menu aria-label="Replier ou déplier le menu" title="Replier / déplier le menu">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <?= admin_icon('chevron-left') ?>
       </button>
     </div>
     <form method="post" action="<?= e(url('/admin/project')) ?>" class="project-switch" title="Projet actif">
       <?= csrf_field() ?>
       <input type="hidden" name="back" value="<?= e(substr((string) ($_SERVER['REQUEST_URI'] ?? '/admin'), strlen(rtrim((string) \DeepFind\Config::get('APP_BASE_PATH', ''), '/')))) ?>">
-      <span class="nav-ico project-ico" aria-hidden="true"><?= e(mb_strtoupper(mb_substr(\DeepFind\Project::current()['name'], 0, 1))) ?></span>
+      <span class="nav-ico project-ico" aria-hidden="true"><?= admin_icon('layers') ?></span>
       <label class="project-label"><span class="muted small">Projet</span>
-        <select name="project_id" data-autosubmit aria-label="Projet actif">
+        <span class="side-select"><select name="project_id" data-autosubmit aria-label="Projet actif">
           <?php foreach (\DeepFind\Project::all() as $pj): ?>
             <option value="<?= (int) $pj['id'] ?>" <?= $pj['id'] === \DeepFind\Project::id() ? 'selected' : '' ?>><?= e($pj['name']) ?></option>
           <?php endforeach; ?>
-        </select>
+        </select><?= admin_icon('chevron-down') ?></span>
       </label>
     </form>
-    <?php foreach ($nav as $k => [$href, $label]): ?>
-      <a href="<?= e(url($href)) ?>" class="<?= $active === $k ? 'on' : '' ?>" title="<?= e($label) ?>"><span class="nav-ico" aria-hidden="true"><?= e(mb_substr($label, 0, 1)) ?></span><span class="nav-label"><?= e($label) ?></span></a>
+    <?php foreach ($nav as $k => [$href, $label, $icon]): ?>
+      <a href="<?= e(url($href)) ?>" <?= $active === $k ? 'class="on" aria-current="page"' : '' ?> title="<?= e($label) ?>" aria-label="<?= e($label) ?>"><span class="nav-ico" aria-hidden="true"><?= admin_icon($icon) ?></span><span class="nav-label"><?= e($label) ?></span></a>
     <?php endforeach; ?>
-    <a href="<?= e(url('/admin/demo')) ?>" target="_blank" rel="noopener" title="Démo du widget"><span class="nav-ico" aria-hidden="true">↗</span><span class="nav-label">Démo du widget</span></a>
+    <a href="<?= e(url('/admin/demo')) ?>" target="_blank" rel="noopener" title="Démo du widget" aria-label="Démo du widget"><span class="nav-ico" aria-hidden="true"><?= admin_icon('external-link') ?></span><span class="nav-label">Démo du widget</span></a>
     <div class="side-foot">
-      <button type="button" class="theme-btn" data-toggle-theme title="Basculer thème clair / sombre">
-        <span class="nav-ico" aria-hidden="true">☾</span><span class="nav-label">Thème <span data-theme-label>sombre</span></span>
+      <button type="button" class="theme-btn" data-toggle-theme title="Basculer thème clair / sombre" aria-label="Basculer thème clair / sombre">
+        <span class="nav-ico" aria-hidden="true"><?= admin_theme_icons() ?></span><span class="nav-label">Thème <span data-theme-label>sombre</span></span>
       </button>
       <?php if (count(Auth::langs()) > 1): ?>
       <form method="post" action="<?= e(url('/admin/lang')) ?>" class="lang-form">
         <?= csrf_field() ?>
         <input type="hidden" name="back" value="<?= e($_SERVER['REQUEST_URI'] ?? '') ?>">
-        <label>Langue
-          <select name="lang" data-autosubmit>
+        <label class="side-meta"><?= admin_icon('world') ?> Langue
+          <span class="side-select"><select name="lang" data-autosubmit>
             <?php foreach (Auth::langs() as $l): ?>
               <option value="<?= e($l) ?>" <?= Auth::lang() === $l ? 'selected' : '' ?>><?= e(strtoupper($l)) ?></option>
             <?php endforeach; ?>
-          </select>
+          </select><?= admin_icon('chevron-down') ?></span>
         </label>
       </form>
       <?php else: ?>
-        <div class="muted">Langue : <?= e(strtoupper(Auth::lang())) ?></div>
+        <div class="side-meta muted"><?= admin_icon('world') ?> Langue : <?= e(strtoupper(Auth::lang())) ?></div>
       <?php endif; ?>
-      <form method="post" action="<?= e(url('/admin/logout')) ?>"><?= csrf_field() ?><button class="link">Se déconnecter</button></form>
+      <form method="post" action="<?= e(url('/admin/logout')) ?>"><?= csrf_field() ?><button class="side-meta side-logout" title="Se déconnecter" aria-label="Se déconnecter"><?= admin_icon('logout') ?><span class="nav-label">Se déconnecter</span></button></form>
     </div>
   </nav>
   <main class="main">

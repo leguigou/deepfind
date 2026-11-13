@@ -102,6 +102,20 @@ function asset(string $path): string
     return url($path) . '?v=' . (is_file($file) ? filemtime($file) : '1');
 }
 
+/** Pictogramme décoratif du sprite Tabler, coloré comme son libellé. */
+function admin_icon(string $name, string $class = ''): string
+{
+    $href = asset('/assets/admin-icons.svg') . '#' . $name;
+    return '<svg class="admin-icon ' . e($class) . '" width="18" height="18" viewBox="0 0 24 24"'
+        . ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
+        . ' aria-hidden="true" focusable="false"><use href="' . e($href) . '"/></svg>';
+}
+
+function admin_theme_icons(): string
+{
+    return admin_icon('moon', 'theme-icon-dark') . admin_icon('sun-high', 'theme-icon-light');
+}
+
 /** Texte échappé avec les mots de la recherche surlignés (<mark>), sans tenir compte des accents ni de la casse. */
 function highlight(string $text, array $words): string
 {

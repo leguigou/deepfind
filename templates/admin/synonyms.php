@@ -18,7 +18,11 @@
     <button class="btn">Importer</button>
   </form>
 </div>
-<form method="post" action="<?= e(url('/admin/synonyms/sync')) ?>"><?= csrf_field() ?><button class="btn btn-light btn-sm">Renvoyer tous les synonymes au moteur</button></form>
+<form method="post" action="<?= e(url('/admin/synonyms/sync')) ?>" class="actions synonym-sync">
+  <?= csrf_field() ?>
+  <button type="submit" class="btn btn-light" aria-describedby="synonym-sync-help">Synchroniser avec Meilisearch</button>
+  <span id="synonym-sync-help" class="muted small">À utiliser si les changements ne sont pas visibles dans la recherche.</span>
+</form>
 <table class="table">
   <thead><tr><th>Type</th><th>Terme</th><th>Synonymes</th><th></th></tr></thead>
   <tbody>

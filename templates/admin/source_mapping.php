@@ -107,7 +107,7 @@ $tableHead = '<thead><tr><th>Champ DeepFind</th><th></th><th>Champ détecté dan
               $attrs = $g['attrs'];
           }
       } ?>
-      <div class="card">
+      <div class="card map-attribute-card">
         <div class="grid4">
           <label>Liste d'attributs <?= select_simple($prefix . '[path]', $paths, $state['path'], '— ne pas utiliser —') ?></label>
           <label>Code <?= select_simple($prefix . '[code_path]', $attrs, $state['code_path'], '') ?></label>
