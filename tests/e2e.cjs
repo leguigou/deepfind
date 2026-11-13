@@ -248,7 +248,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.keyboard.press('Escape');
   check('widget : fermeture Échap', await page.$eval('.df-overlay', (o) => o.hidden));
 
-  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1,
+  const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true,
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile Safari/604.1' });
   const mp = await mobile.newPage();
   await mp.goto(BASE + '/admin/login');
@@ -260,6 +260,31 @@ fs.mkdirSync(OUT, { recursive: true });
   await mp.waitForTimeout(300);
   await mp.screenshot({ path: OUT + '/08-widget-mobile.png' });
   check('widget mobile : pas de défilement horizontal', await mp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  const filters = mp.locator('.df-filters-btn');
+  const side = mp.locator('.df-side');
+  check('widget mobile : filtres masqués au départ', !await side.isVisible() && await filters.getAttribute('aria-expanded') === 'false');
+  await filters.tap();
+  check('widget mobile : stock, promotion et facettes dans le volet', await side.locator('input[name=in_stock]').isVisible()
+    && await side.locator('input[name=on_sale]').isVisible() && await side.locator('.df-fv').first().isVisible());
+  await side.locator('input[name=in_stock]').check();
+  await side.locator('.df-clear').waitFor();
+  await mp.screenshot({ path: OUT + '/09-widget-mobile-filtres.png' });
+  const closeFilters = side.getByRole('button', { name: 'Fermer les filtres' });
+  const closeTop = (await closeFilters.boundingBox()).y;
+  const scrollTop = await side.locator('.df-side-body').evaluate((body) => { body.scrollTop = body.scrollHeight; return body.scrollTop; });
+  check('widget mobile : fermeture accessible après défilement', scrollTop > 0 && (await closeFilters.boundingBox()).y === closeTop);
+  await closeFilters.tap();
+  check('widget mobile : fermeture du volet et retour aux résultats', !await side.isVisible() && await mp.locator('.df-main').isVisible()
+    && await filters.getAttribute('aria-expanded') === 'false');
+  await filters.tap();
+  check('widget mobile : filtre conservé à la réouverture', await side.locator('input[name=in_stock]').isChecked());
+  await side.getByRole('button', { name: 'Effacer les filtres' }).tap();
+  check('widget mobile : effacement du filtre de stock', !await side.locator('input[name=in_stock]').isChecked());
+  await mp.keyboard.press('Escape');
+  check('widget mobile : Échap ferme le volet', !await side.isVisible() && await filters.isVisible());
+  await filters.tap();
+  await mp.locator('.df-side-backdrop').tap({ position: { x: 380, y: 100 } });
+  check('widget mobile : un appui à côté du volet revient aux résultats', !await side.isVisible() && await filters.isVisible());
 
   check('aucune erreur JavaScript', errors.length === 0);
   if (errors.length) { console.log(errors.join('\n')); }
