@@ -39,16 +39,17 @@
 <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=3" defer
   data-key="<?= e($keys[0]['public_key'] ?? 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
-  data-input="#search, input[name=q]"
-  data-anchor="header.page-header"
-  data-results-url="https://www.cabesto.com/catalogsearch/result/?q="&gt;&lt;/script&gt;</pre>
+  data-input="#search"
+  data-results-url="https://www.cabesto.com/fr/catalogsearch/result/?q="&gt;&lt;/script&gt;</pre>
 <table class="table compact">
   <thead><tr><th>Attribut</th><th>Rôle</th></tr></thead>
   <tbody>
     <tr><td><code>data-key</code></td><td>Clé publique (obligatoire)</td></tr>
     <tr><td><code>data-lang</code></td><td>Langue des résultats (fr par défaut)</td></tr>
     <tr><td><code>data-input</code></td><td>Sélecteur CSS du ou des champs de recherche du site</td></tr>
-    <tr><td><code>data-anchor</code></td><td>Élément sous lequel s'ouvre le panneau (en-tête du site). Par défaut : sous le champ de recherche</td></tr>
+    <tr><td><code>data-gap</code></td><td>Écart en pixels entre la barre de recherche et la fenêtre (12 par défaut). La fenêtre s'ouvre juste sous la barre, le reste de la page est assombri</td></tr>
+    <tr><td><code>data-position="anchor"</code> + <code>data-anchor</code></td><td>Ouvrir plutôt la fenêtre sous un élément du site (ex. <code>header.page-header</code>)</td></tr>
+    <tr><td><code>data-enter</code></td><td><code>off</code> : la touche Entrée laisse seulement la fenêtre DeepFind ; <code>on</code> : elle ouvre la page de résultats. Sans attribut : réglage <a href="<?= e(url('/admin/settings')) ?>">Paramètres › Widget sur le site</a></td></tr>
     <tr><td><code>data-results-url</code></td><td>Page « Tout voir » (la requête est ajoutée à la fin). Vide = bouton masqué</td></tr>
     <tr><td><code>data-currency</code>, <code>data-locale</code></td><td>Format des prix (EUR, fr-FR par défaut)</td></tr>
     <tr><td><code>data-min-chars</code>, <code>data-page-size</code></td><td>Caractères avant recherche (2), produits par page (20)</td></tr>

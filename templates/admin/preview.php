@@ -1,7 +1,7 @@
 <?php $sorts = ['relevance' => 'Pertinence', 'price_asc' => 'Prix croissant', 'price_desc' => 'Prix décroissant', 'newest' => 'Nouveautés',
     'margin_desc' => 'Rentabilité (marge)', 'popularity_desc' => 'Ventes 30 j', 'score_desc' => 'Score métier']; ?>
 <p class="muted">Vue réservée à l'équipe : marge, score métier et règles appliquées sont visibles ici mais <strong>jamais envoyés au site public</strong>.
-  <strong>Boost permanent</strong> : fait monter (ou descendre) le produit sur toutes les recherches. <strong>Épingler</strong> : impose une position pour cette recherche uniquement. <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index). <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
+  <strong>Boost</strong> : multiplie la pertinence du produit sur toutes les recherches (crée une <a href="<?= e(url('/admin/boost-rules')) ?>">règle de boost</a> « Produit SKU »). <strong>Épingler</strong> : impose une position pour cette recherche uniquement. <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index). <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
 <form method="get" class="card form inline">
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
@@ -37,12 +37,13 @@
           <td class="pv-product">
             <a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code><?= !empty($pr['matched_variant']) ? ' <small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?>
             <div class="pv-actions">
-              <span class="pv-label">Boost permanent</span>
-              <?php $cur = $adminBoosts[mb_strtoupper($pr['sku'], 'UTF-8')] ?? 0; ?>
-            <form method="post" action="<?= e(url('/admin/boosts/save')) ?>" class="inline-boost">
+              <span class="pv-label">Boost</span>
+              <?php $cur = (float) ($adminBoosts[mb_strtoupper($pr['sku'], 'UTF-8')] ?? 1.0); $curKey = rtrim(rtrim(number_format($cur, 2, '.', ''), '0'), '.'); ?>
+            <form method="post" action="<?= e(url('/admin/boost-rules/product')) ?>" class="inline-boost">
               <?= csrf_field() ?><input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
-              <select name="boost" data-autosubmit aria-label="Boost permanent de <?= e($pr['sku']) ?>" class="<?= $cur > 0 ? 'boost-up' : ($cur < 0 ? 'boost-down' : '') ?>">
-                <?php for ($b = 10; $b >= -10; $b--): ?><option value="<?= $b ?>" <?= $b === $cur ? 'selected' : '' ?>><?= $b === 0 ? 'Aucun' : sprintf('%+d', $b) ?></option><?php endfor; ?>
+              <select name="boost" data-autosubmit aria-label="Boost du produit <?= e($pr['sku']) ?> sur toutes les recherches" title="Règle de boost « Produit <?= e($pr['sku']) ?> » sur toutes les recherches" class="<?= $cur > 1 ? 'boost-up' : ($cur < 1 ? 'boost-down' : '') ?>">
+                <?php $opts = \DeepFind\Rules\BoostRules::QUICK; if (!isset($opts[$curKey])) { $opts = [$curKey => '×' . str_replace('.', ',', $curKey)] + $opts; } ?>
+                <?php foreach ($opts as $v => $l): ?><option value="<?= e((string) $v) ?>" <?= (string) $v === $curKey ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?>
               </select>
               <noscript><button class="btn btn-sm">OK</button></noscript>
             </form>

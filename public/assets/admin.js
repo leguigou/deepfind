@@ -13,6 +13,64 @@
   root.setAttribute('data-theme', theme);
   if (read('df-menu') === 'collapsed') { root.classList.add('menu-collapsed'); }
 
+  /*
+   * Fenêtres de confirmation et d'information aux couleurs de l'extranet (remplacent confirm() / alert() du navigateur).
+   * DeepFindUI.confirm(message, {ok, danger}) et DeepFindUI.alert(message) renvoient une promesse.
+   */
+  function uiDialog(message, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      var dlg = document.createElement('dialog');
+      dlg.className = 'modal modal-confirm';
+      dlg.setAttribute('aria-labelledby', 'df-ui-title');
+      var head = document.createElement('div');
+      head.className = 'modal-head';
+      var h = document.createElement('h2');
+      h.id = 'df-ui-title';
+      h.textContent = opts.title || (opts.alert ? 'Information' : 'Confirmation');
+      head.appendChild(h);
+      var body = document.createElement('div');
+      body.className = 'modal-body';
+      var p = document.createElement('p');
+      p.textContent = message;
+      body.appendChild(p);
+      var foot = document.createElement('div');
+      foot.className = 'modal-foot';
+      var cancel = null;
+      if (!opts.alert) {
+        cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'btn btn-light';
+        cancel.textContent = 'Annuler';
+        cancel.addEventListener('click', function () { dlg.close('cancel'); });
+        foot.appendChild(cancel);
+      }
+      var ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'btn' + (opts.danger ? ' btn-danger-solid' : '');
+      ok.setAttribute('data-ok', '');
+      ok.textContent = opts.ok || 'OK';
+      ok.addEventListener('click', function () { dlg.close('ok'); });
+      foot.appendChild(ok);
+      dlg.appendChild(head);
+      dlg.appendChild(body);
+      dlg.appendChild(foot);
+      // Clic hors du cadre = annuler ; Échap = annuler (comportement natif de <dialog>)
+      dlg.addEventListener('click', function (ev) { if (ev.target === dlg) { dlg.close('cancel'); } });
+      dlg.addEventListener('close', function () {
+        resolve(dlg.returnValue === 'ok' || (opts.alert && true));
+        dlg.remove();
+      });
+      document.body.appendChild(dlg);
+      dlg.showModal();
+      (opts.danger && cancel ? cancel : ok).focus();
+    });
+  }
+  window.DeepFindUI = {
+    confirm: function (message, opts) { return uiDialog(message, opts); },
+    alert: function (message, opts) { return uiDialog(message, Object.assign({ alert: true }, opts || {})); }
+  };
+
   document.addEventListener('DOMContentLoaded', function () {
     function label() {
       document.querySelectorAll('[data-theme-label]').forEach(function (el) {
@@ -34,11 +92,23 @@
         write('df-menu', collapsed ? 'collapsed' : 'open');
       });
     });
+    // data-confirm : demande de confirmation avant l'envoi (le bouton cliqué donne son libellé au bouton de validation)
     document.addEventListener('submit', function (ev) {
+      var form = ev.target;
+      if (form.__dfConfirmed) { form.__dfConfirmed = false; return; }
       var btn = ev.submitter;
-      var msg = (btn && btn.getAttribute('data-confirm')) || ev.target.getAttribute('data-confirm');
-      if (msg && !window.confirm(msg)) { ev.preventDefault(); }
-    });
+      var msg = (btn && btn.getAttribute('data-confirm')) || form.getAttribute('data-confirm');
+      if (!msg) { return; }
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      var label = btn ? btn.textContent.replace(/\s+/g, ' ').trim() : '';
+      var danger = !!(btn && /btn-danger/.test(btn.className)) || /supprim|désactiv|vider|purge|restaur|écras|bloqu/i.test(label + ' ' + msg);
+      window.DeepFindUI.confirm(msg, { ok: label && label.length <= 30 ? label : 'Confirmer', danger: danger }).then(function (yes) {
+        if (!yes) { return; }
+        form.__dfConfirmed = true;
+        if (form.requestSubmit) { form.requestSubmit(btn && btn.form === form ? btn : undefined); } else { form.submit(); }
+      });
+    }, true);
     document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
       el.addEventListener('change', function () { el.form.submit(); });
     });

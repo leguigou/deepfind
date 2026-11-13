@@ -11,7 +11,6 @@ $nav = [
     'rules' => ['/admin/rules', 'Règles de résultats'],
     'redirects' => ['/admin/redirects', 'Redirections'],
     'relevance' => ['/admin/relevance', 'Pertinence & classement'],
-    'boosts' => ['/admin/boosts', 'Boosts produits'],
     'boost_rules' => ['/admin/boost-rules', 'Règles de boost'],
     'preview' => ['/admin/preview', 'Aperçu interne'],
     'stats' => ['/admin/stats', 'Statistiques'],

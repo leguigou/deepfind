@@ -30,9 +30,12 @@ final class PreviewController
         $pins = [];
         if ($result && $result['products']) {
             $skus = array_column($result['products'], 'sku');
-            $in = implode(',', array_fill(0, count($skus), '?'));
-            foreach (Db::all("SELECT sku, boost FROM product_boosts WHERE project_id = ? AND lang = ? AND sku IN ($in)", [\DeepFind\Project::id(), Auth::lang(), ...$skus]) as $b) {
-                $adminBoosts[mb_strtoupper($b['sku'], 'UTF-8')] = (int) $b['boost'];
+            $quick = \DeepFind\Rules\BoostRules::productBoosts(Auth::lang());
+            foreach ($skus as $sku) {
+                $k = mb_strtoupper((string) $sku, 'UTF-8');
+                if (isset($quick[$k])) {
+                    $adminBoosts[$k] = $quick[$k];
+                }
             }
             foreach (Db::all("SELECT id, sku, position FROM query_rules WHERE project_id = ? AND lang = ? AND query = ? AND action = 'pin'", [\DeepFind\Project::id(), Auth::lang(), \DeepFind\Text::normalize((string) ($_GET['q'] ?? ''))]) as $pin) {
                 $pins[mb_strtoupper($pin['sku'], 'UTF-8')] = $pin;

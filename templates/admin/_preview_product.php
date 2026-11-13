@@ -48,7 +48,7 @@ $variants = is_array($d['variants'] ?? null) ? $d['variants'] : [];
       <dt>Marge</dt><dd><?= fmt_n(100 * (float) ($pr['margin_rate'] ?? 0), 1) ?> %</dd>
       <dt>Ventes / clics 30 j</dt><dd><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($pr['clicks_30d'] ?? 0) ?></dd>
       <dt>Score métier</dt><dd><?= fmt_n($pr['biz_score'] ?? 0, 1) ?></dd>
-      <dt>Boost (flux / extranet / total)</dt><dd><?= sprintf('%+d', (int) ($pr['manual_boost'] ?? 0)) ?> / <?= sprintf('%+d', (int) ($d['admin_boost'] ?? 0)) ?> / <?= sprintf('%+d', (int) ($pr['boost_total'] ?? 0)) ?></dd>
+      <dt>Boost du flux</dt><dd><?= sprintf('%+d', (int) ($pr['manual_boost'] ?? 0)) ?> <small class="muted">(points de score métier)</small></dd>
       <?php if (isset($pr['relevance'])): ?><dt>Pertinence moteur</dt><dd><?= fmt_n($pr['relevance'], 3) ?></dd><?php endif; ?>
       <?php if (!empty($d['ean'])): ?><dt>EAN</dt><dd><code><?= e($d['ean']) ?></code></dd><?php endif; ?>
       <?php if (!empty($d['created_ts'])): ?><dt>Créé le</dt><dd><?= e(date('d/m/Y', (int) $d['created_ts'])) ?></dd><?php endif; ?>

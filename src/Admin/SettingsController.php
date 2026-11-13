@@ -12,6 +12,7 @@ final class SettingsController
     public const GROUPS = [
         'Anti-robots (commun à tous les projets)' => ['rate_per_minute', 'rate_per_hour', 'same_query_per_minute', 'burst_multiplier', 'violations_before_block', 'block_minutes', 'block_bad_user_agents', 'bad_user_agents', 'ip_allowlist'],
         'Recherche' => ['posts_limit', 'max_limit', 'cache_ttl', 'facet_values_limit'],
+        'Widget sur le site' => ['widget_enter_submit'],
         'Journaux & import' => ['log_searches', 'max_drop_percent', 'log_retention_days'],
     ];
 

@@ -22,7 +22,7 @@ final class ConfigTransfer
     ];
 
     /** Paramètres de recherche et d'import */
-    public const SEARCH_SETTINGS = ['posts_limit', 'max_limit', 'cache_ttl', 'facet_values_limit', 'log_searches', 'max_drop_percent'];
+    public const SEARCH_SETTINGS = ['posts_limit', 'max_limit', 'cache_ttl', 'facet_values_limit', 'log_searches', 'max_drop_percent', 'widget_enter_submit'];
 
     public const SECTIONS = [
         'relevance' => 'Pertinence & score métier (ordre des champs, correspondance, poids, bonus début du nom…)',
@@ -30,7 +30,6 @@ final class ConfigTransfer
         'synonyms' => 'Synonymes & alias',
         'rules' => 'Règles de résultats (épingler, remonter, masquer)',
         'redirects' => 'Redirections',
-        'boosts' => 'Boosts produits',
         'boost_rules' => 'Règles de boost (conditions et termes)',
         'sources' => 'Flux : mapping et planification des imports',
     ];
@@ -49,7 +48,6 @@ final class ConfigTransfer
             'synonyms' => $strip(Db::all('SELECT * FROM synonyms WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'rules' => $strip(Db::all('SELECT * FROM query_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'redirects' => $strip(Db::all('SELECT * FROM redirects WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
-            'boosts' => $strip(Db::all('SELECT * FROM product_boosts WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'boost_rules' => $strip(Db::all('SELECT * FROM boost_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'sources' => $strip(
                 Db::all('SELECT code, kind, lang, url, delta_url, auth_header, mapping, active, cron_full, cron_delta FROM sources WHERE project_id = ? ORDER BY id', [$pid]),
@@ -124,7 +122,7 @@ final class ConfigTransfer
                     $msgs[] = self::SECTIONS[$sec] . ' : copié';
                 }
             }
-            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boosts' => 'product_boosts', 'boost_rules' => 'boost_rules'] as $sec => $table) {
+            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boost_rules' => 'boost_rules'] as $sec => $table) {
                 if (!in_array($sec, $sections, true)) {
                     continue;
                 }
