@@ -47,13 +47,13 @@
       seeAll: 'Tout voir', sort: 'Trier', relevance: 'Pertinence', priceAsc: 'Prix croissant', priceDesc: 'Prix décroissant', newest: 'Nouveautés',
       none: 'Aucun résultat pour', tryOther: 'Vérifiez l\'orthographe ou essayez un terme plus général.', from: 'dès', outOfStock: 'Rupture',
       isNew: 'Nouveau', close: 'Fermer', busy: 'Trop de recherches en peu de temps, patientez quelques secondes…', error: 'Recherche momentanément indisponible.',
-      goTo: 'Voir la page', showFilters: 'Filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…',
+      goTo: 'Voir la page', closeFilters: 'Fermer les filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…',
       approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
       isNew: 'New', close: 'Close', busy: 'Too many searches, please wait a few seconds…', error: 'Search temporarily unavailable.',
-      goTo: 'Go to page', showFilters: 'Filters', clear: 'Clear filters', results: 'results', loading: 'Loading…',
+      goTo: 'Go to page', closeFilters: 'Close filters', clear: 'Clear filters', results: 'results', loading: 'Loading…',
       approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products' }
   };
   var t = T[cfg.lang] || T.fr;
@@ -64,7 +64,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=5'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=6'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -92,17 +92,35 @@
   var closeBtn = el('button', 'df-close', '×');
   closeBtn.type = 'button';
   closeBtn.setAttribute('aria-label', t.close);
+  var sideBackdrop = el('div', 'df-side-backdrop');
   var side = el('aside', 'df-side');
+  side.id = 'df-filters';
+  var sideHead = el('div', 'df-side-head');
+  sideHead.appendChild(el('h3', null, t.filters));
+  var sideCloseBtn = el('button', 'df-side-close', t.close);
+  sideCloseBtn.type = 'button';
+  sideCloseBtn.setAttribute('aria-label', t.closeFilters);
+  sideHead.appendChild(sideCloseBtn);
+  var sideBody = el('div', 'df-side-body');
+  var sideToggles = el('div', 'df-side-toggles');
+  var sideContent = el('div');
+  sideBody.appendChild(sideToggles);
+  sideBody.appendChild(sideContent);
+  side.appendChild(sideHead);
+  side.appendChild(sideBody);
   var main = el('div', 'df-main');
   layer.appendChild(closeBtn);
   layer.appendChild(side);
   layer.appendChild(main);
+  layer.appendChild(sideBackdrop);
 
   var head = el('div', 'df-head');
   var title = el('h2', 'df-title');
   var tools = el('div', 'df-tools');
-  var filtersBtn = el('button', 'df-filters-btn', t.showFilters);
+  var filtersBtn = el('button', 'df-filters-btn', t.filters);
   filtersBtn.type = 'button';
+  filtersBtn.setAttribute('aria-controls', side.id);
+  filtersBtn.setAttribute('aria-expanded', 'false');
   function toggle(name, label) {
     var lab = el('label', 'df-toggle');
     var cb = el('input');
@@ -123,8 +141,6 @@
   });
   var seeAll = el('a', 'df-see-all');
   tools.appendChild(filtersBtn);
-  tools.appendChild(tgStock.label);
-  tools.appendChild(tgSale.label);
   tools.appendChild(sortSel);
   tools.appendChild(seeAll);
   head.appendChild(title);
@@ -153,6 +169,7 @@
   var cache = new Map();
   var timer = null;
   var activeInput = null;
+  var mobile = window.matchMedia('(max-width: 900px)');
 
   function resetFilters() { state.filters = {}; }
 
@@ -371,14 +388,19 @@
   }
 
   function renderSide(data) {
-    side.textContent = '';
+    sideContent.textContent = '';
     var facets = data.facets || [];
-    var hasFilter = Object.keys(state.filters).some(function (k) { return state.filters[k].length; });
+    var hasFilter = tgStock.input.checked || tgSale.input.checked || Object.keys(state.filters).some(function (k) { return state.filters[k].length; });
     if (hasFilter) {
       var clear = el('button', 'df-clear', t.clear);
       clear.type = 'button';
-      clear.addEventListener('click', function () { resetFilters(); search(false); });
-      side.appendChild(clear);
+      clear.addEventListener('click', function () {
+        tgStock.input.checked = false;
+        tgSale.input.checked = false;
+        resetFilters();
+        search(false);
+      });
+      sideContent.appendChild(clear);
     }
     facets.forEach(function (f) {
       var sec = el('div', 'df-sec');
@@ -413,7 +435,7 @@
         });
         sec.appendChild(more);
       }
-      side.appendChild(sec);
+      sideContent.appendChild(sec);
     });
     var posts = data.posts || [];
     if (posts.length) {
@@ -428,7 +450,7 @@
         onOpen(a, function () { track('post', p.id, i + 1); });
         ps.appendChild(a);
       });
-      side.appendChild(ps);
+      sideContent.appendChild(ps);
     }
   }
 
@@ -494,8 +516,36 @@
   }
   function close() {
     overlay.hidden = true;
-    layer.classList.remove('df-side-open');
+    setFiltersOpen(false);
     document.documentElement.classList.remove('df-lock');
+  }
+  function setFiltersOpen(isOpen, restoreFocus) {
+    layer.classList.toggle('df-side-open', isOpen);
+    filtersBtn.setAttribute('aria-expanded', String(isOpen));
+    main.toggleAttribute('inert', isOpen);
+    closeBtn.toggleAttribute('inert', isOpen);
+    if (isOpen) { sideCloseBtn.focus({ preventScroll: true }); }
+    else if (restoreFocus) { filtersBtn.focus({ preventScroll: true }); }
+  }
+  function syncFilterLayout() {
+    if (mobile.matches) {
+      sideToggles.appendChild(tgStock.label);
+      sideToggles.appendChild(tgSale.label);
+    } else {
+      setFiltersOpen(false);
+      tools.insertBefore(tgStock.label, sortSel);
+      tools.insertBefore(tgSale.label, sortSel);
+    }
+  }
+  function dismiss(ev) {
+    if (overlay.hidden) { return; }
+    if (layer.classList.contains('df-side-open')) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setFiltersOpen(false, true);
+    } else {
+      close();
+    }
   }
 
   function onInput(ev) {
@@ -523,7 +573,7 @@
       if (input.value.trim().length >= cfg.minChars && state.q === input.value.trim() && grid.childNodes.length) { open(); }
     },
     keydown: function (ev) {
-      if (ev.key === 'Escape') { close(); }
+      if (ev.key === 'Escape') { dismiss(ev); }
       if (ev.key !== 'Enter') { return; }
       // Redirection automatique : prioritaire, même si la touche Entrée n'ouvre pas la page de résultats
       var typed = ev.target.value.trim();
@@ -627,6 +677,8 @@
 
   function init() {
     if (cfg.blockNative) { blockNative(); }
+    syncFilterLayout();
+    mobile.addEventListener('change', syncFilterLayout);
     document.querySelectorAll(cfg.input).forEach(bind);
     // Champs ajoutés plus tard (thèmes Magento qui reconstruisent l'en-tête)
     if (window.MutationObserver) {
@@ -634,15 +686,17 @@
         .observe(document.body, { childList: true, subtree: true });
     }
     closeBtn.addEventListener('click', close);
+    sideCloseBtn.addEventListener('click', function () { setFiltersOpen(false, true); });
+    sideBackdrop.addEventListener('click', function () { setFiltersOpen(false, true); });
     // Clic sur le fond sombre : ferme la fenêtre sans déclencher ce qui se trouve dessous
-    backdrop.addEventListener('mousedown', function (ev) { ev.preventDefault(); close(); });
+    backdrop.addEventListener('mousedown', function (ev) { ev.preventDefault(); dismiss(ev); });
     backdrop.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); });
-    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !overlay.hidden) { close(); } });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { dismiss(ev); } });
     window.addEventListener('resize', function () { if (!overlay.hidden) { position(); } });
     tgStock.input.addEventListener('change', function () { search(false); });
     tgSale.input.addEventListener('change', function () { search(false); });
     sortSel.addEventListener('change', function () { state.sort = sortSel.value; search(false); });
-    filtersBtn.addEventListener('click', function () { layer.classList.toggle('df-side-open'); });
+    filtersBtn.addEventListener('click', function () { setFiltersOpen(true); });
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         if (entries[0].isIntersecting && state.hasMore && !state.loading) { search(true); }
