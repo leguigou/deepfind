@@ -8,18 +8,45 @@
   <label>Marge min. (0 à 1) <input name="margin_min" value="<?= e($p['margin_min'] ?? '') ?>" size="6" placeholder="0.3"></label>
   <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="in_stock" value="1" <?= !empty($p['in_stock']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">En stock</span></label>
   <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="on_sale" value="1" <?= !empty($p['on_sale']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">En promotion</span></label>
+  <label class="toggle toggle-sm" title="Afficher aussi les produits désactivés qui correspondent à la recherche"><input type="checkbox" role="switch" name="show_disabled" value="1" <?= !empty($p['show_disabled']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Désactivés</span></label>
+  <?php foreach (['brand', 'category'] as $fk): foreach ((array) ($p[$fk] ?? []) as $fv): ?><input type="hidden" name="<?= $fk ?>[]" value="<?= e((string) $fv) ?>"><?php endforeach; endforeach; ?>
+  <?php foreach ((array) ($p['attr'] ?? []) as $ac => $avs): foreach ((array) $avs as $av): ?><input type="hidden" name="attr[<?= e((string) $ac) ?>][]" value="<?= e((string) $av) ?>"><?php endforeach; endforeach; ?>
   <button class="btn">Rechercher</button>
 </form>
 <?php if ($error): ?><div class="flash flash-error"><?= e($error) ?></div><?php endif; ?>
 <?php if ($result): ?>
   <?php if (!empty($result['approximate'])): ?><div class="flash flash-warn">Aucun résultat exact (tous les mots) : le visiteur voit « Aucun résultat exact » puis ces produits approchants. Ajoutez un synonyme si l'un d'eux correspond vraiment.</div><?php endif; ?>
+  <?php $nDis = count($result['disabled'] ?? []); $showDis = !empty($p['show_disabled']); ?>
   <p><strong><?= fmt_n($result['total']) ?></strong> produit(s) · moteur <?= (int) $result['engine_ms'] ?> ms
+    <?php if ($nDis > 0): ?> · <a href="<?= e(url('/admin/preview', $showDis ? array_diff_key($keep, ['show_disabled' => 1]) : $keep + ['show_disabled' => 1])) ?>" class="badge badge-ko"><?= $nDis ?> désactivé(s) correspondant(s) : <?= $showDis ? 'masquer' : 'afficher' ?></a><?php endif; ?>
+    · <a href="<?= e(url('/admin/disabled')) ?>">liste complète des désactivés (<?= count($disabledRules) ?>)</a>
     <?= $result['redirect'] ? ' · redirection : <a href="' . e($result['redirect']) . '">' . e($result['redirect']) . '</a>' : '' ?></p>
   <div class="pv-grid">
-    <aside class="card">
+    <aside class="card pv-facets">
+      <?php
+        // Lien qui ajoute ou retire une valeur de filtre (marque, catégorie, attribut), les autres paramètres étant conservés
+        $facetUrl = static function (string $code, string $value) use ($keep): string {
+            $q = $keep;
+            if (str_starts_with($code, 'attr.')) {
+                $c = substr($code, 5);
+                $cur = (array) ($q['attr'][$c] ?? []);
+                $cur = in_array($value, $cur, true) ? array_values(array_diff($cur, [$value])) : [...$cur, $value];
+                if ($cur) { $q['attr'][$c] = $cur; } else { unset($q['attr'][$c]); }
+            } else {
+                $cur = (array) ($q[$code] ?? []);
+                $cur = in_array($value, $cur, true) ? array_values(array_diff($cur, [$value])) : [...$cur, $value];
+                if ($cur) { $q[$code] = $cur; } else { unset($q[$code]); }
+            }
+            return url('/admin/preview', array_filter($q, static fn ($v) => $v !== [] && $v !== null));
+        };
+        $hasFacet = !empty($keep['brand']) || !empty($keep['category']) || !empty($keep['attr']);
+      ?>
+      <?php if ($hasFacet): ?><p class="pv-clear"><a href="<?= e(url('/admin/preview', array_diff_key($keep, ['brand' => 1, 'category' => 1, 'attr' => 1]))) ?>">✕ Effacer les filtres</a></p><?php endif; ?>
       <?php foreach ($result['facets'] as $f): ?>
         <h3><?= e($f['label']) ?></h3>
-        <ul class="facet-list"><?php foreach (array_slice($f['values'], 0, 12) as $v): ?><li><span><?= e($v['value']) ?></span><span class="muted"><?= (int) $v['count'] ?></span></li><?php endforeach; ?></ul>
+        <ul class="facet-list"><?php foreach (array_slice($f['values'], 0, 12) as $v): ?>
+          <li><a class="pv-fv<?= $v['selected'] ? ' on' : '' ?>" href="<?= e($facetUrl($f['code'], $v['value'])) ?>" aria-pressed="<?= $v['selected'] ? 'true' : 'false' ?>"><span class="pv-check" aria-hidden="true"></span><span class="pv-fv-label"><?= e($v['value']) ?></span><span class="muted"><?= (int) $v['count'] ?></span></a></li>
+        <?php endforeach; ?></ul>
       <?php endforeach; ?>
       <h3>Articles</h3>
       <ul class="facet-list"><?php foreach ($result['posts'] as $post): ?><li><a href="<?= e($post['url']) ?>" target="_blank" rel="noopener"><?= e($post['title']) ?></a></li><?php endforeach; ?>
@@ -81,9 +108,9 @@
       </tbody>
     </table>
     </div>
-    <?php if (!empty($result['disabled'])): ?>
+    <?php if ($showDis && !empty($result['disabled'])): ?>
       <h3 class="pv-disabled-title">Produits désactivés correspondant à cette recherche (<?= count($result['disabled']) ?>)</h3>
-      <p class="muted">Ils ne sont jamais renvoyés au site. Total désactivés dans ce projet et cette langue : <?= count($disabledRules) ?>.</p>
+      <p class="muted">Ils ne sont jamais renvoyés au site. <a href="<?= e(url('/admin/disabled')) ?>">Voir tous les produits désactivés (<?= count($disabledRules) ?>)</a>.</p>
       <div class="table-scroll">
       <table class="table compact pv-table">
         <thead><tr><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th></th></tr></thead>
@@ -109,5 +136,5 @@
     </div>
   </div>
   <?php foreach ($result['products'] as $i => $pr) { $dlgId = 'pv-d-' . $i; $isDisabled = false; include __DIR__ . '/_preview_product.php'; } ?>
-  <?php foreach ($result['disabled'] ?? [] as $j => $pr) { $dlgId = 'pv-x-' . $j; $isDisabled = true; include __DIR__ . '/_preview_product.php'; } ?>
+  <?php foreach ($showDis ? ($result['disabled'] ?? []) : [] as $j => $pr) { $dlgId = 'pv-x-' . $j; $isDisabled = true; include __DIR__ . '/_preview_product.php'; } ?>
 <?php endif; ?>

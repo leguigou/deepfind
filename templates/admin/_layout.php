@@ -13,6 +13,7 @@ $nav = [
     'relevance' => ['/admin/relevance', 'Pertinence & classement'],
     'boost_rules' => ['/admin/boost-rules', 'Règles de boost'],
     'preview' => ['/admin/preview', 'Aperçu interne'],
+    'disabled' => ['/admin/disabled', 'Produits désactivés'],
     'stats' => ['/admin/stats', 'Statistiques'],
     'logs' => ['/admin/logs', 'Journal des recherches'],
     'bots' => ['/admin/bots', 'Robots & blocages'],
