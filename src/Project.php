@@ -79,6 +79,20 @@ final class Project
         return (int) self::current()['id'];
     }
 
+    /** Projet actif : sinon le widget ne prend pas la main sur le site (recherche d'origine conservée). */
+    public static function isActive(?int $id = null): bool
+    {
+        $p = $id === null ? self::current() : self::find($id);
+        return $p !== null && (int) ($p['active'] ?? 1) === 1;
+    }
+
+    public static function setActive(int $id, bool $active): void
+    {
+        Db::update('projects', ['active' => $active ? 1 : 0], 'id = ?', [$id]);
+        self::reload();
+        self::with($id, static fn () => CacheVersion::bump());
+    }
+
     public static function indexPrefix(): string
     {
         return (string) self::current()['index_prefix'];

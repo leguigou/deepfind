@@ -626,3 +626,7 @@ textarea.bn-code-area { margin: 0; border-radius: 0 0 10px 10px; background: #1f
 /* Textes indicatifs des champs : lisibles dans les deux thèmes (le navigateur les rend trop pâles et semi-transparents) */
 input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; }
 textarea.bn-code-area::placeholder { color: #9a9aae; }
+.pj-state form { margin: 6px 0 0; }
+.pj-table .name-input { min-width: 130px; max-width: 170px; }
+.pj-table td.actions { min-width: 150px; }
+.pj-table .actions { flex-wrap: wrap; }

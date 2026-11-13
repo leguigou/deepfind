@@ -18,6 +18,7 @@
 </header>
 <main class="demo-main">
   <h1>Page de démonstration</h1>
+  <?php if (!\DeepFind\Project::isActive()): ?><p style="padding:10px 14px;border-radius:10px;background:#fff4e5;color:#7a4b00">Projet désactivé : le widget ne s'active pas (comme sur le site). Réactivez-le dans « Projets » pour le tester.</p><?php endif; ?>
   <p>Tapez une recherche dans le champ ci-dessus (ex. <em>palme</em>, <em>plame</em>, <em>masque</em>, un SKU…).</p>
   <?php if (!$keys): ?>
     <p><strong>Aucune clé publique active.</strong> Créez-en une dans l'extranet, rubrique « Clés &amp; intégration ».</p>

@@ -88,6 +88,10 @@ $nav = [
       <a class="project-chip <?= \DeepFind\Project::id() === \DeepFind\Project::defaultId() ? 'is-main' : 'is-other' ?>" href="<?= e(url('/admin/projects')) ?>" title="Changer de projet">
         <?= e(\DeepFind\Project::current()['name']) ?></a>
     </div>
+    <?php if (!\DeepFind\Project::isActive()): ?>
+      <div class="flash flash-warn">Projet « <?= e(\DeepFind\Project::current()['name']) ?> » <strong>désactivé</strong> : le widget ne s'active pas sur le site, la recherche d'origine du site est utilisée.
+        <a href="<?= e(url('/admin/projects')) ?>">Gérer les projets</a></div>
+    <?php endif; ?>
     <?php foreach ($flash as [$type, $msg]): ?>
       <div class="flash flash-<?= e($type) ?>"><?= e($msg) ?></div>
     <?php endforeach; ?>

@@ -56,9 +56,10 @@ src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode 
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
-src/Http/ApiController.php     /api/v1/search, /api/v1/click, /api/v1/health
+src/Http/ApiController.php     /api/v1/config (projet actif ?), /api/v1/search, /api/v1/click, /api/v1/health
 src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
-src/Project.php                projet courant (session extranet / clé publique API / source importée) ; préfixe d'index par projet
+src/Project.php                projet courant (session extranet / clé publique API / source importée) ; préfixe d'index par projet ;
+                               projet désactivé (projects.active = 0) → le widget ne prend pas la main sur le site
 src/ConfigTransfer.php         export, résumé, copie de configuration entre projets, sauvegardes (config_snapshots), restauration
 src/Migrations.php             ajout des colonnes manquantes sur une base existante (appelé par `install`) ; crée le projet « prod »
 src/CacheVersion.php           version des données (fichier var/cache/data_version) incluse dans TOUTES les clés de cache :

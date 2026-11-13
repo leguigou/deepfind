@@ -542,6 +542,20 @@ if ($base) {
         && DeepFind\Db::value("SELECT COUNT(*) FROM redirections WHERE project_id = ? AND terms LIKE '%bonjour test%'", [$prodId]) == 0);
     file_put_contents(APP_ROOT . '/tests/_tmp/test_project', $testId . ' ' . $testKey);
 
+    // Projet désactivé : l'API le signale au widget, qui ne prend pas la main ; recherche refusée
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    check('config widget : projet actif', $c === 200 && ($cf['enabled'] ?? null) === true && array_key_exists('enter_submit', $cf));
+    DeepFind\Project::setActive($prodId, false);
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    [$cs] = $get("/api/v1/search?key=$key&q=palme");
+    check('projet désactivé : widget prévenu, recherche refusée', $c === 200 && ($cf['enabled'] ?? null) === false && $cs === 403);
+    [$c, $cf] = $get("/api/v1/config?key=$testKey&lang=fr");
+    check('projet désactivé : sans effet sur les autres projets', ($cf['enabled'] ?? null) === true);
+    DeepFind\Project::setActive($prodId, true);
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    [$cs] = $get("/api/v1/search?key=$key&q=palme");
+    check('projet réactivé', ($cf['enabled'] ?? null) === true && $cs === 200);
+
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }

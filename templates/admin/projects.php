@@ -3,8 +3,9 @@
   Exemple : « Production » pour le site, « Test » pour essayer des réglages sans toucher aux résultats du site, puis <a href="<?= e(url('/admin/projects/copy')) ?>">copier la configuration</a> validée.
   La protection anti-robots et le jeton d'accès sont communs à tous les projets.</p>
 
-<table class="table">
-  <thead><tr><th>Projet</th><th>Code / index</th><th class="num">Flux</th><th class="num">Clés actives</th><th class="num">Recherches 7 j</th><th>Dernier import</th><th></th></tr></thead>
+<div class="table-scroll">
+<table class="table pj-table">
+  <thead><tr><th>Projet</th><th>Widget sur le site</th><th>Code / index</th><th class="num">Flux</th><th class="num">Clés actives</th><th class="num">Recherches 7 j</th><th>Dernier import</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($rows as $r): ?>
     <tr class="<?= $r['id'] === $current ? 'row-current' : '' ?>">
@@ -16,6 +17,17 @@
         </form>
         <?= $r['id'] === $current ? '<span class="badge badge-ok">projet actif</span>' : '' ?>
       </td>
+      <td class="pj-state">
+        <?php $on = (int) ($r['active'] ?? 1) === 1; ?>
+        <span class="badge <?= $on ? 'badge-ok' : 'badge-ko' ?>"><?= $on ? 'Actif' : 'Désactivé' ?></span>
+        <form method="post" action="<?= e(url('/admin/projects/active')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>"><input type="hidden" name="active" value="<?= $on ? '0' : '1' ?>">
+          <?php if ($on): ?>
+            <button class="btn btn-sm btn-light btn-danger-soft" data-confirm="Désactiver « <?= e($r['name']) ?> » ? Sur les sites qui utilisent ses clés, le widget ne s'active plus : pas de fenêtre de recherche DeepFind, la recherche d'origine du site reprend la main.">Désactiver</button>
+          <?php else: ?>
+            <button class="btn btn-sm" data-confirm="Réactiver « <?= e($r['name']) ?> » ? Le widget reprend la recherche des sites qui utilisent ses clés.">Activer</button>
+          <?php endif; ?>
+        </form>
+      </td>
       <td><code><?= e($r['code']) ?></code><br><span class="muted small"><?= e($r['index_prefix']) ?>products_…</span></td>
       <td class="num"><?= fmt_n($r['sources']) ?></td>
       <td class="num"><?= fmt_n($r['keys']) ?></td>
@@ -25,7 +37,7 @@
         <?php if ($r['id'] !== $current): ?>
           <form method="post" action="<?= e(url('/admin/project')) ?>"><?= csrf_field() ?><input type="hidden" name="project_id" value="<?= (int) $r['id'] ?>"><input type="hidden" name="back" value="/admin/projects"><button class="btn btn-sm">Ouvrir</button></form>
         <?php endif; ?>
-        <a class="btn btn-sm btn-light" href="<?= e(url('/admin/projects/copy', ['from' => $r['id']])) ?>">Copier sa configuration…</a>
+        <a class="btn btn-sm btn-light" href="<?= e(url('/admin/projects/copy', ['from' => $r['id']])) ?>" title="Copier sa configuration vers un autre projet">Copier…</a>
         <?php if (count($rows) > 1): ?>
         <details class="danger-details"><summary class="btn btn-sm btn-danger">Supprimer…</summary>
           <form method="post" action="<?= e(url('/admin/projects/delete')) ?>" class="card form">
@@ -41,6 +53,7 @@
   <?php endforeach; ?>
   </tbody>
 </table>
+</div>
 
 <div class="grid2">
   <form method="post" action="<?= e(url('/admin/projects/create')) ?>" class="card form">

@@ -67,6 +67,23 @@ final class ProjectsController
         App::back('/admin/sources');
     }
 
+    /** Active ou désactive un projet : désactivé, le widget ne prend plus la main sur le site (recherche d'origine conservée). */
+    public function active(): void
+    {
+        $id = (int) ($_POST['id'] ?? 0);
+        $p = Project::find($id);
+        if ($p === null) {
+            Auth::flash('error', 'Projet introuvable.');
+        } else {
+            $on = ($_POST['active'] ?? '') === '1';
+            Project::setActive($id, $on);
+            // délai : réponse « config » gardée 1 min par le navigateur et 5 min dans la session du visiteur
+            Auth::flash('ok', sprintf('Projet « %s » %s. Pris en compte immédiatement pour les nouveaux visiteurs, en 5 minutes au plus pour ceux déjà sur le site.',
+                $p['name'], $on ? 'activé : le widget reprend la recherche du site' : 'désactivé : le widget ne s\'active plus, la recherche d\'origine du site est conservée'));
+        }
+        App::back('/admin/projects');
+    }
+
     public function rename(): void
     {
         $id = (int) ($_POST['id'] ?? 0);
