@@ -250,6 +250,26 @@ if ($base) {
     DeepFind\Db::exec("DELETE FROM query_rules WHERE query = 'masque' AND action = 'hide'");
     DeepFind\Rules\RulesRepository::bumpVersion();
 
+    // Aperçu interne : champs trouvés, fiche détaillée, produit désactivé partout (règle « masquer » sur « * »)
+    $svc = new DeepFind\Search\SearchService(DeepFind\Meili\MeiliClient::search());
+    $int = $svc->search(DeepFind\Search\SearchRequest::fromArray(['q' => 'palme', 'lang' => 'fr', 'limit' => 10], true), true);
+    $p0 = $int['products'][0] ?? [];
+    check('aperçu : champs où la recherche est trouvée', in_array('name', array_column($p0['matched'] ?? [], 'field'), true), json_encode($p0['matched'] ?? null));
+    check('aperçu : fiche détaillée (attributs, catégories)', isset($p0['details']['attr'], $p0['details']['category_paths']));
+    $off = $int['products'][1]['sku'] ?? '';
+    DeepFind\Rules\RulesRepository::addRule('fr', '*', $off, 'hide', null, '', '');
+    DeepFind\Rules\RulesRepository::bumpVersion();
+    [, $pub] = $get("/api/v1/search?key=$key&q=palme&limit=48");
+    check('désactivation : produit absent de la recherche publique', $off !== '' && !in_array($off, array_column($pub['products'], 'sku'), true));
+    check('API : ni fiche détaillée ni champs trouvés exposés', !str_contains(json_encode($pub), '"details"') && !str_contains(json_encode($pub), '"matched"'));
+    $int = $svc->search(DeepFind\Search\SearchRequest::fromArray(['q' => 'palme', 'lang' => 'fr', 'limit' => 48], true), true);
+    check('désactivation : listé dans « produits désactivés » de l\'aperçu', in_array($off, array_column($int['disabled'] ?? [], 'sku'), true)
+        && !in_array($off, array_column($int['products'], 'sku'), true));
+    DeepFind\Db::exec("DELETE FROM query_rules WHERE query = '*' AND action = 'hide'");
+    DeepFind\Rules\RulesRepository::bumpVersion();
+    [, $pub] = $get("/api/v1/search?key=$key&q=palme&limit=48");
+    check('réactivation : produit de retour dans la recherche', in_array($off, array_column($pub['products'], 'sku'), true));
+
     // Correspondance des mots : « barbe à papa » (aucun produit) => approchants signalés, ou rien en mode strict
     [, $bp] = $get("/api/v1/search?key=$key&q=" . rawurlencode('barbe à papa') . "&sid=sidbarbe00001");
     check('recherche sans produit : résultats marqués « approchants » (ou aucun)', ($bp['approximate'] ?? false) === true || $bp['total'] === 0, json_encode(['t' => $bp['total'], 'a' => $bp['approximate'] ?? null]));

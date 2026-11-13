@@ -84,6 +84,19 @@
       }
     }
 
+    // Fenêtres modales (<dialog>) : ouverture par data-dialog-open="id", fermeture par bouton, Échap ou clic hors du cadre
+    document.querySelectorAll('[data-dialog-open]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var dlg = document.getElementById(b.getAttribute('data-dialog-open'));
+        if (dlg && typeof dlg.showModal === 'function') { dlg.showModal(); }
+      });
+    });
+    document.querySelectorAll('dialog.modal').forEach(function (dlg) {
+      dlg.addEventListener('click', function (ev) {
+        if (ev.target === dlg || ev.target.closest('[data-dialog-close]')) { dlg.close(); }
+      });
+    });
+
     document.querySelectorAll('[data-dim-row] input').forEach(function (cb) {
       cb.addEventListener('change', function () { var tr = cb.closest('tr'); if (tr) { tr.classList.toggle('dim', !cb.checked); } });
     });

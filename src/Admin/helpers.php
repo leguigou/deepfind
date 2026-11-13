@@ -101,3 +101,17 @@ function asset(string $path): string
     $file = APP_ROOT . '/public' . $path;
     return url($path) . '?v=' . (is_file($file) ? filemtime($file) : '1');
 }
+
+/** Texte échappé avec les mots de la recherche surlignés (<mark>), sans tenir compte des accents ni de la casse. */
+function highlight(string $text, array $words): string
+{
+    if ($words === []) {
+        return e($text);
+    }
+    $html = '';
+    foreach (preg_split('/([\p{L}\p{N}]+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [] as $i => $part) {
+        $hit = $i % 2 === 1 && DeepFind\Search\Relevance::matchesAny($words, DeepFind\Text::normalize($part));
+        $html .= $hit ? '<mark>' . e($part) . '</mark>' : e($part);
+    }
+    return $html;
+}

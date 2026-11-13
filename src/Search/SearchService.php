@@ -20,6 +20,14 @@ final class SearchService
         'has_price_range', 'on_sale', 'discount_percent', 'in_stock', 'rating', 'reviews_count', 'is_new'];
     private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'boost_total', 'clicks_30d', 'type', 'category_names'];
     private const POST_FIELDS = ['id', 'title', 'url', 'image', 'excerpt', 'published_ts'];
+    // Aperçu interne uniquement : fiche détaillée et champs où la recherche a été trouvée.
+    private const DETAIL_FIELDS = ['short_description', 'description', 'ean', 'all_skus', 'all_eans', 'category_paths', 'category_terms',
+        'search_keywords', 'attr', 'attr_values', 'variants', 'created_ts', 'admin_boost'];
+
+    /** @var list<string> mots de la recherche en cours (aperçu interne) */
+    private array $words = [];
+    /** @var array<string, string> libellés des attributs */
+    private array $attrLabels = [];
 
     public function __construct(private readonly MeiliClient $meili)
     {
@@ -31,6 +39,7 @@ final class SearchService
         $postIndex = Config::postIndex($r->lang);
         $rules = RulesRepository::compiled($r->lang);
         $q = $r->qNorm;
+        $this->words = $internal ? Relevance::words($r->q, $r->lang) : [];
 
         // Épingler / remonter : uniquement en tri « pertinence » (un tri par prix demandé par le visiteur reste respecté).
         $withRules = $q !== '' && $r->sort === 'relevance';
@@ -63,7 +72,8 @@ final class SearchService
         foreach (array_keys($attrLabels) as $code) {
             $facets[] = 'attr.' . $code;
         }
-        $fields = $internal ? [...self::PUBLIC_FIELDS, ...self::INTERNAL_FIELDS] : self::PUBLIC_FIELDS;
+        $this->attrLabels = $attrLabels;
+        $fields = $internal ? [...self::PUBLIC_FIELDS, ...self::INTERNAL_FIELDS, ...self::DETAIL_FIELDS] : self::PUBLIC_FIELDS;
 
         $queries = [];
         $names = [];
@@ -111,6 +121,13 @@ final class SearchService
                 $queries[] = ['indexUid' => $productIndex, 'q' => $r->q, 'limit' => 0, 'filter' => $f, 'facets' => [$field]];
                 $names[] = 'facet:' . $field;
             }
+        }
+
+        // Aperçu interne : produits désactivés (masqués de toutes les recherches) qui correspondraient à cette recherche.
+        if ($internal && $rules['hide_all'] !== []) {
+            $queries[] = ['indexUid' => $productIndex, 'q' => $r->q, 'limit' => 50, 'attributesToRetrieve' => $fields,
+                'filter' => [...array_values($groups), Filter::in('all_skus', $rules['hide_all'])]];
+            $names[] = 'disabled';
         }
 
         $withPosts = $r->withPosts && $r->offset === 0 && $r->q !== '' && Settings::int('posts_limit') > 0 && $this->indexExists($postIndex);
@@ -174,6 +191,7 @@ final class SearchService
             }
             if ($internal) {
                 $q['showRankingScore'] = true;
+                $q['showMatchesPosition'] = true;
             }
         }
         unset($q);
@@ -337,7 +355,7 @@ final class SearchService
             'posts' => $posts,
             'posts_total' => (int) ($res['posts']['estimatedTotalHits'] ?? 0),
             'engine_ms' => (int) ($main['processingTimeMs'] ?? 0),
-        ];
+        ] + ($internal ? ['disabled' => array_map(fn ($h) => $this->product($h, true), $res['disabled']['hits'] ?? [])] : []);
     }
 
     private function product(array $h, bool $internal): array
@@ -360,7 +378,99 @@ final class SearchService
                 $p[$b] = (bool) $p[$b];
             }
         }
+        if ($internal) {
+            $p['details'] = array_intersect_key($h, array_flip(self::DETAIL_FIELDS));
+            $p['matched'] = $this->matched($h);
+        }
         return $p;
+    }
+
+    /**
+     * Champs où la recherche a été trouvée (aperçu interne) : positions renvoyées par le moteur (showMatchesPosition),
+     * sinon repli sur une comparaison mot à mot (fautes de frappe et synonymes non détectés dans ce cas).
+     * @return list<array{field:string, label:string, values:list<string>}>
+     */
+    private function matched(array $h): array
+    {
+        if ($this->words === []) {
+            return [];
+        }
+        $positions = $h['_matchesPosition'] ?? null;
+        $keys = is_array($positions) ? array_keys($positions) : Relevance::searchableAttributes();
+        $out = [];
+        foreach ($keys as $key) {
+            $key = (string) $key;
+            $field = (string) preg_replace('/[.\[].*$/', '', $key);
+            $raw = $h[$field] ?? null;
+            if ($raw === null || $raw === '' || $raw === []) {
+                continue;
+            }
+            $list = is_array($raw) ? array_values(array_filter($raw, 'is_scalar')) : [$raw];
+            $indices = [];
+            foreach (is_array($positions) ? ($positions[$key] ?? []) : [] as $pos) {
+                foreach ((array) ($pos['indices'] ?? []) as $i) {
+                    $indices[(int) $i] = true;
+                }
+            }
+            $values = [];
+            foreach ($list as $i => $v) {
+                $v = (string) $v;
+                if ($indices !== [] ? isset($indices[$i]) : $this->hasWord($v)) {
+                    $values[] = $v;
+                }
+            }
+            if ($values === [] && is_array($positions)) {
+                $values = array_map('strval', array_slice($list, 0, 3)); // trouvé par le moteur (faute de frappe, synonyme…)
+            }
+            if ($values === []) {
+                continue;
+            }
+            $values = array_values(array_unique(array_map(fn ($v) => $this->excerpt($v), array_slice($values, 0, 8))));
+            if ($field === 'attr_values' && is_array($h['attr'] ?? null)) {
+                $values = array_map(fn ($v) => $this->attrLabel($h['attr'], $v), $values);
+            }
+            $out[] = ['field' => $field, 'label' => Relevance::FIELDS[$field][0] ?? $field, 'values' => $values];
+        }
+        return $out;
+    }
+
+    private function hasWord(string $text): bool
+    {
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', \DeepFind\Text::normalize($text, 5000)) ?: [] as $w) {
+            if ($w !== '' && Relevance::matchesAny($this->words, $w)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Extrait d'environ 160 caractères autour du premier mot trouvé (descriptions longues). */
+    private function excerpt(string $text): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        if (mb_strlen($text, 'UTF-8') <= 160) {
+            return $text;
+        }
+        $start = 0;
+        foreach ($this->words as $w) {
+            $p = mb_stripos(\DeepFind\Text::normalize($text, 5000), $w, 0, 'UTF-8');
+            if ($p !== false) {
+                $start = max(0, $p - 50);
+                break;
+            }
+        }
+        return ($start > 0 ? '… ' : '') . mb_substr($text, $start, 160, 'UTF-8') . ' …';
+    }
+
+    /** « Jaune » → « Couleur : Jaune » quand la valeur appartient à un attribut connu. */
+    private function attrLabel(array $attr, string $value): string
+    {
+        foreach ($attr as $code => $vals) {
+            if (in_array($value, (array) $vals, true)) {
+                return ($this->attrLabels[$code] ?? $code) . ' : ' . $value;
+            }
+        }
+        return $value;
     }
 
     private function facet(string $code, string $label, array $dist, array $selected, bool $alpha): array

@@ -68,6 +68,7 @@ final class App
         'GET /admin/settings' => [SettingsController::class, 'index'],
         'POST /admin/settings/save' => [SettingsController::class, 'save'],
         'GET /admin/preview' => [PreviewController::class, 'preview'],
+        'POST /admin/preview/toggle' => [PreviewController::class, 'toggle'],
         'GET /admin/demo' => [PreviewController::class, 'demo'],
     ];
 

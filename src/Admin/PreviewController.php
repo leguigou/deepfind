@@ -6,6 +6,7 @@ namespace DeepFind\Admin;
 
 use DeepFind\Db;
 use DeepFind\Meili\MeiliClient;
+use DeepFind\Rules\RulesRepository;
 use DeepFind\Search\SearchRequest;
 use DeepFind\Search\SearchService;
 
@@ -37,9 +38,41 @@ final class PreviewController
                 $pins[mb_strtoupper($pin['sku'], 'UTF-8')] = $pin;
             }
         }
+        $disabledRules = [];
+        foreach (Db::all("SELECT id, sku FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide'", [\DeepFind\Project::id(), Auth::lang()]) as $d) {
+            $disabledRules[mb_strtoupper($d['sku'], 'UTF-8')] = (int) $d['id'];
+        }
         $back = '/admin/preview?' . http_build_query(array_intersect_key($_GET, array_flip(['q', 'sort', 'margin_min', 'in_stock', 'on_sale'])));
         View::render('preview', ['active' => 'preview', 'p' => $_GET, 'result' => $result, 'error' => $error,
-            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back], 'Aperçu interne');
+            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back, 'disabledRules' => $disabledRules, 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . Auth::lang()),
+            'words' => \DeepFind\Search\Relevance::words((string) ($_GET['q'] ?? ''), Auth::lang())], 'Aperçu interne');
+    }
+
+    /**
+     * Désactive ou réactive un produit dans toutes les recherches (règle « masquer » sur la requête « * »).
+     * Le produit reste dans l'index : il n'est simplement plus jamais renvoyé au site.
+     */
+    public function toggle(): void
+    {
+        $sku = trim((string) ($_POST['sku'] ?? ''));
+        $lang = Auth::lang();
+        if ($sku === '') {
+            Auth::flash('error', 'SKU manquant.');
+        } elseif (($_POST['state'] ?? '') === 'off') {
+            $exists = Db::one("SELECT id FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide' AND sku = ?",
+                [\DeepFind\Project::id(), $lang, $sku]);
+            if ($exists === null) {
+                RulesRepository::addRule($lang, '*', $sku, 'hide', null, '', '');
+            }
+            RulesRepository::bumpVersion();
+            Auth::flash('ok', sprintf('Produit %s désactivé : il n\'apparaît plus dans aucune recherche du site.', $sku));
+        } else {
+            Db::exec("DELETE FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide' AND sku = ?",
+                [\DeepFind\Project::id(), $lang, $sku]);
+            RulesRepository::bumpVersion();
+            Auth::flash('ok', sprintf('Produit %s réactivé.', $sku));
+        }
+        App::backTo('/admin/preview');
     }
 
     /** Page de démonstration du widget (simule l'en-tête du site). */

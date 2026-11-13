@@ -1,7 +1,7 @@
 <?php $sorts = ['relevance' => 'Pertinence', 'price_asc' => 'Prix croissant', 'price_desc' => 'Prix décroissant', 'newest' => 'Nouveautés',
     'margin_desc' => 'Rentabilité (marge)', 'popularity_desc' => 'Ventes 30 j', 'score_desc' => 'Score métier']; ?>
 <p class="muted">Vue réservée à l'équipe : marge, score métier et règles appliquées sont visibles ici mais <strong>jamais envoyés au site public</strong>.
-  <strong>Boost permanent</strong> : fait monter (ou descendre) le produit sur toutes les recherches. <strong>Épingler</strong> : impose une position pour cette recherche uniquement. Effet immédiat, la page se recharge sur la même recherche.</p>
+  <strong>Boost permanent</strong> : fait monter (ou descendre) le produit sur toutes les recherches. <strong>Épingler</strong> : impose une position pour cette recherche uniquement. <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index). <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
 <form method="get" class="card form inline">
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
@@ -25,7 +25,9 @@
       <ul class="facet-list"><?php foreach ($result['posts'] as $post): ?><li><a href="<?= e($post['url']) ?>" target="_blank" rel="noopener"><?= e($post['title']) ?></a></li><?php endforeach; ?>
         <?php if (!$result['posts']): ?><li class="muted">Aucun</li><?php endif; ?></ul>
     </aside>
-    <table class="table compact">
+    <div class="pv-results">
+    <div class="table-scroll">
+    <table class="table compact pv-table">
       <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j / clics 30 j">Ventes / clics</th><th class="num" title="Pertinence du moteur + bonus « mot au début du nom »">Pertinence</th><th class="num">Score métier</th></tr></thead>
       <tbody>
       <?php foreach ($result['products'] as $i => $pr): ?>
@@ -55,7 +57,13 @@
                 <select name="position" aria-label="Position"><?php for ($pp = 1; $pp <= 10; $pp++): ?><option value="<?= $pp ?>"><?= $pp ?>e</option><?php endfor; ?></select>
                 <button class="btn btn-sm btn-light" title="Afficher ce produit à cette position pour cette recherche">Épingler</button></form>
             <?php endif; ?>
+            <form method="post" action="<?= e(url('/admin/preview/toggle')) ?>"><?= csrf_field() ?>
+              <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="off"><input type="hidden" name="back" value="<?= e($back) ?>">
+              <button class="btn btn-sm btn-light btn-danger-soft" title="Retirer ce produit de toutes les recherches du site"
+                data-confirm="Désactiver <?= e($pr['sku']) ?> ? Il n'apparaîtra plus dans aucune recherche du site (réactivable ici).">Désactiver</button></form>
+            <button type="button" class="btn btn-sm btn-light" data-dialog-open="pv-d-<?= $i ?>">Détails</button>
             <?= !empty($pr['exact_match']) ? '<span class="badge badge-info">SKU exact</span>' : '' ?>
+            <?= !empty($pr['rule']) ? '<span class="badge badge-info">' . e($pr['rule']) . '</span>' : '' ?>
             </div>
           </td>
           <td class="num"><?= $pr['has_price_range'] ? 'dès ' : '' ?><?= fmt_n($pr['final_price'], 2) ?> €<?= $pr['on_sale'] ? '<br><s class="muted">' . fmt_n($pr['price'], 2) . ' €</s> -' . (int) $pr['discount_percent'] . ' %' : '' ?></td>
@@ -70,5 +78,34 @@
       <?php endforeach; ?>
       </tbody>
     </table>
+    </div>
+    <?php if (!empty($result['disabled'])): ?>
+      <h3 class="pv-disabled-title">Produits désactivés correspondant à cette recherche (<?= count($result['disabled']) ?>)</h3>
+      <p class="muted">Ils ne sont jamais renvoyés au site. Total désactivés dans ce projet et cette langue : <?= count($disabledRules) ?>.</p>
+      <div class="table-scroll">
+      <table class="table compact pv-table">
+        <thead><tr><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th></th></tr></thead>
+        <tbody>
+        <?php foreach ($result['disabled'] as $j => $pr): ?>
+          <tr class="dim-soft">
+            <td><?php if ($pr['image']): ?><img class="pv-thumb" src="<?= e($pr['image']) ?>" alt="" loading="lazy"><?php endif; ?></td>
+            <td class="pv-product"><a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code> <span class="badge badge-ko">désactivé</span></td>
+            <td class="num"><?= fmt_n($pr['final_price'], 2) ?> €</td>
+            <td><?= $pr['in_stock'] ? '<span class="badge badge-ok">' . (int) ($pr['salable_qty'] ?? 0) . '</span>' : '<span class="badge badge-ko">rupture</span>' ?></td>
+            <td><div class="pv-actions">
+              <form method="post" action="<?= e(url('/admin/preview/toggle')) ?>"><?= csrf_field() ?>
+                <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="on"><input type="hidden" name="back" value="<?= e($back) ?>">
+                <button class="btn btn-sm">Activer</button></form>
+              <button type="button" class="btn btn-sm btn-light" data-dialog-open="pv-x-<?= $j ?>">Détails</button>
+            </div></td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+      </div>
+    <?php endif; ?>
+    </div>
   </div>
+  <?php foreach ($result['products'] as $i => $pr) { $dlgId = 'pv-d-' . $i; $isDisabled = false; include __DIR__ . '/_preview_product.php'; } ?>
+  <?php foreach ($result['disabled'] ?? [] as $j => $pr) { $dlgId = 'pv-x-' . $j; $isDisabled = true; include __DIR__ . '/_preview_product.php'; } ?>
 <?php endif; ?>
