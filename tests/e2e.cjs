@@ -255,11 +255,34 @@ fs.mkdirSync(OUT, { recursive: true });
   await mp.fill('input[name=token]', TOKEN);
   await mp.click('button.btn');
   await mp.goto(BASE + '/admin/demo');
+  // La démo n'a pas d'URL de résultats configurée par défaut.
+  await mp.waitForFunction(() => window.DeepFind?.isActive());
+  await mp.evaluate(() => { window.DeepFind.config.resultsUrl = '/admin/demo?q='; });
+  await mp.route('**/api/v1/search?*', async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    data.total = data.products.length + 117;
+    await route.fulfill({ response, json: data });
+  }, { times: 1 });
   await mp.fill('#search', 'masque');
   await mp.waitForSelector('.df-card', { timeout: 5000 });
-  await mp.waitForTimeout(300);
-  await mp.screenshot({ path: OUT + '/08-widget-mobile.png' });
   check('widget mobile : pas de défilement horizontal', await mp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  const seeAll = mp.locator('.df-see-all[href$="q=masque"]').filter({ hasText: 'Tout voir (+117)' });
+  await seeAll.waitFor({ timeout: 5000 });
+  for (const width of [390, 320]) {
+    await mp.setViewportSize({ width, height: 844 });
+    const aligned = await mp.locator('.df-tools').evaluate((tools) => {
+      const [filters, sort, link] = ['.df-filters-btn', '.df-sort', '.df-see-all']
+        .map((selector) => tools.querySelector(selector).getBoundingClientRect());
+      return filters.top === sort.top && sort.top === link.top
+        && filters.height === sort.height && filters.height >= 44
+        && filters.right <= sort.left && sort.right <= link.left
+        && Math.abs(link.right - tools.getBoundingClientRect().right) < 1;
+    });
+    check('widget mobile : filtres, tri et lien alignés à ' + width + ' px', aligned);
+    await mp.screenshot({ path: OUT + (width === 390 ? '/08-widget-mobile.png' : '/22-widget-mobile-320.png') });
+  }
+  await mp.setViewportSize({ width: 390, height: 844 });
   const filters = mp.locator('.df-filters-btn');
   const side = mp.locator('.df-side');
   check('widget mobile : filtres masqués au départ', !await side.isVisible() && await filters.getAttribute('aria-expanded') === 'false');
