@@ -167,6 +167,47 @@
       });
     });
 
+    // Champs d'envoi de fichier (file_field) : glisser-déposer, nom et taille du fichier, retrait
+    function fmtSize(b) { return b < 1024 ? b + ' o' : b < 1048576 ? Math.round(b / 1024) + ' Ko' : (b / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
+    document.querySelectorAll('[data-file-drop]').forEach(function (box) {
+      var input = box.querySelector('input[type=file]');
+      var zone = box.querySelector('[data-file-zone]');
+      var chosen = box.querySelector('[data-file-chosen]');
+      var err = box.querySelector('[data-file-error]');
+      var accept = (input.getAttribute('accept') || '').split(',').map(function (a) { return a.trim().toLowerCase(); }).filter(Boolean);
+      function okType(file) {
+        if (!accept.length) { return true; }
+        var name = file.name.toLowerCase();
+        return accept.some(function (a) { return a.charAt(0) === '.' ? name.slice(-a.length) === a : (a.slice(-2) === '/*' ? file.type.indexOf(a.slice(0, -1)) === 0 : file.type === a); });
+      }
+      function show() {
+        var file = input.files && input.files[0];
+        err.hidden = true;
+        zone.hidden = !!file;
+        chosen.hidden = !file;
+        if (file) {
+          chosen.querySelector('[data-file-name]').textContent = file.name;
+          chosen.querySelector('[data-file-size]').textContent = fmtSize(file.size);
+        }
+      }
+      input.addEventListener('change', show);
+      box.querySelector('[data-file-clear]').addEventListener('click', function () { input.value = ''; show(); zone.focus(); });
+      ['dragenter', 'dragover'].forEach(function (t) { box.addEventListener(t, function (ev) { ev.preventDefault(); box.classList.add('is-over'); }); });
+      ['dragleave', 'drop'].forEach(function (t) { box.addEventListener(t, function (ev) { ev.preventDefault(); if (t === 'drop' || !box.contains(ev.relatedTarget)) { box.classList.remove('is-over'); } }); });
+      box.addEventListener('drop', function (ev) {
+        var file = ev.dataTransfer && ev.dataTransfer.files[0];
+        if (!file) { return; }
+        if (!okType(file)) { err.textContent = 'Format non accepté : ' + file.name; err.hidden = false; return; }
+        var dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        show();
+      });
+      // la zone est un <label> : Entrée / Espace l'ouvrent aussi au clavier
+      zone.tabIndex = 0;
+      zone.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); input.click(); } });
+    });
+
     document.querySelectorAll('[data-dim-row] input').forEach(function (cb) {
       cb.addEventListener('change', function () { var tr = cb.closest('tr'); if (tr) { tr.classList.toggle('dim', !cb.checked); } });
     });

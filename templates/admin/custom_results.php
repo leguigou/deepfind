@@ -59,7 +59,7 @@ $fmtPeriod = static function (array $c): string {
     <?= csrf_field() ?>
     <p class="muted">Colonnes : <code>requete;sku;action;position_ou_poids;debut;fin</code> avec action = pin (position), boost (en tête) ou hide (exclure).
       Chaque requête (et période) devient un résultat personnalisé « Recherche « … » » en correspondance exacte. Exemple : <code>samples/boosts.csv</code>.</p>
-    <label>Fichier <input type="file" name="csv" accept=".csv,text/csv" required></label>
+    <?= file_field('csv', '.csv,text/csv', 'Fichier CSV, 5 Mo maximum') ?>
     <label class="check"><input type="checkbox" name="replace" value="1"> Remplacer tous les résultats personnalisés de cette langue</label>
     <button class="btn btn-light">Importer</button>
   </form>

@@ -3,7 +3,7 @@
 ?>
 <p><a href="<?= e(url('/admin/banners')) ?>" class="cr-back">‹ Retour aux bannières</a></p>
 
-<form method="post" action="<?= e(url('/admin/banners/save')) ?>" class="form cr-form" data-banner-form
+<form method="post" action="<?= e(url('/admin/banners/save')) ?>" class="form cr-form" data-banner-form data-max-kb="<?= $maxKb ?>"
       data-banner="<?= e(\DeepFind\Text::json($b)) ?>" data-upload-url="<?= e(url('/admin/banners/upload')) ?>" data-csrf="<?= e(\DeepFind\Admin\Auth::csrf()) ?>">
   <?= csrf_field() ?><input type="hidden" name="payload" value="">
 
@@ -47,16 +47,27 @@
             <?php foreach (['desktop' => ['Ordinateur', '1200 à 1600 px de large, 150 à 300 px de haut'], 'mobile' => ['Mobile', '640 à 800 px de large, 100 à 200 px de haut']] as $k => [$label, $size]): ?>
               <div class="bn-slot" data-slot="<?= $k ?>">
                 <strong><?= e($label) ?></strong>
-                <div class="bn-drop" data-drop>
-                  <img data-preview alt="" hidden>
+                <div class="bn-drop" data-drop tabindex="0" role="button" aria-label="Téléverser l'image <?= e(mb_strtolower($label)) ?>">
+                  <input type="file" class="vh" accept="image/jpeg,image/png,image/gif,image/webp" data-file tabindex="-1" aria-hidden="true">
                   <div class="bn-empty" data-empty>
-                    <span class="bn-ico" aria-hidden="true">🖼</span>
-                    <label class="btn btn-light bn-upload">Téléverser une image<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-file hidden></label>
-                    <small class="muted">ou glissez-déposez le fichier ici</small>
+                    <span class="bn-ico" aria-hidden="true">⇪</span>
+                    <strong>Glissez une image ici</strong>
+                    <span class="muted">ou <u>parcourez vos fichiers</u></span>
                   </div>
-                  <button type="button" class="icon-btn bn-remove" data-remove aria-label="Retirer l'image" hidden>🗑</button>
+                  <div class="bn-busy" data-busy hidden><span class="spinner" aria-hidden="true"></span>Téléversement…</div>
+                  <figure class="bn-filled" data-filled hidden>
+                    <img data-preview alt="">
+                    <figcaption>
+                      <span class="muted" data-meta></span>
+                      <span class="bn-actions">
+                        <button type="button" class="btn btn-sm btn-light" data-replace>Remplacer</button>
+                        <button type="button" class="btn btn-sm btn-light btn-danger-soft" data-remove>Retirer</button>
+                      </span>
+                    </figcaption>
+                  </figure>
                 </div>
-                <small class="muted">Formats : JPG, PNG, GIF, WebP. Taille conseillée : <?= e($size) ?>. Maximum : <?= $maxKb ?> Ko.<?= $k === 'mobile' ? ' Facultative : à défaut, l\'image ordinateur est utilisée.' : '' ?></small>
+                <p class="file-drop-error" data-error role="alert" hidden></p>
+                <small class="muted">JPG, PNG, GIF ou WebP · <?= $maxKb ?> Ko maximum · conseillé : <?= e($size) ?>.<?= $k === 'mobile' ? ' Facultative : à défaut, l\'image ordinateur est utilisée.' : '' ?></small>
                 <input data-f="image_<?= $k ?>" type="url" placeholder="… ou saisissez l'adresse de l'image (https://…)" aria-label="Adresse de l'image <?= e(mb_strtolower($label)) ?>">
               </div>
             <?php endforeach; ?>

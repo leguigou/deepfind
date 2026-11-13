@@ -13,7 +13,7 @@
     <?= csrf_field() ?>
     <h3>Importer un CSV</h3>
     <p class="muted">Colonnes : <code>type;terme;synonymes</code> (voir samples/synonymes.csv)</p>
-    <input type="file" name="csv" accept=".csv,text/csv" required>
+    <?= file_field('csv', '.csv,text/csv', 'Fichier CSV, 5 Mo maximum') ?>
     <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="replace"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Remplacer tous les synonymes de cette langue</span></label>
     <button class="btn">Importer</button>
   </form>

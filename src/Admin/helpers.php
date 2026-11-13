@@ -115,3 +115,26 @@ function highlight(string $text, array $words): string
     }
     return $html;
 }
+
+/**
+ * Champ d'envoi de fichier stylisé : zone cliquable et glisser-déposer, puis nom et taille du fichier choisi (assets/admin.js).
+ * Le vrai champ reste dans le formulaire (validation « required » du navigateur conservée), masqué visuellement.
+ */
+function file_field(string $name, string $accept, string $hint = '', bool $required = true): string
+{
+    static $n = 0;
+    $id = 'ff-' . (++$n);
+    return '<div class="file-drop" data-file-drop>'
+        . '<input type="file" class="vh" id="' . $id . '" name="' . e($name) . '" accept="' . e($accept) . '"' . ($required ? ' required' : '') . '>'
+        . '<label for="' . $id . '" class="file-drop-zone" data-file-zone>'
+        . '<span class="file-drop-ico" aria-hidden="true">⇪</span>'
+        . '<span class="file-drop-text"><strong>Glissez votre fichier ici</strong><span>ou <u>parcourez vos fichiers</u></span></span>'
+        . ($hint !== '' ? '<small class="muted">' . e($hint) . '</small>' : '')
+        . '</label>'
+        . '<div class="file-drop-chosen" data-file-chosen hidden><span class="file-drop-ico" aria-hidden="true">✓</span>'
+        . '<span class="file-drop-text"><strong data-file-name></strong><small class="muted" data-file-size></small></span>'
+        . '<label for="' . $id . '" class="btn btn-sm btn-light">Changer</label>'
+        . '<button type="button" class="icon-btn" data-file-clear aria-label="Retirer le fichier">✕</button></div>'
+        . '<p class="file-drop-error" data-file-error hidden></p>'
+        . '</div>';
+}
