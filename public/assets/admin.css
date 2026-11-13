@@ -20,6 +20,7 @@
   --ko: #ff6b7d; --ko-bg: rgba(255, 107, 125, .15);
   --info: #9ab4ff; --info-bg: rgba(154, 180, 255, .14);
   --input-bg: rgba(255, 255, 255, .07);
+  --placeholder: #c6bae9;
   --shadow: 0 10px 30px rgba(8, 2, 30, .45);
   --blur: blur(14px);
   --bar-bg: rgba(23, 10, 54, .88);
@@ -48,6 +49,7 @@
   --ko: #c4223a; --ko-bg: #fde6e9;
   --info: #3651c9; --info-bg: #e7ecfd;
   --input-bg: #ffffff;
+  --placeholder: #776c95;
   --shadow: 0 6px 20px rgba(60, 30, 120, .08);
   --blur: none;
   --bar-bg: rgba(255, 255, 255, .94);
@@ -620,3 +622,7 @@ textarea.bn-code-area { margin: 0; border-radius: 0 0 10px 10px; background: #1f
 @keyframes df-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 [data-mode-panel="visual"] > .grid2 { margin-bottom: 18px; }
+
+/* Textes indicatifs des champs : lisibles dans les deux thèmes (le navigateur les rend trop pâles et semi-transparents) */
+input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; }
+textarea.bn-code-area::placeholder { color: #9a9aae; }
