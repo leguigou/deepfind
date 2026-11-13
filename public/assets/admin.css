@@ -494,3 +494,7 @@ input[type=checkbox]:not([role=switch]):disabled { opacity: .5; cursor: not-allo
 /* Les styles des champs de formulaire ne doivent pas déformer les cases à cocher */
 .form input[type=checkbox]:not([role=switch]), .modal input[type=checkbox]:not([role=switch]) { width: 20px; min-width: 20px; height: 20px; padding: 0; margin: 0; }
 .ms-add[hidden] { display: none !important; }
+
+/* Aperçu : produit désactivé affiché à sa place dans la liste */
+.pv-row-disabled td { background: repeating-linear-gradient(135deg, transparent 0 10px, var(--ko-bg) 10px 20px); }
+.pv-row-disabled td:not(:last-child) > *:not(.pv-actions), .pv-row-disabled .pv-thumb { opacity: .7; }
