@@ -110,7 +110,13 @@ final class App
             $this->login($method);
             return;
         }
-        if (!Auth::check()) {
+        if ($path === '/admin/logout' && $method === 'POST') {
+            Auth::logout();
+            Response::redirect(url('/admin/login'));
+            return;
+        }
+        // Une reconnexion par cookie doit recharger le formulaire avant tout POST.
+        if (!Auth::check($method === 'GET')) {
             Response::redirect(url('/admin/login'));
             return;
         }
@@ -121,11 +127,6 @@ final class App
             $_SESSION['project_id'] = $pid;
         }
         \DeepFind\Project::use($pid);
-        if ($path === '/admin/logout' && $method === 'POST') {
-            Auth::logout();
-            Response::redirect(url('/admin/login'));
-            return;
-        }
         if ($path === '/admin/lang' && $method === 'POST') {
             $l = (string) ($_POST['lang'] ?? '');
             if (in_array($l, Auth::langs(), true)) {
@@ -162,7 +163,7 @@ final class App
                 return;
             }
             $error = $res;
-        } elseif (Auth::check()) {
+        } elseif (Auth::check($method === 'GET')) {
             Response::redirect(url('/admin'));
             return;
         }

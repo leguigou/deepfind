@@ -6,6 +6,7 @@ namespace DeepFind\Admin;
 
 use DeepFind\Config;
 use DeepFind\Security\ClientIp;
+use DeepFind\Store\MysqlStore;
 use DeepFind\Store\Store;
 
 /**
@@ -14,6 +15,8 @@ use DeepFind\Store\Store;
 final class Auth
 {
     private const IDLE = 7200;
+    private const REMEMBER_TTL = 10 * 86400;
+    private const REMEMBER_COOKIE = 'DFADMIN_REMEMBER';
     private const MAX_ATTEMPTS = 5;
     private const WINDOW = 900;
 
@@ -22,31 +25,33 @@ final class Auth
         if (session_status() === PHP_SESSION_ACTIVE) {
             return;
         }
-        $https = (($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off')
-            || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
         session_name('DFADMIN');
-        session_set_cookie_params([
-            'lifetime' => 0,
-            'path' => rtrim((string) Config::get('APP_BASE_PATH', ''), '/') . '/admin',
-            'secure' => $https,
-            'httponly' => true,
-            'samesite' => 'Strict',
-        ]);
+        session_set_cookie_params(['lifetime' => 0] + self::cookieOptions());
         session_start();
     }
 
-    public static function check(): bool
+    public static function check(bool $restore = false): bool
     {
-        if (($_SESSION['admin'] ?? false) !== true) {
+        $now = time();
+        if (($_SESSION['admin'] ?? false) === true
+            && $now - (int) ($_SESSION['last'] ?? 0) <= self::IDLE
+            && $now < (int) ($_SESSION['remember_until'] ?? PHP_INT_MAX)
+        ) {
+            $_SESSION['last'] = $now;
+            return true;
+        }
+        unset($_SESSION['admin'], $_SESSION['last'], $_SESSION['remember_until']);
+        if (!$restore || ($key = self::rememberKey()) === null) {
             return false;
         }
-        if (time() - (int) ($_SESSION['last'] ?? 0) > self::IDLE) {
-            self::logout();
+        $expires = (new MysqlStore())->get($key);
+        if (!is_int($expires) || $expires <= $now) {
+            self::setRememberCookie('', $now - 3600);
             return false;
         }
-        $_SESSION['last'] = time();
+        self::openSession($expires);
         return true;
     }
 
@@ -69,19 +74,64 @@ final class Auth
             usleep(300_000);
             return 'Jeton invalide.';
         }
-        session_regenerate_id(true);
-        $_SESSION['admin'] = true;
-        $_SESSION['last'] = time();
-        $_SESSION['csrf'] = bin2hex(random_bytes(16));
+        $store = new MysqlStore();
+        $previous = self::rememberKey();
+        $value = bin2hex(random_bytes(32));
+        $expires = time() + self::REMEMBER_TTL;
+        $store->set(self::rememberKey($value), $expires, self::REMEMBER_TTL);
+        if ($previous !== null) {
+            $store->delete($previous);
+        }
+        self::setRememberCookie($value, $expires);
+        self::openSession($expires);
         return true;
     }
 
     public static function logout(): void
     {
+        if (($key = self::rememberKey()) !== null) {
+            (new MysqlStore())->delete($key);
+        }
+        self::setRememberCookie('', time() - 3600);
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }
+    }
+
+    private static function openSession(int $expires): void
+    {
+        session_regenerate_id(true);
+        $_SESSION['admin'] = true;
+        $_SESSION['last'] = time();
+        $_SESSION['remember_until'] = $expires;
+        $_SESSION['csrf'] = bin2hex(random_bytes(16));
+    }
+
+    private static function rememberKey(?string $value = null): ?string
+    {
+        $value ??= $_COOKIE[self::REMEMBER_COOKIE] ?? null;
+        $token = (string) Config::get('ADMIN_TOKEN', '');
+        if (!is_string($value) || !preg_match('/\A[0-9a-f]{64}\z/', $value) || strlen($token) < 24) {
+            return null;
+        }
+        return 'admin-remember:' . hash_hmac('sha256', $value, $token);
+    }
+
+    private static function setRememberCookie(string $value, int $expires): void
+    {
+        setcookie(self::REMEMBER_COOKIE, $value, ['expires' => $expires] + self::cookieOptions());
+    }
+
+    private static function cookieOptions(): array
+    {
+        return [
+            'path' => rtrim((string) Config::get('APP_BASE_PATH', ''), '/') . '/admin',
+            'secure' => (($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off')
+                || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https',
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ];
     }
 
     public static function csrf(): string
