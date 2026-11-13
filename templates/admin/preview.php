@@ -18,7 +18,7 @@
   <?php if (!empty($result['approximate'])): ?><div class="flash flash-warn">Aucun résultat exact (tous les mots) : le visiteur voit « Aucun résultat exact » puis ces produits approchants. Ajoutez un synonyme si l'un d'eux correspond vraiment.</div><?php endif; ?>
   <?php $nDis = count($result['disabled'] ?? []); $showDis = !empty($p['show_disabled']); ?>
   <p><strong><?= fmt_n($result['total']) ?></strong> produit(s) · moteur <?= (int) $result['engine_ms'] ?> ms
-    <?php if ($nDis > 0): ?> · <a href="<?= e(url('/admin/preview', $showDis ? array_diff_key($keep, ['show_disabled' => 1]) : $keep + ['show_disabled' => 1])) ?>" class="badge badge-ko"><?= $nDis ?> désactivé(s) correspondant(s) : <?= $showDis ? 'masquer' : 'afficher' ?></a><?php endif; ?>
+    <?php if ($nDis > 0): ?> · <a href="<?= e(url('/admin/preview', $showDis ? array_diff_key($keep, ['show_disabled' => 1]) : $keep + ['show_disabled' => 1])) ?>" class="badge badge-ko"><?= $nDis ?> désactivé(s) correspondant(s)<?= $showDis ? ', inclus dans la liste : masquer' : ' : afficher dans la liste' ?></a><?php endif; ?>
     · <a href="<?= e(url('/admin/disabled')) ?>">liste complète des désactivés (<?= count($disabledRules) ?>)</a>
     <?= $result['redirect'] ? ' · redirection : <a href="' . e($result['redirect']) . '">' . e($result['redirect']) . '</a>' : '' ?></p>
   <div class="pv-grid">
@@ -55,14 +55,14 @@
     <div class="pv-results">
     <div class="table-scroll">
     <table class="table compact pv-table">
-      <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j / clics 30 j">Ventes / clics</th><th class="num" title="(Pertinence du moteur + bonus « mot au début du nom ») × règles de boost">Pertinence</th><th class="num">Score métier</th></tr></thead>
+      <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j (flux) / clics 30 j dans la recherche (en direct)">Ventes / clics</th><th class="num" title="(Pertinence du moteur + bonus « mot au début du nom ») × règles de boost">Pertinence</th><th class="num">Score métier</th></tr></thead>
       <tbody>
-      <?php foreach ($result['products'] as $i => $pr): ?>
-        <tr class="<?= $pr['in_stock'] ? '' : 'dim' ?>">
-          <td><?= $i + 1 ?></td>
+      <?php $rank = 0; foreach ($result['products'] as $i => $pr): $off = !empty($pr['disabled']); if (!$off) { $rank++; } ?>
+        <tr class="<?= $off ? 'pv-row-disabled' : ($pr['in_stock'] ? '' : 'dim') ?>">
+          <td><?= $off ? '<span class="muted" title="Désactivé : non affiché sur le site">—</span>' : $rank ?></td>
           <td><?php if ($pr['image']): ?><img class="pv-thumb" src="<?= e($pr['image']) ?>" alt="" loading="lazy"><?php endif; ?></td>
           <td class="pv-product">
-            <a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code><?= !empty($pr['matched_variant']) ? ' <small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?>
+            <a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code><?= $off ? ' <span class="badge badge-ko">désactivé</span>' : '' ?><?= !empty($pr['matched_variant']) ? ' <small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?>
             <div class="pv-actions">
               <span class="pv-label">Boost</span>
               <?php $cur = (float) ($adminBoosts[mb_strtoupper($pr['sku'], 'UTF-8')] ?? 1.0); $curKey = rtrim(rtrim(number_format($cur, 2, '.', ''), '0'), '.'); ?>
@@ -86,9 +86,13 @@
                 <button class="btn btn-sm btn-light" title="Afficher ce produit à cette position pour cette recherche">Épingler</button></form>
             <?php endif; ?>
             <form method="post" action="<?= e(url('/admin/preview/toggle')) ?>"><?= csrf_field() ?>
-              <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="off"><input type="hidden" name="back" value="<?= e($back) ?>">
+              <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="<?= $off ? 'on' : 'off' ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
+              <?php if ($off): ?>
+              <button class="btn btn-sm" title="Faire réapparaître ce produit dans les recherches du site">Activer</button></form>
+              <?php else: ?>
               <button class="btn btn-sm btn-light btn-danger-soft" title="Retirer ce produit de toutes les recherches du site"
                 data-confirm="Désactiver <?= e($pr['sku']) ?> ? Il n'apparaîtra plus dans aucune recherche du site (réactivable ici).">Désactiver</button></form>
+              <?php endif; ?>
             <button type="button" class="btn btn-sm btn-light" data-dialog-open="pv-d-<?= $i ?>">Détails</button>
             <?= !empty($pr['exact_match']) ? '<span class="badge badge-info">SKU exact</span>' : '' ?>
             <?= !empty($pr['rule']) ? '<span class="badge badge-info">' . e($pr['rule']) . '</span>' : '' ?>
@@ -98,7 +102,8 @@
           <td class="num"><?= $pr['has_price_range'] ? 'dès ' : '' ?><?= fmt_n($pr['final_price'], 2) ?> €<?= $pr['on_sale'] ? '<br><s class="muted">' . fmt_n($pr['price'], 2) . ' €</s> -' . (int) $pr['discount_percent'] . ' %' : '' ?></td>
           <td><?= $pr['in_stock'] ? '<span class="badge badge-ok">' . (int) ($pr['salable_qty'] ?? 0) . '</span>' : '<span class="badge badge-ko">rupture</span>' ?></td>
           <td class="num"><?= fmt_n(100 * (float) ($pr['margin_rate'] ?? 0), 1) ?> %</td>
-          <td class="num"><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($pr['clicks_30d'] ?? 0) ?></td>
+          <?php $live = $liveClicks[(string) $pr['id']] ?? 0; $inScore = (int) ($pr['clicks_30d'] ?? 0); ?>
+          <td class="num" title="Clics enregistrés sur 30 jours : <?= $live ?>. Pris en compte dans le score métier : <?= $inScore ?> (mis à jour au recalcul des scores)."><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($live) ?><?= $live !== $inScore ? '<br><small class="muted">score : ' . fmt_n($inScore) . '</small>' : '' ?></td>
           <td class="num" title="Moteur <?= isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—' ?> + début du nom <?= isset($pr['name_position']) ? fmt_n($pr['name_position'], 2) : '—' ?><?= isset($pr['boost_factor']) ? ', × règles de boost ' . fmt_n($pr['boost_factor'], 2) : '' ?>">
             <?= isset($pr['final_score']) ? fmt_n($pr['final_score'], 2) : (isset($pr['relevance']) ? fmt_n($pr['relevance'], 2) : '—') ?>
             <?php if (isset($pr['name_position'])): ?><br><small class="muted">début nom <?= fmt_n($pr['name_position'], 2) ?></small><?php endif; ?></td>
@@ -108,33 +113,7 @@
       </tbody>
     </table>
     </div>
-    <?php if ($showDis && !empty($result['disabled'])): ?>
-      <h3 class="pv-disabled-title">Produits désactivés correspondant à cette recherche (<?= count($result['disabled']) ?>)</h3>
-      <p class="muted">Ils ne sont jamais renvoyés au site. <a href="<?= e(url('/admin/disabled')) ?>">Voir tous les produits désactivés (<?= count($disabledRules) ?>)</a>.</p>
-      <div class="table-scroll">
-      <table class="table compact pv-table">
-        <thead><tr><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th></th></tr></thead>
-        <tbody>
-        <?php foreach ($result['disabled'] as $j => $pr): ?>
-          <tr class="dim-soft">
-            <td><?php if ($pr['image']): ?><img class="pv-thumb" src="<?= e($pr['image']) ?>" alt="" loading="lazy"><?php endif; ?></td>
-            <td class="pv-product"><a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code> <span class="badge badge-ko">désactivé</span></td>
-            <td class="num"><?= fmt_n($pr['final_price'], 2) ?> €</td>
-            <td><?= $pr['in_stock'] ? '<span class="badge badge-ok">' . (int) ($pr['salable_qty'] ?? 0) . '</span>' : '<span class="badge badge-ko">rupture</span>' ?></td>
-            <td><div class="pv-actions">
-              <form method="post" action="<?= e(url('/admin/preview/toggle')) ?>"><?= csrf_field() ?>
-                <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="on"><input type="hidden" name="back" value="<?= e($back) ?>">
-                <button class="btn btn-sm">Activer</button></form>
-              <button type="button" class="btn btn-sm btn-light" data-dialog-open="pv-x-<?= $j ?>">Détails</button>
-            </div></td>
-          </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
-      </div>
-    <?php endif; ?>
     </div>
   </div>
-  <?php foreach ($result['products'] as $i => $pr) { $dlgId = 'pv-d-' . $i; $isDisabled = false; include __DIR__ . '/_preview_product.php'; } ?>
-  <?php foreach ($showDis ? ($result['disabled'] ?? []) : [] as $j => $pr) { $dlgId = 'pv-x-' . $j; $isDisabled = true; include __DIR__ . '/_preview_product.php'; } ?>
+  <?php foreach ($result['products'] as $i => $pr) { $dlgId = 'pv-d-' . $i; $isDisabled = !empty($pr['disabled']); include __DIR__ . '/_preview_product.php'; } ?>
 <?php endif; ?>

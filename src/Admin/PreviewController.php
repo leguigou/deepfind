@@ -21,7 +21,7 @@ final class PreviewController
         $error = null;
         if (isset($_GET['q'])) {
             try {
-                $result = (new SearchService(MeiliClient::search()))->search(SearchRequest::fromArray($params, true), true);
+                $result = (new SearchService(MeiliClient::search()))->search(SearchRequest::fromArray($params, true), true, !empty($_GET['show_disabled']));
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
             }
@@ -41,6 +41,16 @@ final class PreviewController
                 $pins[mb_strtoupper($pin['sku'], 'UTF-8')] = $pin;
             }
         }
+        // Clics réels des 30 derniers jours (le chiffre de l'index n'est mis à jour qu'au recalcul des scores)
+        $liveClicks = [];
+        if ($result && $result['products']) {
+            $ids = array_values(array_unique(array_map('strval', array_column($result['products'], 'id'))));
+            $in = implode(',', array_fill(0, count($ids), '?'));
+            foreach (Db::all("SELECT doc_id, COUNT(*) AS n FROM click_logs WHERE project_id = ? AND lang = ? AND doc_type = 'product' AND created_at >= ? AND doc_id IN ($in) GROUP BY doc_id",
+                [\DeepFind\Project::id(), Auth::lang(), date('Y-m-d H:i:s', time() - 30 * 86400), ...$ids]) as $c) {
+                $liveClicks[(string) $c['doc_id']] = (int) $c['n'];
+            }
+        }
         $disabledRules = [];
         foreach (Db::all("SELECT id, sku FROM query_rules WHERE project_id = ? AND lang = ? AND query = '*' AND action = 'hide'", [\DeepFind\Project::id(), Auth::lang()]) as $d) {
             $disabledRules[mb_strtoupper($d['sku'], 'UTF-8')] = (int) $d['id'];
@@ -49,7 +59,7 @@ final class PreviewController
         $keep = array_intersect_key($_GET, array_flip(['q', 'sort', 'margin_min', 'in_stock', 'on_sale', 'show_disabled', 'brand', 'category', 'attr']));
         $back = '/admin/preview?' . http_build_query($keep);
         View::render('preview', ['active' => 'preview', 'p' => $_GET, 'result' => $result, 'error' => $error,
-            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back, 'keep' => $keep, 'disabledRules' => $disabledRules, 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . Auth::lang()),
+            'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back, 'keep' => $keep, 'liveClicks' => $liveClicks, 'disabledRules' => $disabledRules, 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . Auth::lang()),
             'words' => \DeepFind\Search\Relevance::words((string) ($_GET['q'] ?? ''), Auth::lang())], 'Aperçu interne');
     }
 

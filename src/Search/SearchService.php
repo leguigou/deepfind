@@ -27,6 +27,8 @@ final class SearchService
 
     /** @var list<string> mots de la recherche en cours (aperçu interne) */
     private array $words = [];
+    /** @var array<string, true> SKU désactivés partout (aperçu interne : produits signalés « désactivé ») */
+    private array $hideAll = [];
     /** @var array<string, string> libellés des attributs */
     private array $attrLabels = [];
 
@@ -34,7 +36,10 @@ final class SearchService
     {
     }
 
-    public function search(SearchRequest $r, bool $internal = false): array
+    /**
+     * @param bool $withDisabled aperçu interne : garder les produits désactivés dans la liste, à leur place, signalés « disabled »
+     */
+    public function search(SearchRequest $r, bool $internal = false, bool $withDisabled = false): array
     {
         $productIndex = Config::productIndex($r->lang);
         $postIndex = Config::postIndex($r->lang);
@@ -46,7 +51,9 @@ final class SearchService
         $withRules = $q !== '' && $r->sort === 'relevance';
         $pins = $withRules ? ($rules['pins'][$q] ?? []) : [];
         $boosts = $withRules ? ($rules['boosts'][$q] ?? []) : [];
-        $hides = array_values(array_unique(array_merge($q !== '' ? ($rules['hides'][$q] ?? []) : [], $rules['hide_all'])));
+        $withDisabled = $withDisabled && $internal;
+        $this->hideAll = $internal ? array_fill_keys(array_map(static fn ($s) => mb_strtoupper((string) $s, 'UTF-8'), $rules['hide_all']), true) : [];
+        $hides = array_values(array_unique(array_merge($q !== '' ? ($rules['hides'][$q] ?? []) : [], $withDisabled ? [] : $rules['hide_all'])));
         $injected = array_values(array_unique(array_merge($boosts, array_column($pins, 'sku'))));
         $injected = array_values(array_diff($injected, $hides));
 
@@ -393,6 +400,13 @@ final class SearchService
             }
         }
         if ($internal) {
+            $p['disabled'] = false;
+            foreach ($h['all_skus'] ?? [$h['sku'] ?? ''] as $s) {
+                if (isset($this->hideAll[mb_strtoupper((string) $s, 'UTF-8')])) {
+                    $p['disabled'] = true;
+                    break;
+                }
+            }
             $p['details'] = array_intersect_key($h, array_flip(self::DETAIL_FIELDS));
             $p['matched'] = $this->matched($h);
         }

@@ -265,6 +265,11 @@ if ($base) {
     $int = $svc->search(DeepFind\Search\SearchRequest::fromArray(['q' => 'palme', 'lang' => 'fr', 'limit' => 48], true), true);
     check('désactivation : listé dans « produits désactivés » de l\'aperçu', in_array($off, array_column($int['disabled'] ?? [], 'sku'), true)
         && !in_array($off, array_column($int['products'], 'sku'), true));
+    $intAll = $svc->search(DeepFind\Search\SearchRequest::fromArray(['q' => 'palme', 'lang' => 'fr', 'limit' => 48], true), true, true);
+    $mark = array_column($intAll['products'], 'disabled', 'sku');
+    check('aperçu « Désactivés » : produit gardé à sa place et signalé', ($mark[$off] ?? null) === true && count(array_filter($mark)) === 1);
+    [, $pub2] = $get("/api/v1/search?key=$key&q=palme&limit=48&show_disabled=1");
+    check('API : un paramètre show_disabled ne fait pas réapparaître le produit', !in_array($off, array_column($pub2['products'], 'sku'), true) && !str_contains(json_encode($pub2), '"disabled"'));
     DeepFind\Db::exec("DELETE FROM query_rules WHERE query = '*' AND action = 'hide'");
     DeepFind\Rules\RulesRepository::bumpVersion();
     [, $pub] = $get("/api/v1/search?key=$key&q=palme&limit=48");

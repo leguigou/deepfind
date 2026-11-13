@@ -46,7 +46,7 @@ $variants = is_array($d['variants'] ?? null) ? $d['variants'] : [];
       <dt>Prix</dt><dd><?= !empty($pr['has_price_range']) ? 'dès ' : '' ?><?= fmt_n($pr['final_price'] ?? 0, 2) ?> €<?= !empty($pr['on_sale']) ? ' <s class="muted">' . fmt_n($pr['price'], 2) . ' €</s> -' . (int) $pr['discount_percent'] . ' %' : '' ?></dd>
       <dt>Stock</dt><dd><?= !empty($pr['in_stock']) ? 'en stock (' . (int) ($pr['salable_qty'] ?? 0) . ')' : 'rupture' ?></dd>
       <dt>Marge</dt><dd><?= fmt_n(100 * (float) ($pr['margin_rate'] ?? 0), 1) ?> %</dd>
-      <dt>Ventes / clics 30 j</dt><dd><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($pr['clicks_30d'] ?? 0) ?></dd>
+      <dt>Ventes / clics 30 j</dt><dd><?= fmt_n($pr['sales_30d'] ?? 0) ?> / <?= fmt_n($liveClicks[(string) $pr['id']] ?? 0) ?> <small class="muted">(dans le score : <?= fmt_n($pr['clicks_30d'] ?? 0) ?>)</small></dd>
       <dt>Score métier</dt><dd><?= fmt_n($pr['biz_score'] ?? 0, 1) ?></dd>
       <dt>Boost du flux</dt><dd><?= sprintf('%+d', (int) ($pr['manual_boost'] ?? 0)) ?> <small class="muted">(points de score métier)</small></dd>
       <?php if (isset($pr['relevance'])): ?><dt>Pertinence moteur</dt><dd><?= fmt_n($pr['relevance'], 3) ?></dd><?php endif; ?>
