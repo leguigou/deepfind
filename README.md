@@ -210,7 +210,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=2" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=3" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search, input[name=q]"
@@ -219,11 +219,12 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 ```
 
 - Le widget s'accroche au champ de recherche existant et ouvre le panneau sous l'en-tête.
+- **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », « Recent Searches »…) : neutralisée par défaut. Le widget intercepte les événements du champ avant les scripts du site, qui ne s'ouvrent donc plus ; les panneaux connus (`#search_autocomplete`, Amasty, Mirasvit, Smile ElasticSuite) sont en plus masqués. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"` (clic droit sur le panneau › Inspecter pour trouver son `id` ou sa `class`). Pour garder l'autocomplétion d'origine : `data-native="keep"`. La touche Entrée envoie toujours le formulaire du site (ou va vers `data-results-url`).
 - Il charge ses styles tout seul (`deepfind.css`). Les couleurs se changent via les variables `--df-*` du fichier CSS.
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
 - **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez `?v=1` en `?v=2` pour forcer le rechargement par les navigateurs.
+- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=3` en `?v=4`) pour forcer le rechargement par les navigateurs.
 
 ## 5. Formats des flux et mapping
 
