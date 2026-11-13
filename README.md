@@ -210,7 +210,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=3" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=4" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -225,7 +225,7 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
 - **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=3` en `?v=4`) pour forcer le rechargement par les navigateurs.
+- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=4` en `?v=5`) pour forcer le rechargement par les navigateurs.
 
 ## 5. Formats des flux et mapping
 
@@ -448,7 +448,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. Il n'y a pas 
 | Imports | Historique, rapports (motifs de rejet, exemples de SKU rejetés) |
 | Synonymes & alias | Équivalents (palme = palmes = fins) ou alias à sens unique ; import CSV (`samples/synonymes.csv`) |
 | Résultats personnalisés | Pour des termes de recherche (correspondance exacte ou large), en continu ou sur une période : produits **affichés en premier** (ou **uniquement** ces produits) et produits **exclus**, choisis un par un (dans l'ordre voulu) ou par règle (marque, catégorie, attribut, stock, prix…). Suivi **impressions** (recherches où le résultat s'applique, journal des recherches activé), **clics** sur ses produits et **CTR**. « Épingler » dans l'aperçu crée ou complète un résultat « Recherche « … » ». Import CSV des anciennes règles (`samples/boosts.csv`), converties automatiquement par `install`. Ordre imposé en tri « pertinence » uniquement |
-| Redirections | Requête → page (ex. « retour » → CGV) ; import CSV |
+| Redirections | Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur une période. Un lien vers la page est proposé en haut des résultats ; en **redirection automatique**, la recherche validée (Entrée, loupe) ouvre directement la page. Import CSV `requete;url` (`samples/redirections.csv`). Les anciennes redirections sont converties par `install` (automatiques, correspondance exacte) |
+| Bannières | Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTML (scripts, événements et liens javascript: retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi **affichages**, **clics**, **CTR**. Images stockées dans `public/uploads/banners/` (à sauvegarder et à rendre accessible en écriture par PHP) |
 | Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
 | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | Produits désactivés | Liste de tous les produits retirés des recherches (bouton « Désactiver » de l'aperçu), avec filtre, « Activer » et « Tout réactiver ». Dans l'aperçu, l'interrupteur « Désactivés » affiche ceux qui correspondent à la recherche ; les filtres de gauche (marques, catégories, attributs) sont cliquables |

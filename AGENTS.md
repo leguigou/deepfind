@@ -48,6 +48,10 @@ src/Rules/BoostRules.php       règles de boost (boost_rules) : termes exacts/la
 src/Rules/CustomResults.php    résultats personnalisés (custom_results) : termes, période, inclus/exclus (SKU ou règles → filtres Meili),
                                modes first/only appliqués par SearchService ; suivi : search_logs.custom_ids, click_logs.custom_result_id
 public/assets/conditions.js    sélecteur de conditions partagé (règles de boost, résultats personnalisés)
+src/Rules/Banners.php          bannières (banners) : par termes ou par défaut, image ordi/mobile ou HTML ; suivi search_logs.banner_id + click_logs (doc_type banner)
+src/Rules/Redirections.php     redirections (redirections) : termes, période, automatique ou lien proposé ; ancienne table redirects convertie
+src/Security/HtmlSanitizer.php HTML des bannières : balises / attributs autorisés, pas de script ni javascript: (le widget refiltre aussi)
+public/assets/editor-tools.js  termes + période (calendrier) des pages d'édition ; gabarit templates/admin/_terms_period.php
 src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
@@ -73,7 +77,7 @@ tests/                         run.sh (unitaires + intégration), run.php, fake-
 3. **Pas d'écriture en base pour chaque requête de robot** : `BotGuard` passe par le `KvStore`. Les événements sont limités à une ligne par IP, par motif et par minute.
 4. **Une IP n'est jamais stockée en clair** : uniquement `ip_hash` (HMAC avec `APP_SECRET`) et `ip_masked`.
 5. **Extranet** : chaque POST vérifie le jeton CSRF (`App::handle`), chaque sortie passe par `e()`, et la CSP interdit le JavaScript inline. N'ajoutez pas d'attribut `onclick` ni de `<script>` inline : passez par `public/assets/admin.js` et des attributs `data-*`.
-6. **Widget** : créez les éléments avec `textContent` ; les URL passent par `safeUrl()` (http/https uniquement). Pas de `innerHTML` avec des données du flux.
+6. **Widget** : créez les éléments avec `textContent` ; les URL passent par `safeUrl()` (http/https uniquement). Pas de `innerHTML` avec des données du flux. Seule exception : le HTML des bannières, nettoyé à l'enregistrement (`HtmlSanitizer`) puis refiltré balise par balise par le widget (`cleanNode`).
 7. **Les valeurs de filtre Meilisearch** passent toujours par `Search\Filter` ; les codes d'attributs, par `Mapper::code()`.
 8. **Les secrets** (`.env`, clés Meilisearch, jeton d'administration) ne vont ni dans le dépôt, ni dans les journaux, ni dans les réponses.
 

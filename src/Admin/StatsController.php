@@ -23,10 +23,10 @@ final class StatsController
              FROM search_logs WHERE project_id = ? AND lang = ? AND created_at >= ? AND is_final = 1',
             $p
         ) ?? [];
-        $kpi['clicks'] = (int) Db::value('SELECT COUNT(*) FROM click_logs WHERE project_id = ? AND lang = ? AND created_at >= ?', $p);
+        $kpi['clicks'] = (int) Db::value("SELECT COUNT(*) FROM click_logs WHERE project_id = ? AND lang = ? AND created_at >= ? AND doc_type <> 'banner'", $p);
         $top = Db::all(
             'SELECT l.query_norm, COUNT(*) AS n, ROUND(AVG(l.results)) AS avg_results, SUM(l.results = 0 OR l.approx = 1) AS zero,
-                    (SELECT COUNT(*) FROM click_logs c WHERE c.project_id = l.project_id AND c.lang = l.lang AND c.query_norm = l.query_norm AND c.created_at >= ?) AS clicks
+                    (SELECT COUNT(*) FROM click_logs c WHERE c.project_id = l.project_id AND c.lang = l.lang AND c.query_norm = l.query_norm AND c.created_at >= ? AND c.doc_type <> \'banner\') AS clicks
              FROM search_logs l WHERE l.project_id = ? AND l.lang = ? AND l.created_at >= ? AND l.is_final = 1
              GROUP BY l.query_norm ORDER BY n DESC LIMIT 50',
             [$since, $pid, $lang, $since]
@@ -63,7 +63,7 @@ final class StatsController
         // Requêtes fréquentes avec des résultats mais (presque) aucun clic : résultats probablement peu pertinents
         $noClick = Db::all(
             'SELECT l.query_norm, COUNT(*) AS n, ROUND(AVG(l.results)) AS avg_results,
-                    (SELECT COUNT(*) FROM click_logs c WHERE c.project_id = l.project_id AND c.lang = l.lang AND c.query_norm = l.query_norm AND c.created_at >= ?) AS clicks
+                    (SELECT COUNT(*) FROM click_logs c WHERE c.project_id = l.project_id AND c.lang = l.lang AND c.query_norm = l.query_norm AND c.created_at >= ? AND c.doc_type <> \'banner\') AS clicks
              FROM search_logs l WHERE l.project_id = ? AND l.lang = ? AND l.created_at >= ? AND l.is_final = 1 AND l.results > 0 AND l.approx = 0
              GROUP BY l.query_norm HAVING n >= 3 AND clicks = 0 ORDER BY n DESC LIMIT 20',
             [$since, $pid, $lang, $since]

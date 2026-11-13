@@ -9,6 +9,7 @@ $nav = [
     'imports' => ['/admin/imports', 'Imports'],
     'synonyms' => ['/admin/synonyms', 'Synonymes & alias'],
     'custom_results' => ['/admin/custom-results', 'Résultats personnalisés'],
+    'banners' => ['/admin/banners', 'Bannières'],
     'redirects' => ['/admin/redirects', 'Redirections'],
     'relevance' => ['/admin/relevance', 'Pertinence & classement'],
     'boost_rules' => ['/admin/boost-rules', 'Règles de boost'],

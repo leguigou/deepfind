@@ -21,6 +21,16 @@
     <?php if ($nDis > 0): ?> · <a href="<?= e(url('/admin/preview', $showDis ? array_diff_key($keep, ['show_disabled' => 1]) : $keep + ['show_disabled' => 1])) ?>" class="badge badge-ko"><?= $nDis ?> désactivé(s) correspondant(s)<?= $showDis ? ', inclus dans la liste : masquer' : ' : afficher dans la liste' ?></a><?php endif; ?>
     · <a href="<?= e(url('/admin/disabled')) ?>">liste complète des désactivés (<?= count($disabledRules) ?>)</a>
     <?= $result['redirect'] ? ' · redirection : <a href="' . e($result['redirect']) . '">' . e($result['redirect']) . '</a>' : '' ?></p>
+  <?php if (!empty($result['banner'])): $bn = $result['banner']; ?>
+    <div class="card pv-banner">
+      <div class="pv-banner-head"><span class="badge badge-info">Bannière</span> <a href="<?= e(url('/admin/banners/edit', ['id' => $bn['id']])) ?>"><?= e($bn['name'] ?? '') ?></a></div>
+      <?php if ($bn['mode'] === 'visual'): ?>
+        <img src="<?= e($bn['desktop']) ?>" alt="<?= e($bn['alt']) ?>" class="pv-banner-img">
+      <?php else: ?>
+        <div class="pv-banner-html"><?= $bn['html'] /* HTML nettoyé à l'enregistrement (HtmlSanitizer) */ ?></div>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
   <div class="pv-grid">
     <aside class="card pv-facets">
       <?php

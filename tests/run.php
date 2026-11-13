@@ -229,7 +229,21 @@ if ($base) {
     sort($sorted);
     check('API : tri prix croissant', $prices === $sorted);
     [, $d] = $get("/api/v1/search?key=$key&q=retour");
-    check('API : redirection', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours');
+    check('API : redirection (ancien format converti, automatique)', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours' && ($d['redirect_auto'] ?? false) === true);
+    $RD = DeepFind\Rules\Redirections::class;
+    [$rdl, $rdErr] = $RD::sanitize(['name' => 'Livraison', 'active' => true, 'auto' => false, 'url' => 'https://www.example.com/livraison',
+        'terms' => [['term' => 'livraison', 'match' => 'broad']]]);
+    $rdId = $RD::save('fr', $rdl, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('délai de livraison') . "&limit=3");
+    check('redirection : terme large, lien proposé (non automatique)', $rdErr === [] && ($d['redirect'] ?? '') === 'https://www.example.com/livraison' && ($d['redirect_auto'] ?? true) === false);
+    $rdl['starts_at'] = '2099-01-01';
+    $rdl['ends_at'] = '2099-12-31';
+    $RD::save('fr', $rdl, $rdId);
+    [, $d] = $get("/api/v1/search?key=$key&q=livraison&limit=3");
+    check('redirection : période à venir → pas encore active', ($d['redirect'] ?? null) === null);
+    [, $rdBad] = $RD::sanitize(['name' => 'x', 'url' => 'javascript:alert(1)', 'terms' => []]);
+    check('redirection : URL non http(s) et sans terme refusée', count($rdBad) === 2);
+    $RD::delete($rdId, 'fr');
     [, $d] = $get("/api/v1/search?key=$key&q=nageoire");
     check('API : synonymes', $d['total'] > 0);
     [$c] = $get("/api/v1/search?key=pk_00000000000000000000000000000000&q=palme");
@@ -339,6 +353,44 @@ if ($base) {
     foreach ($savedMasque as $c) {
         $CR::save('fr', $c, null);
     }
+
+    // Bannières : sélection par termes, bannière par défaut, période, HTML nettoyé, suivi affichages / clics / CTR
+    $BN = DeepFind\Rules\Banners::class;
+    [$bDef] = $BN::sanitize(['name' => 'Défaut', 'active' => true, 'is_default' => true, 'mode' => 'visual', 'image_desktop' => 'https://cdn.example/def.jpg'], 'fr');
+    $idDef = $BN::save('fr', $bDef, null);
+    [$bPal, $errPal] = $BN::sanitize(['name' => 'Palmes', 'active' => true, 'mode' => 'visual', 'terms' => [['term' => 'palme', 'match' => 'broad']],
+        'image_desktop' => 'https://cdn.example/d.jpg', 'image_mobile' => 'https://cdn.example/m.jpg', 'link_url' => 'https://www.example.com/palmes', 'new_window' => true], 'fr');
+    $idPal = $BN::save('fr', $bPal, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('palmes de plongée') . "&limit=5&sid=sidbanner00000001");
+    check('bannière : choisie par terme large, image mobile et lien envoyés', $errPal === [] && ($d['banner']['id'] ?? 0) === $idPal
+        && ($d['banner']['mobile'] ?? '') === 'https://cdn.example/m.jpg' && ($d['banner']['new_window'] ?? false) === true && !isset($d['banner']['name']));
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=5");
+    check('bannière : par défaut quand aucune ne correspond', ($d['banner']['id'] ?? 0) === $idDef);
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=5&offset=5");
+    check('bannière : pas sur les pages suivantes', ($d['banner'] ?? null) === null);
+    $ch = curl_init($base . '/api/v1/click');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_NOPROXY => '*', CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Origin: http://localhost:8080', 'User-Agent: Mozilla/5.0 Tests'],
+        CURLOPT_POSTFIELDS => http_build_query(['key' => $key, 'lang' => 'fr', 'q' => 'palmes de plongée', 'doc_type' => 'banner', 'doc_id' => $idPal, 'position' => 0, 'sid' => 'sidbanner00000001'])]);
+    curl_exec($ch);
+    usleep(300000);
+    $bs = $BN::stats('fr', [$idPal], 30)[$idPal];
+    check('bannière : affichages, clics, CTR', $bs['impressions'] === 1 && $bs['clicks'] === 1 && $bs['ctr'] === 100.0, json_encode($bs));
+    [$bCode] = $BN::sanitize(['name' => 'Code', 'active' => true, 'mode' => 'code', 'terms' => [['term' => 'tuba', 'match' => 'exact']],
+        'html' => '<a href="javascript:alert(1)" onclick="x()">A</a><script>alert(1)</script><img src="https://cdn.example/t.jpg" onerror="y()" alt="T">'], 'fr');
+    check('bannière HTML : scripts, événements et javascript: retirés', $bCode !== null && !preg_match('/script|onclick|onerror|javascript/i', $bCode['html'])
+        && str_contains($bCode['html'], 'https://cdn.example/t.jpg'));
+    $bPal['starts_at'] = '2000-01-01';
+    $bPal['ends_at'] = '2000-01-31';
+    $BN::save('fr', $bPal, $idPal);
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=5");
+    check('bannière : période terminée → bannière par défaut', ($d['banner']['id'] ?? 0) === $idDef);
+    [, $errB] = $BN::sanitize(['name' => 'x', 'mode' => 'visual', 'terms' => [], 'image_desktop' => 'javascript:alert(1)'], 'fr');
+    check('bannière : sans terme ni défaut, ou image non http(s), refusée', count($errB) === 2, json_encode($errB));
+    DeepFind\Db::exec('DELETE FROM banners');
+    DeepFind\Db::exec("DELETE FROM search_logs WHERE sid = 'sidbanner00000001'");
+    DeepFind\Db::exec("DELETE FROM click_logs WHERE doc_type = 'banner'");
+    DeepFind\CacheVersion::bump();
     DeepFind\Db::exec("DELETE FROM search_logs WHERE sid = 'sidcr000000000001'");
     DeepFind\Db::exec('DELETE FROM click_logs WHERE custom_result_id IS NOT NULL');
     DeepFind\CacheVersion::bump();
@@ -457,8 +509,9 @@ if ($base) {
     $testKey = DeepFind\Project::with($testId, static fn () => DeepFind\Security\ApiKeys::create('Test', 'localhost', 'fr'));
     // Une redirection et un réglage uniquement dans Test
     DeepFind\Project::with($testId, static function (): void {
-        DeepFind\Rules\RulesRepository::addRedirect('fr', 'bonjour test', 'https://www.example.com/test');
-        DeepFind\Rules\RulesRepository::bumpVersion();
+        [$red] = DeepFind\Rules\Redirections::sanitize(['name' => 'Bonjour', 'active' => true, 'auto' => true, 'url' => 'https://www.example.com/test',
+            'terms' => [['term' => 'bonjour test', 'match' => 'exact']]]);
+        DeepFind\Rules\Redirections::save('fr', $red, null);
         DeepFind\Settings::set('matching_mode', 'strict');
     });
     [, $rt] = $get("/api/v1/search?key=$testKey&q=" . rawurlencode('bonjour test'));
@@ -486,7 +539,7 @@ if ($base) {
     DeepFind\Project::use($testId);
     DeepFind\Project::use($prodId);
     check('sauvegarde : restauration', DeepFind\Settings::get('matching_mode') === 'exact_then_approx'
-        && DeepFind\Db::value("SELECT COUNT(*) FROM redirects WHERE project_id = ? AND query = 'bonjour test'", [$prodId]) == 0);
+        && DeepFind\Db::value("SELECT COUNT(*) FROM redirections WHERE project_id = ? AND terms LIKE '%bonjour test%'", [$prodId]) == 0);
     file_put_contents(APP_ROOT . '/tests/_tmp/test_project', $testId . ' ' . $testKey);
 
     [$c, $d] = $get('/api/v1/health');

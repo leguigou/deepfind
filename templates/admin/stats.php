@@ -37,7 +37,7 @@
         </form>
       </td>
       <td class="actions">
-        <a class="btn btn-sm btn-light" href="<?= e(url('/admin/redirects', ['query' => $z['query_norm']])) ?>">Redirection</a>
+        <a class="btn btn-sm btn-light" href="<?= e(url('/admin/redirects/edit', ['term' => $z['query_norm']])) ?>">Redirection</a>
         <a class="btn btn-sm btn-light" href="<?= e(url('/admin/custom-results/edit', ['term' => $z['query_norm']])) ?>">Résultat perso.</a>
         <a class="btn btn-sm btn-light" href="<?= e(url('/admin/preview', ['q' => $z['query_norm']])) ?>">Aperçu</a>
       </td>

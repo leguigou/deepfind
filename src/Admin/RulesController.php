@@ -9,7 +9,7 @@ use DeepFind\Db;
 use DeepFind\Meili\MeiliClient;
 use DeepFind\Rules\RulesRepository;
 
-/** Synonymes et redirections (les règles de résultats sont devenues les résultats personnalisés). */
+/** Synonymes (règles de résultats et redirections ont leurs propres pages). */
 final class RulesController
 {
     // ------------------------------------------------------------ Synonymes
@@ -81,47 +81,6 @@ final class RulesController
     }
 
     // ------------------------------------------------------------ Redirections
-
-    public function redirects(): void
-    {
-        $lang = Auth::lang();
-        View::render('redirects', [
-            'active' => 'redirects', 'lang' => $lang,
-            'rows' => Db::all('SELECT * FROM redirects WHERE project_id = ? AND lang = ? ORDER BY query', [\DeepFind\Project::id(), $lang]),
-        ], 'Redirections');
-    }
-
-    public function redirectAdd(): void
-    {
-        $q = trim((string) ($_POST['query'] ?? ''));
-        $url = trim((string) ($_POST['url'] ?? ''));
-        if ($q === '' || !preg_match('#^https?://#i', $url)) {
-            Auth::flash('error', 'Requête obligatoire et URL commençant par http(s)://');
-        } else {
-            RulesRepository::addRedirect(Auth::lang(), $q, $url);
-            RulesRepository::bumpVersion();
-            Auth::flash('ok', 'Redirection enregistrée.');
-        }
-        $this->backTo('/admin/redirects');
-    }
-
-    public function redirectDelete(): void
-    {
-        Db::exec('DELETE FROM redirects WHERE id = ? AND project_id = ?', [(int) ($_POST['id'] ?? 0), \DeepFind\Project::id()]);
-        RulesRepository::bumpVersion();
-        App::back('/admin/redirects');
-    }
-
-    public function redirectImport(): void
-    {
-        $file = $this->upload();
-        if ($file !== null) {
-            [$n, $errors] = RulesRepository::importRedirects($file, Auth::lang(), isset($_POST['replace']));
-            RulesRepository::bumpVersion();
-            $this->report($n, $errors);
-        }
-        App::back('/admin/redirects');
-    }
 
     // ------------------------------------------------------------
 

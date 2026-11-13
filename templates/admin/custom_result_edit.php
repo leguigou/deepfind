@@ -27,18 +27,7 @@
       <label class="toggle"><input type="checkbox" role="switch" data-f="active" aria-label="Statut actif"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
     </div>
 
-    <div class="cr-section">
-      <strong>Durée</strong>
-      <label class="check"><input type="radio" name="cr_duration" value="always"><span>Appliquer en continu à partir d'aujourd'hui</span></label>
-      <label class="check"><input type="radio" name="cr_duration" value="period"><span>Définir une période</span></label>
-      <div class="cr-range-wrap">
-        <button type="button" class="cr-range" data-range aria-haspopup="dialog">
-          <span data-range-start class="muted">Date de début</span><span class="cr-range-sep" aria-hidden="true">▸</span><span data-range-end class="muted">Date de fin</span>
-          <span class="cr-cal-ico" aria-hidden="true">📅</span>
-        </button>
-        <div class="cr-cal" data-cal hidden></div>
-      </div>
-    </div>
+    <?php $withTerms = false; include __DIR__ . '/_terms_period.php'; ?>
 
     <div class="cr-section">
       <strong>Afficher les résultats</strong>
@@ -46,19 +35,7 @@
       <label class="check"><input type="radio" name="cr_mode" value="first"><span>Afficher <strong>d'abord</strong> les résultats sélectionnés, puis les résultats naturels</span></label>
     </div>
 
-    <div class="cr-section">
-      <strong>Termes de recherche</strong>
-      <div class="br-term-input">
-        <select data-f="term_match" aria-label="Type de correspondance">
-          <option value="exact">= Correspondance exacte</option>
-          <option value="broad">≈ Correspondance large</option>
-        </select>
-        <input data-f="term" placeholder="Saisir un terme de recherche" aria-label="Terme de recherche">
-        <button type="button" class="btn" data-add-term>Ajouter un terme</button>
-      </div>
-      <small class="muted">Exacte : la recherche est exactement ce terme. Large : la recherche contient tous les mots du terme.</small>
-      <div class="chips" data-terms></div>
-    </div>
+    <?php $withTerms = true; $withPeriod = false; include __DIR__ . '/_terms_period.php'; ?>
 
     <div class="grid2 cr-boxes">
       <?php foreach (['include' => 'Résultats inclus', 'exclude' => 'Résultats exclus'] as $kind => $boxTitle): ?>
@@ -119,5 +96,6 @@
     <button type="button" class="btn" data-rule-confirm>Enregistrer la règle</button>
   </div>
 </dialog>
+<script src="<?= e(asset('/assets/editor-tools.js')) ?>"></script>
 <script src="<?= e(asset('/assets/conditions.js')) ?>"></script>
 <script src="<?= e(asset('/assets/custom-results.js')) ?>"></script>

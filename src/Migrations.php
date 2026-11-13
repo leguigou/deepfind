@@ -30,6 +30,7 @@ final class Migrations
             'approx' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER results',
             'approx_results' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER approx',
             'custom_ids' => 'VARCHAR(255) NULL AFTER is_final',
+            'banner_id' => 'INT UNSIGNED NULL AFTER custom_ids',
         ],
         'import_runs' => [
             'phase' => 'VARCHAR(30) NULL AFTER items_rejected',
@@ -66,6 +67,7 @@ final class Migrations
     /** Colonnes ENUM à élargir : table => [colonne => [valeur requise, nouvelle définition]] */
     private const ENUMS = [
         'import_runs' => ['type' => ['scores', "ENUM('full','delta','scores') NOT NULL"]],
+        'click_logs' => ['doc_type' => ['banner', "ENUM('product','post','banner') NOT NULL"]],
     ];
 
     private static function indexExists(string $table, string $name): bool
@@ -125,6 +127,10 @@ final class Migrations
         $m = \DeepFind\Rules\CustomResults::migrateQueryRules();
         if ($m > 0) {
             $added[] = $m . ' règle(s) de résultats convertie(s) en résultats personnalisés';
+        }
+        $rd = \DeepFind\Rules\Redirections::migrateLegacy();
+        if ($rd > 0) {
+            $added[] = $rd . ' redirection(s) convertie(s) au nouveau format';
         }
         $n = \DeepFind\Rules\BoostRules::migrateProductBoosts();
         if ($n > 0) {

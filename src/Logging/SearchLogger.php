@@ -44,6 +44,7 @@ final class SearchLogger
             'sid' => $e['sid'] !== '' ? $e['sid'] : null,
             'is_final' => 1,
             'custom_ids' => !empty($e['custom_ids']) ? ',' . implode(',', array_map('intval', $e['custom_ids'])) . ',' : null,
+            'banner_id' => !empty($e['banner_id']) ? (int) $e['banner_id'] : null,
         ]);
         $sid = $e['sid'];
         if ($sid !== '') {
@@ -67,7 +68,7 @@ final class SearchLogger
             'created_at' => date('Y-m-d H:i:s'),
             'lang' => $c['lang'],
             'query_norm' => Text::truncate($c['query_norm'], 255),
-            'doc_type' => $c['doc_type'] === 'post' ? 'post' : 'product',
+            'doc_type' => in_array($c['doc_type'], ['post', 'banner'], true) ? $c['doc_type'] : 'product',
             'doc_id' => Text::truncate($c['doc_id'], 190),
             'position' => max(0, min(1000, $c['position'])),
             'ip_hash' => $c['ip_hash'],

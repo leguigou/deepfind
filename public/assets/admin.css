@@ -566,3 +566,27 @@ input.cr-search { width: 100%; margin: 0 0 12px; }
 .br-list-line { display: grid; grid-template-columns: minmax(120px, 160px) 1fr; gap: 8px; }
 .br-list-line select { margin: 0; }
 @media (max-width: 640px) { .br-list-line { grid-template-columns: 1fr; } .cal-grid { grid-template-columns: repeat(7, 34px); } .cr-range { min-width: 0; width: 100%; } }
+
+/* ---------- Bannières */
+.bn-cell { display: flex; align-items: center; gap: 12px; min-width: 260px; }
+.bn-thumb { width: 120px; height: 40px; object-fit: cover; border-radius: 6px; background: #fff; }
+.bn-code { display: inline-grid; place-items: center; width: 120px; height: 40px; border-radius: 6px; background: var(--surface-2); font-family: monospace; font-weight: 700; color: var(--muted); }
+.bn-panel { padding: 18px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 14px; }
+.bn-mode select { max-width: 360px; }
+.bn-slot { display: flex; flex-direction: column; gap: 8px; }
+.bn-slot input { margin: 0; }
+.bn-drop { position: relative; min-height: 180px; border: 1.5px dashed var(--accent); border-radius: 12px; display: grid; place-items: center; padding: 14px; background: var(--surface); }
+.bn-drop.is-over { background: var(--accent-soft); }
+.bn-drop.is-busy { opacity: .6; pointer-events: none; }
+.bn-drop img { max-width: 100%; max-height: 220px; border-radius: 6px; }
+.bn-drop img[hidden], .bn-empty[hidden], .bn-remove[hidden] { display: none; }
+.bn-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.bn-ico { font-size: 40px; opacity: .45; }
+.bn-upload { cursor: pointer; margin: 0 !important; }
+.bn-remove { position: absolute; top: 8px; right: 8px; }
+.bn-code-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 10px 10px 0 0; background: #2a2a33; color: #ddd; font-weight: 700; }
+textarea.bn-code-area { margin: 0; border-radius: 0 0 10px 10px; background: #1f1f26; color: #e8e8f0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.5; min-height: 180px; }
+.pv-banner { margin-bottom: 14px; padding: 12px; }
+.pv-banner-head { margin-bottom: 8px; }
+.pv-banner-img { display: block; max-width: 100%; max-height: 220px; border-radius: 8px; }
+.pv-banner-html { background: #fff; color: #222; border-radius: 8px; padding: 6px; overflow: auto; }

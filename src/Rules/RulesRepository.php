@@ -211,6 +211,7 @@ final class RulesRepository
         Db::pdo()->beginTransaction();
         if ($replace) {
             Db::exec('DELETE FROM redirects WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
+            Db::exec('DELETE FROM redirections WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
         }
         foreach ($rows as $i => $r) {
             $q = $r['requete'] ?? $r['query'] ?? '';
@@ -223,6 +224,8 @@ final class RulesRepository
             $n++;
         }
         Db::pdo()->commit();
+        // Lignes importées → redirections automatiques en correspondance exacte
+        Redirections::migrateLegacy();
         return [$n, $errors];
     }
 

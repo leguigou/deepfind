@@ -7,6 +7,7 @@ namespace DeepFind\Search;
 use DeepFind\Config;
 use DeepFind\Meili\MeiliClient;
 use DeepFind\Rules\BoostRules;
+use DeepFind\Rules\Banners;
 use DeepFind\Rules\CustomResults;
 use DeepFind\Rules\RulesRepository;
 use DeepFind\Settings;
@@ -205,6 +206,12 @@ final class SearchService
         }
         // Résultats personnalisés appliqués (journal des recherches → impressions) ; retiré de la réponse publique par l'API
         $out['_cr'] = $plan['ids'];
+        // Bannière en haut des résultats (première page seulement)
+        $banner = $r->offset === 0 ? Banners::forQuery($r->lang, $r->q) : null;
+        $out['banner'] = $banner ? Banners::payload($banner) : null;
+        if ($internal && $banner) {
+            $out['banner']['name'] = $banner['name'];
+        }
         return $out;
     }
 
@@ -398,7 +405,9 @@ final class SearchService
             'has_more' => ($mainOffset + $mainLimit) < $mainTotal,
             // true : aucun produit ne contient tous les mots ; produits « approchants » (comptés « sans résultat exact »)
             'approximate' => $approx,
-            'redirect' => RulesRepository::compiled($r->lang)['redirects'][$r->qNorm] ?? null,
+            'redirect' => ($redir = \DeepFind\Rules\Redirections::forQuery($r->lang, $r->q)) ? $redir['url'] : null,
+            // automatique : la recherche validée (Entrée, loupe) ouvre directement la page ; sinon, lien proposé en haut des résultats
+            'redirect_auto' => $redir ? $redir['auto'] : false,
             'products' => $hits,
             'facets' => $facets,
             'toggles' => [

@@ -91,6 +91,7 @@ final class ApiController
                 'ip_hash' => ClientIp::hash($ip), 'ip_masked' => ClientIp::mask($ip), 'user_agent' => $ua,
                 'sid' => self::sid($_GET['sid'] ?? ''),
                 'custom_ids' => $applied,
+                'banner_id' => (int) ($data['banner']['id'] ?? 0),
             ]);
         }
     }
