@@ -43,6 +43,7 @@ final class SearchLogger
             'user_agent' => Text::truncate($e['user_agent'], 255),
             'sid' => $e['sid'] !== '' ? $e['sid'] : null,
             'is_final' => 1,
+            'custom_ids' => !empty($e['custom_ids']) ? ',' . implode(',', array_map('intval', $e['custom_ids'])) . ',' : null,
         ]);
         $sid = $e['sid'];
         if ($sid !== '') {
@@ -71,6 +72,7 @@ final class SearchLogger
             'position' => max(0, min(1000, $c['position'])),
             'ip_hash' => $c['ip_hash'],
             'sid' => $c['sid'] !== '' ? $c['sid'] : null,
+            'custom_result_id' => !empty($c['custom_result_id']) ? (int) $c['custom_result_id'] : null,
         ]);
     }
 

@@ -42,9 +42,12 @@ src/Search/
   SearchService.php            UN appel multi-search : principal + injectés (pin/boost) + SKU exact + facettes disjonctives + blog
   IndexSettings.php            réglages des index (searchable, filterable, rankingRules, typo, synonymes)
   Filter.php                   échappement des valeurs de filtre Meilisearch
-src/Rules/RulesRepository.php  synonymes, règles, redirections, import CSV, version des règles (invalide les caches)
+src/Rules/RulesRepository.php  synonymes, produits désactivés (query_rules « * »), redirections, import CSV, version des règles (invalide les caches)
 src/Rules/Boosts.php           clics 30 j (et anciens product_boosts, convertis en règles de boost) → ProductBuilder::applySignals()
 src/Rules/BoostRules.php       règles de boost (boost_rules) : termes exacts/larges + conditions → coefficient appliqué par SearchService::rerank()
+src/Rules/CustomResults.php    résultats personnalisés (custom_results) : termes, période, inclus/exclus (SKU ou règles → filtres Meili),
+                               modes first/only appliqués par SearchService ; suivi : search_logs.custom_ids, click_logs.custom_result_id
+public/assets/conditions.js    sélecteur de conditions partagé (règles de boost, résultats personnalisés)
 src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)

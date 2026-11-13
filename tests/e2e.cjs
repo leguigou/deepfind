@@ -33,7 +33,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/01-dashboard-sombre.png', fullPage: true });
 
   const pages = ['/admin/sources', '/admin/sources/edit?id=1', '/admin/sources/test?id=1', '/admin/imports', '/admin/imports/view?id=1',
-    '/admin/synonyms', '/admin/rules', '/admin/redirects', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/logs', '/admin/bots',
+    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/redirects', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/logs', '/admin/bots',
     '/admin/keys', '/admin/settings'];
   for (const p of pages) {
     const resp = await page.goto(BASE + p);

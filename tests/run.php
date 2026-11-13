@@ -275,6 +275,74 @@ if ($base) {
     [, $pub] = $get("/api/v1/search?key=$key&q=palme&limit=48");
     check('réactivation : produit de retour dans la recherche', in_array($off, array_column($pub['products'], 'sku'), true));
 
+    // Résultats personnalisés : produits en premier (ordre choisi), uniquement les sélectionnés, exclusions, période, suivi
+    $CR = DeepFind\Rules\CustomResults::class;
+    // le jeu d'exemple a déjà un résultat « masque » (converti depuis samples/boosts.csv) : mis de côté pendant ces tests
+    $savedMasque = array_values(array_filter($CR::all('fr'), static fn ($c) => in_array('masque', array_column($c['terms'], 'term'), true)));
+    foreach ($savedMasque as $c) {
+        $CR::delete($c['id'], 'fr');
+    }
+    [, $nat] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    $natSkus = array_column($nat['products'], 'sku');
+    $last = end($natSkus);
+    $beforeLast = $natSkus[count($natSkus) - 2] ?? '';
+    [$crFirst] = $CR::sanitize(['name' => 'Test en premier', 'active' => true, 'mode' => 'first', 'terms' => [['term' => 'masque', 'match' => 'exact']],
+        'include_items' => [$last, $beforeLast]], 'fr');
+    $idFirst = $CR::save('fr', $crFirst, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0&sid=sidcr000000000001");
+    check('résultat perso : produits choisis en premier, dans l\'ordre', array_slice(array_column($d['products'], 'sku'), 0, 2) === [$last, $beforeLast]
+        && count($d['products']) === count($natSkus), json_encode(array_slice(array_column($d['products'], 'sku'), 0, 3)));
+    check('résultat perso : identifiant de suivi sur les produits mis en avant, rien d\'interne exposé', ($d['products'][0]['cr'] ?? 0) === $idFirst
+        && !isset($d['products'][2]['cr']) && !array_key_exists('_cr', $d));
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0&sort=price_asc");
+    check('résultat perso : ordre imposé ignoré si le visiteur trie par prix', ($d['products'][0]['sku'] ?? '') !== $last || $natSkus[0] === $last);
+    // suivi : 1 impression (recherche finale journalisée) et 1 clic sur un produit mis en avant
+    $ch = curl_init($base . '/api/v1/click');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_NOPROXY => '*', CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Origin: http://localhost:8080', 'User-Agent: Mozilla/5.0 Tests'],
+        CURLOPT_POSTFIELDS => http_build_query(['key' => $key, 'lang' => 'fr', 'q' => 'masque', 'doc_type' => 'product', 'doc_id' => 'x', 'position' => 1, 'sid' => 'sidcr000000000001', 'cr' => $idFirst])]);
+    curl_exec($ch);
+    usleep(300000);
+    $st = $CR::stats('fr', [$idFirst], 30)[$idFirst];
+    // 2 recherches où le résultat s'appliquait (dont le tri par prix), 1 clic sur un produit mis en avant
+    check('résultat perso : impressions, clics et CTR', $st['impressions'] === 2 && $st['clicks'] === 1 && $st['ctr'] === 50.0, json_encode($st));
+
+    // mode « uniquement » avec une règle (marque) + exclusion par règle ; terme large
+    $brand = $nat['products'][0]['brand'] ?? '';
+    [$crOnly, $errOnly] = $CR::sanitize(['name' => 'Test uniquement', 'active' => true, 'mode' => 'only', 'terms' => [['term' => 'masque', 'match' => 'broad']],
+        'include_rules' => [['match' => 'all', 'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => [$brand]]]]]], 'fr');
+    $CR::delete($idFirst, 'fr');
+    $idOnly = $CR::save('fr', $crOnly, null);
+    [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('masque plongée') . "&limit=48&posts=0");
+    $brands = array_values(array_unique(array_column($d['products'], 'brand')));
+    check('résultat perso « uniquement » (terme large, règle marque) : seulement la marque choisie', $errOnly === [] && $brands === [$brand] && $d['total'] >= 1, json_encode($brands));
+    $crOnly['exclude_rules'] = [['match_all' => true, 'conditions' => [['field' => 'final_price', 'op' => 'gte', 'value' => 0]]]];
+    $CR::save('fr', $crOnly, $idOnly);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    check('résultat perso : exclusion par règle (prix ≥ 0 → plus rien)', $d['total'] === 0 && $d['products'] === []);
+    // période terminée : sans effet
+    $crOnly['starts_at'] = '2000-01-01';
+    $crOnly['ends_at'] = '2000-12-31';
+    $CR::save('fr', $crOnly, $idOnly);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    check('résultat perso : période terminée sans effet', array_column($d['products'], 'sku') === $natSkus);
+    [, $errs] = $CR::sanitize(['name' => 'x', 'mode' => 'only', 'terms' => [['term' => 'a', 'match' => 'exact']]], 'fr');
+    check('résultat perso : « uniquement » sans produit refusé', $errs !== []);
+    // épingler depuis l'aperçu : position dans la liste, retrait
+    $CR::delete($idOnly, 'fr');
+    $pid = $CR::pin('fr', 'masque', $last, 1);
+    [, $d] = $get("/api/v1/search?key=$key&q=masque&limit=48&posts=0");
+    $pins = $CR::pinsFor('fr', 'masque');
+    check('épingler (aperçu) : produit en 1re position', ($d['products'][0]['sku'] ?? '') === $last && ($pins[mb_strtoupper($last)]['position'] ?? 0) === 1);
+    $CR::unpin('fr', $pid, $last);
+    check('retirer l\'épinglage : résultat vide supprimé', $CR::find($pid, 'fr') === null);
+    foreach ($savedMasque as $c) {
+        $CR::save('fr', $c, null);
+    }
+    DeepFind\Db::exec("DELETE FROM search_logs WHERE sid = 'sidcr000000000001'");
+    DeepFind\Db::exec('DELETE FROM click_logs WHERE custom_result_id IS NOT NULL');
+    DeepFind\CacheVersion::bump();
+
     // Règles de boost : termes exacts / larges, conditions toutes / au moins une, effet sur l'ordre
     $BR = DeepFind\Rules\BoostRules::class;
     $qw = DeepFind\Search\Relevance::words('palmes de plongée', 'fr');

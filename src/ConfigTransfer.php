@@ -28,7 +28,8 @@ final class ConfigTransfer
         'relevance' => 'Pertinence & score métier (ordre des champs, correspondance, poids, bonus début du nom…)',
         'search' => 'Paramètres de recherche et d\'import (cache, articles affichés, seuil de sécurité…)',
         'synonyms' => 'Synonymes & alias',
-        'rules' => 'Règles de résultats (épingler, remonter, masquer)',
+        'rules' => 'Produits désactivés',
+        'custom_results' => 'Résultats personnalisés',
         'redirects' => 'Redirections',
         'boost_rules' => 'Règles de boost (conditions et termes)',
         'sources' => 'Flux : mapping et planification des imports',
@@ -47,6 +48,7 @@ final class ConfigTransfer
             'search' => $pick(self::SEARCH_SETTINGS),
             'synonyms' => $strip(Db::all('SELECT * FROM synonyms WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'rules' => $strip(Db::all('SELECT * FROM query_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
+            'custom_results' => $strip(Db::all('SELECT * FROM custom_results WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'redirects' => $strip(Db::all('SELECT * FROM redirects WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'boost_rules' => $strip(Db::all('SELECT * FROM boost_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'sources' => $strip(
@@ -122,7 +124,7 @@ final class ConfigTransfer
                     $msgs[] = self::SECTIONS[$sec] . ' : copié';
                 }
             }
-            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boost_rules' => 'boost_rules'] as $sec => $table) {
+            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirects', 'boost_rules' => 'boost_rules', 'custom_results' => 'custom_results'] as $sec => $table) {
                 if (!in_array($sec, $sections, true)) {
                     continue;
                 }
@@ -163,6 +165,10 @@ final class ConfigTransfer
         } catch (\Throwable $e) {
             $pdo->rollBack();
             throw $e;
+        }
+        // Ancienne sauvegarde : ses règles de résultats (hors produits désactivés) deviennent des résultats personnalisés
+        if (\DeepFind\Rules\CustomResults::migrateQueryRules() > 0) {
+            $msgs[] = 'Anciennes règles de résultats converties en résultats personnalisés';
         }
         $msgs[] = self::applyToEngine($to);
         return $msgs;

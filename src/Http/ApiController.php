@@ -74,6 +74,9 @@ final class ApiController
             }
         }
         $tookMs = (int) round((hrtime(true) - $t0) / 1e6);
+        // Résultats personnalisés appliqués : pour le journal (impressions), pas dans la réponse
+        $applied = array_map('intval', (array) ($data['_cr'] ?? []));
+        unset($data['_cr']);
         $data['took_ms'] = $tookMs;
         $data['widget'] = ['enter_submit' => Settings::int('widget_enter_submit') === 1];
         $data['cached'] = $cached;
@@ -87,6 +90,7 @@ final class ApiController
                 'filters' => $req->filtersSummary(), 'results' => (int) $data['total'], 'approx' => !empty($data['approximate']), 'took_ms' => $tookMs,
                 'ip_hash' => ClientIp::hash($ip), 'ip_masked' => ClientIp::mask($ip), 'user_agent' => $ua,
                 'sid' => self::sid($_GET['sid'] ?? ''),
+                'custom_ids' => $applied,
             ]);
         }
     }
@@ -116,6 +120,7 @@ final class ApiController
             'position' => (int) ($p['position'] ?? 0),
             'ip_hash' => ClientIp::hash($ip),
             'sid' => self::sid($p['sid'] ?? ''),
+            'custom_result_id' => max(0, (int) ($p['cr'] ?? 0)),
         ]);
     }
 

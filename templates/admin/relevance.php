@@ -28,7 +28,7 @@ $radios = static function (string $name, array $options, string $current): void 
     <li><strong>Exactitude</strong> (mot complet plutôt que début de mot).</li>
     <li><strong>Score métier</strong> : stock, marge, popularité, clics, nouveauté, boosts (réglages 3 et 4).</li>
   </ol>
-  <p class="muted">Les produits épinglés ou remontés par une <a href="<?= e(url('/admin/rules')) ?>">règle</a> passent avant tout cela. Vérifiez l'effet de vos réglages dans l'<a href="<?= e(url('/admin/preview')) ?>">aperçu interne</a> (pertinence et score de chaque produit).</p>
+  <p class="muted">Les produits mis en avant par un <a href="<?= e(url('/admin/custom-results')) ?>">résultat personnalisé</a> passent avant tout cela. Vérifiez l'effet de vos réglages dans l'<a href="<?= e(url('/admin/preview')) ?>">aperçu interne</a> (pertinence et score de chaque produit).</p>
 </div>
 
 <form method="post" action="<?= e(url('/admin/relevance/save')) ?>" class="form has-fixed-actions">

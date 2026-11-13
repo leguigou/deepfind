@@ -112,19 +112,81 @@ function clause(array $doc, string $c): bool
     }
     throw new RuntimeException('filtre non géré : ' . $c);
 }
+/** Découpe une expression au niveau 0 (hors parenthèses, crochets et guillemets) sur un mot-clé (AND / OR). */
+function splitTop(string $s, string $kw): array
+{
+    $parts = [];
+    $depth = 0;
+    $inQ = false;
+    $start = 0;
+    $len = strlen($s);
+    $k = ' ' . $kw . ' ';
+    for ($i = 0; $i < $len; $i++) {
+        $c = $s[$i];
+        if ($inQ) {
+            if ($c === '\\') { $i++; } elseif ($c === '"') { $inQ = false; }
+            continue;
+        }
+        if ($c === '"') { $inQ = true; } elseif ($c === '(' || $c === '[') { $depth++; } elseif ($c === ')' || $c === ']') { $depth--; }
+        elseif ($depth === 0 && substr($s, $i, strlen($k)) === $k) {
+            $parts[] = substr($s, $start, $i - $start);
+            $i += strlen($k) - 1;
+            $start = $i + 1;
+        }
+    }
+    $parts[] = substr($s, $start);
+    return $parts;
+}
+/** Vrai si les parenthèses extérieures entourent toute l'expression. */
+function wrapped(string $s): bool
+{
+    if ($s === '' || $s[0] !== '(' || substr($s, -1) !== ')') {
+        return false;
+    }
+    $depth = 0;
+    $inQ = false;
+    for ($i = 0, $n = strlen($s); $i < $n; $i++) {
+        $c = $s[$i];
+        if ($inQ) { if ($c === '\\') { $i++; } elseif ($c === '"') { $inQ = false; } continue; }
+        if ($c === '"') { $inQ = true; } elseif ($c === '(') { $depth++; } elseif ($c === ')') { $depth--; if ($depth === 0 && $i < $n - 1) { return false; } }
+    }
+    return true;
+}
+/** Expression de filtre : parenthèses, OR, AND, NOT, puis clauses simples. */
+function expr(array $doc, string $s): bool
+{
+    $s = trim($s);
+    while (wrapped($s)) {
+        $s = trim(substr($s, 1, -1));
+    }
+    $or = splitTop($s, 'OR');
+    if (count($or) > 1) {
+        foreach ($or as $p) { if (expr($doc, $p)) { return true; } }
+        return false;
+    }
+    $and = splitTop($s, 'AND');
+    if (count($and) > 1) {
+        foreach ($and as $p) { if (!expr($doc, $p)) { return false; } }
+        return true;
+    }
+    if (preg_match('/^NOT\s+(\(.*\))$/s', $s, $m)) {
+        return !expr($doc, $m[1]);
+    }
+    return clause($doc, $s);
+}
 function filterOk(array $doc, $filter): bool
 {
     if ($filter === null || $filter === [] || $filter === '') {
         return true;
     }
     if (is_string($filter)) {
-        return clause($doc, $filter);
+        return expr($doc, $filter);
     }
     foreach ($filter as $f) {
         if (is_array($f)) {
             $any = false;
             foreach ($f as $or) {
-                if (clause($doc, $or)) {
+                if (expr($doc, $or)) {
                     $any = true;
                     break;
                 }
@@ -132,7 +194,7 @@ function filterOk(array $doc, $filter): bool
             if (!$any) {
                 return false;
             }
-        } elseif (!clause($doc, $f)) {
+        } elseif (!expr($doc, $f)) {
             return false;
         }
     }

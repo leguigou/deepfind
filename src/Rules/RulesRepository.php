@@ -165,7 +165,9 @@ final class RulesRepository
         $n = 0;
         Db::pdo()->beginTransaction();
         if ($replace) {
-            Db::exec('DELETE FROM query_rules WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
+            // Remplace les résultats personnalisés ; les produits désactivés partout (requête « * ») sont conservés
+            Db::exec("DELETE FROM query_rules WHERE project_id = ? AND lang = ? AND query <> '*'", [\DeepFind\Project::id(), $lang]);
+            Db::exec('DELETE FROM custom_results WHERE project_id = ? AND lang = ?', [\DeepFind\Project::id(), $lang]);
         }
         foreach ($rows as $i => $r) {
             $q = $r['requete'] ?? $r['query'] ?? '';
@@ -180,6 +182,8 @@ final class RulesRepository
             $n++;
         }
         Db::pdo()->commit();
+        // Les lignes importées deviennent des résultats personnalisés (une par requête et par période)
+        CustomResults::migrateQueryRules();
         return [$n, $errors];
     }
 

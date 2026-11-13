@@ -94,4 +94,5 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
     </div>
   </form>
 </dialog>
+<script src="<?= e(asset('/assets/conditions.js')) ?>"></script>
 <script src="<?= e(asset('/assets/boost-rules.js')) ?>"></script>

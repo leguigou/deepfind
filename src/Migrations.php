@@ -17,7 +17,7 @@ final class Migrations
         'query_rules' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirects' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
-        'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
+        'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id', 'custom_result_id' => 'INT UNSIGNED NULL AFTER sid'],
         'sources' => [
             'project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',
             'cron_full' => 'VARCHAR(100) NULL AFTER active',
@@ -29,6 +29,7 @@ final class Migrations
             'project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',
             'approx' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER results',
             'approx_results' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER approx',
+            'custom_ids' => 'VARCHAR(255) NULL AFTER is_final',
         ],
         'import_runs' => [
             'phase' => 'VARCHAR(30) NULL AFTER items_rejected',
@@ -52,7 +53,7 @@ final class Migrations
         'product_boosts' => ['uk_project_lang_sku' => ['project_id, lang, sku', true, ['uk_lang_sku']]],
         'redirects' => ['uk_project_lang_query' => ['project_id, lang, query', true, ['uk_lang_query']]],
         'search_logs' => ['idx_project_created' => ['project_id, created_at', false, []]],
-        'click_logs' => ['idx_project_created' => ['project_id, created_at', false, []]],
+        'click_logs' => ['idx_project_created' => ['project_id, created_at', false, []], 'idx_custom' => ['custom_result_id, created_at', false, []]],
     ];
 
     /** Paramètres communs à tous les projets (restent dans la table settings). */
@@ -121,6 +122,10 @@ final class Migrations
             }
         }
         // « Boosts produits » remplacés par les règles de boost : chaque boost devient une règle « SKU » sur toutes les recherches.
+        $m = \DeepFind\Rules\CustomResults::migrateQueryRules();
+        if ($m > 0) {
+            $added[] = $m . ' règle(s) de résultats convertie(s) en résultats personnalisés';
+        }
         $n = \DeepFind\Rules\BoostRules::migrateProductBoosts();
         if ($n > 0) {
             $added[] = $n . ' boost(s) produit converti(s) en règles de boost (lancez scores:refresh pour retirer l\'ancien bonus du score métier)';

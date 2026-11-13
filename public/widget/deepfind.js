@@ -295,7 +295,7 @@
     price.appendChild(el('span', 'df-final', fmt(final)));
     if (regular > final + 0.005) { price.appendChild(el('s', 'df-old', fmt(regular))); }
     a.appendChild(price);
-    onOpen(a, function () { track('product', p.id, position); });
+    onOpen(a, function () { track('product', p.id, position, p.cr); });
     return a;
   }
 
@@ -367,9 +367,10 @@
     a.addEventListener('auxclick', function (ev) { if (ev.button === 1) { fn(); } });
   }
 
-  function track(type, id, position) {
+  function track(type, id, position, cr) {
     try {
       var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, q: state.q, doc_type: type, doc_id: id, position: String(position), sid: sid });
+      if (cr) { body.set('cr', String(cr)); } // produit mis en avant par un résultat personnalisé
       if (navigator.sendBeacon) { navigator.sendBeacon(cfg.api + '/click', body); }
       else { fetch(cfg.api + '/click', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }); }
     } catch (e) { /* sans importance */ }
