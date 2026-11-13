@@ -453,3 +453,11 @@ input.br-boost { max-width: 130px; }
 .br-dates { margin-top: 4px; }
 .br-dates label { margin: 0 0 8px; }
 .br-period { white-space: nowrap; }
+
+/* Fenêtres de confirmation / information (DeepFindUI) */
+dialog.modal-confirm { width: min(460px, calc(100vw - 32px)); }
+dialog.modal-confirm .modal-head h2 { margin: 0; font-size: 17px; }
+dialog.modal-confirm .modal-body { padding: 16px 18px 8px; }
+dialog.modal-confirm .modal-body p { margin: 0; line-height: 1.5; white-space: pre-line; }
+.btn-danger-solid { background: var(--ko); color: #fff; border: 1px solid var(--ko); box-shadow: none; }
+.btn-danger-solid:hover { filter: brightness(1.08); }

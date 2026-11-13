@@ -18,6 +18,8 @@ fs.mkdirSync(OUT, { recursive: true });
   page.on('pageerror', (e) => errors.push('JS: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
   let ok = 0; const fail = [];
+  // Fenêtre de confirmation de l'extranet (remplace confirm() du navigateur) : bouton de validation
+  const confirmModal = async () => { await page.click('dialog.modal-confirm[open] [data-ok]'); };
   const check = (name, cond) => { if (cond) { ok++; console.log('  ✔ ' + name); } else { fail.push(name); console.log('  ✘ ' + name); } };
 
   await page.goto(BASE + '/admin');
@@ -71,8 +73,8 @@ fs.mkdirSync(OUT, { recursive: true });
   check('ajout synonyme', (await page.textContent('body')).includes('lunette'));
   // Action : import manuel mis en file d'attente
   await page.goto(BASE + '/admin/sources');
-  page.once('dialog', (d) => d.accept());
   await page.click('form[action$="/admin/sources/import"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('import mis en file d\'attente', /mis en file|déjà en attente/.test(await page.textContent('body')));
   // Action : blocage manuel d'une IP
   await page.goto(BASE + '/admin/bots');
@@ -173,21 +175,21 @@ fs.mkdirSync(OUT, { recursive: true });
   await Promise.all([page.waitForNavigation(), page.click('.modal-foot button.btn:not(.btn-light)')]);
   check('règles de boost : règle enregistrée avec période', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('01/01/2020'));
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
-  page.once('dialog', (d) => d.accept());
-  await Promise.all([page.waitForNavigation(), page.click('form[action$="/admin/boost-rules/delete"] button')]);
+  await page.click('form[action$="/admin/boost-rules/delete"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Cache : visibilité et purge
   await page.goto(BASE + '/admin/cache');
   check('cache : page affichée', (await page.textContent('body')).includes('Résultats en cache'));
   await page.screenshot({ path: OUT + '/10-cache.png', fullPage: false });
-  page.once('dialog', (d) => d.accept());
   await page.click('form[action$="/admin/cache/purge"] button.btn >> nth=0');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('cache : purge', (await page.textContent('body')).includes('supprimée(s)'));
 
   // Import manuel suivi en direct (le worker est lancé par le script de test)
   await page.goto(BASE + '/admin/sources');
-  page.once('dialog', (d) => d.accept());
   await page.click('form[action$="/admin/sources/import"] button >> nth=0');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('import : page de suivi ouverte', page.url().includes('/admin/imports/view'));
   check('import : barre de progression', (await page.$$('.prog-big .prog-bar')).length === 1);
   await page.screenshot({ path: OUT + '/11-import-en-attente.png', fullPage: false });
@@ -214,12 +216,12 @@ fs.mkdirSync(OUT, { recursive: true });
   await Promise.all([page.waitForNavigation(), page.click('form.card button.btn')]);
   check('copie : résumé des changements', (await page.textContent('body')).includes('Changements dans « Production »'));
   await page.screenshot({ path: OUT + '/21-copie-resume.png', fullPage: false });
-  page.once('dialog', (d) => d.accept());
-  await Promise.all([page.waitForNavigation(), page.click('form.actions button.btn')]);
+  await page.click('form.actions button.btn');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('copie : appliquée avec sauvegarde', (await page.textContent('body')).includes('Sauvegarde #'));
   check('copie : bascule sur le projet cible', (await page.textContent('.project-chip')).includes('Production'));
-  page.once('dialog', (d) => d.accept());
-  await Promise.all([page.waitForNavigation(), page.click('form[action$="/admin/projects/restore"] button >> nth=0')]);
+  await page.click('form[action$="/admin/projects/restore"] button >> nth=0');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('sauvegarde : restaurée', (await page.textContent('body')).includes('Sauvegarde restaurée'));
   await page.goto(BASE + '/admin/redirects');
   check('projets : Production sans la redirection de Test', (await page.textContent('table')).includes('cgv#retours') && !(await page.textContent('table')).includes('bonjour test'));
