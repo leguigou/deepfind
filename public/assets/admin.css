@@ -769,3 +769,23 @@ tr.ly-dragging { opacity: .45; }
   .lp-row { flex-direction: column; align-items: flex-start; }
   .lp-name input { min-width: 0; width: 100%; font-size: 20px; }
 }
+
+/* Clés : ajout par fenêtre, une ligne par clé, clé masquée + afficher / copier */
+.page-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.page-actions p { margin: 0; flex: 1; min-width: 260px; }
+.keys-table td { vertical-align: middle; }
+.keys-table input { margin: 0; }
+.keys-table .key-name { min-width: 170px; }
+.keys-table .key-origins { min-width: 220px; width: 100%; }
+.keys-table .key-langs, .modal .key-langs { width: 80px; }
+.key-value code { font-size: 12.5px; }
+.key-value + .icon-btn { margin-left: 6px; }
+.keys-table .icon-btn-sm { display: inline-grid; vertical-align: middle; }
+.key-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.key-actions form { margin: 0; }
+.key-eye-off, .key-copied { display: none; }
+[data-key-reveal][aria-pressed=true] .key-eye { display: none; }
+[data-key-reveal][aria-pressed=true] .key-eye-off { display: block; }
+[data-key-copy].is-copied .key-copy { display: none; }
+[data-key-copy].is-copied .key-copied { display: block; color: var(--ok); }
+.key-delete { color: var(--ko); }
