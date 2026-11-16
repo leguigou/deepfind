@@ -31,6 +31,7 @@ final class IntegrationController
             'edit' => $edit,
             'filters' => WidgetConfig::filters($lang),
             'sorts' => WidgetConfig::sorts($lang),
+            'sortItems' => WidgetConfig::sortItems($lang),
             'firstKey' => (string) (Db::value('SELECT public_key FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id LIMIT 1', [\DeepFind\Project::id()]) ?? ''),
             'appUrl' => rtrim((string) Config::get('APP_URL', ''), '/'),
         ], 'Intégration');
@@ -93,20 +94,26 @@ final class IntegrationController
         $in = is_array($in) ? $in : [];
         WidgetConfig::saveSorts(Auth::lang(), (string) ($in['relevance'] ?? ''), is_array($in['items'] ?? null) ? $in['items'] : []);
         $msg = 'Options de tri enregistrées.';
-        // Tri par nom : le champ doit être triable dans le moteur ; appliqué tout de suite (sinon au prochain import complet)
-        if (preg_match('/"name_(asc|desc)"/', (string) ($_POST['payload'] ?? ''))) {
-            try {
-                $meili = MeiliClient::admin();
-                foreach (Auth::langs() as $l) {
-                    $uid = Config::productIndex($l);
-                    if ($meili->getIndex($uid) !== null) {
-                        $meili->updateSettings($uid, ['sortableAttributes' => IndexSettings::SORTABLE]);
-                    }
+        // Les champs choisis doivent être triables dans le moteur : mis à jour tout de suite si besoin (sinon au prochain import complet)
+        try {
+            $meili = MeiliClient::admin();
+            $updated = false;
+            foreach (Auth::langs() as $l) {
+                $uid = Config::productIndex($l);
+                if ($meili->getIndex($uid) === null) {
+                    continue;
                 }
-                $msg .= ' Tri par nom : le moteur met à jour l\'index (quelques minutes sur un gros catalogue).';
-            } catch (\Throwable $e) {
-                Auth::flash('error', 'Tri par nom : le moteur n\'a pas pu être mis à jour (' . $e->getMessage() . '). Il le sera au prochain import complet.');
+                $have = $meili->getSettings($uid)['sortableAttributes'] ?? [];
+                if (array_diff(IndexSettings::SORTABLE, $have) !== []) {
+                    $meili->updateSettings($uid, ['sortableAttributes' => IndexSettings::SORTABLE]);
+                    $updated = true;
+                }
             }
+            if ($updated) {
+                $msg .= ' Le moteur rend les nouveaux champs triables (quelques minutes sur un gros catalogue) ; d\'ici là, ces tris peuvent échouer.';
+            }
+        } catch (\Throwable $e) {
+            Auth::flash('error', 'Le moteur n\'a pas pu être mis à jour (' . $e->getMessage() . ') : les nouveaux tris fonctionneront après le prochain import complet.');
         }
         Auth::flash('ok', $msg);
         App::back('/admin/integration', ['tab' => 'sorts']);

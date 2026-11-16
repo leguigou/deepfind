@@ -723,7 +723,7 @@ textarea.bn-code-area::placeholder { color: #9a9aae; }
 .ly-pic-embedded { grid-template-columns: 26px repeat(3, 1fr); }
 .ly-pic-embedded i:first-child { grid-row: span 2; background: var(--muted); opacity: .3; }
 .ly-table input:not([type=checkbox]), .ly-table select { margin: 0; width: 100%; }
-.ly-grip-col { width: 92px; }
+.ly-grip-col { width: 40px; }
 .ly-grip { white-space: nowrap; }
 .ly-handle { display: inline-flex; vertical-align: middle; cursor: grab; color: var(--muted); margin-right: 4px; }
 .icon-btn-xs { display: inline-grid; width: 24px; height: 24px; font-size: 12px; vertical-align: middle; margin-left: 2px; }
@@ -734,3 +734,4 @@ tr.ly-dragging { opacity: .45; }
 .form-foot { display: flex; justify-content: flex-end; }
 [data-layer-only][hidden] { display: none !important; }
 .ly-pic-floating { background: rgba(0, 0, 0, .16); }
+.ly-sorts-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 0 8px; }

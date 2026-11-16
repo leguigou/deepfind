@@ -11,7 +11,7 @@ use DeepFind\Text;
 /** Paramètres d'une recherche, validés. */
 final class SearchRequest
 {
-    public const SORTS = ['relevance', 'price_asc', 'price_desc', 'newest', 'name_asc', 'name_desc'];
+    public const SORTS = ['relevance', 'price_asc', 'price_desc', 'newest'];
     public const INTERNAL_SORTS = ['margin_desc', 'popularity_desc', 'score_desc'];
 
     public string $q = '';
@@ -56,7 +56,10 @@ final class SearchRequest
         $r->priceMin = isset($p['price_min']) && $p['price_min'] !== '' ? (float) $p['price_min'] : null;
         $r->priceMax = isset($p['price_max']) && $p['price_max'] !== '' ? (float) $p['price_max'] : null;
         $sorts = $internal ? [...self::SORTS, ...self::INTERNAL_SORTS] : self::SORTS;
-        $r->sort = in_array($p['sort'] ?? '', $sorts, true) ? (string) $p['sort'] : 'relevance';
+        $sort = (string) ($p['sort'] ?? '');
+        // Options de tri de l'extranet : « champ:ordre » (anciennes clés price_asc… converties)
+        $parsed = in_array($sort, $sorts, true) ? null : \DeepFind\Widget\WidgetConfig::parseSort($sort);
+        $r->sort = in_array($sort, $sorts, true) ? $sort : ($parsed ? $parsed[0] . ':' . $parsed[1] : 'relevance');
         if ($internal && isset($p['margin_min']) && $p['margin_min'] !== '') {
             $r->marginMin = (float) $p['margin_min'];
         }

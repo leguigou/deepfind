@@ -309,12 +309,11 @@ final class SearchService
             'price_asc' => [...$s, 'sort_price:asc'],
             'price_desc' => [...$s, 'sort_price:desc'],
             'newest' => [...$s, 'created_ts:desc'],
-            'name_asc' => [...$s, 'name:asc'],
-            'name_desc' => [...$s, 'name:desc'],
             'margin_desc' => ['margin_rate:desc'],
             'popularity_desc' => ['sales_30d:desc'],
             'score_desc' => ['biz_score:desc'],
-            default => $s,
+            default => ($p = \DeepFind\Widget\WidgetConfig::parseSort($r->sort))
+                ? [...$s, \DeepFind\Widget\WidgetConfig::SORT_FIELDS[$p[0]][3] . ':' . $p[1]] : $s,
         };
     }
 

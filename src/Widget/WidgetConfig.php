@@ -26,17 +26,40 @@ final class WidgetConfig
         'embedded' => ['Intégré', 'S\'intègre comme une partie d\'une section existante de votre boutique.'],
     ];
 
-    /** Options de tri possibles (hors pertinence, toujours proposée en premier) : [libellé par défaut fr, en]. */
-    public const SORTS = [
-        'price_asc' => ['Prix croissant', 'Price: low to high'],
-        'price_desc' => ['Prix décroissant', 'Price: high to low'],
-        'newest' => ['Nouveautés', 'Newest'],
-        'name_asc' => ['Nom de A à Z', 'Name: A to Z'],
-        'name_desc' => ['Nom de Z à A', 'Name: Z to A'],
+    /**
+     * Champs proposés pour les options de tri : code => [libellé, type, principal ?, champ du moteur].
+     * type text : A à Z / Z à A ; num : du plus bas au plus élevé / l'inverse ; date : du plus récent / du plus ancien.
+     * Jamais la marge ni le score interne : ils restent réservés aux tris de l'aperçu interne.
+     */
+    public const SORT_FIELDS = [
+        'price' => ['Prix', 'num', true, 'sort_price'],
+        'name' => ['Nom du produit', 'text', true, 'name'],
+        'created' => ['Date d\'ajout', 'date', true, 'created_ts'],
+        'discount' => ['Remise (%)', 'num', true, 'discount_percent'],
+        'brand' => ['Marque', 'text', true, 'brand'],
+        'sales' => ['Ventes 30 jours', 'num', true, 'sales_30d'],
+        'rating' => ['Note des avis', 'num', true, 'rating'],
+        'regular_price' => ['Prix avant remise', 'num', false, 'price'],
+        'reviews' => ['Nombre d\'avis', 'num', false, 'reviews_count'],
+        'sku' => ['SKU', 'text', false, 'sku'],
+        'type' => ['Type de produit', 'text', false, 'type'],
+        'in_stock' => ['Disponibilité', 'num', false, 'in_stock'],
+        'on_sale' => ['En promotion', 'num', false, 'on_sale'],
+        'is_new' => ['Nouveauté', 'num', false, 'is_new'],
     ];
 
+    /** Ordres selon le type de champ : dir => [libellé de l'ordre, suffixe du nom par défaut fr, en]. */
+    public const SORT_DIRS = [
+        'text' => ['asc' => ['A à Z', 'de A à Z', 'A to Z'], 'desc' => ['Z à A', 'de Z à A', 'Z to A']],
+        'num' => ['asc' => ['Du plus bas au plus élevé', 'croissant', 'low to high'], 'desc' => ['Du plus élevé au plus bas', 'décroissant', 'high to low']],
+        'date' => ['desc' => ['Du plus récent au plus ancien', 'du plus récent', 'newest first'], 'asc' => ['Du plus ancien au plus récent', 'du plus ancien', 'oldest first']],
+    ];
+
+    /** Anciennes clés de tri (widget ?v=7/8, réglages déjà enregistrés) → champ:ordre. */
+    public const LEGACY_SORTS = ['price_asc' => 'price:asc', 'price_desc' => 'price:desc', 'newest' => 'created:desc', 'name_asc' => 'name:asc', 'name_desc' => 'name:desc'];
+
     /** Tris proposés tant que rien n'est enregistré (comportement historique du widget). */
-    private const DEFAULT_SORTS = ['price_asc', 'price_desc', 'newest'];
+    private const DEFAULT_SORTS = ['price:asc', 'price:desc', 'created:desc'];
 
     /** Apparence des filtres : toggle = case à cocher, range = plage min / max, terms = liste de valeurs. */
     public const APPEARANCES = ['toggle' => 'Case à cocher', 'range' => 'Plage (min / max)', 'terms' => 'Liste de valeurs'];
@@ -198,34 +221,63 @@ final class WidgetConfig
 
     // ------------------------------------------------------------------ Options de tri
 
-    /** @return array{relevance:string, items:list<array{key:string, label:string}>} */
+    /** « champ:ordre » valide (ancienne clé acceptée), sinon null. @return ?array{0:string, 1:string} */
+    public static function parseSort(string $key): ?array
+    {
+        $key = self::LEGACY_SORTS[$key] ?? $key;
+        if (!preg_match('/^([a-z_]+):(asc|desc)$/', $key, $m) || !isset(self::SORT_FIELDS[$m[1]])) {
+            return null;
+        }
+        return [$m[1], $m[2]];
+    }
+
+    /** Nom affiché par défaut d'un tri (« Prix croissant », « Nom du produit de A à Z »). */
+    public static function sortDefaultLabel(string $field, string $dir, string $lang): string
+    {
+        [$label, $type] = self::SORT_FIELDS[$field];
+        $d = self::SORT_DIRS[$type][$dir];
+        return $label . ' ' . ($lang === 'en' ? $d[2] : $d[1]);
+    }
+
+    /** Tris enregistrés (label vide = pas de nom personnalisé). @return list<array{field:string, dir:string, label:string}> */
+    public static function sortItems(string $lang): array
+    {
+        $saved = Settings::json('widget_sorts_' . $lang);
+        $list = isset($saved['items']) && is_array($saved['items']) ? $saved['items'] : array_map(static fn ($k) => ['key' => $k], self::DEFAULT_SORTS);
+        $items = [];
+        foreach ($list as $s) {
+            $p = self::parseSort((string) ($s['key'] ?? ''));
+            if ($p !== null) {
+                $items[] = ['field' => $p[0], 'dir' => $p[1], 'label' => trim((string) ($s['label'] ?? ''))];
+            }
+        }
+        return $items;
+    }
+
+    /** Pour le widget : nom par défaut quand aucun nom personnalisé. @return array{relevance:string, items:list<array{key:string, label:string}>} */
     public static function sorts(string $lang): array
     {
         $saved = Settings::json('widget_sorts_' . $lang);
-        $i = $lang === 'en' ? 1 : 0;
-        $items = [];
-        $list = isset($saved['items']) && is_array($saved['items']) ? $saved['items'] : array_map(static fn ($k) => ['key' => $k], self::DEFAULT_SORTS);
-        foreach ($list as $s) {
-            $key = (string) ($s['key'] ?? '');
-            if (!isset(self::SORTS[$key])) {
-                continue;
-            }
-            $label = trim((string) ($s['label'] ?? ''));
-            $items[] = ['key' => $key, 'label' => $label !== '' ? $label : self::SORTS[$key][$i]];
-        }
+        $items = array_map(static fn ($s) => [
+            'key' => $s['field'] . ':' . $s['dir'],
+            'label' => $s['label'] !== '' ? $s['label'] : self::sortDefaultLabel($s['field'], $s['dir'], $lang),
+        ], self::sortItems($lang));
         $rel = trim((string) ($saved['relevance'] ?? ''));
-        return ['relevance' => $rel !== '' ? $rel : ($i ? 'Relevance' : 'Pertinence'), 'items' => $items];
+        return ['relevance' => $rel !== '' ? $rel : ($lang === 'en' ? 'Relevance' : 'Pertinence'), 'items' => $items];
     }
 
-    /** @param list<array{key?:mixed, label?:mixed}> $items */
+    /** @param list<array{field?:mixed, dir?:mixed, label?:mixed}> $items */
     public static function saveSorts(string $lang, string $relevance, array $items): void
     {
         $out = [];
+        $seen = [];
         foreach (array_slice($items, 0, 20) as $s) {
-            $key = (string) ($s['key'] ?? '');
-            if (isset(self::SORTS[$key])) {
-                $out[] = ['key' => $key, 'label' => Text::truncate(trim((string) ($s['label'] ?? '')), 60)];
+            $p = self::parseSort((string) ($s['field'] ?? '') . ':' . (string) ($s['dir'] ?? ''));
+            if ($p === null || isset($seen[$p[0] . ':' . $p[1]])) {
+                continue;
             }
+            $seen[$p[0] . ':' . $p[1]] = true;
+            $out[] = ['key' => $p[0] . ':' . $p[1], 'label' => Text::truncate(trim((string) ($s['label'] ?? '')), 60)];
         }
         Settings::set('widget_sorts_' . $lang, Text::json(['relevance' => Text::truncate(trim($relevance), 60), 'items' => $out]));
     }

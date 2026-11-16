@@ -1,5 +1,5 @@
 /* Intégration : configuration d'un layer (champs selon le type), listes ordonnées des filtres et des tris
- * (glisser-déposer, flèches, ajout / retrait, recherche). Aucune donnée insérée en HTML brut. */
+ * (glisser-déposer, ajout / retrait, recherche ; tri = champ puis ordre selon son type puis nom). Aucune donnée insérée en HTML brut. */
 (function () {
   'use strict';
   document.addEventListener('DOMContentLoaded', function () {
@@ -44,31 +44,48 @@
           var r = tr.getBoundingClientRect();
           list.insertBefore(dragged, ev.clientY > r.top + r.height / 2 ? tr.nextSibling : tr);
         });
-        tr.querySelectorAll('[data-move]').forEach(function (b) {
-          b.addEventListener('click', function () {
-            var dir = parseInt(b.getAttribute('data-move'), 10);
-            var sib = dir < 0 ? tr.previousElementSibling : tr.nextElementSibling;
-            if (!sib) { return; }
-            list.insertBefore(tr, dir < 0 ? sib : sib.nextSibling);
-            b.focus();
-          });
-        });
         var rm = tr.querySelector('[data-remove]');
-        if (rm) { rm.addEventListener('click', function () { tr.remove(); }); }
-        // tri : nom proposé = libellé du tri choisi, tant que le nom n'a pas été modifié
-        var key = tr.querySelector('select[data-f="key"]');
+        if (rm) { rm.addEventListener('click', function () { tr.remove(); syncMissing(); }); }
+        // Tri : champ → ordres possibles selon son type (texte, nombre, date) → nom affiché par défaut
+        var field = tr.querySelector('select[data-f="field"]');
+        var dir = tr.querySelector('select[data-f="dir"]');
         var label = tr.querySelector('input[data-f="label"]');
-        if (key && label) {
-          var auto = function () { return key.options[key.selectedIndex].textContent; };
-          if (label.value === '') { label.value = auto(); }
-          var last = label.value === auto() ? label.value : null;
-          key.addEventListener('change', function () {
-            if (last !== null && label.value === last) { label.value = auto(); last = label.value; }
+        if (field && dir && meta) {
+          var placeholder = function () {
+            var fd = meta.fields[field.value];
+            var dd = fd && meta.dirs[fd[1]] && meta.dirs[fd[1]][dir.value];
+            label.placeholder = fd && dd ? fd[0] + ' ' + dd[1] : 'Saisir le nom d\'affichage';
+          };
+          field.addEventListener('change', function () {
+            var fd = meta.fields[field.value];
+            var keep = dir.value;
+            dir.textContent = '';
+            var ph = document.createElement('option');
+            ph.value = ''; ph.disabled = true; ph.textContent = 'Sélectionner l\'ordre';
+            dir.appendChild(ph);
+            Object.keys(fd ? meta.dirs[fd[1]] : {}).forEach(function (d) {
+              var o = document.createElement('option');
+              o.value = d; o.textContent = meta.dirs[fd[1]][d][0];
+              dir.appendChild(o);
+            });
+            dir.disabled = !fd;
+            dir.value = keep && dir.querySelector('option[value="' + keep + '"]') ? keep : '';
+            if (!dir.value) { ph.selected = true; }
+            placeholder();
+            if (!dir.disabled && !dir.value) { dir.focus(); }
           });
-          label.addEventListener('input', function () { last = null; });
+          dir.addEventListener('change', placeholder);
+          label.addEventListener('input', syncMissing);
         }
       }
+      var metaAttr = form.getAttribute('data-sort-meta');
+      var meta = metaAttr ? JSON.parse(metaAttr) : null;
+      var missing = form.querySelector('[data-missing-label]');
+      function syncMissing() {
+        if (missing) { missing.hidden = !rows().some(function (tr) { var l = tr.querySelector('input[data-f="label"]'); return l && l.value.trim() === ''; }); }
+      }
       rows().forEach(bindRow);
+      syncMissing();
 
       var add = form.querySelector('[data-add-row]');
       var tpl = form.querySelector('template[data-row-template]');
@@ -77,6 +94,7 @@
           var tr = tpl.content.firstElementChild.cloneNode(true);
           list.appendChild(tr);
           bindRow(tr);
+          syncMissing();
           tr.querySelector('select, input').focus();
         });
       }
@@ -99,7 +117,9 @@
         } else {
           payload = {
             relevance: form.querySelector('[data-relevance]').value,
-            items: rows().map(function (tr) { return { key: tr.querySelector('[data-f="key"]').value, label: tr.querySelector('[data-f="label"]').value }; })
+            items: rows().map(function (tr) {
+              return { field: tr.querySelector('[data-f="field"]').value, dir: tr.querySelector('[data-f="dir"]').value, label: tr.querySelector('[data-f="label"]').value };
+            })
           };
         }
         form.querySelector('input[name=payload]').value = JSON.stringify(payload);
