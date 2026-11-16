@@ -1,5 +1,5 @@
 <?php
-/** @var string $tab @var string $lang @var array $layers @var ?array $edit @var array $filters @var array $sorts @var string $firstKey @var string $appUrl */
+/** @var string $tab @var string $lang @var array $layers @var array $filters @var array $sorts @var string $firstKey @var string $appUrl */
 use DeepFind\Admin\IntegrationController;
 use DeepFind\Widget\WidgetConfig;
 
@@ -17,8 +17,8 @@ $types = WidgetConfig::TYPES;
   Un seul layer est actif à la fois ; sans layer actif, le widget s'affiche sous la barre de recherche (réglages par défaut).</p>
 
 <div class="ly-list">
-  <?php foreach ($layers as $l): $isEdit = $edit && $edit['id'] === $l['id']; ?>
-    <div class="card ly-card<?= $l['active'] ? ' ly-active' : '' ?><?= $isEdit ? ' ly-edit' : '' ?>">
+  <?php foreach ($layers as $l): ?>
+    <div class="card ly-card<?= $l['active'] ? ' ly-active' : '' ?>">
       <span class="ly-check" aria-hidden="true"><?= $l['active'] ? admin_icon('circle-check') : '' ?></span>
       <div class="ly-info">
         <strong><?= e($l['name']) ?></strong> <?= $l['active'] ? '<span class="badge badge-ok">Layer actif</span>' : '' ?>
@@ -33,7 +33,7 @@ $types = WidgetConfig::TYPES;
             <button class="btn btn-sm btn-light" data-confirm="Activer « <?= e($l['name']) ?> » ? Il remplacera le layer actif sur le site.">Activer le layer</button>
           <?php endif; ?>
         </form>
-        <a class="btn btn-sm<?= $isEdit ? '' : ' btn-light' ?>" href="<?= e(url('/admin/integration', ['layer' => $l['id']])) ?>#ly-config"<?= $isEdit ? ' aria-current="true"' : '' ?>>Configuration</a>
+        <a class="btn btn-sm" href="<?= e(url('/admin/integration/layer', ['id' => $l['id']])) ?>">Configuration</a>
         <?php if (!$l['active']): ?>
           <form method="post" action="<?= e(url('/admin/integration/layer/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
             <button class="icon-btn" title="Supprimer" aria-label="Supprimer « <?= e($l['name']) ?> »" data-confirm="Supprimer le layer « <?= e($l['name']) ?> » ?"><?= admin_icon('trash') ?></button></form>
@@ -47,43 +47,6 @@ $types = WidgetConfig::TYPES;
 </div>
 <p><button type="button" class="btn btn-light" data-dialog-open="ly-dialog">Créer un nouveau layer</button></p>
 
-<?php if ($edit): $s = $edit['settings']; ?>
-<form method="post" action="<?= e(url('/admin/integration/layer/save')) ?>" class="card form" id="ly-config" data-layer-form>
-  <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>">
-  <h3>Configuration de « <?= e($edit['name']) ?> »</h3>
-  <div class="grid2">
-    <label>Nom <input name="name" value="<?= e($edit['name']) ?>" maxlength="100" required></label>
-    <label>Type
-      <select name="type" data-layer-type>
-        <?php foreach ($types as $k => [$label, $help]): ?><option value="<?= e($k) ?>" data-help="<?= e($help) ?>" <?= $edit['type'] === $k ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?>
-      </select>
-      <small class="muted" data-layer-type-help><?= e($types[$edit['type']][1]) ?></small>
-    </label>
-  </div>
-  <div class="toggle-row">
-    <label class="toggle">
-      <input type="checkbox" role="switch" name="url_state" value="1" <?= $s['url_state'] ? 'checked' : '' ?>>
-      <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-      <span class="toggle-text"><strong>Garder la recherche dans l'adresse de la page</strong>
-        <small class="muted">Si la page est rechargée, la fenêtre se rouvre avec la même recherche, les mêmes filtres et le même tri (ajout de <code>#df=…</code> à l'adresse).
-          Si une fonctionnalité de votre site dépend des ancres d'URL, laissez ce réglage désactivé.</small></span>
-    </label>
-  </div>
-  <label>Sélecteur CSS du champ de recherche
-    <input name="input" value="<?= e($s['input']) ?>" placeholder="#search" class="code">
-    <small class="muted">Par exemple <code>#search</code> ou <code>input[name="q"]</code> : le ou les champs de votre site dans lesquels les visiteurs tapent leur recherche.
-      Vide : celui indiqué dans le code du site (<code>data-input</code>).</small>
-  </label>
-  <label data-layer-only="embedded">Sélecteur CSS du bloc d'affichage
-    <input name="container" value="<?= e($s['container']) ?>" placeholder="main#maincontent" class="code">
-    <small class="muted">Bloc de votre page dans lequel les résultats s'affichent à la place de son contenu, tant qu'une recherche est en cours.</small>
-  </label>
-  <label data-layer-only="below">Écart sous la barre de recherche (pixels)
-    <input name="gap" type="number" min="0" max="80" value="<?= (int) $s['gap'] ?>">
-  </label>
-  <div class="form-foot"><button class="btn">Enregistrer</button></div>
-</form>
-<?php endif; ?>
 
 <dialog id="ly-dialog" class="modal" aria-labelledby="ly-title">
   <form method="post" action="<?= e(url('/admin/integration/layer/create')) ?>" class="form modal-form">

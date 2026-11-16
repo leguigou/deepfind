@@ -584,6 +584,12 @@ if ($base) {
     $WC::saveLayer($l2, 'Essai intégré', 'embedded', ['container' => 'main#maincontent<script>', 'input' => '#search', 'url_state' => '1', 'gap' => 500]);
     $WC::activateLayer($l2, true);
     $al = $WC::activeLayer();
+    $WC::saveLayer($l1, 'Cabesto', 'below', ['min_chars' => 0, 'logo' => 'javascript:alert(1)', 'color_primary' => '#1069F9', 'color_text' => 'red',
+        'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>']);
+    $ls = $WC::layer($l1);
+    check('intégration : type figé, identité et personnalisation nettoyées', $ls['type'] === 'fullscreen' && $ls['settings']['min_chars'] === 1
+        && $ls['settings']['logo'] === '' && $ls['settings']['color_primary'] === '#1069f9' && $ls['settings']['color_text'] === ''
+        && $ls['settings']['css'] === '.df-title { color: red; }' && $ls['settings']['card_template'] === '<div>{{name}}<img src="{{image}}"></div>');
     check('intégration : activation exclusive, réglages nettoyés', $al['id'] === $l2 && !$WC::layer($l1)['active'] && $al['settings']['container'] === 'main#maincontentscript'
         && $al['settings']['url_state'] === true && $al['settings']['gap'] === 80);
     $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'label' => '', 'visible' => false], ['code' => 'inconnu', 'visible' => true]]);

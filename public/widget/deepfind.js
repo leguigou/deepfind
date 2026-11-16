@@ -42,7 +42,11 @@
     container: '',
     urlState: false,
     filters: null,
-    sorts: null
+    sorts: null,
+    logo: '',
+    colors: null,
+    customCss: '',
+    cardTemplate: ''
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -383,10 +387,43 @@
     });
   }
 
+  // Modèle de carte (extranet › Intégration › layer) : variables remplacées par des valeurs échappées,
+  // puis HTML refiltré (mêmes règles que les bannières) ; pas de lien imbriqué, la carte entière est déjà un lien.
+  function esc(v) { return String(v === undefined || v === null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+  function templateCard(a, p, href) {
+    var mv = p.matched_variant;
+    var final = mv ? mv.final_price : p.final_price;
+    var regular = mv ? mv.price : p.price;
+    var v = {
+      name: p.name, brand: p.brand || '', image: safeUrl(p.image), price: fmt(final),
+      old_price: regular > final + 0.005 ? fmt(regular) : '', discount: p.on_sale && p.discount_percent > 0 ? '-' + p.discount_percent + '%' : '',
+      sku: (mv && mv.sku) || p.sku || '', stock: p.in_stock ? t.inStock : t.outOfStock, 'new': p.is_new ? t.isNew : '', rating: p.rating || ''
+    };
+    var html = cfg.cardTemplate.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(v, k) ? esc(v[k]) : ''; });
+    var doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
+    Array.prototype.forEach.call(doc.body.childNodes, function (c) { a.appendChild(cleanNode(c)); });
+    Array.prototype.forEach.call(a.querySelectorAll('a'), function (n) {
+      var span = el('span', n.className || null);
+      while (n.firstChild) { span.appendChild(n.firstChild); }
+      n.parentNode.replaceChild(span, n);
+    });
+    Array.prototype.forEach.call(a.querySelectorAll('img'), function (img) {
+      if (!img.getAttribute('src')) { img.remove(); return; }
+      img.loading = 'lazy';
+      img.onerror = function () { img.remove(); };
+    });
+  }
+
   function card(p, position) {
     var href = safeUrl(p.matched_variant && p.matched_variant.url) || safeUrl(p.url) || '#';
     var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
     a.href = href;
+    if (cfg.cardTemplate) {
+      a.classList.add('df-card-tpl');
+      templateCard(a, p, href);
+      onOpen(a, function () { track('product', p.id, position, p.cr); });
+      return a;
+    }
     var media = el('div', 'df-media');
     var src = safeUrl(p.image);
     if (src) {
@@ -858,6 +895,26 @@
   function applyDisplay() {
     overlay.className = 'df-overlay df-type-' + cfg.type;
     bar.hidden = !usesBar();
+    var hex = function (c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : ''; };
+    if (cfg.colors) {
+      if (hex(cfg.colors.primary)) { overlay.style.setProperty('--df-accent', cfg.colors.primary); }
+      if (hex(cfg.colors.contrast)) { overlay.style.setProperty('--df-on-accent', cfg.colors.contrast); }
+      if (hex(cfg.colors.text)) { overlay.style.setProperty('--df-text', cfg.colors.text); }
+    }
+    if (cfg.logo) {
+      var logo = el('img', 'df-logo' + (usesBar() ? '' : ' df-logo-top'));
+      logo.src = cfg.logo;
+      logo.alt = '';
+      logo.onerror = function () { logo.remove(); };
+      if (usesBar()) { bar.insertBefore(logo, barInput); } else { main.insertBefore(logo, main.firstChild); }
+    }
+    if (cfg.customCss) {
+      // CSS de l'extranet, inséré comme texte (aucun HTML interprété)
+      var st = document.createElement('style');
+      st.setAttribute('data-deepfind', 'custom');
+      st.textContent = cfg.customCss;
+      document.head.appendChild(st);
+    }
     setupSorts();
     (cfg.filters || []).forEach(function (f) {
       var tg = f.code === 'in_stock' ? tgStock : (f.code === 'on_sale' ? tgSale : null);
@@ -936,6 +993,11 @@
       cfg.urlState = !!l.url_state;
       if (l.type === 'below' && ds.gap === undefined && l.gap !== undefined) { cfg.gap = parseInt(l.gap, 10) || 0; }
       if (l.type === 'embedded' && !cfg.container) { cfg.type = 'below'; }
+      if (ds.minChars === undefined && l.min_chars) { cfg.minChars = Math.max(1, parseInt(l.min_chars, 10) || 2); }
+      cfg.logo = safeUrl(l.logo);
+      cfg.colors = { primary: l.color_primary, contrast: l.color_contrast, text: l.color_text };
+      cfg.customCss = typeof l.css === 'string' ? l.css : '';
+      cfg.cardTemplate = typeof l.card_template === 'string' ? l.card_template : '';
     }
     if (Array.isArray(c.filters)) { cfg.filters = c.filters; }
     if (c.sorts && Array.isArray(c.sorts.items)) { cfg.sorts = c.sorts; }

@@ -1,25 +1,24 @@
-/* Intégration : configuration d'un layer (champs selon le type), listes ordonnées des filtres et des tris
+/* Intégration : paramètres d'un layer (renommer, couleurs), listes ordonnées des filtres et des tris
  * (glisser-déposer, ajout / retrait, recherche ; tri = champ puis ordre selon son type puis nom). Aucune donnée insérée en HTML brut. */
 (function () {
   'use strict';
   document.addEventListener('DOMContentLoaded', function () {
-    // ------------------------------------------------------------ Layer : champs propres au type choisi
-    var lf = document.querySelector('[data-layer-form]');
-    if (lf) {
-      var type = lf.querySelector('[data-layer-type]');
-      var help = lf.querySelector('[data-layer-type-help]');
-      var sync = function () {
-        lf.querySelectorAll('[data-layer-only]').forEach(function (n) {
-          var on = n.getAttribute('data-layer-only') === type.value;
-          n.hidden = !on;
-          n.querySelectorAll('input').forEach(function (i) { i.required = on && i.name === 'container'; });
-        });
-        var opt = type.options[type.selectedIndex];
-        if (help && opt) { help.textContent = opt.getAttribute('data-help') || ''; }
-      };
-      type.addEventListener('change', sync);
-      sync();
+    // ------------------------------------------------------------ Paramètres d'un layer : renommer, couleurs
+    var nameInput = document.querySelector('[data-lp-name]');
+    var renameBtn = document.querySelector('[data-lp-rename]');
+    if (nameInput && renameBtn) {
+      renameBtn.addEventListener('click', function () {
+        nameInput.readOnly = false;
+        nameInput.focus();
+        nameInput.select();
+      });
     }
+    document.querySelectorAll('input[type=color][data-color-for]').forEach(function (picker) {
+      var text = document.querySelector('input[name="' + picker.getAttribute('data-color-for') + '"]');
+      if (!text) { return; }
+      picker.addEventListener('input', function () { text.value = picker.value.toUpperCase(); });
+      text.addEventListener('input', function () { if (/^#[0-9a-f]{6}$/i.test(text.value.trim())) { picker.value = text.value.trim().toLowerCase(); } });
+    });
 
     // ------------------------------------------------------------ Listes ordonnées (filtres, tris)
     document.querySelectorAll('[data-order-form]').forEach(function (form) {

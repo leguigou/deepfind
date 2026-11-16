@@ -100,13 +100,48 @@ final class WidgetConfig
     public static function cleanSettings(array $in): array
     {
         $sel = static fn ($v) => mb_substr(trim(str_replace(['<', '>', '{', '}'], '', (string) $v)), 0, 300, 'UTF-8');
+        $color = static fn ($v) => preg_match('/^#[0-9a-f]{6}$/i', trim((string) $v)) ? strtolower(trim((string) $v)) : '';
+        $logo = trim((string) ($in['logo'] ?? ''));
         $gap = (int) ($in['gap'] ?? 12);
         return [
             'input' => $sel($in['input'] ?? ''),
             'container' => $sel($in['container'] ?? ''),
             'url_state' => !empty($in['url_state']),
             'gap' => max(0, min(80, $gap)),
+            // caractères tapés avant d'afficher les résultats
+            'min_chars' => max(1, min(10, (int) ($in['min_chars'] ?? 2))),
+            // identité de marque : logo (https uniquement) et couleurs #rrggbb (vide = couleurs par défaut du widget)
+            'logo' => preg_match('#^https://[^\s"\'<>]+$#i', $logo) ? mb_substr($logo, 0, 500, 'UTF-8') : '',
+            'color_primary' => $color($in['color_primary'] ?? ''),
+            'color_contrast' => $color($in['color_contrast'] ?? ''),
+            'color_text' => $color($in['color_text'] ?? ''),
+            // personnalisation avancée : CSS ajouté à la page (texte brut), modèle HTML de la carte produit (nettoyé)
+            'css' => mb_substr(str_replace("\0", '', (string) ($in['css'] ?? '')), 0, 20000, 'UTF-8'),
+            'card_template' => self::cleanCardTemplate((string) ($in['card_template'] ?? '')),
         ];
+    }
+
+    /** Variables du modèle de carte produit : {{nom}} => description (valeurs échappées par le widget). */
+    public const CARD_VARS = [
+        'name' => 'Nom du produit', 'brand' => 'Marque', 'image' => 'Image', 'price' => 'Prix (formaté)',
+        'old_price' => 'Prix avant remise (vide sans remise)', 'discount' => 'Remise, ex. « -20% » (vide sans remise)', 'sku' => 'SKU',
+        'stock' => '« En stock » ou « Rupture »', 'new' => '« Nouveau » ou vide', 'rating' => 'Note des avis',
+    ];
+
+    /**
+     * Modèle de carte : mêmes balises et attributs que les bannières (HtmlSanitizer), variables {{…}} conservées
+     * (y compris dans href / src). Le widget le nettoie de nouveau après avoir remplacé les variables.
+     */
+    public static function cleanCardTemplate(string $html): string
+    {
+        $html = trim(mb_substr($html, 0, 10000, 'UTF-8'));
+        if ($html === '') {
+            return '';
+        }
+        $vars = implode('|', array_keys(self::CARD_VARS));
+        $html = preg_replace('/\{\{\s*(' . $vars . ')\s*\}\}/', '/__df__/$1', $html) ?? '';
+        $html = \DeepFind\Security\HtmlSanitizer::clean($html);
+        return preg_replace('#/__df__/(' . $vars . ')#', '{{$1}}', $html) ?? '';
     }
 
     public static function createLayer(string $name, string $type): int
@@ -124,6 +159,7 @@ final class WidgetConfig
         return (int) $id;
     }
 
+    /** Le type (mise en page) est fixé à la création. */
     public static function saveLayer(int $id, string $name, string $type, array $settings): void
     {
         $l = self::layer($id);
@@ -132,7 +168,6 @@ final class WidgetConfig
         }
         Db::update('layers', [
             'name' => Text::truncate(trim($name), 100) ?: $l['name'],
-            'type' => isset(self::TYPES[$type]) ? $type : $l['type'],
             'settings' => Text::json(self::cleanSettings($settings)),
             'updated_at' => date('Y-m-d H:i:s'),
         ], 'id = ? AND project_id = ?', [$id, Project::id()]);
