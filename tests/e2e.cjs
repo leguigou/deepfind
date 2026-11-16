@@ -202,10 +202,10 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // Projets : sélecteur, isolation dans l'extranet, copie avec résumé, restauration
   await page.goto(BASE + '/admin/projects');
-  check('projets : liste', (await page.$$eval('input.name-input', (i) => i.map((x) => x.value))).includes('Cabesto Test'));
+  check('projets : liste', (await page.$$eval('input.name-input', (i) => i.map((x) => x.value))).includes('Projet Test'));
   await page.screenshot({ path: OUT + '/20-projets.png', fullPage: false });
-  await Promise.all([page.waitForNavigation(), page.selectOption('.project-switch select', { label: 'Cabesto Test' })]);
-  check('projets : sélecteur → projet Test actif', (await page.textContent('.project-chip')).includes('Cabesto Test'));
+  await Promise.all([page.waitForNavigation(), page.selectOption('.project-switch select', { label: 'Projet Test' })]);
+  check('projets : sélecteur → projet Test actif', (await page.textContent('.project-chip')).includes('Projet Test'));
   await page.goto(BASE + '/admin/redirects');
   check('projets : redirection propre au projet Test', (await page.textContent('table')).includes('bonjour test'));
   await page.goto(BASE + '/admin/projects/copy');

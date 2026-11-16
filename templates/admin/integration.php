@@ -3,7 +3,7 @@
 use DeepFind\Admin\IntegrationController;
 use DeepFind\Widget\WidgetConfig;
 
-$base = $appUrl !== '' ? $appUrl : 'https://search.cabesto.com';
+$base = $appUrl !== '' ? $appUrl : 'https://search.example.com';
 $types = WidgetConfig::TYPES;
 ?>
 <nav class="tabs" aria-label="Rubriques de l'intégration">
@@ -92,7 +92,7 @@ $types = WidgetConfig::TYPES;
       <li><strong>Glissez le bouton « Tester DeepFind »</strong> ci-dessus jusque dans la barre de favoris, puis relâchez.
         <br><span class="muted small">Si le glisser ne marche pas : cliquez sur « Copier le lien du favori », puis clic droit dans la barre de favoris › <em>Ajouter une page…</em>,
           nom « Tester DeepFind », et collez le lien dans le champ <em>URL</em>.</span></li>
-      <li><strong>Ouvrez le site</strong> dans un onglet, par exemple <code>https://www.cabesto.com</code>.</li>
+      <li><strong>Ouvrez le site</strong> dans un onglet, par exemple <code>https://www.example.com</code>.</li>
       <li><strong>Cliquez sur le favori « Tester DeepFind »</strong>. Un bandeau « Aperçu DeepFind » apparaît en bas à gauche.
         <br><span class="muted small">Si DeepFind est déjà installé sur le site, la page se recharge d'abord toute seule en mode aperçu.</span></li>
       <li><strong>Tapez une recherche</strong> dans la barre de recherche du site : le widget s'affiche avec le layer choisi.</li>
@@ -128,7 +128,7 @@ $types = WidgetConfig::TYPES;
           </label>
         <?php endforeach; ?>
       </div>
-      <label>Nom <input name="name" maxlength="100" placeholder="ex. : Cabesto"></label>
+      <label>Nom <input name="name" maxlength="100" placeholder="ex. : Ma boutique"></label>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn btn-light" data-dialog-close>Retour</button>
@@ -299,7 +299,7 @@ $types = WidgetConfig::TYPES;
   data-key="<?= e($firstKey !== '' ? $firstKey : 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"
-  data-results-url="https://www.cabesto.com/fr/catalogsearch/result/?q="&gt;&lt;/script&gt;</pre>
+  data-results-url="https://www.example.com/fr/catalogsearch/result/?q="&gt;&lt;/script&gt;</pre>
   <p class="muted small">Le layer actif (type, champ de recherche, bloc d'affichage), les filtres et les tris s'appliquent sans modifier ce code.
     Le sélecteur du champ choisi dans le layer remplace <code>data-input</code>.</p>
   <table class="table compact">

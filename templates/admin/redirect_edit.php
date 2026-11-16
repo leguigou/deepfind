@@ -23,7 +23,7 @@
       <label class="toggle"><input type="checkbox" role="switch" data-f="new_tab" aria-label="Ouvrir dans un nouvel onglet"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
     </div>
     <label>URL de destination
-      <input data-f="url" type="url" placeholder="ex. : https://www.cabesto.com/fr/livraison" required></label>
+      <input data-f="url" type="url" placeholder="ex. : https://www.example.com/fr/livraison" required></label>
 
     <?php $withTerms = true; $withPeriod = false; include __DIR__ . '/_terms_period.php'; ?>
     <?php $withTerms = false; $withPeriod = true; include __DIR__ . '/_terms_period.php'; ?>

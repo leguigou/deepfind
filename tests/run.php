@@ -153,9 +153,9 @@ check('IP masquée IPv4', ClientIp::mask('203.0.113.42') === '203.0.113.x');
 check('IP masquée IPv6', ClientIp::mask('2001:db8:abcd:12::1') === '2001:db8:abcd::/48');
 check('CIDR', ClientIp::inCidr('10.1.2.3', '10.0.0.0/8') && !ClientIp::inCidr('11.1.2.3', '10.0.0.0/8'));
 check('IP hachée (pas en clair)', strlen(ClientIp::hash('1.2.3.4')) === 16 && !str_contains(ClientIp::hash('1.2.3.4'), '1.2.3.4'));
-$key = ['allowed_origins' => 'cabesto.com'];
-check('origine autorisée (sous-domaine)', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://www.cabesto.com', 'HTTP_HOST' => 'search.x']) === 'https://www.cabesto.com');
-check('origine refusée', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://cabesto.com.evil.io', 'HTTP_HOST' => 'search.x']) === null);
+$key = ['allowed_origins' => 'example.com'];
+check('origine autorisée (sous-domaine)', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://www.example.com', 'HTTP_HOST' => 'search.x']) === 'https://www.example.com');
+check('origine refusée', ApiKeys::checkOrigin($key, ['HTTP_ORIGIN' => 'https://example.com.evil.io', 'HTTP_HOST' => 'search.x']) === null);
 check('origine refusée sans en-tête', ApiKeys::checkOrigin($key, ['HTTP_HOST' => 'search.x']) === null);
 check('même domaine sans Origin (Referer) accepté', ApiKeys::checkOrigin($key, ['HTTP_REFERER' => 'https://search.x/admin/demo', 'HTTP_HOST' => 'search.x']) === '');
 
@@ -554,7 +554,7 @@ if ($base) {
     DeepFind\Db::exec("DELETE FROM import_runs WHERE status = 'queued'");
     // ================================================================ Projets : isolation complète, copie, sauvegarde
     $prodId = DeepFind\Project::defaultId();
-    $testId = DeepFind\Project::create('test', 'Cabesto Test');
+    $testId = DeepFind\Project::create('test', 'Projet Test');
     check('projet : préfixe d\'index propre', DeepFind\Project::find($testId)['index_prefix'] === 'deepfind_test_');
     DeepFind\ConfigTransfer::apply($testId, DeepFind\ConfigTransfer::export($prodId), array_keys(DeepFind\ConfigTransfer::SECTIONS), true);
     $tSources = DeepFind\Db::all('SELECT * FROM sources WHERE project_id = ?', [$testId]);
@@ -627,13 +627,13 @@ if ($base) {
     check('intégration : sans layer, affichage par défaut + filtres et tris par défaut', (array_key_exists('layer', $cf) && $cf['layer'] === null)
         && ($cf['sorts']['relevance'] ?? '') === 'Pertinence' && array_column($cf['sorts']['items'] ?? [], 'key') === ['price:asc', 'price:desc', 'created:desc']
         && in_array('price', array_column($cf['filters'] ?? [], 'code'), true), json_encode([$c, $cf['layer'] ?? 'x', $cf['sorts'] ?? null, array_column($cf['filters'] ?? [], 'code')]));
-    $l1 = $WC::createLayer('Cabesto', 'fullscreen');
+    $l1 = $WC::createLayer('Boutique', 'fullscreen');
     $l2 = $WC::createLayer('Essai', 'embedded');
     check('intégration : premier layer actif d\'office, le suivant non', $WC::activeLayer()['id'] === $l1 && !$WC::layer($l2)['active']);
     $WC::saveLayer($l2, 'Essai intégré', 'embedded', ['container' => 'main#maincontent<script>', 'input' => '#search', 'url_state' => '1', 'gap' => 500]);
     $WC::activateLayer($l2, true);
     $al = $WC::activeLayer();
-    $WC::saveLayer($l1, 'Cabesto', 'below', ['min_chars' => 0, 'logo' => 'javascript:alert(1)', 'color_primary' => '#1069F9', 'color_text' => 'red',
+    $WC::saveLayer($l1, 'Boutique', 'below', ['min_chars' => 0, 'logo' => 'javascript:alert(1)', 'color_primary' => '#1069F9', 'color_text' => 'red',
         'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>',
         'css_mobile' => '.df-name { font-size: 12px; }', 'card_template_mobile' => '<p>{{price}}<iframe src="x"></iframe></p>', 'max_width' => 100]);
     check('intégration : largeur maximale bornée (320 px minimum, vide = par défaut)', $WC::layer($l1)['settings']['max_width'] === 320
@@ -662,7 +662,7 @@ if ($base) {
     $tok = $WC::previewToken($l1);
     [, $pv] = $get("/api/v1/config?key=$key&lang=fr&preview=" . rawurlencode($tok));
     [, $pvBad] = $get("/api/v1/config?key=$key&lang=fr&preview=" . rawurlencode(substr($tok, 0, -1) . (str_ends_with($tok, 'a') ? 'b' : 'a')));
-    check('aperçu : layer inactif servi avec un jeton valide, refusé sinon', ($pv['preview']['layer'] ?? '') === 'Cabesto' && ($pv['layer']['type'] ?? '') === 'below'
+    check('aperçu : layer inactif servi avec un jeton valide, refusé sinon', ($pv['preview']['layer'] ?? '') === 'Boutique' && ($pv['layer']['type'] ?? '') === 'below'
         && ($pvBad['preview']['error'] ?? '') === 'expired' && ($pvBad['layer']['type'] ?? '') === 'embedded');
     $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'label' => '', 'visible' => false], ['code' => 'inconnu', 'visible' => true]]);
     $WC::saveSorts('fr', 'Les plus pertinents', [['field' => 'name', 'dir' => 'asc', 'label' => 'Nom A-Z'], ['field' => 'price', 'dir' => 'desc', 'label' => ''],

@@ -65,7 +65,7 @@
     <?= csrf_field() ?>
     <h3>Nouveau projet</h3>
     <div class="grid2">
-      <label>Nom <input name="name" required placeholder="Cabesto Test"></label>
+      <label>Nom <input name="name" required placeholder="Test"></label>
       <label>Code (minuscules) <input name="code" required pattern="[a-z0-9][a-z0-9\-]{1,19}" placeholder="test"></label>
     </div>
     <label>Point de départ

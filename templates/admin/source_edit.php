@@ -10,10 +10,10 @@
     </label>
   </div>
   <label>Flux complet : URL http(s) ou chemin local (dossiers autorisés : FEED_LOCAL_DIRS)
-    <input name="url" value="<?= e($source['url']) ?>" placeholder="https://www.cabesto.com/media/feeds/search_fr.xml.gz" required></label>
+    <input name="url" value="<?= e($source['url']) ?>" placeholder="https://www.example.com/media/feeds/search_fr.xml.gz" required></label>
   <?php if ($source['kind'] === 'products'): ?>
   <label>Flux delta (stock / prix / suppressions), facultatif
-    <input name="delta_url" value="<?= e($source['delta_url']) ?>" placeholder="https://www.cabesto.com/media/feeds/search_fr_delta.xml"></label>
+    <input name="delta_url" value="<?= e($source['delta_url']) ?>" placeholder="https://www.example.com/media/feeds/search_fr_delta.xml"></label>
   <?php endif; ?>
   <label>En-têtes HTTP d'authentification (un par ligne), facultatif
     <textarea name="auth_header" rows="2" placeholder="Authorization: Bearer xxxxx"><?= e($source['auth_header']) ?></textarea>

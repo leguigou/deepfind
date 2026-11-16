@@ -49,9 +49,9 @@ $mask = static fn (string $k): string => strlen($k) > 12 ? substr($k, 0, 7) . '*
       <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
-      <label>Nom <input name="name" required maxlength="100" placeholder="Site cabesto.com">
-        <small class="muted">Pour retrouver la clé dans la liste (ex. « Cabesto — Production »).</small></label>
-      <label>Domaines autorisés <input name="origins" placeholder="cabesto.com, www.cabesto.com">
+      <label>Nom <input name="name" required maxlength="100" placeholder="Site www.example.com">
+        <small class="muted">Pour retrouver la clé dans la liste (ex. « Site — Production »).</small></label>
+      <label>Domaines autorisés <input name="origins" placeholder="example.com, www.example.com">
         <small class="muted">Séparés par des virgules ; sous-domaines inclus. Vide : tous les domaines (déconseillé).</small></label>
       <label>Langues <input name="langs" value="fr" class="key-langs">
         <small class="muted">Codes séparés par des virgules (ex. <code>fr,en</code>).</small></label>

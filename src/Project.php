@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace DeepFind;
 
 /**
- * Projet courant (ex. « Cabesto Prod », « Cabesto Test ») : tout ce qui est propre à un projet
+ * Projet courant (ex. « Production », « Test ») : tout ce qui est propre à un projet
  * (flux, index Meilisearch, règles, boosts, paramètres de pertinence, clés, journaux, cache) est filtré par project_id.
  * Partagé entre projets : protection anti-robots, jeton d'accès à l'extranet.
  *
@@ -135,7 +135,7 @@ final class Project
         return $id;
     }
 
-    /** Premier projet (« Cabesto Prod ») : garde le préfixe d'index historique, aucune réindexation nécessaire. */
+    /** Premier projet (« Production ») : garde le préfixe d'index historique, aucune réindexation nécessaire. */
     public static function ensureDefault(): ?int
     {
         if ((int) Db::value('SELECT COUNT(*) FROM projects') > 0) {
