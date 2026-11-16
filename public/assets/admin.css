@@ -843,3 +843,4 @@ dialog.modal.lp-editor { width: min(1100px, calc(100vw - 32px)); }
 /* Tableau dans une carte : pas de second flou d'arrière-plan (la carte floute déjà). Deux backdrop-filter imbriqués
    peuvent laisser des bandes claires dans Chrome (rendu par la carte graphique), surtout en thème sombre. */
 .card .table, .card .table-scroll > .table { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }

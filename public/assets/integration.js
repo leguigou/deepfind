@@ -58,7 +58,7 @@
 
     // ------------------------------------------------------------ Fenêtre « Ajouter un filtre » : nom et nombre de valeurs selon le champ
     var addForm = document.querySelector('[data-filter-add]');
-    if (addForm) {
+    if (addForm && addForm.querySelector('[data-filter-code]')) { // pas de liste quand tout est déjà ajouté
       var code = addForm.querySelector('[data-filter-code]');
       var flabel = addForm.querySelector('[data-filter-label]');
       var limitRow = addForm.querySelector('[data-filter-limit-row]');

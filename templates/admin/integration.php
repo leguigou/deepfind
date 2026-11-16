@@ -80,7 +80,7 @@ $types = WidgetConfig::TYPES;
 <div class="page-actions">
   <p class="muted">Ajoutez les filtres proposés aux visiteurs à côté des résultats, choisissez leur nom, leur ordre (faites glisser les lignes)
     et le nombre de valeurs affichées. Langue : <strong><?= e(strtoupper($lang)) ?></strong>.</p>
-  <button type="button" class="btn" data-dialog-open="flt-dialog" <?= $addable ? '' : 'disabled title="Tous les filtres disponibles sont déjà ajoutés"' ?>>+ Ajouter un filtre</button>
+  <button type="button" class="btn" data-dialog-open="flt-dialog">+ Ajouter un filtre</button>
 </div>
 <form method="post" action="<?= e(url('/admin/integration/filters')) ?>" class="card" data-order-form="filters">
   <?= csrf_field() ?><input type="hidden" name="payload" value=""><input type="hidden" name="removed" value="">
@@ -114,10 +114,17 @@ $types = WidgetConfig::TYPES;
     <?= csrf_field() ?>
     <div class="modal-head">
       <div class="modal-title"><h2 id="flt-title">Ajouter un filtre</h2></div>
+      <?php if ($addable): ?>
       <label class="toggle"><span class="toggle-text">Statut</span><input type="checkbox" role="switch" name="visible" value="1" checked><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
+      <?php endif; ?>
       <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
+      <?php if (!$addable): ?>
+      <p class="flash flash-info">Tous les champs disponibles sont déjà dans la liste des filtres : il n'y a rien à ajouter.
+        Pour proposer un nouvel attribut, cochez « filtrable » dans le <a href="<?= e(url('/admin/sources')) ?>">mapping des flux</a> puis lancez un import ;
+        pour remettre un filtre retiré, il réapparaîtra ici.</p>
+      <?php else: ?>
       <label>Champ
         <select name="code" required data-filter-code>
           <option value="" disabled selected>Sélectionner un champ</option>
@@ -140,10 +147,11 @@ $types = WidgetConfig::TYPES;
         <input name="limit" type="number" min="1" max="100" value="8" class="flt-limit" data-filter-limit>
         <small class="muted">Nombre de valeurs visibles ; les suivantes derrière « + N ».</small>
       </label>
+      <?php endif; ?>
     </div>
     <div class="modal-foot">
-      <button type="button" class="btn btn-light" data-dialog-close>Annuler</button>
-      <button class="btn">Enregistrer</button>
+      <button type="button" class="btn btn-light" data-dialog-close><?= $addable ? 'Annuler' : 'Fermer' ?></button>
+      <?php if ($addable): ?><button class="btn">Enregistrer</button><?php endif; ?>
     </div>
   </form>
 </dialog>
