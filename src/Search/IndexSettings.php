@@ -22,8 +22,9 @@ final class IndexSettings
         return self::STOP_WORDS[$lang] ?? [];
     }
 
-    /** Champs triables des produits (name : options de tri « Nom de A à Z / Z à A » du widget). */
-    public const SORTABLE = ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d', 'name'];
+    /** Champs triables des produits : tris internes + champs des options de tri du widget (WidgetConfig::SORT_FIELDS). */
+    public const SORTABLE = ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d',
+        'name', 'discount_percent', 'brand', 'rating', 'price', 'reviews_count', 'sku', 'type', 'on_sale', 'is_new'];
 
     /** @param list<string> $filterableAttrCodes */
     public static function products(string $lang, array $filterableAttrCodes, array $synonyms): array

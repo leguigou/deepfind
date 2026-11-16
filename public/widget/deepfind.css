@@ -44,7 +44,7 @@ html.df-lock { overflow: hidden; }
   background: none; color: var(--df-text); font: inherit; font-size: 14px; text-align: left; text-transform: uppercase; cursor: pointer;
 }
 .df-fv:hover { background: var(--df-hover); }
-.df-fv.df-on { background: var(--df-accent); color: #fff; }
+.df-fv.df-on { background: var(--df-accent); color: var(--df-on-accent, #fff); }
 .df-fv-count { color: var(--df-muted); font-size: 12px; }
 .df-fv.df-on .df-fv-count { color: rgba(255, 255, 255, .8); }
 .df-more, .df-clear { border: 0; background: none; color: var(--df-accent); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; padding: 4px 8px; }
@@ -148,7 +148,7 @@ html.df-lock { overflow: hidden; }
 .df-range { display: flex; align-items: center; gap: 6px; }
 .df-range-input { width: 0; flex: 1; min-width: 0; padding: 7px 8px; border: 1px solid var(--df-border); border-radius: 6px; font: inherit; font-size: 14px; color: var(--df-text); background: #fff; }
 .df-range-sep { color: var(--df-muted); }
-.df-range-ok { padding: 7px 10px; border: 0; border-radius: 6px; background: var(--df-accent); color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.df-range-ok { padding: 7px 10px; border: 0; border-radius: 6px; background: var(--df-accent); color: var(--df-on-accent, #fff); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 
 /* Types de layer (extranet › Intégration). below = sous la barre (règles ci-dessus) */
 .df-bar { display: none; }
@@ -181,3 +181,9 @@ html.df-lock { overflow: hidden; }
   .df-type-embedded .df-layer { border: 0; }
   .df-type-embedded .df-side { position: absolute; max-height: none; }
 }
+
+/* Logo du layer (identité de marque) */
+.df-logo { display: block; flex: none; max-height: 40px; max-width: 160px; object-fit: contain; }
+.df-logo-top { margin: 0 0 14px; max-height: 34px; }
+/* Modèle de carte produit personnalisé : mise en page libre */
+.df-card-tpl { display: block; }

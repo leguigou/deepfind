@@ -77,6 +77,7 @@ final class App
         'POST /admin/keys/update' => [KeysController::class, 'update'],
         'POST /admin/keys/delete' => [KeysController::class, 'delete'],
         'GET /admin/integration' => [IntegrationController::class, 'index'],
+        'GET /admin/integration/layer' => [IntegrationController::class, 'layer'],
         'POST /admin/integration/layer/create' => [IntegrationController::class, 'createLayer'],
         'POST /admin/integration/layer/save' => [IntegrationController::class, 'saveLayer'],
         'POST /admin/integration/layer/active' => [IntegrationController::class, 'activateLayer'],

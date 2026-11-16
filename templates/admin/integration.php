@@ -1,5 +1,5 @@
 <?php
-/** @var string $tab @var string $lang @var array $layers @var ?array $edit @var array $filters @var array $sorts @var string $firstKey @var string $appUrl */
+/** @var string $tab @var string $lang @var array $layers @var array $filters @var array $sorts @var string $firstKey @var string $appUrl */
 use DeepFind\Admin\IntegrationController;
 use DeepFind\Widget\WidgetConfig;
 
@@ -17,8 +17,8 @@ $types = WidgetConfig::TYPES;
   Un seul layer est actif à la fois ; sans layer actif, le widget s'affiche sous la barre de recherche (réglages par défaut).</p>
 
 <div class="ly-list">
-  <?php foreach ($layers as $l): $isEdit = $edit && $edit['id'] === $l['id']; ?>
-    <div class="card ly-card<?= $l['active'] ? ' ly-active' : '' ?><?= $isEdit ? ' ly-edit' : '' ?>">
+  <?php foreach ($layers as $l): ?>
+    <div class="card ly-card<?= $l['active'] ? ' ly-active' : '' ?>">
       <span class="ly-check" aria-hidden="true"><?= $l['active'] ? admin_icon('circle-check') : '' ?></span>
       <div class="ly-info">
         <strong><?= e($l['name']) ?></strong> <?= $l['active'] ? '<span class="badge badge-ok">Layer actif</span>' : '' ?>
@@ -33,7 +33,7 @@ $types = WidgetConfig::TYPES;
             <button class="btn btn-sm btn-light" data-confirm="Activer « <?= e($l['name']) ?> » ? Il remplacera le layer actif sur le site.">Activer le layer</button>
           <?php endif; ?>
         </form>
-        <a class="btn btn-sm<?= $isEdit ? '' : ' btn-light' ?>" href="<?= e(url('/admin/integration', ['layer' => $l['id']])) ?>#ly-config"<?= $isEdit ? ' aria-current="true"' : '' ?>>Configuration</a>
+        <a class="btn btn-sm" href="<?= e(url('/admin/integration/layer', ['id' => $l['id']])) ?>">Configuration</a>
         <?php if (!$l['active']): ?>
           <form method="post" action="<?= e(url('/admin/integration/layer/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
             <button class="icon-btn" title="Supprimer" aria-label="Supprimer « <?= e($l['name']) ?> »" data-confirm="Supprimer le layer « <?= e($l['name']) ?> » ?"><?= admin_icon('trash') ?></button></form>
@@ -47,43 +47,6 @@ $types = WidgetConfig::TYPES;
 </div>
 <p><button type="button" class="btn btn-light" data-dialog-open="ly-dialog">Créer un nouveau layer</button></p>
 
-<?php if ($edit): $s = $edit['settings']; ?>
-<form method="post" action="<?= e(url('/admin/integration/layer/save')) ?>" class="card form" id="ly-config" data-layer-form>
-  <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>">
-  <h3>Configuration de « <?= e($edit['name']) ?> »</h3>
-  <div class="grid2">
-    <label>Nom <input name="name" value="<?= e($edit['name']) ?>" maxlength="100" required></label>
-    <label>Type
-      <select name="type" data-layer-type>
-        <?php foreach ($types as $k => [$label, $help]): ?><option value="<?= e($k) ?>" data-help="<?= e($help) ?>" <?= $edit['type'] === $k ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?>
-      </select>
-      <small class="muted" data-layer-type-help><?= e($types[$edit['type']][1]) ?></small>
-    </label>
-  </div>
-  <div class="toggle-row">
-    <label class="toggle">
-      <input type="checkbox" role="switch" name="url_state" value="1" <?= $s['url_state'] ? 'checked' : '' ?>>
-      <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-      <span class="toggle-text"><strong>Garder la recherche dans l'adresse de la page</strong>
-        <small class="muted">Si la page est rechargée, la fenêtre se rouvre avec la même recherche, les mêmes filtres et le même tri (ajout de <code>#df=…</code> à l'adresse).
-          Si une fonctionnalité de votre site dépend des ancres d'URL, laissez ce réglage désactivé.</small></span>
-    </label>
-  </div>
-  <label>Sélecteur CSS du champ de recherche
-    <input name="input" value="<?= e($s['input']) ?>" placeholder="#search" class="code">
-    <small class="muted">Par exemple <code>#search</code> ou <code>input[name="q"]</code> : le ou les champs de votre site dans lesquels les visiteurs tapent leur recherche.
-      Vide : celui indiqué dans le code du site (<code>data-input</code>).</small>
-  </label>
-  <label data-layer-only="embedded">Sélecteur CSS du bloc d'affichage
-    <input name="container" value="<?= e($s['container']) ?>" placeholder="main#maincontent" class="code">
-    <small class="muted">Bloc de votre page dans lequel les résultats s'affichent à la place de son contenu, tant qu'une recherche est en cours.</small>
-  </label>
-  <label data-layer-only="below">Écart sous la barre de recherche (pixels)
-    <input name="gap" type="number" min="0" max="80" value="<?= (int) $s['gap'] ?>">
-  </label>
-  <div class="form-foot"><button class="btn">Enregistrer</button></div>
-</form>
-<?php endif; ?>
 
 <dialog id="ly-dialog" class="modal" aria-labelledby="ly-title">
   <form method="post" action="<?= e(url('/admin/integration/layer/create')) ?>" class="form modal-form">
@@ -114,7 +77,7 @@ $types = WidgetConfig::TYPES;
 </dialog>
 
 <?php elseif ($tab === 'filters'): ?>
-<p class="muted">Choisissez les filtres proposés aux visiteurs à côté des résultats, leur nom et leur ordre (faites glisser les lignes, ou utilisez les flèches).
+<p class="muted">Choisissez les filtres proposés aux visiteurs à côté des résultats, leur nom et leur ordre (faites glisser les lignes).
   Les filtres d'attributs apparaissent ici après un import. Langue : <strong><?= e(strtoupper($lang)) ?></strong>.</p>
 <form method="post" action="<?= e(url('/admin/integration/filters')) ?>" class="card" data-order-form="filters">
   <?= csrf_field() ?><input type="hidden" name="payload" value="">
@@ -124,8 +87,7 @@ $types = WidgetConfig::TYPES;
     <tbody data-order-list>
     <?php foreach ($filters as $f): ?>
       <tr draggable="true" data-row data-code="<?= e($f['code']) ?>">
-        <td class="ly-grip"><span class="ly-handle" title="Faire glisser pour déplacer"><?= admin_icon('grip-vertical') ?></span>
-          <button type="button" class="icon-btn icon-btn-xs" data-move="-1" aria-label="Monter « <?= e($f['label']) ?> »">↑</button><button type="button" class="icon-btn icon-btn-xs" data-move="1" aria-label="Descendre « <?= e($f['label']) ?> »">↓</button></td>
+        <td class="ly-grip"><span class="ly-handle" title="Faire glisser pour déplacer"><?= admin_icon('grip-vertical') ?></span></td>
         <td><input data-f="label" value="<?= e($f['label']) ?>" placeholder="<?= e($f['default_label']) ?>" maxlength="60" aria-label="Nom affiché"></td>
         <td><code><?= e($f['code']) ?></code></td>
         <td><?= e(WidgetConfig::APPEARANCES[$f['appearance']]) ?></td>
@@ -138,44 +100,57 @@ $types = WidgetConfig::TYPES;
   <div class="form-foot"><button class="btn">Enregistrer</button></div>
 </form>
 
-<?php else: ?>
-<p class="muted">Choisissez les tris proposés dans le menu « Trier » du widget, leur ordre et leur nom. « Pertinence » est toujours proposé en premier.
-  Langue : <strong><?= e(strtoupper($lang)) ?></strong>.</p>
-<form method="post" action="<?= e(url('/admin/integration/sorts')) ?>" class="card" data-order-form="sorts">
-  <?= csrf_field() ?><input type="hidden" name="payload" value="">
-  <table class="table ly-table">
-    <thead><tr><th class="ly-grip-col"></th><th>Tri</th><th>Nom personnalisé</th><th></th></tr></thead>
-    <tbody>
-      <tr><td></td><td><strong>Pertinence</strong></td><td><input data-relevance value="<?= e($sorts['relevance']) ?>" maxlength="60" aria-label="Nom du tri par pertinence"></td><td></td></tr>
-    </tbody>
-    <tbody data-order-list>
-    <?php foreach ($sorts['items'] as $s): ?>
+<?php else:
+  $sortRow = static function (?array $s) use ($lang): void {
+      $f = $s['field'] ?? '';
+      $type = $f !== '' ? WidgetConfig::SORT_FIELDS[$f][1] : '';
+      $groups = ['Champs principaux' => true, 'Autres champs' => false]; ?>
       <tr draggable="true" data-row>
-        <td class="ly-grip"><span class="ly-handle" title="Faire glisser pour déplacer"><?= admin_icon('grip-vertical') ?></span>
-          <button type="button" class="icon-btn icon-btn-xs" data-move="-1" aria-label="Monter">↑</button><button type="button" class="icon-btn icon-btn-xs" data-move="1" aria-label="Descendre">↓</button></td>
-        <td><select data-f="key" aria-label="Tri">
-          <?php foreach (WidgetConfig::SORTS as $k => [$fr]): ?><option value="<?= e($k) ?>" <?= $s['key'] === $k ? 'selected' : '' ?>><?= e($fr) ?></option><?php endforeach; ?>
+        <td class="ly-grip"><span class="ly-handle" title="Faire glisser pour déplacer"><?= admin_icon('grip-vertical') ?></span></td>
+        <td><select data-f="field" aria-label="Champ" required>
+          <option value="" disabled <?= $f === '' ? 'selected' : '' ?>>Sélectionner un champ</option>
+          <?php foreach ($groups as $glabel => $main): ?>
+            <optgroup label="<?= e($glabel) ?>">
+            <?php foreach (WidgetConfig::SORT_FIELDS as $code => [$label, , $isMain]): if ($isMain !== $main) { continue; } ?>
+              <option value="<?= e($code) ?>" <?= $f === $code ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+            </optgroup>
+          <?php endforeach; ?>
         </select></td>
-        <td><input data-f="label" value="<?= e($s['label']) ?>" maxlength="60" aria-label="Nom personnalisé"></td>
+        <td><select data-f="dir" aria-label="Ordre" required <?= $type === '' ? 'disabled' : '' ?>>
+          <option value="" disabled <?= $type === '' ? 'selected' : '' ?>>Sélectionner l'ordre</option>
+          <?php foreach ($type !== '' ? WidgetConfig::SORT_DIRS[$type] : [] as $d => [$dlabel]): ?>
+            <option value="<?= e($d) ?>" <?= ($s['dir'] ?? '') === $d ? 'selected' : '' ?>><?= e($dlabel) ?></option>
+          <?php endforeach; ?>
+        </select></td>
+        <td><input data-f="label" value="<?= e($s['label'] ?? '') ?>" maxlength="60" aria-label="Nom affiché"
+          placeholder="<?= e($f !== '' && isset($s['dir']) ? WidgetConfig::sortDefaultLabel($f, $s['dir'], $lang) : 'Saisir le nom d\'affichage') ?>"></td>
         <td><button type="button" class="icon-btn" data-remove aria-label="Retirer ce tri" title="Retirer"><?= admin_icon('trash') ?></button></td>
       </tr>
-    <?php endforeach; ?>
+  <?php };
+  $meta = ['fields' => array_map(static fn ($v) => [$v[0], $v[1]], WidgetConfig::SORT_FIELDS),
+      'dirs' => array_map(static fn ($t) => array_map(static fn ($d) => [$d[0], $lang === 'en' ? $d[2] : $d[1]], $t), WidgetConfig::SORT_DIRS)];
+?>
+<p class="muted">Choisissez les tris proposés dans le menu « Trier » du widget : le champ, l'ordre, puis le nom affiché. Faites glisser les lignes pour changer leur ordre.
+  « Pertinence » est toujours proposé en premier. Langue : <strong><?= e(strtoupper($lang)) ?></strong>.</p>
+<form method="post" action="<?= e(url('/admin/integration/sorts')) ?>" class="card" data-order-form="sorts" data-sort-meta="<?= e(\DeepFind\Text::json($meta)) ?>">
+  <?= csrf_field() ?><input type="hidden" name="payload" value="">
+  <table class="table ly-table ly-sorts">
+    <thead><tr><th class="ly-grip-col"></th><th>Champ</th><th>Ordre</th><th>Nom affiché</th><th></th></tr></thead>
+    <tbody>
+      <tr><td></td><td><strong>Pertinence</strong></td><td></td><td><input data-relevance value="<?= e($sorts['relevance']) ?>" maxlength="60" aria-label="Nom du tri par pertinence"></td><td></td></tr>
+    </tbody>
+    <tbody data-order-list>
+    <?php foreach ($sortItems as $it) { $sortRow($it); } ?>
     </tbody>
   </table>
-  <template data-row-template>
-    <tr draggable="true" data-row>
-      <td class="ly-grip"><span class="ly-handle" title="Faire glisser pour déplacer"><?= admin_icon('grip-vertical') ?></span>
-        <button type="button" class="icon-btn icon-btn-xs" data-move="-1" aria-label="Monter">↑</button><button type="button" class="icon-btn icon-btn-xs" data-move="1" aria-label="Descendre">↓</button></td>
-      <td><select data-f="key" aria-label="Tri">
-        <?php foreach (WidgetConfig::SORTS as $k => [$fr]): ?><option value="<?= e($k) ?>"><?= e($fr) ?></option><?php endforeach; ?>
-      </select></td>
-      <td><input data-f="label" maxlength="60" aria-label="Nom personnalisé"></td>
-      <td><button type="button" class="icon-btn" data-remove aria-label="Retirer ce tri" title="Retirer"><?= admin_icon('trash') ?></button></td>
-    </tr>
-  </template>
-  <p><button type="button" class="btn btn-sm btn-light" data-add-row>+ Ajouter un tri</button></p>
-  <p class="muted small">Le tri par nom demande une mise à jour du moteur, lancée à l'enregistrement (quelques minutes sur un gros catalogue).</p>
-  <div class="form-foot"><button class="btn">Enregistrer</button></div>
+  <template data-row-template><?php $sortRow(null); ?></template>
+  <p class="muted small" data-missing-label hidden>ⓘ Certains tris n'ont pas de nom personnalisé en <?= e(strtoupper($lang)) ?> : le nom grisé sera affiché.</p>
+  <div class="ly-sorts-foot">
+    <button type="button" class="btn btn-sm btn-light" data-add-row>+ Ajouter un champ</button>
+    <button class="btn">Enregistrer</button>
+  </div>
+  <p class="muted small">Un nouveau champ de tri peut demander une mise à jour du moteur, lancée à l'enregistrement (quelques minutes sur un gros catalogue).</p>
 </form>
 <?php endif; ?>
 

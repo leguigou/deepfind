@@ -576,7 +576,7 @@ if ($base) {
     DeepFind\Project::use($prodId);
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     check('intégration : sans layer, affichage par défaut + filtres et tris par défaut', ($cf['layer'] ?? 'x') === null
-        && ($cf['sorts']['relevance'] ?? '') === 'Pertinence' && array_column($cf['sorts']['items'] ?? [], 'key') === ['price_asc', 'price_desc', 'newest']
+        && ($cf['sorts']['relevance'] ?? '') === 'Pertinence' && array_column($cf['sorts']['items'] ?? [], 'key') === ['price:asc', 'price:desc', 'created:desc']
         && in_array('price', array_column($cf['filters'] ?? [], 'code'), true));
     $l1 = $WC::createLayer('Cabesto', 'fullscreen');
     $l2 = $WC::createLayer('Essai', 'embedded');
@@ -584,16 +584,23 @@ if ($base) {
     $WC::saveLayer($l2, 'Essai intégré', 'embedded', ['container' => 'main#maincontent<script>', 'input' => '#search', 'url_state' => '1', 'gap' => 500]);
     $WC::activateLayer($l2, true);
     $al = $WC::activeLayer();
+    $WC::saveLayer($l1, 'Cabesto', 'below', ['min_chars' => 0, 'logo' => 'javascript:alert(1)', 'color_primary' => '#1069F9', 'color_text' => 'red',
+        'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>']);
+    $ls = $WC::layer($l1);
+    check('intégration : type figé, identité et personnalisation nettoyées', $ls['type'] === 'fullscreen' && $ls['settings']['min_chars'] === 1
+        && $ls['settings']['logo'] === '' && $ls['settings']['color_primary'] === '#1069f9' && $ls['settings']['color_text'] === ''
+        && $ls['settings']['css'] === '.df-title { color: red; }' && $ls['settings']['card_template'] === '<div>{{name}}<img src="{{image}}"></div>');
     check('intégration : activation exclusive, réglages nettoyés', $al['id'] === $l2 && !$WC::layer($l1)['active'] && $al['settings']['container'] === 'main#maincontentscript'
         && $al['settings']['url_state'] === true && $al['settings']['gap'] === 80);
     $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'label' => '', 'visible' => false], ['code' => 'inconnu', 'visible' => true]]);
-    $WC::saveSorts('fr', 'Les plus pertinents', [['key' => 'name_asc', 'label' => 'Nom A-Z'], ['key' => 'price_desc', 'label' => ''], ['key' => 'margin_desc', 'label' => 'interdit']]);
+    $WC::saveSorts('fr', 'Les plus pertinents', [['field' => 'name', 'dir' => 'asc', 'label' => 'Nom A-Z'], ['field' => 'price', 'dir' => 'desc', 'label' => ''],
+        ['field' => 'margin_rate', 'dir' => 'desc', 'label' => 'interdit'], ['field' => 'name', 'dir' => 'asc', 'label' => 'doublon']]);
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     $codes = array_column($cf['filters'] ?? [], 'code');
     check('intégration : config widget (layer actif, ordre des filtres, tris sans tri interne)', ($cf['layer']['type'] ?? '') === 'embedded'
         && ($cf['layer']['container'] ?? '') === 'main#maincontentscript' && array_slice($codes, 0, 2) === ['price', 'brand'] && !in_array('inconnu', $codes, true)
         && ($cf['filters'][0]['label'] ?? '') === 'Budget' && ($cf['filters'][1]['visible'] ?? true) === false
-        && ($cf['sorts']['relevance'] ?? '') === 'Les plus pertinents' && ($cf['sorts']['items'] ?? []) === [['key' => 'name_asc', 'label' => 'Nom A-Z'], ['key' => 'price_desc', 'label' => 'Prix décroissant']]
+        && ($cf['sorts']['relevance'] ?? '') === 'Les plus pertinents' && ($cf['sorts']['items'] ?? []) === [['key' => 'name:asc', 'label' => 'Nom A-Z'], ['key' => 'price:desc', 'label' => 'Prix décroissant']]
         && !str_contains(json_encode($cf), 'margin'));
     [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=3");
     check('intégration : filtre masqué (marques) absent des résultats', !in_array('brand', array_column($d['facets'] ?? [], 'code'), true));
@@ -604,7 +611,11 @@ if ($base) {
     DeepFind\Settings::set('widget_sorts_fr', '');
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     check('intégration : layer désactivé = affichage par défaut', ($cf['layer'] ?? 'x') === null && $WC::layers() === []);
-    check('tri par nom accepté par l\'API publique', DeepFind\Search\SearchRequest::fromArray(['q' => 'x', 'sort' => 'name_desc'])->sort === 'name_desc');
+    $SR = DeepFind\Search\SearchRequest::class;
+    check('tris : champ:ordre accepté, marge refusée, ancienne clé conservée', $SR::fromArray(['q' => 'x', 'sort' => 'brand:desc'])->sort === 'brand:desc'
+        && $SR::fromArray(['q' => 'x', 'sort' => 'margin_rate:desc'])->sort === 'relevance' && $SR::fromArray(['q' => 'x', 'sort' => 'price_asc'])->sort === 'price_asc');
+    [$c] = $get("/api/v1/search?key=$key&q=palme&sort=" . rawurlencode('price:desc'));
+    check('tris : nouveau format accepté par l\'API', $c === 200);
 
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
