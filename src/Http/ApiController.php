@@ -150,6 +150,8 @@ final class ApiController
         Response::json([
             'enabled' => \DeepFind\Project::isActive(),
             'enter_submit' => Settings::int('widget_enter_submit') === 1,
+            // neutraliser l'autocomplétion d'origine du site (data-native="keep" / "block" sur le script reste prioritaire)
+            'block_native' => Settings::int('widget_block_native') === 1,
         ] + \DeepFind\Widget\WidgetConfig::forWidget($lang), 200, $cors + ['Cache-Control' => 'private, max-age=60']);
     }
 

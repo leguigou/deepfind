@@ -560,6 +560,12 @@ if ($base) {
     // Projet désactivé : l'API le signale au widget, qui ne prend pas la main ; recherche refusée
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     check('config widget : projet actif', $c === 200 && ($cf['enabled'] ?? null) === true && array_key_exists('enter_submit', $cf));
+    check('config widget : autocomplétion d\'origine bloquée par défaut', ($cf['block_native'] ?? null) === true);
+    DeepFind\Settings::set('widget_block_native', '0');
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    check('config widget : réglage « bloquer l\'autocomplétion » désactivable', ($cf['block_native'] ?? null) === false);
+    DeepFind\Settings::set('widget_block_native', '1');
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     DeepFind\Project::setActive($prodId, false);
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     [$cs] = $get("/api/v1/search?key=$key&q=palme");

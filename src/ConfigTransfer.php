@@ -22,7 +22,7 @@ final class ConfigTransfer
     ];
 
     /** Paramètres de recherche et d'import */
-    public const SEARCH_SETTINGS = ['posts_limit', 'max_limit', 'cache_ttl', 'facet_values_limit', 'log_searches', 'max_drop_percent', 'widget_enter_submit'];
+    public const SEARCH_SETTINGS = ['posts_limit', 'max_limit', 'cache_ttl', 'facet_values_limit', 'log_searches', 'max_drop_percent', 'widget_enter_submit', 'widget_block_native'];
 
     public const SECTIONS = [
         'relevance' => 'Pertinence & score métier (ordre des champs, correspondance, poids, bonus début du nom…)',

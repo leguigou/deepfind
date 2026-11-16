@@ -3,7 +3,8 @@
  * <script src="https://search.example.com/widget/deepfind.js" defer
  *         data-key="pk_…" data-lang="fr" data-input="#search" data-anchor="header"
  *         data-results-url="https://www.example.com/catalogsearch/result/?q="></script>
- * data-native="keep"   : laisse fonctionner l'autocomplétion d'origine du site (par défaut : elle est neutralisée)
+ * data-native="keep"   : laisse fonctionner l'autocomplétion d'origine du site ; "block" : la neutralise
+ *                        (sans attribut : réglage de l'extranet, Paramètres › Widget sur le site ; activé par défaut)
  * data-hide=".panneau" : sélecteurs CSS supplémentaires de panneaux d'origine à masquer
  * data-position="anchor" : panneau sous data-anchor (par défaut : juste sous la barre de recherche, avec data-gap px d'écart)
  * data-enter="off"     : la touche Entrée n'ouvre pas la page de résultats (sinon : réglage de l'extranet, Paramètres › Widget)
@@ -31,7 +32,7 @@
     pageSize: Math.min(48, parseInt(ds.pageSize || '20', 10)),
     debounce: parseInt(ds.debounce || '180', 10),
     // Autocomplétion d'origine du site (Magento…) : neutralisée par défaut pour ne pas s'ouvrir en même temps
-    blockNative: ds.native !== 'keep',
+    blockNative: ds.native !== 'keep', // remplacé par le réglage de l'extranet si data-native est absent (voir applyCfg)
     hide: ds.hide || '',
     position: ds.position === 'anchor' ? 'anchor' : 'input',
     gap: parseInt(ds.gap || '12', 10),
@@ -80,7 +81,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=12'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=13'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1094,7 +1095,7 @@
   }
   function writeCfg(c) {
     try {
-      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false,
+      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1104,6 +1105,8 @@
     if (cfg.enter === null && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
+    if (ds.native !== 'keep' && ds.native !== 'block' && c.block_native !== undefined) { cfg.blockNative = c.block_native !== false; }
+    if (ds.native === 'block') { cfg.blockNative = true; }
     var l = c.layer;
     if (l && TYPES[l.type]) {
       cfg.type = l.type;
