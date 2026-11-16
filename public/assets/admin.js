@@ -125,6 +125,15 @@
         if (form.requestSubmit) { form.requestSubmit(btn && btn.form === form ? btn : undefined); } else { form.submit(); }
       });
     }, true);
+    // data-confirm-change : interrupteur qui demande confirmation, puis envoie son formulaire (sinon revient à l'état initial)
+    document.querySelectorAll('input[data-confirm-change]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var turnedOn = cb.checked;
+        window.DeepFindUI.confirm(cb.getAttribute('data-confirm-change'), { ok: cb.getAttribute('data-confirm-ok') || 'Confirmer', danger: !turnedOn }).then(function (yes) {
+          if (yes) { cb.form.submit(); } else { cb.checked = !turnedOn; }
+        });
+      });
+    });
     document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
       el.addEventListener('change', function () { el.form.submit(); });
     });
