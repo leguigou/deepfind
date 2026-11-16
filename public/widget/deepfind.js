@@ -86,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=18'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=19'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1121,6 +1121,26 @@
     preview = ds.preview || window.sessionStorage.getItem(PREVIEW_KEY) || '';
   } catch (e) { preview = ds.preview || ''; }
   if (preview && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9a-f]{24}$/.test(preview)) { preview = ''; }
+  // Logo DeepFind (loupe à cercles), dessiné en SVG sans HTML inséré
+  function dfLogo() {
+    var NS = 'http://www.w3.org/2000/svg';
+    var mk = function (tag, attrs, parent) {
+      var n = document.createElementNS(NS, tag);
+      Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      if (parent) { parent.appendChild(n); }
+      return n;
+    };
+    var svg = mk('svg', { 'class': 'df-preview-logo', width: '20', height: '20', viewBox: '0 0 32 32', 'aria-hidden': 'true', focusable: 'false' });
+    var grad = mk('linearGradient', { id: 'df-preview-g', x1: '0', y1: '0', x2: '1', y2: '1' }, mk('defs', {}, svg));
+    mk('stop', { offset: '0', 'stop-color': '#ff4f8b' }, grad);
+    mk('stop', { offset: '1', 'stop-color': '#ff6a5c' }, grad);
+    var paint = 'url(#df-preview-g)';
+    mk('circle', { cx: '13.5', cy: '13.5', r: '10', fill: 'none', stroke: paint, 'stroke-width': '3.4' }, svg);
+    mk('circle', { cx: '13.5', cy: '13.5', r: '5.6', fill: 'none', stroke: paint, 'stroke-width': '1.6', opacity: '.6' }, svg);
+    mk('circle', { cx: '13.5', cy: '13.5', r: '2.4', fill: paint }, svg);
+    mk('path', { d: 'M21.2 21.2 27.6 27.6', stroke: paint, 'stroke-width': '4.2', 'stroke-linecap': 'round' }, svg);
+    return svg;
+  }
   // Pastille discrète en haut à droite (détail au survol) ; passe à gauche si elle gênerait le bouton fermer de la fenêtre
   function previewBadge(detail, isError) {
     if (isError) { console.warn('[DeepFind] ' + detail); }
@@ -1128,8 +1148,9 @@
       var bar = el('div', 'df-preview-bar' + (isError ? ' df-preview-error' : ''));
       bar.setAttribute('role', 'status');
       bar.title = detail;
-      bar.appendChild(el('span', null, isError ? 'Aperçu DeepFind indisponible' : 'Aperçu DeepFind'));
-      var quit = el('button', 'df-preview-quit', 'Quitter');
+      bar.appendChild(dfLogo());
+      bar.appendChild(el('span', 'df-preview-name', isError ? 'DeepFind : aperçu indisponible' : 'DeepFind'));
+      var quit = el('button', 'df-preview-quit', 'Quitter l\'aperçu');
       quit.title = 'Quitter l\'aperçu';
       quit.setAttribute('aria-label', 'Quitter l\'aperçu DeepFind');
       quit.type = 'button';
