@@ -5,7 +5,7 @@ Pour l'installation et l'usage métier, voir `README.md`.
 
 ## Objectif du projet
 
-Recherche instantanée (type Doofinder) pour le site Magento 2.4.7 de Cabesto : flux XML produits et blog,
+Recherche instantanée (type Doofinder) pour un site Magento 2.4.7 : flux XML produits et blog,
 indexation dans Meilisearch, API PHP appelée par un widget JavaScript, extranet de gestion. Langue prioritaire : FR, multi-langue prévu.
 
 ## Pile technique et contraintes

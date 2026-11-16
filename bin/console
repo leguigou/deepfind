@@ -91,7 +91,7 @@ try {
             } else {
                 $err('✘ Meilisearch injoignable : vérifiez MEILI_URL / MEILI_MASTER_KEY et le service meilisearch.');
             }
-            $out('Étapes suivantes : php bin/console key:create --name="Site" --origins=cabesto.com puis import:run --all');
+            $out('Étapes suivantes : php bin/console key:create --name="Site" --origins=example.com puis import:run --all');
             break;
 
         case 'import:run':
