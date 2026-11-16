@@ -482,6 +482,24 @@ if (preg_match('#^/indexes/([^/]+)(/.*)?$#', $path, $m)) {
         out(['results' => array_slice($res, (int) ($body['offset'] ?? 0), (int) ($body['limit'] ?? 20)), 'total' => count($res)]);
     } elseif ($sub === '/search') {
         out(search($idx, $body + ['indexUid' => $uid]));
+    } elseif ($sub === '/facet-search') {
+        // recherche dans toutes les valeurs d'un champ (contient le texte, sans tenir compte des majuscules)
+        $name = (string) ($body['facetName'] ?? '');
+        $needle = mb_strtolower((string) ($body['facetQuery'] ?? ''));
+        $count = [];
+        foreach ($idx['docs'] as $doc) {
+            foreach (array_unique(array_map('strval', flat(getPath($doc, $name)))) as $v) {
+                if ($v !== '' && ($needle === '' || str_contains(mb_strtolower($v), $needle))) {
+                    $count[$v] = ($count[$v] ?? 0) + 1;
+                }
+            }
+        }
+        arsort($count);
+        $hits = [];
+        foreach (array_slice($count, 0, 100, true) as $v => $n) {
+            $hits[] = ['value' => (string) $v, 'count' => $n];
+        }
+        out(['facetHits' => $hits, 'facetQuery' => $body['facetQuery'] ?? '', 'processingTimeMs' => 0]);
     } else {
         out(['message' => 'route non gérée par le faux serveur', 'code' => 'not_found'], 404);
     }

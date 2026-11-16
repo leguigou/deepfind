@@ -160,6 +160,16 @@ final class MeiliClient
         return $this->task($this->request('POST', '/swap-indexes', [['indexes' => [$a, $b]]]));
     }
 
+    /**
+     * Recherche dans les valeurs d'un champ filtrable (toutes les valeurs, pas seulement les 100 renvoyées par une recherche).
+     * @return list<array{value:string, count:int}>
+     */
+    public function facetSearch(string $uid, string $facetName, string $facetQuery): array
+    {
+        $res = $this->request('POST', '/indexes/' . rawurlencode($uid) . '/facet-search', ['facetName' => $facetName, 'facetQuery' => $facetQuery]);
+        return array_map(static fn ($h) => ['value' => (string) $h['value'], 'count' => (int) $h['count']], $res['facetHits'] ?? []);
+    }
+
     /** @param list<array<string,mixed>> $queries
      *  @return list<array<string,mixed>> */
     public function multiSearch(array $queries): array
