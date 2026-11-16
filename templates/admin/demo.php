@@ -10,7 +10,7 @@
 </head>
 <body>
 <header class="demo-header" id="demo-header">
-  <div class="demo-logo">CABESTO</div>
+  <div class="demo-logo">MA BOUTIQUE</div>
   <form class="demo-search" action="#" role="search">
     <input id="search" name="q" type="search" placeholder="Rechercher un produit, une marque, un SKU…" autocomplete="off">
   </form>

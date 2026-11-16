@@ -84,7 +84,7 @@
 
         <div data-mode-panel="code" hidden>
           <div class="bn-code-head"><span>HTML</span><button type="button" class="icon-btn" data-copy aria-label="Copier le code">⧉</button></div>
-          <textarea data-f="html" class="bn-code-area" rows="10" spellcheck="false" placeholder="&lt;a href=&quot;https://www.cabesto.com/…&quot;&gt;&lt;img src=&quot;https://…&quot; alt=&quot;…&quot;&gt;&lt;/a&gt;"></textarea>
+          <textarea data-f="html" class="bn-code-area" rows="10" spellcheck="false" placeholder="&lt;a href=&quot;https://www.example.com/…&quot;&gt;&lt;img src=&quot;https://…&quot; alt=&quot;…&quot;&gt;&lt;/a&gt;"></textarea>
           <small class="muted">Balises autorisées : liens, images (picture / source), textes et blocs. Les scripts, iframes, formulaires, événements (onclick…) et liens javascript: sont retirés à l'enregistrement.</small>
         </div>
       </div>

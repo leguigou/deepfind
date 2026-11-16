@@ -108,7 +108,7 @@ $colors = [
     <h2 class="lp-title">Identité de marque</h2>
     <p class="muted lp-intro">Personnalisez le logo et les couleurs de votre marque pour ce layer.</p>
     <label>Logo
-      <input name="logo" type="url" value="<?= e($s['logo']) ?>" placeholder="https://www.cabesto.com/logo.png">
+      <input name="logo" type="url" value="<?= e($s['logo']) ?>" placeholder="https://www.example.com/logo.png">
       <small class="muted">Adresse de l'image du logo (https). PNG ou SVG avec fond transparent recommandé.
         Plein écran et Flottant : à gauche de la barre de recherche du layer ; autres mises en page : en haut des résultats.</small>
     </label>

@@ -1,19 +1,18 @@
 # DeepFind
 
-Moteur de recherche instantanée pour le site Cabesto, dans l'esprit de Doofinder :
+Moteur de recherche instantanée pour un site e-commerce Magento 2, dans l'esprit de Doofinder :
 
 - **Recherche** : tolérance aux fautes de frappe, synonymes et alias, recherche par SKU (parent ou enfant) et EAN.
-- **Règles de résultats** : produits épinglés, remontés ou masqués, redirections.
-- **Filtres** : marques, catégories, attributs, stock, promotion.
-- **Panneau de résultats** : chargement au défilement, articles de blog dans la colonne de gauche.
-- **Extranet de gestion** : flux, mapping, imports, règles, statistiques, journal des recherches, robots et blocages.
+- **Mise en avant** : résultats personnalisés (produits affichés en premier, seuls ou exclus), règles de boost, bannières, redirections.
+- **Fenêtre de recherche configurable** : quatre mises en page (sous la barre, plein écran, flottant, intégré), couleurs et logo, CSS et modèle de carte produit, filtres et tris réglables, version mobile.
+- **Extranet de gestion** : flux, mapping visuel, imports, pertinence, statistiques, journal des recherches, robots et blocages, projets de test.
 - **Protection anti-robots** : seuils d'appels par IP et blocage automatique.
 
-![Tableau de bord (thème sombre)](docs/screenshots/01-dashboard-sombre.png)
+![Tableau de bord (thème sombre)](docs/screenshots/01-tableau-de-bord.png)
 
-| Widget sur le site | Aperçu interne (marge, score) | Thème clair, menu replié |
+| Widget « sous la barre » | Widget sur mobile | Widget « plein écran » |
 |---|---|---|
-| ![](docs/screenshots/06-widget.png) | ![](docs/screenshots/02-apercu-interne.png) | ![](docs/screenshots/04-stats-clair-menu-replie.png) |
+| ![](docs/screenshots/02-widget-sous-la-barre.png) | ![](docs/screenshots/03-widget-mobile.png) | ![](docs/screenshots/04-widget-plein-ecran.png) |
 
 > ⚠️ Les flux fournis dans `samples/` sont **fictifs** : produits, prix, stocks et marges sont inventés. Les noms de marques ne servent qu'à illustrer.
 > Testez toute installation ou mise à jour sur un serveur de **recette** avant la production.
@@ -25,45 +24,47 @@ Moteur de recherche instantanée pour le site Cabesto, dans l'esprit de Doofinde
 1. [Comment ça marche](#1-comment-ça-marche)
 2. [Logiciels à installer](#2-logiciels-à-installer)
 3. [Installation pas à pas](#3-installation-pas-à-pas)
-4. [Intégrer le widget sur le site Magento](#4-intégrer-le-widget-sur-le-site-magento)
+4. [Intégrer le widget sur le site](#4-intégrer-le-widget-sur-le-site)
 5. [Formats des flux et mapping](#5-formats-des-flux-et-mapping)
 6. [Utiliser l'extranet](#6-utiliser-lextranet)
-7. [Anti-robots](#7-anti-robots)
-8. [Journaux de recherche et RGPD](#8-journaux-de-recherche-et-rgpd)
-9. [Commandes](#9-commandes)
-10. [Tests](#10-tests)
-11. [Dépannage](#11-dépannage)
-12. [Limites connues de la V1](#12-limites-connues-de-la-v1)
+7. [Personnaliser le widget (Intégration)](#7-personnaliser-le-widget-intégration)
+8. [Pertinence et mise en avant](#8-pertinence-et-mise-en-avant)
+9. [Anti-robots](#9-anti-robots)
+10. [Journaux de recherche et RGPD](#10-journaux-de-recherche-et-rgpd)
+11. [Commandes](#11-commandes)
+12. [Tests](#12-tests)
+13. [Dépannage](#13-dépannage)
+14. [Limites connues](#14-limites-connues)
 
 ---
 
 ## 1. Comment ça marche
 
 ```
- Magento 2.4.7 ──flux XML produits (complet + delta)──┐
- Magefan Blog ──flux XML articles─────────────────────┤
-                                                      ▼
-                           bin/console import:run (cron / bouton extranet)
-                                                      │  lecture en flux, regroupement parents/enfants,
-                                                      │  calcul prix « dès », stock, promo, score métier
-                                                      ▼
-                                              Meilisearch (127.0.0.1:7700, jamais exposé)
-                                                      ▲
- Navigateur ─ widget JS (clé publique) ─► /api/v1/search (PHP) ─┘   + MySQL : config, règles, journaux
+ Magento 2 ──flux XML produits (complet + delta)──┐
+ Blog (Magefan) ──flux XML articles───────────────┤
+                                                  ▼
+                       bin/console import:run (planificateur / bouton extranet)
+                                                  │  lecture en flux, regroupement parents/enfants,
+                                                  │  calcul prix « dès », stock, promo, score métier
+                                                  ▼
+                                          Meilisearch (127.0.0.1:7700, jamais exposé)
+                                                  ▲
+ Navigateur ─ widget JS (clé publique) ─► /api/v1/search (PHP) ─┘   + MySQL : configuration, règles, journaux
                                            • contrôle clé + domaine
                                            • anti-robots (APCu/Redis)
-                                           • règles (épingler/masquer/redirection)
+                                           • règles (résultats personnalisés, boosts, redirections)
                                            • ne renvoie QUE les champs d'affichage (jamais la marge)
 ```
 
 - **Meilisearch** fait la recherche elle-même (index en mémoire, réponses en quelques millisecondes).
-- **PHP / Apache / MySQL**, que vous avez déjà, servent l'API, l'extranet, les imports et les journaux.
+- **PHP / Apache / MySQL** servent l'API, l'extranet, les imports et les journaux.
 - **Aucune dépendance Composer** : le code n'utilise que PHP et ses extensions standard.
 - Un **import complet** construit un index temporaire, vérifie qu'il n'a pas perdu trop de produits, puis bascule instantanément. Les visiteurs ne voient aucune coupure, et un flux vide ou cassé ne vide jamais la recherche.
 
 ## 2. Logiciels à installer
 
-Sur la VM. Commandes pour Debian/Ubuntu ; adaptez-les à votre distribution.
+Sur la machine virtuelle. Commandes pour Debian/Ubuntu ; adaptez-les à votre distribution.
 
 | Logiciel | Pourquoi | Obligatoire |
 |---|---|---|
@@ -71,21 +72,21 @@ Sur la VM. Commandes pour Debian/Ubuntu ; adaptez-les à votre distribution.
 | Extensions PHP : `pdo_mysql`, `curl`, `xml` (xmlreader, dom, simplexml), `mbstring`, `zlib` | Application | ✅ |
 | Extension PHP **`apcu`** | Compteurs anti-robots et cache, en mémoire | Fortement conseillé (sinon Redis ou repli MySQL) |
 | OPcache activé | Performances PHP | Fortement conseillé |
-| MySQL 8 ou MariaDB 10.6+ | Configuration, règles, journaux | ✅ (déjà présent) |
-| Apache 2.4 : `proxy_fcgi`, `headers`, `deflate`, `http2`, `ssl` | Serveur web | ✅ (déjà présent) |
+| MySQL 8 ou MariaDB 10.6+ | Configuration, règles, journaux | ✅ |
+| Apache 2.4 : `proxy_fcgi`, `headers`, `deflate`, `http2`, `ssl` | Serveur web | ✅ |
 | **Meilisearch** 1.x (**1.10 minimum**) | Moteur de recherche | ✅ **à installer** |
 | Supervisor | Traiter les imports lancés depuis l'extranet | Conseillé (sinon une ligne cron) |
 | Redis + `php-redis` | Uniquement si plusieurs serveurs web | Facultatif |
 
-**Mémoire vive pour environ 70 000 produits :** comptez 8 Go sur la VM, dont 4 Go pour Meilisearch. Prévoyez 40 Go de disque SSD.
+**Mémoire vive pour environ 70 000 produits :** comptez 8 Go sur la machine, dont 4 Go pour Meilisearch. Prévoyez 40 Go de disque SSD.
 
-> PHP 8.5 : sur Debian/Ubuntu, les paquets viennent en général du dépôt de Ondřej Surý (`packages.sury.org` / PPA `ondrej/php`).
+> PHP 8.5 : sur Debian/Ubuntu, les paquets viennent en général du dépôt d'Ondřej Surý (`packages.sury.org` / PPA `ondrej/php`).
 > Vérifiez la disponibilité de `php8.5-apcu` au moment de l'installation. S'il n'existe pas encore, mettez `RATE_STORE=redis` (avec `php8.5-redis`) ou `RATE_STORE=mysql` dans `.env`.
-> Le code a été testé sous **PHP 8.3** (pas d'environnement 8.5 disponible pour les tests). Il n'utilise aucune fonction dépréciée en 8.5 à notre connaissance. Lancez `php bin/console check`, puis la suite de tests, sur votre VM.
+> Le code est testé sous **PHP 8.3** (voir [Tests](#12-tests)). Il n'utilise aucune fonction dépréciée en 8.5 à notre connaissance. Lancez `php bin/console check`, puis la suite de tests, sur votre serveur.
 
 ## 3. Installation pas à pas
 
-Toutes les commandes sont à lancer en root (ou avec `sudo`) **sur le serveur de recette d'abord**.
+Toutes les commandes sont à lancer en root (ou avec `sudo`), **sur le serveur de recette d'abord**.
 
 ### 3.1 PHP et extensions
 
@@ -159,7 +160,7 @@ cd /var/www/deepfind && cp .env.example .env && chmod 640 .env
 php bin/console admin:token
 ```
 
-Copiez les valeurs `ADMIN_TOKEN` et `APP_SECRET` affichées dans `.env`, puis complétez `DB_*`, `MEILI_MASTER_KEY` (la même que l'étape 3.2) et `APP_URL`.
+Copiez les valeurs `ADMIN_TOKEN` et `APP_SECRET` affichées dans `.env`, puis complétez `DB_*`, `MEILI_MASTER_KEY` (la même qu'à l'étape 3.2) et `APP_URL` (adresse publique de DeepFind, par exemple `https://search.example.com`).
 
 ```bash
 chown -R www-data: var && chgrp www-data .env
@@ -173,9 +174,11 @@ php bin/console check
 php bin/console install
 ```
 
+`install` crée ou met à jour les tables. Vous pouvez la relancer sans risque après chaque mise à jour du code : elle ajoute ce qui manque sans rien effacer.
+
 ### 3.5 Apache
 
-Copiez `deploy/apache-vhost.conf` dans `/etc/apache2/sites-available/deepfind.conf` et adaptez le nom de domaine et les certificats. Ensuite :
+Copiez `deploy/apache-vhost.conf` dans `/etc/apache2/sites-available/deepfind.conf`, puis adaptez le nom de domaine et les certificats. Ensuite :
 
 ```bash
 a2enmod proxy_fcgi setenvif headers deflate http2 ssl && a2enconf php8.5-fpm
@@ -185,7 +188,7 @@ a2enmod proxy_fcgi setenvif headers deflate http2 ssl && a2enconf php8.5-fpm
 a2ensite deepfind && apachectl configtest && systemctl reload apache2
 ```
 
-Conseillé : limitez `/admin` aux IP du siège ou du VPN (bloc commenté dans le fichier).
+Conseillé : limitez `/admin` aux adresses IP de vos bureaux ou de votre VPN (bloc commenté dans le fichier).
 
 ### 3.6 Worker et tâches planifiées
 
@@ -197,43 +200,60 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 
 ### 3.7 Premier import
 
-1. Connectez-vous à `https://search.cabesto.com/admin` avec le jeton `ADMIN_TOKEN`.
-2. **Flux & mapping** : remplacez l'URL d'exemple de `produits_fr` par l'URL de votre flux Magento, puis faites de même pour `blog_fr`.
+1. Connectez-vous à `https://search.example.com/admin` (votre `APP_URL` suivi de `/admin`) avec le jeton `ADMIN_TOKEN`.
+2. **Catalogues › Flux & mapping** : remplacez l'URL d'exemple de `produits_fr` par l'URL de votre flux Magento, puis faites de même pour `blog_fr`.
 3. **Mapping** (mapping visuel) : DeepFind analyse le flux. Pour chaque champ (obligatoires en premier), choisissez à droite le champ du flux correspondant, puis enregistrez. Voir la section 5.
 4. **Tester** : vérifiez que le mapping produit le bon document, sans rien indexer.
 5. **Planification des imports** (dans la fiche du flux) : choisissez par exemple « Chaque nuit à 3 h 15 » pour l'import complet et « Toutes les 15 min de 6 h à 23 h » pour le delta.
-6. **Import complet** pour un premier chargement immédiat, puis suivez l'avancement dans **Imports**.
-7. **Clés & intégration** : créez une clé pour `cabesto.com`, puis testez avec **Démo du widget**.
+6. **Import complet** pour un premier chargement immédiat, puis suivez l'avancement dans **Catalogues › Imports**.
+7. **Paramètres › Clés** : créez une clé pour le domaine de votre site (ex. `example.com`), puis testez avec **Recommandations › Démo du widget**.
+8. **Paramètres › Intégration** : copiez le code à ajouter sur le site (section 4) et réglez l'affichage (section 7).
 
-## 4. Intégrer le widget sur le site Magento
+## 4. Intégrer le widget sur le site
 
-Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
+Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=21" defer
+<script src="https://search.example.com/widget/deepfind.js?v=21" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
-  data-results-url="https://www.cabesto.com/fr/catalogsearch/result/?q="></script>
+  data-results-url="https://www.example.com/fr/catalogsearch/result/?q="></script>
 ```
 
-- **Activation** : au chargement, le widget demande à l'API (`/api/v1/config`) si le projet de la clé est actif. Il ne prend la main (fenêtre de recherche, neutralisation de l'autocomplétion d'origine) que si c'est le cas. **Projet désactivé** (page Projets) ou **API injoignable** : rien n'est modifié, la recherche d'origine du site fonctionne normalement. La réponse est gardée 1 min par le navigateur et 5 min dans la session du visiteur.
-- Le widget s'accroche au champ de recherche existant. La fenêtre s'ouvre **juste sous la barre de recherche** (écart réglable : `data-gap="12"`), le reste de la page est assombri et la barre reste mise en avant et utilisable. Un clic sur le fond sombre ferme la fenêtre. Pour l'ouvrir sous un autre élément : `data-position="anchor" data-anchor="header.page-header"`.
-- **Touche Entrée** : ouvre la page de résultats du site (Paramètres › Widget sur le site), ou, si ce réglage est désactivé, laisse seulement la fenêtre DeepFind. `data-enter="off"` / `"on"` force le comportement sur une page.
-- **Clics** : chaque ouverture d'un produit ou d'un article depuis la fenêtre (clic, Ctrl/Cmd + clic, clic molette) est enregistrée. Les clics des 30 derniers jours entrent dans le score métier au recalcul (import, recalcul nocturne ou « Recalculer les scores »).
-- **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », « Recent Searches »…) : neutralisée par défaut. Le widget intercepte les événements du champ avant les scripts du site, qui ne s'ouvrent donc plus ; les panneaux connus (`#search_autocomplete`, Amasty, Mirasvit, Smile ElasticSuite) sont en plus masqués. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"` (clic droit sur le panneau › Inspecter pour trouver son `id` ou sa `class`). Pour garder l'autocomplétion d'origine : réglage « Bloquer l'autocomplétion d'origine » dans Paramètres › Widget sur le site, ou `data-native="keep"` sur le script (prioritaire sur le réglage). La touche Entrée envoie toujours le formulaire du site (ou va vers `data-results-url`).
-- Il charge ses styles tout seul (`deepfind.css`). Les couleurs se changent via les variables `--df-*` du fichier CSS.
-- **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
-- **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
+**Fonctionnement**
+- **Activation** : au chargement, le widget demande à l'API (`/api/v1/config`) si le projet de la clé est actif, et récupère l'affichage choisi dans l'extranet (layer actif, filtres, tris). Il ne prend la main que si le projet est actif. **Projet désactivé** ou **API injoignable** : rien n'est modifié, la recherche d'origine du site fonctionne normalement. La réponse est gardée 1 min par le navigateur et 5 min dans la session du visiteur : un changement dans l'extranet arrive sur le site en 5 minutes au plus.
+- **Affichage** : selon le layer actif (section 7) : sous la barre de recherche (par défaut), plein écran, flottant ou intégré dans un bloc de la page.
+- **Touche Entrée** : ouvre la page de résultats du site, ou, si ce réglage est désactivé (Paramètres › Paramètres › Widget sur le site), laisse seulement la fenêtre DeepFind. `data-enter="off"` / `"on"` force le comportement sur une page.
+- **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », Amasty, Mirasvit, Smile ElasticSuite…) : bloquée par défaut, pour que deux fenêtres ne s'ouvrent pas en même temps. Le réglage « Bloquer l'autocomplétion d'origine » (Paramètres › Paramètres › Widget sur le site) la réactive. Sur le script, `data-native="keep"` (laisser) ou `data-native="block"` (bloquer) est prioritaire sur ce réglage. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"`.
+- **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres (marques, catégories, attributs, prix avec curseur, en stock, en promotion), blocs de filtres repliables, tris, articles de blog, redirections, bannières, touche Échap, version mobile avec bouton « Filtres ».
+- **Clics** : chaque ouverture d'un produit, d'un article ou d'une bannière depuis la fenêtre (clic, Ctrl/Cmd + clic, clic molette) est mesurée (`sendBeacon`), sans cookie, avec un identifiant aléatoire créé à chaque chargement de page. Les clics des 30 derniers jours entrent dans le score métier.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=20` en `?v=21`) pour forcer le rechargement par les navigateurs.
+
+**Attributs du script**
+
+| Attribut | Rôle |
+|---|---|
+| `data-key` | Clé publique (obligatoire) |
+| `data-lang` | Langue des résultats (`fr` par défaut) |
+| `data-input` | Sélecteur CSS du ou des champs de recherche du site (si le layer actif n'en indique pas) |
+| `data-results-url` | Page « Tout voir » (la recherche est ajoutée à la fin). Vide = bouton masqué |
+| `data-gap` | Layer « Sous la barre » : écart en pixels entre la barre de recherche et la fenêtre (12 par défaut) |
+| `data-position="anchor"` + `data-anchor` | Layer « Sous la barre » : ouvrir plutôt la fenêtre sous un élément du site (ex. `header.page-header`) |
+| `data-enter` | `off` / `on` : comportement de la touche Entrée (sinon : réglage de l'extranet) |
+| `data-native` | `keep` / `block` : autocomplétion d'origine du site (sinon : réglage de l'extranet) |
+| `data-hide` | Sélecteurs CSS supplémentaires de panneaux d'origine à masquer |
+| `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
+| `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
+
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=20` en `?v=21`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
 Deux options pour les flux :
 
 - **Le format DeepFind (recommandé)** : le mapping par défaut fonctionne sans modification. Exemples complets : `samples/products_fr.xml`, `samples/products_fr_delta.xml`, `samples/blog_fr.xml`.
-- **Votre propre format** : vous adaptez le mapping JSON de la source. Exemple : `samples/mapping_flat_example.json` pour `samples/products_fr_flat.xml`.
+- **Votre propre format** : vous adaptez le mapping de la source (mapping visuel ou JSON). Exemple : `samples/mapping_flat_example.json` pour `samples/products_fr_flat.xml`.
 
 **Règles communes :**
 - Encodage UTF-8.
@@ -251,7 +271,7 @@ Deux options pour les flux :
 | `sku` | texte | ✅ | recherche exacte prioritaire |
 | `type` | simple/configurable… | | info |
 | `parent_id` | texte | flux à plat | rattachement d'un enfant à son parent |
-| `enabled` | 0/1 | | 0 = ignoré |
+| `enabled` | 0/1 | | 0 = produit non vendable (voir « Produits désactivés ») |
 | `name` | texte | ✅ | recherche (poids fort), affichage |
 | `brand` | texte | conseillé | filtre « Marques » |
 | `url`, `image`, `image_hover` | URL http(s) | url ✅ | affichage (utilisez l'image *cache* redimensionnée de Magento) |
@@ -269,7 +289,7 @@ Deux options pour les flux :
 
 **Blocs particuliers :**
 - `categories` : une ou plusieurs catégories, avec leur chemin « A > B > C ».
-- `attributes` : attributs génériques (code, libellé, `filterable="1"`). Les attributs filtrables deviennent des filtres du widget.
+- `attributes` : attributs génériques (code, libellé, `filterable="1"`). Les attributs filtrables peuvent devenir des filtres du widget (section 7).
 - `variants` : les enfants, avec les champs `id, sku, ean, url, image, price, final_price, in_stock, salable_qty`, plus leurs propres attributs (taille…).
 
 ### Parents et enfants Magento
@@ -281,7 +301,7 @@ Deux options pour les flux :
 - Un seul document par parent.
 - Prix « dès » = celui de l'enfant en stock le moins cher.
 - Le parent est « en stock » si au moins un enfant l'est.
-- Les SKU et EAN des enfants sont recherchables : chercher `C4-PREDATOR-40-41` affiche le parent avec la variante.
+- Les SKU et EAN des enfants sont recherchables : chercher le SKU d'un enfant affiche le parent avec la variante.
 - Les attributs des enfants (taille…) deviennent des filtres du parent.
 
 ### Flux delta (stock, prix, suppressions)
@@ -298,9 +318,9 @@ Champs : `id`, `title`, `url`, `published_at` (obligatoires), plus `image`, `exc
 
 ### Mapping visuel (recommandé)
 
-![Mapping visuel](docs/screenshots/09-mapping-visuel.png)
+![Mapping visuel](docs/screenshots/13-mapping-visuel.png)
 
-**Flux & mapping › Mapping** : DeepFind télécharge le flux (ou réutilise le téléchargement de moins d'une heure) et analyse ses 300 premiers éléments.
+**Catalogues › Flux & mapping › Mapping** : DeepFind télécharge le flux (ou réutilise le téléchargement de moins d'une heure) et analyse ses 300 premiers éléments.
 
 **Ce qui est détecté :**
 - L'élément qui représente un produit (`<product>`, `<item>`…), modifiable.
@@ -345,61 +365,66 @@ Le résultat est enregistré dans le mapping JSON de la source, qui reste modifi
 
 ## 6. Utiliser l'extranet
 
-### Projets : Production et Test
+L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion est mémorisée pendant 10 jours. Le bouton « Se déconnecter » révoque le cookie de ce navigateur. Il n'y a pas de comptes utilisateurs. Le menu de gauche se replie, et le bouton en bas du menu bascule entre les thèmes sombre et clair ; ces deux choix sont mémorisés.
 
-![Projets](docs/screenshots/20-projets.png)
+![Statistiques, thème clair et menu replié](docs/screenshots/20-statistiques-clair.png)
 
-Le **sélecteur en haut du menu** choisit le projet actif. Un badge en haut à droite de chaque page rappelle sur quel projet vous travaillez : vert pour le premier projet, orange pour les autres.
+### Menu
 
-**Ce que chaque projet a en propre** :
-- les flux, le mapping, la planification et les imports ;
-- les **index de recherche** : `deepfind_products_fr` pour Production, `deepfind_test_products_fr` pour un projet « test » ;
-- les synonymes, règles, redirections et boosts ;
-- la pertinence et les paramètres ;
-- les clés publiques et la démo du widget ;
-- les statistiques, journaux, clics et le cache.
+| Rubrique | Page | À quoi ça sert |
+|---|---|---|
+| | Tableau de bord | État du moteur, recherches et taux sans résultat sur 24 h, nombre de produits (et de produits désactivés auto), derniers imports, alertes de configuration |
+| **Analyse** | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
+| | Journal des recherches | Détail filtrable et exportable |
+| **Catalogues** | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
+| | Imports | Historique (durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
+| | Produits désactivés | Produits retirés des recherches avec le bouton « Désactiver » de l'aperçu interne, avec filtre, « Activer » et « Tout réactiver » |
+| | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
+| **Optimisations** | Pertinence & classement | Correspondance des mots, importance des champs, score métier (section 8) |
+| | Règles de boost | Coefficients appliqués aux produits qui remplissent des conditions (section 8) |
+| | Synonymes & alias | Équivalents (palme = palmes = fins) ou alias à sens unique ; import CSV (`samples/synonymes.csv`) |
+| | Redirections | Envoyer certaines recherches vers une page (section 8) |
+| **Recommandations** | Résultats personnalisés | Produits affichés en premier, seuls ou exclus pour certaines recherches (section 8) |
+| | Bannières | Image ou code HTML en haut des résultats (section 8) |
+| | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
+| | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
+| **Paramètres** | Projets | Production, Test… (voir plus bas) |
+| | Clés | Clés publiques et domaines autorisés |
+| | Intégration | Layers, filtres, options de tri, code du site, favori de test (section 7) |
+| | Cache | État et purge des caches |
+| | Paramètres | Seuils anti-robots, recherche, widget sur le site, journaux, sécurité des imports |
 
-**Commun à tous les projets** : la protection anti-robots (seuils, IP bloquées), la durée de conservation des journaux et le jeton d'accès.
+### Aperçu interne
 
-**Mettre en place un projet de test** :
-1. Dans **Projets › Nouveau projet**, saisissez « Cabesto Test », code `test`, avec comme point de départ « Copie de la configuration de Production ».
-2. Ouvrez **Flux & mapping** dans ce projet, puis lancez un **import complet**. Ses flux sont créés inactifs, donc sans import planifié tant que vous ne les activez pas.
-3. Réglez la pertinence, les synonymes, etc. dans Test. Vérifiez le résultat avec l'**aperçu interne** ou la **démo du widget**, qui utilise la clé du projet Test. Vous pouvez aussi utiliser cette clé sur une recette Magento.
+![Aperçu interne](docs/screenshots/05-apercu-interne.png)
 
-**Copier une configuration validée vers Production** : **Projets › Copier sa configuration…**
-1. Choisissez le projet source et le projet cible, puis les éléments à copier : pertinence, paramètres de recherche, synonymes, règles, redirections, règles de boost, mapping et planification des flux. Les URL des flux ne sont copiées que si vous l'activez.
-2. **« Voir ce qui va changer »** affiche le résumé des différences.
-3. **« Confirmer »** applique la copie. Une **sauvegarde de la cible** est faite juste avant, et les réglages sont envoyés aux index de la cible tout de suite.
-4. Lancez ensuite un recalcul des scores ou un import si des poids, boosts ou mappings ont changé.
+Réservé à l'équipe : la marge, le score métier et les règles appliquées n'y sont visibles que dans l'extranet, **jamais envoyés au site public**.
+- Tri par rentabilité, filtre « marge minimum », filtres du catalogue cliquables.
+- Sur chaque produit : **boost rapide** (crée une règle de boost « Produit SKU »), **épingler** à une position pour la recherche en cours, **désactiver** (retire le produit de toutes les recherches), **détails** (fiche du produit et champs où les mots ont été trouvés).
+- L'interrupteur **« Désactivés »** affiche aussi les produits désactivés qui correspondraient à la recherche, avec leur type :
+  - **« désactivé manu »** : désactivé avec le bouton « Désactiver ». Seul « Activer » le fait revenir, même s'il est dans le flux.
+  - **« désactivé auto »** : absent du dernier flux complet (voir ci-dessous). Il revient de lui-même quand il réapparaît dans le flux.
 
-**Ce qui n'est jamais copié** : statistiques, journaux, clics, historique des imports, clés publiques, produits indexés.
+### Produits absents du flux : désactivation automatique
 
-**Sauvegardes** (**Projets**, partie droite) :
-- une sauvegarde est créée automatiquement avant chaque copie, et vous pouvez en créer une manuellement ;
-- **« Restaurer »** remet la configuration telle qu'elle était, après avoir sauvegardé l'état actuel ;
-- **« Télécharger la configuration (JSON) »** permet de l'archiver.
+À chaque **import complet**, DeepFind compare le flux avec l'index en ligne, par SKU :
+- un produit **absent du flux** (ou rejeté, par exemple `enabled = 0` ou prix nul) devient **non vendable** : il est gardé **90 jours** dans l'index, sans jamais être proposé aux visiteurs, puis retiré ;
+- s'il **revient dans le flux complet**, il est **réactivé automatiquement** ;
+- une **désactivation manuelle** reste indépendante du flux.
 
-**Charge sur le serveur** : un projet de test qui indexe tout le catalogue double à peu près la mémoire utilisée par Meilisearch. Ses imports consomment du processeur sur la même machine. Planifiez-les hors des heures de pointe, ou gardez dans Test un flux réduit.
+Le contrôle de sécurité de l'import (« Import bloqué si le catalogue baisse de plus de N % », 20 % par défaut) porte sur les produits vendables. Le tableau de bord compte les produits désactivés auto à part.
 
-> Les projets servent à tester des **réglages**. Une **nouvelle version de DeepFind** (le code) se teste toujours sur une installation de recette séparée.
+> Après une mise à jour qui apporte cette fonction, lancez un **import complet** : le filtre « vendable » ne s'active qu'une fois l'index reconstruit.
 
-**Installation existante** : `php bin/console install` crée le projet « Production » (nom réglable par `DEFAULT_PROJECT_NAME`). Il y rattache vos flux, règles, clés, journaux et paramètres de pertinence, et garde vos index actuels : aucune réindexation n'est nécessaire.
+### Imports
 
-En ligne de commande, l'option `--project=CODE` cible un projet, par exemple :
+![Historique des imports](docs/screenshots/14-imports.png)
 
-```bash
-php bin/console import:run --project=test --source=produits_fr
-```
-
-### Lancer un import manuellement et suivre son avancement
-
-![Suivi d'un import](docs/screenshots/12-import-termine.png)
-
-**Depuis l'extranet :** **Flux & mapping** › bouton **« Import complet »** (ou **« Delta »**) sur la ligne du flux.
+**Depuis l'extranet :** **Catalogues › Flux & mapping** › bouton **« Import complet »** (ou **« Delta »**) sur la ligne du flux.
 - L'import est mis en file d'attente puis traité **en arrière-plan** par le worker (Supervisor), ou par la tâche cron `schedule:run --work` sans Supervisor. Vous arrivez directement sur sa **page de suivi**, qui se met à jour toute seule toutes les 2 secondes. Vous pouvez la quitter : l'import continue.
-- **Étapes affichées** : téléchargement (Mo reçus / Mo total), comptage des éléments du flux, lecture (`12 000 / 40 000 éléments`), regroupement parents/enfants (flux à plat), indexation dans Meilisearch (lots traités), bascule.
-- Vous voyez aussi le pourcentage global, le temps écoulé et le **temps restant estimé**. La liste **Imports** affiche une barre de progression pour chaque import en cours.
-- **Résultats immédiats** : dès la bascule, la recherche sur le site renvoie les nouveaux résultats. Tous les caches sont invalidés automatiquement (voir « Cache » ci-dessous).
+- **Étapes affichées** : téléchargement (Mo reçus / Mo total), comptage des éléments du flux, lecture, regroupement parents/enfants (flux à plat), indexation dans Meilisearch, bascule. Avec le pourcentage global, le temps écoulé et le **temps restant estimé**.
+- **Historique** : début, fin, **durée**, éléments lus, indexés, rejetés, et **écart** avec l'import complet précédent : en vert les produits nouveaux ou revenus dans le flux, en rouge les produits désactivés auto (détail au survol).
+- **Résultats immédiats** : dès la bascule, la recherche renvoie les nouveaux résultats. Tous les caches sont invalidés automatiquement.
 
 **En ligne de commande** (affiche la progression par tranche de 10 %) :
 
@@ -409,24 +434,7 @@ php bin/console import:run --source=produits_fr
 
 **Flux volumineux :** le fichier est téléchargé sur disque, puis lu au fil de l'eau. La mémoire reste constante quelle que soit sa taille.
 - Mesure en test (environ 15 000 produits avec variantes) : **20 Mo de mémoire** pour un flux de **40 Mo**, comptage préalable en moins d'une seconde.
-- La durée totale dépend surtout de l'indexation par Meilisearch, à mesurer sur votre VM.
-- Le rapport d'import (**Imports › détail**) indique la durée et la mémoire maximale utilisée.
-
-### Cache
-
-![Cache](docs/screenshots/10-cache.png)
-
-- Les réponses de recherche sont gardées **30 secondes** par défaut (Paramètres › « Cache des réponses », 0 = désactivé), pour absorber les recherches identiques et les rafales.
-- Les règles, paramètres, clés et l'existence des index sont aussi mis en cache.
-- **Invalidation automatique** : un numéro de version des données change après **chaque import, modification de règle, de synonyme ou de paramètre**. Toutes les entrées en cache deviennent alors obsolètes **instantanément**, y compris celles du serveur web qu'un import lancé en ligne de commande ne peut pas vider lui-même. Le numéro est stocké dans le fichier `var/cache/data_version`, que le serveur web et la ligne de commande doivent pouvoir écrire (utilisateur `www-data`).
-- **Page « Cache »** :
-  - stockage utilisé (APCu, Redis ou MySQL) ;
-  - nombre d'entrées et place occupée, au total et par catégorie (résultats, règles, paramètres, compteurs anti-robots…) ;
-  - mémoire APCu ou Redis utilisée et disponible ;
-  - taux de succès du cache.
-- **Boutons de purge** :
-  - « Vider le cache des résultats » ;
-  - « Vider tous les caches ». Les compteurs anti-robots et les blocages sont conservés, sinon les robots repartiraient de zéro.
+- La durée totale dépend surtout de l'indexation par Meilisearch, à mesurer sur votre serveur. L'import complet relit aussi l'index en ligne pour calculer l'écart.
 
 ### Planification des imports
 
@@ -438,69 +446,218 @@ Dans la fiche de chaque flux (**Flux & mapping › nom du flux**), section « Pl
 - l'import delta planifié n'a lieu que si une URL de flux delta est renseignée ;
 - le tableau de bord signale un planificateur arrêté (aucun passage depuis 5 minutes alors que des imports sont planifiés).
 
-### Rubriques
+### Projets : Production et Test
 
-L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion est mémorisée pendant 10 jours à partir de la saisie du jeton, même après fermeture du navigateur. Le bouton « Se déconnecter » révoque le cookie de ce navigateur. Il n'y a pas de comptes utilisateurs en V1. Le menu de gauche se replie, et le bouton en bas du menu bascule entre les thèmes sombre et clair ; ces deux choix sont mémorisés.
+![Projets](docs/screenshots/17-projets.png)
 
-| Rubrique | À quoi ça sert |
+Le **sélecteur en haut du menu** choisit le projet actif. Un badge en haut à droite de chaque page rappelle sur quel projet vous travaillez : vert pour le premier projet, orange pour les autres.
+
+**Dans la liste des projets** : le crayon renomme un projet ; l'interrupteur **« Widget sur le site »** active ou désactive le widget des sites qui utilisent les clés du projet (après confirmation). Désactivé, le widget ne prend plus la main et la recherche d'origine du site reprend.
+
+**Ce que chaque projet a en propre** :
+- les flux, le mapping, la planification et les imports ;
+- les **index de recherche** : `deepfind_products_fr` pour le premier projet, `deepfind_test_products_fr` pour un projet de code `test` ;
+- les synonymes, règles, redirections, boosts, résultats personnalisés et bannières ;
+- la pertinence, les paramètres, les layers, filtres et tris ;
+- les clés publiques et la démo du widget ;
+- les statistiques, journaux, clics et le cache.
+
+**Commun à tous les projets** : la protection anti-robots (seuils, IP bloquées), la durée de conservation des journaux et le jeton d'accès.
+
+**Mettre en place un projet de test** :
+1. Dans **Projets › Nouveau projet**, saisissez par exemple « Test », code `test`, avec comme point de départ « Copie de la configuration de Production ».
+2. Ouvrez **Flux & mapping** dans ce projet, puis lancez un **import complet**. Ses flux sont créés inactifs, donc sans import planifié tant que vous ne les activez pas.
+3. Réglez la pertinence, les synonymes, etc. dans Test. Vérifiez le résultat avec l'**aperçu interne** ou la **démo du widget**, qui utilise la clé du projet Test.
+
+**Copier une configuration validée vers Production** : **Projets › Copier sa configuration…**
+1. Choisissez le projet source et le projet cible, puis les éléments à copier : pertinence, paramètres de recherche, synonymes, règles, redirections, règles de boost, mapping et planification des flux. Les URL des flux ne sont copiées que si vous l'activez.
+2. **« Voir ce qui va changer »** affiche le résumé des différences.
+3. **« Confirmer »** applique la copie. Une **sauvegarde de la cible** est faite juste avant, et les réglages sont envoyés aux index de la cible tout de suite.
+4. Lancez ensuite un recalcul des scores ou un import si des poids, boosts ou mappings ont changé.
+
+**Ce qui n'est jamais copié** : statistiques, journaux, clics, historique des imports, clés publiques, produits indexés. Les layers, filtres et tris ne font pas encore partie de la copie.
+
+**Sauvegardes** (**Projets**, partie droite) : une sauvegarde est créée automatiquement avant chaque copie, et vous pouvez en créer une à la main. **« Restaurer »** remet la configuration telle qu'elle était (après avoir sauvegardé l'état actuel). **« Télécharger la configuration (JSON) »** permet de l'archiver.
+
+**Charge sur le serveur** : un projet de test qui indexe tout le catalogue double à peu près la mémoire utilisée par Meilisearch, et ses imports consomment du processeur sur la même machine. Planifiez-les hors des heures de pointe, ou gardez dans Test un flux réduit.
+
+> Les projets servent à tester des **réglages**. Une **nouvelle version de DeepFind** (le code) se teste toujours sur une installation de recette séparée.
+
+En ligne de commande, l'option `--project=CODE` cible un projet, par exemple :
+
+```bash
+php bin/console import:run --project=test --source=produits_fr
+```
+
+### Clés
+
+![Clés](docs/screenshots/18-cles.png)
+
+- **« + Ajouter une clé »** ouvre une fenêtre : nom, domaines autorisés (séparés par des virgules, sous-domaines inclus), langues.
+- Une ligne par clé : nom, clé publique **masquée** (début et fin visibles), domaines, langues, active. L'**œil** affiche la clé complète, le bouton **copier** la met dans le presse-papiers.
+- La clé publique est visible dans le code des pages du site : c'est normal. Elle est protégée par la liste des domaines autorisés et par les seuils anti-robots.
+
+### Paramètres
+
+![Paramètres](docs/screenshots/19-parametres.png)
+
+Un bloc par thème, une ligne par réglage (valeur par défaut rappelée) :
+- **Anti-robots** (commun à tous les projets) : seuils par IP, blocage automatique, user-agents refusés, IP jamais limitées (section 9).
+- **Recherche** : articles de blog affichés, produits max. par page, cache des réponses, valeurs max. par filtre.
+- **Widget sur le site** : comportement de la touche Entrée, blocage de l'autocomplétion d'origine du site.
+- **Journaux & import** : journalisation des recherches, conservation des journaux, seuil de sécurité des imports complets.
+
+### Cache
+
+- Les réponses de recherche sont gardées **30 secondes** par défaut (Paramètres › « Cache des réponses », 0 = désactivé), pour absorber les recherches identiques et les rafales.
+- Les règles, paramètres, clés et l'existence des index sont aussi mis en cache.
+- **Invalidation automatique** : un numéro de version des données change après **chaque import, modification de règle, de synonyme ou de paramètre**. Toutes les entrées en cache deviennent alors obsolètes **instantanément**. Le numéro est stocké dans le fichier `var/cache/data_version`, que le serveur web et la ligne de commande doivent pouvoir écrire (utilisateur `www-data`).
+- **Page « Cache »** : stockage utilisé (APCu, Redis ou MySQL), nombre d'entrées et place occupée par catégorie, mémoire disponible, taux de succès, et boutons de purge (les compteurs anti-robots et les blocages sont conservés).
+
+## 7. Personnaliser le widget (Intégration)
+
+**Paramètres › Intégration** règle tout ce que voient les visiteurs, sans toucher au code du site. Les changements arrivent sur le site en 5 minutes au plus.
+
+### Layers
+
+![Layers](docs/screenshots/06-integration-layers.png)
+
+Un **layer** est une façon d'afficher la fenêtre de recherche. Un seul est actif à la fois ; **sans layer actif**, le widget s'affiche sous la barre de recherche avec les réglages du code du site.
+
+| Mise en page | Description |
 |---|---|
-| Tableau de bord | État du moteur, nombre de documents, derniers imports, alertes de configuration |
-| Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel** (champs détectés dans le flux), mapping JSON avancé, **test du mapping sans indexer**, **planification des imports** (complet/delta), imports manuels |
-| Imports | Historique, rapports (motifs de rejet, exemples de SKU rejetés) |
-| Synonymes & alias | Équivalents (palme = palmes = fins) ou alias à sens unique ; import CSV (`samples/synonymes.csv`) |
-| Résultats personnalisés | Pour des termes de recherche (correspondance exacte ou large), en continu ou sur une période : produits **affichés en premier** (ou **uniquement** ces produits) et produits **exclus**, choisis un par un (dans l'ordre voulu) ou par règle (marque, catégorie, attribut, stock, prix…). Suivi **impressions** (recherches où le résultat s'applique, journal des recherches activé), **clics** sur ses produits et **CTR**. « Épingler » dans l'aperçu crée ou complète un résultat « Recherche « … » ». Import CSV des anciennes règles (`samples/boosts.csv`), converties automatiquement par `install`. Ordre imposé en tri « pertinence » uniquement |
-| Redirections | Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur une période. Un lien vers la page est proposé en haut des résultats ; en **redirection automatique**, la recherche validée (Entrée, loupe) ouvre directement la page. Import CSV `requete;url` (`samples/redirections.csv`). Les anciennes redirections sont converties par `install` (automatiques, correspondance exacte) |
-| Bannières | Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTML (scripts, événements et liens javascript: retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi **affichages**, **clics**, **CTR**. Images stockées dans `public/uploads/banners/` (à sauvegarder et à rendre accessible en écriture par PHP) |
-| Aperçu interne | Résultats avec **marge, score métier, ventes, règle appliquée**, tri par rentabilité, filtre « marge minimum » |
-| Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un épinglage, **produits les plus cliqués** (nom, SKU, clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
-| Produits désactivés | Liste de tous les produits retirés des recherches (bouton « Désactiver » de l'aperçu), avec filtre, « Activer » et « Tout réactiver ». Dans l'aperçu, l'interrupteur « Désactivés » affiche ceux qui correspondent à la recherche ; les filtres de gauche (marques, catégories, attributs) sont cliquables |
-| Règles de boost | Coefficient (×1,5, ×0,5…) appliqué aux produits qui remplissent des conditions (marque, catégorie, attribut, prix, stock, marge…), sur toutes les recherches ou seulement sur certains termes (correspondance exacte ou large). Visible dans l'aperçu interne |
-| Journal des recherches | Détail filtrable et exportable |
-| Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
-| Clés & intégration | Clés publiques, domaines autorisés, code à copier |
-| Paramètres | Seuils anti-robots, poids du classement, cache, conservation des journaux, seuil de sécurité des imports |
+| **Sous la barre** | S'ouvre juste sous la barre de recherche du site, le reste de la page est assombri |
+| **Plein écran** | Occupe toute la page, avec sa propre barre de recherche |
+| **Flottant** | Panneau centré au-dessus de la page assombrie |
+| **Intégré** | Les résultats prennent la place du contenu d'un bloc du site (ex. `main#maincontent`) |
 
-### Pertinence & classement : mettre en avant ce que vous voulez
+![Créer un nouveau layer](docs/screenshots/07-nouveau-layer.png)
 
-![Pertinence & classement](docs/screenshots/13-pertinence.png)
+- **« Créer un nouveau layer »** : choix de la mise en page et du nom. Le premier layer créé est activé.
+- **« Activer / Désactiver le layer »**, **« Configuration »**, corbeille (layer inactif seulement).
+- **« Tester DeepFind sur le site »** : voir plus bas.
+- **« Code à ajouter sur le site »** : le code de la section 4, avec votre clé et le bon numéro de version.
 
-La page **Pertinence & classement** regroupe tout ce qui fait remonter un produit :
+### Paramètres d'un layer
 
-0. **Correspondance des mots**, en trois modes :
+![Paramètres d'un layer](docs/screenshots/08-parametres-layer.png)
+
+**Options du layer**
+- **Mise en page** : le format actuel, et « Modifier » pour en changer (mêmes illustrations qu'à la création).
+- **Caractères pour afficher les résultats** (1 à 10).
+- **Conservation de la requête de recherche** : la recherche, les filtres et le tri sont gardés dans l'adresse de la page (`#df=…`), et la fenêtre se rouvre à l'identique si la page est rechargée. Laissez-le désactivé si une fonctionnalité du site utilise les ancres d'URL.
+- **Sélecteur CSS du champ de recherche** (vide : celui du code du site).
+- **Bloc d'affichage** (Intégré), **écart sous la barre** (Sous la barre).
+- **Largeur maximale de la fenêtre** (sauf Plein écran) : en **% de l'écran** (par défaut, de 10 à 100) ou en **pixels** (320 à 3 000). Vide : largeur par défaut. Sur mobile, la fenêtre prend toute la largeur.
+
+**Identité de marque** : logo (adresse https, affiché à gauche de la barre de recherche en Plein écran et Flottant, en haut des résultats sinon) et couleurs **primaire**, **contraste primaire** (texte sur la couleur primaire) et **texte**.
+
+**Personnalisation avancée**
+- **CSS** : ajouté à la page du site, en version **Ordinateur** et **Mobile** (900 px de large ou moins). Mobile vide : la version ordinateur s'applique partout.
+- **Modèle de carte produit** (Ordinateur et Mobile) : le code HTML **réellement utilisé** est affiché ; modifiez-le puis enregistrez. « Réinitialiser » remet le modèle d'origine.
+- **Nombre de produits** : produits **par ligne** (ordinateur : automatique ou 1 à 8 ; mobile : 1 à 3) et produits **chargés à la fois** (4 à 48), avec un aperçu de la grille.
+
+![Modèle de carte produit](docs/screenshots/09-modele-carte.png)
+
+**Modèle de carte produit** :
+- HTML simple (div, span, p, strong, img…). Les scripts, événements (`onclick`…) et liens `javascript:` sont retirés à l'enregistrement, puis de nouveau par le widget. Pas de lien : la carte entière mène déjà au produit.
+- Variables (valeurs échappées) : `{{name}}`, `{{brand}}`, `{{image}}`, `{{price}}`, `{{old_price}}`, `{{discount}}`, `{{from}}`, `{{sku}}`, `{{variant}}`, `{{stock}}`, `{{out_of_stock}}`, `{{new}}`, `{{rating}}`, `{{price_class}}`, `{{media_class}}`.
+- Un élément de classe **`df-if-`*variable*** (ex. `df-if-discount`) n'est affiché que si la variable n'est pas vide. Une image de classe `df-img` change au survol si le produit a une seconde image.
+- Un modèle identique à l'origine n'est pas enregistré : le layer suit alors le modèle d'origine.
+
+### Filtres
+
+![Filtres](docs/screenshots/10-filtres.png)
+
+- **« + Ajouter un filtre »** : champ (principaux : en stock, en promotion, marques, catégories, prix ; puis les attributs marqués « filtrables » dans le mapping), nom affiché, valeurs affichées, ordre des valeurs, déplié par défaut, statut. La corbeille retire un filtre.
+- **Ordre** des filtres par glisser-déposer.
+- **Valeurs affichées** : nombre de valeurs visibles dans un filtre de type liste, les suivantes derrière « + N ».
+- **Ordre des valeurs** : **par nombre** de produits (du plus grand au plus petit) ou **A à Z**. Les valeurs proposées sont toujours celles qui ont le plus de produits (plus celles déjà choisies par le visiteur).
+- **Déplié** : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
+- **Prix** : deux champs (min / max) et un curseur à deux poignées, avec « Réinitialiser » et « Valider ».
+- Tant que la liste n'a jamais été enregistrée, tous les filtres disponibles sont proposés. Ensuite, seuls les filtres ajoutés le sont : un nouvel attribut importé apparaît dans « Ajouter un filtre ».
+
+### Options de tri
+
+![Options de tri](docs/screenshots/11-options-de-tri.png)
+
+- « Pertinence » est toujours proposé en premier (nom modifiable).
+- Pour chaque tri : le **champ** (principaux : prix, nom, date d'ajout, remise, marque, ventes 30 jours, note des avis ; puis les autres), l'**ordre** selon son type (A à Z / Z à A, du plus bas au plus élevé, du plus récent au plus ancien) et le **nom affiché** (vide : nom par défaut grisé).
+- Ordre des tris par glisser-déposer. La marge et le score interne ne sont jamais proposés.
+- Un nouveau champ de tri peut demander une mise à jour du moteur, lancée à l'enregistrement (quelques minutes sur un gros catalogue).
+
+### Tester sur le vrai site (favori « Tester DeepFind »)
+
+![Tester DeepFind sur le site](docs/screenshots/12-tester-sur-le-site.png)
+
+Un favori à ajouter dans Chrome : sur une page du site, un clic affiche le widget avec le layer choisi, **même inactif**. Seul votre navigateur voit le test.
+
+1. Dans la fenêtre « Tester DeepFind sur le site », choisissez le **layer** et la **clé** (le site doit faire partie de ses domaines autorisés).
+2. Affichez la barre de favoris de Chrome (`Ctrl` + `Maj` + `B`) et **glissez-y le bouton « Tester DeepFind »** (ou copiez le lien et créez le favori à la main).
+3. Ouvrez le site et **cliquez sur le favori**. Une pastille « DeepFind » apparaît en haut à droite, avec « Quitter l'aperçu ».
+4. Si DeepFind est déjà installé sur le site, la page se recharge en aperçu et le reste de page en page dans l'onglet ; sinon, recliquez sur le favori après chaque changement de page.
+
+Le favori contient un jeton signé, lié au projet et au layer, valable **7 jours**. Si rien ne s'affiche, le site bloque peut-être les scripts extérieurs (politique de sécurité du site).
+
+### Démo du widget
+
+**Recommandations › Démo du widget** affiche le widget sur une page de démonstration. La liste **« Layer testé »** propose le layer actif (en premier, choisi par défaut), les autres layers et « Aucun layer ». Le bloc principal de la page s'appelle `main#maincontent`, comme sur Magento, pour tester un layer « Intégré ».
+
+## 8. Pertinence et mise en avant
+
+### Pertinence & classement
+
+![Pertinence & classement](docs/screenshots/16-pertinence.png)
+
+1. **Correspondance des mots**, en trois modes :
    - *Exacts, sinon approchants signalés* (par défaut) : tous les mots doivent être trouvés. Sinon, des produits approchants sont proposés avec la mention « Aucun résultat exact », et la recherche compte comme « sans résultat exact » dans les statistiques.
    - *Exacts uniquement* : tous les mots, sinon aucun résultat.
-   - *Le plus de résultats possible* : le moteur retire des mots, au risque de résultats sans rapport (« barbe à papa » → « barbe »…).
+   - *Le plus de résultats possible* : le moteur retire des mots, au risque de résultats sans rapport.
 
    Un seuil **« Pertinence minimum »** (0 à 1) peut écarter les produits trop peu pertinents. Réglez-le en regardant la colonne « Pertinence » de l'aperçu interne.
-1. **Importance des champs dans la recherche texte** : numérotez les champs (nom, marque, SKU, mots-clés, catégories, attributs, descriptions). Un mot trouvé dans un champ bien classé fait remonter le produit. Un champ peut être rendu non cherchable. *Appliqué immédiatement au moteur.*
-   - **Bonus « mot recherché au début du nom »** (0,5 par défaut) : DeepFind réordonne les 100 premiers résultats.
-     - Un mot de la recherche en 1re position du nom vaut 1, en 2e 1/2, en 3e 1/3…
-     - Exemple : pour « pompe paddle », « Pompe électrique… » passe devant « Pack Paddle … (Pompe…) ».
-     - La pagination reste cohérente : pas de doublon d'une page à l'autre.
-     - L'aperçu interne affiche ce bonus et le score final de chaque produit.
-   - **Pas de poids chiffré par champ** : Meilisearch classe par *ordre* des champs, pas par poids.
-   - Pour que cet ordre compte plus, activez **« Priorité au champ où le mot est trouvé »** : un produit dont le nom contient le mot passe alors devant un produit qui ne le contient que dans sa description.
-2. **Score métier** : un poids par critère. Mettez 0 pour ignorer un critère.
-   - **Critères** : en stock, rentabilité, popularité (ventes 30 jours du flux), **clics dans la recherche sur 30 jours** (les produits les plus cliqués remontent), nouveauté, boosts (flux + extranet).
-   - Exemple : pour faire remonter les produits rentables, augmentez « Rentabilité ».
-   - **Quand le score est recalculé** : à chaque import, **chaque nuit à 4 h 30** (interrupteur, prend en compte les nouveaux clics et les boosts datés), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits déjà indexés, sans retélécharger les flux, et se suit dans **Imports** comme un import.
+2. **Importance des champs dans la recherche texte** : numérotez les champs (nom, marque, SKU, mots-clés, catégories, attributs, descriptions). Un mot trouvé dans un champ bien classé fait remonter le produit. Un champ peut être rendu non cherchable. *Appliqué immédiatement au moteur.*
+   - **Bonus « mot recherché au début du nom »** (0,5 par défaut) : DeepFind réordonne les premiers résultats. Un mot de la recherche en 1re position du nom vaut 1, en 2e 1/2, en 3e 1/3… La pagination reste cohérente.
+   - Meilisearch classe par *ordre* des champs, pas par poids. Pour que cet ordre compte plus, activez **« Priorité au champ où le mot est trouvé »**.
+3. **Score métier** : un poids par critère (0 pour l'ignorer) : en stock, rentabilité, popularité (ventes 30 jours du flux), **clics dans la recherche sur 30 jours**, nouveauté, boosts.
+   - **Recalcul** : à chaque import, **chaque nuit à 4 h 30** (interrupteur), ou tout de suite avec **« Enregistrer et recalculer les scores »**. Ce recalcul relit les produits indexés, sans retélécharger les flux, et se suit dans **Imports**.
+4. **Importance du score métier face à la pertinence** : *faible* (il ne départage que des produits aussi pertinents, recommandé), *moyenne* ou *forte*. Interrupteur **Ruptures en fin de liste**.
 
-**Règles de boost** (menu dédié) : chaque règle a un nom, un statut, un coefficient (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des termes de recherche facultatifs (**exacte** : la recherche est exactement ce terme ; **large** : elle contient tous ses mots) et des conditions (toutes ou au moins une). La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats (« Nombre de résultats réordonnés »), en tri « pertinence » uniquement. Un produit au-delà de cette fenêtre n'est pas remonté.
+### Règles de boost
 
-**Boost rapide d'un produit** : dans l'aperçu interne, la liste « Boost » de chaque produit crée une règle « Produit SKU » (toutes les recherches). Les anciens « Boosts produits » sont convertis automatiquement en règles par `php bin/console install` (+n → ×(1 + n/10), -n → ×(1 - n/20)). Les règles n'ayant pas de dates, un boost déjà terminé n'est pas repris, un boost à venir devient une règle inactive, et une date de fin est rappelée dans le nom de la règle ; lancez ensuite `scores:refresh` pour retirer leur ancien bonus du score métier.
-- **Directement dans l'aperçu interne**, sur chaque produit :
-  - un sélecteur **« Boost permanent »** (-10 à +10, « Aucun » pour retirer), qui agit sur toutes les recherches ;
-  - un bouton **« Épingler »**, avec choix de la position, qui agit sur la recherche en cours uniquement.
-  - La page se recharge sur la même recherche, déjà réordonnée.
-- Pour imposer une position sur une requête précise, utilisez plutôt les règles « Épingler » ou « Remonter ».
-3. **Importance du score métier face à la pertinence** : *faible* (il ne départage que des produits aussi pertinents, recommandé), *moyenne* ou *forte*. Interrupteur **Ruptures en fin de liste**. *Appliqué immédiatement.*
+![Règles de boost](docs/screenshots/15-regles-de-boost.png)
 
-**Ordre de classement :**
-- Le nombre de mots trouvés passe toujours en premier.
-- Les **règles** (épingler, remonter) passent avant tout le reste.
-- Vérifiez l'effet de vos réglages dans **Aperçu interne**, qui affiche le score et la marge de chaque produit.
+- Une règle a un nom, un statut, un **coefficient** (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des **termes de recherche** facultatifs (exacte : la recherche est exactement ce terme ; large : elle contient tous ses mots) et des **conditions** (toutes, ou au moins une).
+- **Conditions** :
+  - champ à valeurs (marque, catégorie, type, SKU, attributs) : **est** (valeurs cochées), **contient**, **ne contient pas**, **commence par**, **finit par**, sans tenir compte des majuscules ni des accents ;
+  - champ oui/non (disponibilité, en promotion, nouveauté) : valeurs à cocher ;
+  - champ chiffré (prix, remise, marge, ventes) : supérieur ou égal, inférieur ou égal.
+- La liste des valeurs à cocher montre les 100 premières ; tapez dans « Rechercher… » pour chercher parmi **toutes** les valeurs du catalogue.
+- La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats, en tri « pertinence » uniquement.
+- **Boost rapide d'un produit** : dans l'aperçu interne, la liste « Boost » crée une règle « Produit SKU » (toutes les recherches).
 
-## 7. Anti-robots
+### Résultats personnalisés
+
+Pour des termes de recherche (correspondance exacte ou large), en continu ou sur une période :
+- produits **affichés en premier** (ou **uniquement** ces produits), choisis un par un (dans l'ordre voulu) ou par règle (marque, catégorie, attribut, stock, prix…) ;
+- produits **exclus** ;
+- suivi des **impressions**, des **clics** et du **CTR**.
+
+« Épingler » dans l'aperçu interne crée ou complète un résultat « Recherche « … » ». L'ordre imposé ne vaut qu'en tri « pertinence ». Import CSV des anciennes règles (`samples/boosts.csv`).
+
+### Redirections
+
+Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur une période.
+- Un lien vers la page est proposé en haut des résultats ; en **redirection automatique**, la recherche validée (Entrée, loupe) ouvre directement la page.
+- **Ouvrir dans un nouvel onglet** : sinon, la page remplace la page actuelle. Si le navigateur bloque le nouvel onglet, la page s'ouvre dans l'onglet actuel.
+- Import CSV `requete;url` (`samples/redirections.csv`).
+
+### Bannières
+
+Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTML (scripts, événements et liens `javascript:` retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi des **affichages**, **clics** et **CTR**. Les images sont stockées dans `public/uploads/banners/` (à sauvegarder, et accessible en écriture par PHP).
+
+**Ordre de classement :** le nombre de mots trouvés passe en premier ; les résultats personnalisés passent avant le reste. Vérifiez l'effet de vos réglages dans l'**aperçu interne**.
+
+## 9. Anti-robots
 
 À chaque appel de l'API publique :
 
@@ -513,17 +670,17 @@ La page **Pertinence & classement** regroupe tout ce qui fait remonter un produi
 - Les compteurs sont en mémoire (APCu ou Redis) : un robot ne provoque **aucune écriture en base** au-delà d'une alerte par minute.
 - La saisie normale d'un visiteur (une requête toutes les ~180 ms de frappe) reste très en dessous des seuils.
 - Si un proxy, un CDN ou un équilibreur de charge est placé devant Apache, renseignez `TRUSTED_PROXIES`. Sinon, tous les visiteurs auront la même IP.
-- Les IP du siège ou d'un outil de supervision peuvent être exemptées : Paramètres › « IP jamais limitées ».
+- Les IP de vos bureaux ou d'un outil de supervision peuvent être exemptées : Paramètres › « IP jamais limitées ».
 - Un déblocage fait directement en base de données n'est pris en compte qu'au bout de 60 secondes (cache). Le bouton « Débloquer » de l'extranet agit immédiatement.
 
-## 8. Journaux de recherche et RGPD
+## 10. Journaux de recherche et RGPD
 
 - **Contenu enregistré** : chaque recherche « finale » (pas chaque lettre tapée : « pa », « pal », « palm » sont marquées comme intermédiaires), avec les filtres, le nombre de résultats, le temps de réponse, le user-agent et les clics.
 - **Adresse IP** : jamais stockée en clair. On conserve une **empreinte** (HMAC avec `APP_SECRET`) pour compter et bloquer, et une **IP tronquée** (`203.0.113.x`) pour l'affichage. Aucun cookie.
 - **Conservation** : 90 jours par défaut (Paramètres), purge automatique chaque nuit (`logs:purge`).
 - **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site. Ce README ne constitue pas un avis juridique.
 
-## 9. Commandes
+## 11. Commandes
 
 ```bash
 php bin/console help
@@ -531,11 +688,11 @@ php bin/console help
 
 | Commande | Rôle |
 |---|---|
-| *(option commune)* `--project=CODE` | Projet concerné (par défaut le premier, « prod ») ; `import:run --all` sans `--project` traite les flux actifs de tous les projets |
+| *(option commune)* `--project=CODE` | Projet concerné (par défaut le premier) ; `import:run --all` sans `--project` traite les flux actifs de tous les projets |
 | `check` | Vérifie PHP, extensions, base, Meilisearch, droits |
 | `install` | Crée ou met à jour les tables (sans risque si relancée) et les sources par défaut |
 | `admin:token` | Génère `ADMIN_TOKEN` et `APP_SECRET` |
-| `key:create --name=… --origins=cabesto.com --langs=fr` | Crée une clé publique |
+| `key:create --name=… --origins=example.com --langs=fr` | Crée une clé publique |
 | `schedule:run [--work]` | **À lancer chaque minute par cron** : déclenche les imports planifiés dans l'extranet (`--work` : les exécute aussi, sans Supervisor) |
 | `import:run --all` ou `--source=CODE`, `--type=full\|delta` | Import immédiat en ligne de commande |
 | `queue:work [--once]` | Traite les imports demandés depuis l'extranet |
@@ -544,7 +701,7 @@ php bin/console help
 | `rules:import --lang=fr --synonyms=… --rules=… --redirects=… [--replace]` | Import CSV en ligne de commande |
 | `logs:purge` | Purge des journaux |
 
-## 10. Tests
+## 12. Tests
 
 Les tests utilisent une **base MySQL de test dédiée**, dont toutes les tables sont supprimées à chaque lancement : n'utilisez **jamais** la base de production. Ils utilisent aussi un **faux Meilisearch** (`tests/fake-meili.php`), qui imite l'API avec une recherche simplifiée.
 
@@ -558,7 +715,7 @@ GRANT ALL ON deepfind_test.* TO 'df_test'@'localhost';
 bash tests/run.sh
 ```
 
-Ce script lance environ 60 tests unitaires et d'intégration : mapping, regroupement parents/enfants, XML tronqué ou malveillant, API, filtres, règles, SKU, origine, robots.
+Ce script lance environ 190 tests unitaires et d'intégration : mapping, regroupement parents/enfants, XML tronqué ou malveillant, API, filtres, règles, SKU, origine, robots, projets, layers, filtres et tris du widget, désactivation automatique, aperçu. Il échoue si un avertissement PHP apparaît dans le journal du serveur web.
 
 **Test dans le navigateur (facultatif, nécessite Node.js et Playwright)**
 
@@ -584,27 +741,30 @@ Puis lancez le test du navigateur :
 node tests/e2e.cjs http://localhost:8080 tests/_tmp/screens
 ```
 
-Il vérifie la connexion, toutes les pages, les thèmes, le menu replié, les actions principales, le widget (défilement, filtres, mobile) et prend des captures d'écran.
+Il vérifie (environ 90 contrôles) la connexion, toutes les pages, les thèmes, le menu replié, les actions principales, le widget (défilement, filtres, mobile) et prend des captures d'écran.
 
-> Le faux Meilisearch ne reproduit pas exactement la pertinence du vrai. Après installation, validez la qualité des résultats sur la VM de recette avec le vrai Meilisearch et votre catalogue (rubrique **Aperçu interne**).
+> Dernière exécution complète : PHP 8.3, MariaDB 10.11, APCu, faux Meilisearch. Le faux Meilisearch ne reproduit pas exactement la pertinence du vrai. Après installation, validez la qualité des résultats sur le serveur de recette avec le vrai Meilisearch et votre catalogue (**Aperçu interne**).
 
-## 11. Dépannage
+## 13. Dépannage
 
 | Symptôme | Piste |
 |---|---|
-| Le widget n'affiche rien | Console du navigateur : `invalid_key` (clé), `origin_not_allowed` (ajoutez le domaine dans la clé), `bad_user_agent`/`ip_blocked` (Robots & blocages) |
+| Le widget n'affiche rien | Console du navigateur : `invalid_key` (clé), `origin_not_allowed` (ajoutez le domaine dans la clé), `bad_user_agent` / `ip_blocked` (Robots & blocages), `project_disabled` (Projets) |
 | `engine_unavailable` (503) | `systemctl status meilisearch`, `curl 127.0.0.1:7700/health`, `MEILI_MASTER_KEY` identique des deux côtés |
-| Import « Bloqué » | Le flux contient beaucoup moins de produits qu'avant (seuil en Paramètres). Vérifiez le flux, ou augmentez temporairement le seuil |
-| Import « En attente » qui ne démarre pas | Le worker Supervisor ne tourne pas (`supervisorctl status`), ou la ligne cron `queue:work --once` est absente |
+| Un réglage d'affichage n'apparaît pas sur le site | Délai de 5 minutes au plus ; vérifiez aussi le numéro `?v=` du script (section 4) |
+| Import « Bloqué » | Le flux contient beaucoup moins de produits vendables qu'avant (seuil en Paramètres). Vérifiez le flux, ou augmentez temporairement le seuil |
+| Import « En attente » qui ne démarre pas | Le worker Supervisor ne tourne pas (`supervisorctl status`), ou la ligne cron `schedule:run --work` est absente |
 | Produits rejetés | Imports › détail : motifs (SKU manquant, prix nul, enfant sans parent…), puis **Tester** le mapping |
+| Un produit a disparu des résultats | Aperçu interne avec « Désactivés » : « désactivé manu » (bouton Activer) ou « désactivé auto » (absent du dernier flux complet) |
 | Tous les visiteurs bloqués ensemble | Un proxy ou CDN est devant Apache : renseignez `TRUSTED_PROXIES` |
-| Un paramètre modifié n'agit pas | Les paramètres sont mis en cache 60 s ; le classement métier demande un import complet |
+| Un paramètre modifié n'agit pas | Les paramètres sont mis en cache 60 s ; le classement métier demande un recalcul des scores ou un import |
 
-## 12. Limites connues de la V1
+## 14. Limites connues
 
 - **Accès à l'extranet** : un jeton unique, sans comptes utilisateurs ni journal des actions d'administration.
-- **Règles de résultats** : correspondance **exacte** de la requête, sans tenir compte des majuscules ni des accents. Pas de « contient ». Pas d'action « descendre » (seulement épingler, remonter, masquer).
-- **Flux delta** : met à jour prix, stock, champs simples et suppressions. Les nouveaux produits, catégories et attributs arrivent à l'import complet.
-- **Recherche** : pas de recherche sémantique ou IA, pas de suggestions de requêtes, pas de bannières.
-- **Tests** : faits sous PHP 8.3, MariaDB 10.11 et un **faux** Meilisearch. Il faut valider sous PHP 8.5, MySQL et le vrai Meilisearch sur la VM de recette.
+- **Flux delta** : met à jour prix, stock, champs simples et suppressions. Les nouveaux produits, catégories et attributs arrivent à l'import complet ; la réactivation d'un produit désactivé auto aussi.
+- **Recherche** : pas de recherche sémantique ou IA, pas de suggestions de requêtes.
+- **Statistiques** : recherches et clics uniquement ; pas encore de suivi des ventes (ajouts au panier, commandes) ni d'envoi d'événements à Google Analytics.
+- **Copie entre projets** : n'inclut pas encore les layers, filtres et tris.
+- **Tests** : faits sous PHP 8.3 avec un **faux** Meilisearch. Il faut valider sous PHP 8.5 et le vrai Meilisearch sur le serveur de recette.
 - **Module Magento** : aucun module n'est fourni pour générer le flux. Utilisez une extension de flux du marché ou un développement interne qui produit le format décrit ci-dessus.
