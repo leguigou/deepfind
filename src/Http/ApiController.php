@@ -152,7 +152,8 @@ final class ApiController
             'enter_submit' => Settings::int('widget_enter_submit') === 1,
             // neutraliser l'autocomplétion d'origine du site (data-native="keep" / "block" sur le script reste prioritaire)
             'block_native' => Settings::int('widget_block_native') === 1,
-        ] + \DeepFind\Widget\WidgetConfig::forWidget($lang), 200, $cors + ['Cache-Control' => 'private, max-age=60']);
+        ] + \DeepFind\Widget\WidgetConfig::forWidget($lang, $preview = substr((string) ($_GET['preview'] ?? ''), 0, 80)),
+            200, $cors + ['Cache-Control' => $preview !== '' ? 'no-store' : 'private, max-age=60']);
     }
 
     private function health(): void

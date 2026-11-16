@@ -86,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=16'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=17'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1106,10 +1106,41 @@
    */
   var started = false;
   var cfgKey = 'df-cfg:' + cfg.key + ':' + cfg.lang;
+  /*
+   * Aperçu (favori « Tester DeepFind » de l'extranet) : jeton dans data-preview (widget ajouté par le favori) ou gardé
+   * dans la session de l'onglet (widget déjà installé sur le site : le favori recharge la page). Seul ce navigateur voit
+   * le layer testé ; un bandeau permet de quitter l'aperçu.
+   */
+  var PREVIEW_KEY = 'df-preview';
+  var preview = '';
+  try {
+    if (ds.preview) { window.sessionStorage.setItem(PREVIEW_KEY, ds.preview); }
+    preview = ds.preview || window.sessionStorage.getItem(PREVIEW_KEY) || '';
+  } catch (e) { preview = ds.preview || ''; }
+  if (preview && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9a-f]{24}$/.test(preview)) { preview = ''; }
+  function previewBadge(text, isError) {
+    var show = function () {
+      var bar = el('div', 'df-preview-bar' + (isError ? ' df-preview-error' : ''));
+      bar.setAttribute('role', 'status');
+      bar.appendChild(el('span', null, text));
+      var quit = el('button', 'df-preview-quit', 'Quitter l\'aperçu');
+      quit.type = 'button';
+      quit.addEventListener('click', function () {
+        try { window.sessionStorage.removeItem(PREVIEW_KEY); } catch (e) { /* ignoré */ }
+        window.location.reload();
+      });
+      bar.appendChild(quit);
+      document.body.appendChild(bar);
+    };
+    if (!document.querySelector('link[href*="/widget/deepfind.css"]')) { document.head.appendChild(css); }
+    if (document.body) { show(); } else { document.addEventListener('DOMContentLoaded', show); }
+  }
   function readCfg() {
+    if (preview) { return null; } // aperçu : configuration toujours relue
     try { var v = JSON.parse(window.sessionStorage.getItem(cfgKey) || 'null'); return v && Date.now() - v.t < 300000 ? v : null; } catch (e) { return null; }
   }
   function writeCfg(c) {
+    if (preview) { return; } // ne pas mélanger l'aperçu avec la configuration du site
     try {
       window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
@@ -1153,7 +1184,8 @@
     if (c.sorts && Array.isArray(c.sorts.items)) { cfg.sorts = c.sorts; }
   }
   function fetchCfg() {
-    return fetch(cfg.api + '/config?key=' + encodeURIComponent(cfg.key) + '&lang=' + encodeURIComponent(cfg.lang), { credentials: 'omit', headers: { Accept: 'application/json' } })
+    return fetch(cfg.api + '/config?key=' + encodeURIComponent(cfg.key) + '&lang=' + encodeURIComponent(cfg.lang) + (preview ? '&preview=' + encodeURIComponent(preview) : ''),
+      { credentials: 'omit', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
       .then(function (c) { writeCfg(c); applyCfg(c); return c; });
   }
@@ -1166,6 +1198,7 @@
 
   window.DeepFind = {
     config: cfg,
+    preview: preview,
     isActive: function () { return started; },
     open: function (q) { if (!started) { return; } if (q) { state.q = q; resetFilters(); } open(); search(false); },
     close: close
@@ -1178,7 +1211,15 @@
     fetchCfg().catch(function () { /* nouvel essai à la prochaine page */ });
   } else {
     fetchCfg().then(function (c) {
+      if (preview) {
+        if (!c.enabled) { previewBadge('Aperçu DeepFind impossible : le projet est désactivé dans l\'extranet.', true); }
+        else if (c.preview && c.preview.layer) { previewBadge('Aperçu DeepFind : layer « ' + c.preview.layer + ' » (visible seulement dans ce navigateur)', false); }
+        else { previewBadge('Lien de test DeepFind expiré ou non valable pour ce site : recréez le favori dans l\'extranet. Affichage actuel du site.', true); }
+      }
       if (c.enabled) { activate(); } else { console.info('[DeepFind] projet désactivé : la recherche du site reste inchangée'); }
-    }).catch(function () { console.warn('[DeepFind] API injoignable : la recherche du site reste inchangée'); });
+    }).catch(function () {
+      if (preview) { previewBadge('Aperçu DeepFind impossible : API injoignable, ou ce domaine n\'est pas autorisé pour la clé choisie.', true); }
+      console.warn('[DeepFind] API injoignable : la recherche du site reste inchangée');
+    });
   }
 })();

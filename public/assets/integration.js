@@ -58,6 +58,41 @@
       });
     }
 
+    // ------------------------------------------------------------ Favori « Tester DeepFind » (aperçu sur le vrai site)
+    // Le favori enregistre le jeton d'aperçu dans la session de l'onglet du site, puis : widget déjà installé → la page
+    // se recharge en aperçu ; sinon → le widget est ajouté à la page avec la clé et le jeton choisis.
+    var test = document.querySelector('[data-test-bookmark]');
+    if (test && test.querySelector('[data-test-link]')) {
+      var link = test.querySelector('[data-test-link]');
+      var layerSel = test.querySelector('[data-test-layer]');
+      var keySel = test.querySelector('[data-test-key]');
+      var build = function () {
+        var q = JSON.stringify;
+        var code = '(function(){var B=' + q(test.getAttribute('data-base')) + ',K=' + q(keySel.value) + ',T=' + q(layerSel.value)
+          + ',L=' + q(test.getAttribute('data-lang')) + ',V=' + q(test.getAttribute('data-version')) + ';'
+          + 'try{if(T){sessionStorage.setItem("df-preview",T)}else{sessionStorage.removeItem("df-preview")}}catch(e){}'
+          + 'if(window.DeepFind){location.reload();return}'
+          + 'var s=document.createElement("script");s.src=B+"/widget/deepfind.js?v="+V;s.setAttribute("data-key",K);s.setAttribute("data-lang",L);'
+          + 'if(T){s.setAttribute("data-preview",T)}document.body.appendChild(s)})();';
+        link.href = 'javascript:' + encodeURI(code);
+        var opt = layerSel.options[layerSel.selectedIndex];
+        link.title = 'Glissez ce bouton dans la barre de favoris (' + opt.textContent.trim() + ')';
+      };
+      layerSel.addEventListener('change', build);
+      keySel.addEventListener('change', build);
+      build();
+      // un clic dans l'extranet ne ferait rien (sécurité de la page) : on rappelle qu'il faut glisser le bouton
+      link.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        window.DeepFindUI.alert('Glissez ce bouton dans la barre de favoris de Chrome (étape 2), puis cliquez sur le favori depuis une page du site.');
+      });
+      var copyBtn = test.querySelector('[data-test-copy]');
+      copyBtn.addEventListener('click', function () {
+        var done = function () { copyBtn.classList.add('is-copied'); setTimeout(function () { copyBtn.classList.remove('is-copied'); }, 1600); };
+        if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(link.href).then(done, function () {}); }
+      });
+    }
+
     // ------------------------------------------------------------ Paramètres d'un layer : renommer, couleurs
     var nameInput = document.querySelector('[data-lp-name]');
     var renameBtn = document.querySelector('[data-lp-rename]');

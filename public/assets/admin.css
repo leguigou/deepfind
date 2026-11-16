@@ -867,3 +867,16 @@ dialog.modal.lp-products { width: min(820px, calc(100vw - 32px)); }
 .lp-preview-mobile { max-width: 170px; }
 .lp-preview i { display: block; height: 30px; border-radius: 4px; background: var(--accent); opacity: .5; }
 @media (max-width: 700px) { .lp-products-grid { grid-template-columns: 1fr; } }
+
+/* Favori « Tester DeepFind » */
+.ly-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+.ly-buttons .btn .admin-icon, .test-drag .admin-icon { width: 16px; height: 16px; }
+dialog.modal.test-dialog { width: min(900px, calc(100vw - 32px)); }
+.test-dialog .modal-title p { margin: 4px 0 0; }
+.test-drag { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 0 8px; padding: 16px; border: 2px dashed var(--border); border-radius: 12px; }
+.test-bookmark { cursor: grab; }
+.test-drag [data-test-copy] .key-copy, .test-drag [data-test-copy] .key-copied { width: 15px; height: 15px; }
+.test-drag [data-test-copy].is-copied .key-copy { display: none; }
+.test-drag [data-test-copy].is-copied .key-copied { display: block; color: var(--ok); }
+.test-steps { margin: 14px 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; line-height: 1.5; }
+kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; background: var(--surface-2); font: 12px ui-monospace, monospace; }

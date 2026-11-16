@@ -386,16 +386,48 @@ HTML;
 
     // ------------------------------------------------------------------ Pour le widget
 
-    /** Partie « affichage » de /api/v1/config. */
-    public static function forWidget(string $lang): array
+    /** Version du widget à charger (paramètre ?v= du code du site et du favori « Tester DeepFind »). */
+    public const WIDGET_VERSION = 17;
+
+    /** Durée de validité d'un favori « Tester DeepFind » (jeton d'aperçu). */
+    public const PREVIEW_DAYS = 7;
+
+    /**
+     * Jeton d'aperçu d'un layer (favori « Tester DeepFind ») : projet + layer + expiration, signé avec APP_SECRET.
+     * Il ne donne accès qu'à l'affichage de ce layer dans le navigateur de la personne qui teste ; rien n'est modifié.
+     */
+    public static function previewToken(int $layerId, ?int $projectId = null, ?int $expires = null): string
     {
-        $layer = self::activeLayer();
+        $payload = ($projectId ?? Project::id()) . '.' . $layerId . '.' . ($expires ?? time() + self::PREVIEW_DAYS * 86400);
+        return $payload . '.' . substr(hash_hmac('sha256', $payload, (string) \DeepFind\Config::get('APP_SECRET', 'change-me')), 0, 24);
+    }
+
+    /** Layer désigné par un jeton d'aperçu valide pour ce projet, sinon null. */
+    public static function previewLayer(string $token, ?int $projectId = null): ?array
+    {
+        if (!preg_match('/^(\d+)\.(\d+)\.(\d+)\.([0-9a-f]{24})$/', $token, $m)) {
+            return null;
+        }
+        $pid = $projectId ?? Project::id();
+        if ((int) $m[1] !== $pid || (int) $m[3] < time() || !hash_equals(self::previewToken((int) $m[2], $pid, (int) $m[3]), $token)) {
+            return null;
+        }
+        $row = Db::one('SELECT * FROM layers WHERE id = ? AND project_id = ?', [(int) $m[2], $pid]);
+        return $row ? self::decodeLayer($row) : null;
+    }
+
+    /** Partie « affichage » de /api/v1/config ; $preview = jeton d'un favori « Tester DeepFind » (layer choisi au lieu du layer actif). */
+    public static function forWidget(string $lang, string $preview = ''): array
+    {
+        $layer = $preview !== '' ? self::previewLayer($preview) : null;
+        $isPreview = $layer !== null;
+        $layer ??= self::activeLayer();
         return [
             'layer' => $layer ? ['type' => $layer['type']] + $layer['settings'] : null,
             'filters' => array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'appearance' => $f['appearance'], 'visible' => $f['visible'],
                 'limit' => $f['limit'], 'open' => $f['open']],
                 self::filters($lang)),
             'sorts' => self::sorts($lang),
-        ];
+        ] + ($preview !== '' ? ['preview' => $isPreview ? ['layer' => $layer['name']] : ['error' => 'expired']] : []);
     }
 }
