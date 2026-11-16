@@ -585,11 +585,13 @@ if ($base) {
     $WC::activateLayer($l2, true);
     $al = $WC::activeLayer();
     $WC::saveLayer($l1, 'Cabesto', 'below', ['min_chars' => 0, 'logo' => 'javascript:alert(1)', 'color_primary' => '#1069F9', 'color_text' => 'red',
-        'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>']);
+        'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>',
+        'css_mobile' => '.df-name { font-size: 12px; }', 'card_template_mobile' => '<p>{{price}}<iframe src="x"></iframe></p>']);
     $ls = $WC::layer($l1);
     check('intégration : type figé, identité et personnalisation nettoyées', $ls['type'] === 'fullscreen' && $ls['settings']['min_chars'] === 1
         && $ls['settings']['logo'] === '' && $ls['settings']['color_primary'] === '#1069f9' && $ls['settings']['color_text'] === ''
-        && $ls['settings']['css'] === '.df-title { color: red; }' && $ls['settings']['card_template'] === '<div>{{name}}<img src="{{image}}"></div>');
+        && $ls['settings']['css'] === '.df-title { color: red; }' && $ls['settings']['card_template'] === '<div>{{name}}<img src="{{image}}"></div>'
+        && $ls['settings']['css_mobile'] === '.df-name { font-size: 12px; }' && $ls['settings']['card_template_mobile'] === '<p>{{price}}</p>');
     check('intégration : activation exclusive, réglages nettoyés', $al['id'] === $l2 && !$WC::layer($l1)['active'] && $al['settings']['container'] === 'main#maincontentscript'
         && $al['settings']['url_state'] === true && $al['settings']['gap'] === 80);
     $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'label' => '', 'visible' => false], ['code' => 'inconnu', 'visible' => true]]);
@@ -602,7 +604,12 @@ if ($base) {
         && ($cf['filters'][0]['label'] ?? '') === 'Budget' && ($cf['filters'][1]['visible'] ?? true) === false
         && ($cf['sorts']['relevance'] ?? '') === 'Les plus pertinents' && ($cf['sorts']['items'] ?? []) === [['key' => 'name:asc', 'label' => 'Nom A-Z'], ['key' => 'price:desc', 'label' => 'Prix décroissant']]
         && !str_contains(json_encode($cf), 'margin'));
+    check('intégration : seuls les filtres ajoutés restent, les autres sont proposés à l\'ajout', count($codes) === 2
+        && isset($WC::addableFilters('fr')['category']) && !isset($WC::addableFilters('fr')['price']));
+    $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'visible' => false], ['code' => 'category', 'visible' => true, 'limit' => 3]]);
     [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=3");
+    $cat = array_values(array_filter($d['facets'] ?? [], static fn ($f) => $f['code'] === 'category'))[0] ?? null;
+    check('intégration : nombre de valeurs affichées transmis au widget', ($WC::filters('fr')[2]['limit'] ?? 0) === 3 && $cat !== null);
     check('intégration : filtre masqué (marques) absent des résultats', !in_array('brand', array_column($d['facets'] ?? [], 'code'), true));
     $WC::activateLayer($l2, false);
     $WC::deleteLayer($l1);

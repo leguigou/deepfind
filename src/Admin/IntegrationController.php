@@ -27,6 +27,7 @@ final class IntegrationController
             'lang' => $lang,
             'layers' => $layers,
             'filters' => WidgetConfig::filters($lang),
+            'addable' => WidgetConfig::addableFilters($lang),
             'sorts' => WidgetConfig::sorts($lang),
             'sortItems' => WidgetConfig::sortItems($lang),
             'firstKey' => (string) (Db::value('SELECT public_key FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id LIMIT 1', [\DeepFind\Project::id()]) ?? ''),
@@ -62,7 +63,7 @@ final class IntegrationController
             App::back('/admin/integration');
             return;
         }
-        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'card_template']));
+        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile']));
         $settings['url_state'] = isset($_POST['url_state']);
         if ($l['type'] === 'embedded' && trim((string) ($settings['container'] ?? '')) === '') {
             Auth::flash('error', 'Layer intégré : indiquez le sélecteur CSS du bloc du site dans lequel afficher les résultats.');
@@ -75,7 +76,8 @@ final class IntegrationController
         if ($logo !== '' && $saved['logo'] === '') {
             Auth::flash('error', 'Logo ignoré : indiquez une adresse complète en https://');
         }
-        if (trim((string) ($settings['card_template'] ?? '')) !== '' && $saved['card_template'] !== trim((string) $settings['card_template'])) {
+        $changed = static fn (string $k) => trim((string) ($settings[$k] ?? '')) !== '' && $saved[$k] !== trim((string) $settings[$k]);
+        if ($changed('card_template') || $changed('card_template_mobile')) {
             Auth::flash('warn', 'Modèle de carte produit : des balises ou attributs non autorisés (scripts, événements, liens javascript…) ont été retirés.');
         }
         Auth::flash('ok', 'Layer enregistré (pris en compte sur le site sous 5 minutes).');
@@ -103,7 +105,24 @@ final class IntegrationController
     {
         $in = json_decode((string) ($_POST['payload'] ?? '[]'), true);
         WidgetConfig::saveFilters(Auth::lang(), is_array($in) ? $in : []);
-        Auth::flash('ok', 'Filtres enregistrés.');
+        Auth::flash('ok', ($_POST['removed'] ?? '') !== '' ? 'Filtre retiré.' : 'Filtres enregistrés.');
+        App::back('/admin/integration', ['tab' => 'filters']);
+    }
+
+    /** Fenêtre « Ajouter un filtre » : ajouté à la fin de la liste. */
+    public function addFilter(): void
+    {
+        $lang = Auth::lang();
+        $code = (string) ($_POST['code'] ?? '');
+        if (!isset(WidgetConfig::addableFilters($lang)[$code])) {
+            Auth::flash('error', 'Choisissez un champ disponible.');
+            App::back('/admin/integration', ['tab' => 'filters']);
+            return;
+        }
+        $list = array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'visible' => $f['visible'], 'limit' => $f['limit']], WidgetConfig::filters($lang));
+        $list[] = ['code' => $code, 'label' => (string) ($_POST['label'] ?? ''), 'visible' => isset($_POST['visible']), 'limit' => (int) ($_POST['limit'] ?? 0)];
+        WidgetConfig::saveFilters($lang, $list);
+        Auth::flash('ok', 'Filtre ajouté.');
         App::back('/admin/integration', ['tab' => 'filters']);
     }
 

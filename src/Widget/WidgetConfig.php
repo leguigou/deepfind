@@ -116,10 +116,27 @@ final class WidgetConfig
             'color_contrast' => $color($in['color_contrast'] ?? ''),
             'color_text' => $color($in['color_text'] ?? ''),
             // personnalisation avancée : CSS ajouté à la page (texte brut), modèle HTML de la carte produit (nettoyé)
+            // versions mobile (écrans ≤ 900 px) : vides = la version ordinateur s'applique partout
             'css' => mb_substr(str_replace("\0", '', (string) ($in['css'] ?? '')), 0, 20000, 'UTF-8'),
+            'css_mobile' => mb_substr(str_replace("\0", '', (string) ($in['css_mobile'] ?? '')), 0, 20000, 'UTF-8'),
             'card_template' => self::cleanCardTemplate((string) ($in['card_template'] ?? '')),
+            'card_template_mobile' => self::cleanCardTemplate((string) ($in['card_template_mobile'] ?? '')),
         ];
     }
+
+    /** Modèle proposé par « Restaurer les valeurs par défaut » : équivalent de la carte par défaut du widget. */
+    public const DEFAULT_CARD_TEMPLATE = <<<'HTML'
+<div class="df-media">
+  <img src="{{image}}" alt="">
+</div>
+<div class="df-brand">{{brand}}</div>
+<div class="df-name">{{name}}</div>
+<div class="df-price df-sale">
+  <span class="df-final">{{price}}</span>
+  <span class="df-old">{{old_price}}</span>
+  <span class="df-from">{{discount}}</span>
+</div>
+HTML;
 
     /** Variables du modèle de carte produit : {{nom}} => description (valeurs échappées par le widget). */
     public const CARD_VARS = [
@@ -212,33 +229,46 @@ final class WidgetConfig
         return $out;
     }
 
+    /** Nombre de valeurs affichées par défaut dans un filtre « liste » (les suivantes derrière « + N »). */
+    public static function defaultLimit(string $code): int
+    {
+        return $code === 'brand' ? 12 : 8;
+    }
+
     /**
-     * Filtres dans l'ordre choisi, avec nom affiché et visibilité. Les filtres apparus depuis (nouvel attribut importé)
-     * sont ajoutés à la fin, visibles ; ceux qui n'existent plus sont ignorés.
-     * @return list<array{code:string, label:string, default_label:string, appearance:string, visible:bool}>
+     * Filtres ajoutés, dans l'ordre choisi (nom affiché, statut, nombre de valeurs affichées).
+     * Tant que rien n'est enregistré : tous les filtres disponibles. Ensuite : seulement ceux ajoutés
+     * (un nouvel attribut importé se trouve dans « Ajouter un filtre ») ; ceux qui n'existent plus sont ignorés.
+     * @return list<array{code:string, label:string, default_label:string, appearance:string, visible:bool, limit:int}>
      */
     public static function filters(string $lang): array
     {
         $avail = self::availableFilters($lang);
+        $saved = Settings::get('widget_filters_' . $lang) === ''
+            ? array_map(static fn ($c) => ['code' => $c, 'visible' => true], array_keys($avail))
+            : Settings::json('widget_filters_' . $lang);
         $out = [];
-        foreach (Settings::json('widget_filters_' . $lang) as $f) {
+        foreach ($saved as $f) {
             $code = (string) ($f['code'] ?? '');
             if (!isset($avail[$code]) || isset($out[$code])) {
                 continue;
             }
             $label = trim((string) ($f['label'] ?? ''));
+            $limit = (int) ($f['limit'] ?? 0);
             $out[$code] = ['code' => $code, 'label' => $label !== '' ? $label : $avail[$code][0], 'default_label' => $avail[$code][0],
-                'appearance' => $avail[$code][1], 'visible' => !empty($f['visible'])];
-        }
-        foreach ($avail as $code => [$label, $appearance]) {
-            if (!isset($out[$code])) {
-                $out[$code] = ['code' => $code, 'label' => $label, 'default_label' => $label, 'appearance' => $appearance, 'visible' => true];
-            }
+                'appearance' => $avail[$code][1], 'visible' => !empty($f['visible']),
+                'limit' => $limit >= 1 ? min(100, $limit) : self::defaultLimit($code)];
         }
         return array_values($out);
     }
 
-    /** @param list<array{code?:mixed, label?:mixed, visible?:mixed}> $in */
+    /** Filtres disponibles pas encore ajoutés (fenêtre « Ajouter un filtre »). @return array<string, array{0:string, 1:string}> */
+    public static function addableFilters(string $lang): array
+    {
+        return array_diff_key(self::availableFilters($lang), array_flip(array_column(self::filters($lang), 'code')));
+    }
+
+    /** @param list<array{code?:mixed, label?:mixed, visible?:mixed, limit?:mixed}> $in */
     public static function saveFilters(string $lang, array $in): void
     {
         $avail = self::availableFilters($lang);
@@ -249,7 +279,11 @@ final class WidgetConfig
                 continue;
             }
             $label = Text::truncate(trim((string) ($f['label'] ?? '')), 60);
-            $out[$code] = ['code' => $code, 'label' => $label === $avail[$code][0] ? '' : $label, 'visible' => !empty($f['visible'])];
+            $row = ['code' => $code, 'label' => $label === $avail[$code][0] ? '' : $label, 'visible' => !empty($f['visible'])];
+            if ($avail[$code][1] === 'terms') {
+                $row['limit'] = max(1, min(100, (int) ($f['limit'] ?? self::defaultLimit($code)) ?: self::defaultLimit($code)));
+            }
+            $out[$code] = $row;
         }
         Settings::set('widget_filters_' . $lang, Text::json(array_values($out)));
     }
@@ -325,7 +359,8 @@ final class WidgetConfig
         $layer = self::activeLayer();
         return [
             'layer' => $layer ? ['type' => $layer['type']] + $layer['settings'] : null,
-            'filters' => array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'appearance' => $f['appearance'], 'visible' => $f['visible']],
+            'filters' => array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'appearance' => $f['appearance'], 'visible' => $f['visible'],
+                'limit' => $f['limit']],
                 self::filters($lang)),
             'sorts' => self::sorts($lang),
         ];

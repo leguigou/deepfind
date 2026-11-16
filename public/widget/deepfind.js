@@ -46,7 +46,9 @@
     logo: '',
     colors: null,
     customCss: '',
-    cardTemplate: ''
+    customCssMobile: '',
+    cardTemplateDesktop: '',
+    cardTemplateMobile: ''
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -78,7 +80,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=9'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=11'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -390,7 +392,7 @@
   // Modèle de carte (extranet › Intégration › layer) : variables remplacées par des valeurs échappées,
   // puis HTML refiltré (mêmes règles que les bannières) ; pas de lien imbriqué, la carte entière est déjà un lien.
   function esc(v) { return String(v === undefined || v === null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
-  function templateCard(a, p, href) {
+  function templateCard(a, p, href, tpl) {
     var mv = p.matched_variant;
     var final = mv ? mv.final_price : p.final_price;
     var regular = mv ? mv.price : p.price;
@@ -399,7 +401,7 @@
       old_price: regular > final + 0.005 ? fmt(regular) : '', discount: p.on_sale && p.discount_percent > 0 ? '-' + p.discount_percent + '%' : '',
       sku: (mv && mv.sku) || p.sku || '', stock: p.in_stock ? t.inStock : t.outOfStock, 'new': p.is_new ? t.isNew : '', rating: p.rating || ''
     };
-    var html = cfg.cardTemplate.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(v, k) ? esc(v[k]) : ''; });
+    var html = tpl.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(v, k) ? esc(v[k]) : ''; });
     var doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
     Array.prototype.forEach.call(doc.body.childNodes, function (c) { a.appendChild(cleanNode(c)); });
     Array.prototype.forEach.call(a.querySelectorAll('a'), function (n) {
@@ -418,9 +420,10 @@
     var href = safeUrl(p.matched_variant && p.matched_variant.url) || safeUrl(p.url) || '#';
     var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
     a.href = href;
-    if (cfg.cardTemplate) {
+    var tpl = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
+    if (tpl) {
       a.classList.add('df-card-tpl');
-      templateCard(a, p, href);
+      templateCard(a, p, href, tpl);
       onOpen(a, function () { track('product', p.id, position, p.cr); });
       return a;
     }
@@ -479,19 +482,24 @@
     var byCode = {};
     facets.forEach(function (f) { byCode[f.code] = f; });
     var ordered = [];
+    var limits = {};
     if (cfg.filters) {
+      // seuls les filtres ajoutés et actifs dans l'extranet, dans leur ordre
       cfg.filters.forEach(function (c) {
-        if (c.code === 'price' && c.visible) { ordered.push({ price: true, label: c.label }); }
-        else if (byCode[c.code]) { ordered.push(byCode[c.code]); delete byCode[c.code]; }
+        if (!c.visible) { return; }
+        if (c.limit) { limits[c.code] = c.limit; }
+        if (c.code === 'price') { ordered.push({ price: true, label: c.label }); }
+        else if (byCode[c.code]) { ordered.push(byCode[c.code]); }
       });
+    } else {
+      ordered = facets;
     }
-    facets.forEach(function (f) { if (byCode[f.code]) { ordered.push(f); } });
     ordered.forEach(function (f) {
       if (f.price) { renderPrice(f.label, data.price_range); return; }
       var sec = el('div', 'df-sec');
       sec.appendChild(el('h3', null, f.label));
       var list = el('ul', 'df-facet');
-      var max = f.code === 'brand' ? 12 : 8;
+      var max = limits[f.code] || (f.code === 'brand' ? 12 : 8);
       f.values.forEach(function (v, i) {
         var li = el('li');
         if (i >= max && !v.selected) { li.className = 'df-more-item'; li.hidden = true; }
@@ -908,20 +916,28 @@
       logo.onerror = function () { logo.remove(); };
       if (usesBar()) { bar.insertBefore(logo, barInput); } else { main.insertBefore(logo, main.firstChild); }
     }
-    if (cfg.customCss) {
-      // CSS de l'extranet, inséré comme texte (aucun HTML interprété)
+    // CSS de l'extranet, inséré comme texte (aucun HTML interprété) ; version mobile = écrans ≤ 900 px
+    var css = cfg.customCssMobile
+      ? (cfg.customCss ? '@media (min-width: 901px) {\n' + cfg.customCss + '\n}\n' : '') + '@media (max-width: 900px) {\n' + cfg.customCssMobile + '\n}'
+      : cfg.customCss;
+    if (css) {
       var st = document.createElement('style');
       st.setAttribute('data-deepfind', 'custom');
-      st.textContent = cfg.customCss;
+      st.textContent = css;
       document.head.appendChild(st);
     }
     setupSorts();
-    (cfg.filters || []).forEach(function (f) {
-      var tg = f.code === 'in_stock' ? tgStock : (f.code === 'on_sale' ? tgSale : null);
-      if (!tg) { return; }
-      tg.text.nodeValue = ' ' + f.label;
-      tg.label.hidden = !f.visible;
-    });
+    if (cfg.filters) {
+      // « En stock » / « En promotion » : masqués s'ils ne sont pas ajoutés (ou désactivés) dans l'extranet
+      tgStock.label.hidden = true;
+      tgSale.label.hidden = true;
+      cfg.filters.forEach(function (f) {
+        var tg = f.code === 'in_stock' ? tgStock : (f.code === 'on_sale' ? tgSale : null);
+        if (!tg) { return; }
+        tg.text.nodeValue = ' ' + f.label;
+        tg.label.hidden = !f.visible;
+      });
+    }
   }
 
   function init() {
@@ -997,7 +1013,9 @@
       cfg.logo = safeUrl(l.logo);
       cfg.colors = { primary: l.color_primary, contrast: l.color_contrast, text: l.color_text };
       cfg.customCss = typeof l.css === 'string' ? l.css : '';
-      cfg.cardTemplate = typeof l.card_template === 'string' ? l.card_template : '';
+      cfg.customCssMobile = typeof l.css_mobile === 'string' ? l.css_mobile : '';
+      cfg.cardTemplateDesktop = typeof l.card_template === 'string' ? l.card_template : '';
+      cfg.cardTemplateMobile = typeof l.card_template_mobile === 'string' ? l.card_template_mobile : '';
     }
     if (Array.isArray(c.filters)) { cfg.filters = c.filters; }
     if (c.sorts && Array.isArray(c.sorts.items)) { cfg.sorts = c.sorts; }
