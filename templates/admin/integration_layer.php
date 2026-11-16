@@ -59,11 +59,20 @@ $colors = [
       <input name="container" value="<?= e($s['container']) ?>" placeholder="main#maincontent" class="code" <?= $type === 'embedded' ? 'required' : '' ?>>
       <small class="muted">Bloc de votre page dans lequel les résultats s'affichent à la place de son contenu, tant qu'une recherche est en cours.</small>
     </label>
-    <label data-layer-only="below floating embedded"<?= $type === 'fullscreen' ? ' hidden' : '' ?>>Largeur maximale de la fenêtre (pixels)
-      <input name="max_width" type="number" min="320" max="3000" step="10" value="<?= $s['max_width'] ?: '' ?>" class="lp-num" placeholder="Par défaut" data-width-input>
-      <small class="muted" data-width-help>Vide : largeur par défaut (Sous la barre : 1 440 px, Flottant : 1 200 px, Intégré : toute la largeur du bloc).
-        Si l'écran est plus étroit, la fenêtre garde une marge de 16 px de chaque côté ; sur mobile (900 px ou moins), elle prend toute la largeur.</small>
-    </label>
+    <div class="lp-field" data-layer-only="below floating embedded"<?= $type === 'fullscreen' ? ' hidden' : '' ?>>
+      <label for="lp-max-width">Largeur maximale de la fenêtre</label>
+      <span class="lp-unit-field">
+        <input id="lp-max-width" name="max_width" type="number" step="1" value="<?= $s['max_width'] ?: '' ?>" class="lp-num" placeholder="Par défaut" data-width-input
+          <?= $s['max_width_unit'] === 'px' ? 'min="320" max="3000"' : 'min="10" max="100"' ?>>
+        <select name="max_width_unit" aria-label="Unité de la largeur" data-width-unit>
+          <option value="pct" <?= $s['max_width_unit'] === 'pct' ? 'selected' : '' ?>>% de l'écran</option>
+          <option value="px" <?= $s['max_width_unit'] === 'px' ? 'selected' : '' ?>>pixels</option>
+        </select>
+      </span>
+      <small class="muted">Vide : largeur par défaut (Sous la barre : 1 440 px, Flottant : 1 200 px, Intégré : toute la largeur du bloc).
+        En % : part de la largeur de l'écran (10 à 100 ; pour Intégré, part de la largeur du bloc). En pixels : 320 à 3 000.
+        La fenêtre garde une marge de 16 px de chaque côté ; sur mobile (900 px ou moins), elle prend toute la largeur.</small>
+    </div>
     <label data-layer-only="below"<?= $type === 'below' ? '' : ' hidden' ?>>Écart sous la barre de recherche (pixels)
       <input name="gap" type="number" min="0" max="80" value="<?= (int) $s['gap'] ?>" class="lp-num">
     </label>

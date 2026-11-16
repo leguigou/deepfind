@@ -50,7 +50,8 @@
     customCssMobile: '',
     cardTemplateDesktop: '',
     cardTemplateMobile: '',
-    maxWidth: 0
+    maxWidth: 0,
+    maxWidthUnit: '%'
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -742,7 +743,8 @@
     if (cfg.type === 'below' && !overlay.hidden) {
       var lr = layer.getBoundingClientRect();
       var spot = activeInput ? searchBox(activeInput).getBoundingClientRect() : null;
-      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - (cfg.maxWidth || 1440)) / 2);
+      var maxPx = !cfg.maxWidth ? 1440 : (cfg.maxWidthUnit === '%' ? window.innerWidth * cfg.maxWidth / 100 : cfg.maxWidth);
+      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - maxPx) / 2);
       var left = window.innerWidth - w - 40;
       out = lr.top >= 56 && (!spot || spot.right < left - 8 || spot.bottom < lr.top - 52 || spot.top > lr.top - 6);
     }
@@ -1008,7 +1010,7 @@
   function applyDisplay() {
     overlay.className = 'df-overlay df-type-' + cfg.type;
     bar.hidden = !usesBar();
-    if (cfg.maxWidth) { overlay.style.setProperty('--df-width', cfg.maxWidth + 'px'); }
+    if (cfg.maxWidth) { overlay.style.setProperty('--df-width', cfg.maxWidth + cfg.maxWidthUnit); }
     var hex = function (c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : ''; };
     if (cfg.colors) {
       if (hex(cfg.colors.primary)) { overlay.style.setProperty('--df-accent', cfg.colors.primary); }
@@ -1120,7 +1122,9 @@
       if (ds.minChars === undefined && l.min_chars) { cfg.minChars = Math.max(1, parseInt(l.min_chars, 10) || 2); }
       cfg.logo = safeUrl(l.logo);
       cfg.colors = { primary: l.color_primary, contrast: l.color_contrast, text: l.color_text };
-      cfg.maxWidth = l.type !== 'fullscreen' && l.max_width > 0 ? Math.max(320, parseInt(l.max_width, 10)) : 0;
+      // largeur maximale : % de l'écran (ou du bloc pour Intégré) ou pixels
+      cfg.maxWidth = l.type !== 'fullscreen' && l.max_width > 0 ? parseInt(l.max_width, 10) : 0;
+      cfg.maxWidthUnit = l.max_width_unit === 'px' ? 'px' : '%';
       cfg.customCss = typeof l.css === 'string' ? l.css : '';
       cfg.customCssMobile = typeof l.css_mobile === 'string' ? l.css_mobile : '';
       cfg.cardTemplateDesktop = typeof l.card_template === 'string' ? l.card_template : '';

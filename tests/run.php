@@ -594,7 +594,9 @@ if ($base) {
         'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>',
         'css_mobile' => '.df-name { font-size: 12px; }', 'card_template_mobile' => '<p>{{price}}<iframe src="x"></iframe></p>', 'max_width' => 100]);
     check('intégration : largeur maximale bornée (320 px minimum, vide = par défaut)', $WC::layer($l1)['settings']['max_width'] === 320
-        && $WC::cleanSettings(['max_width' => ''])['max_width'] === 0 && $WC::cleanSettings(['max_width' => '980'])['max_width'] === 980);
+        && $WC::cleanSettings(['max_width' => ''])['max_width'] === 0 && $WC::cleanSettings(['max_width' => '980'])['max_width'] === 980
+        && $WC::cleanSettings([])['max_width_unit'] === 'pct' && $WC::cleanSettings(['max_width' => '85', 'max_width_unit' => 'pct']) ['max_width'] === 85
+        && $WC::cleanSettings(['max_width' => '900', 'max_width_unit' => 'pct'])['max_width'] === 100);
     $ls = $WC::layer($l1);
     check('intégration : mise en page modifiable, identité et personnalisation nettoyées', $ls['type'] === 'below' && $ls['settings']['min_chars'] === 1
         && $ls['settings']['logo'] === '' && $ls['settings']['color_primary'] === '#1069f9' && $ls['settings']['color_text'] === ''

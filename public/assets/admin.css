@@ -845,3 +845,9 @@ dialog.modal.lp-editor { width: min(1100px, calc(100vw - 32px)); }
 .card .table, .card .table-scroll > .table { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 [data-filter-open-row][hidden] { display: none !important; }
+.lp-field { display: flex; flex-direction: column; gap: 6px; }
+.lp-field > label { margin: 0; font-weight: 600; }
+.lp-field[hidden] { display: none !important; }
+.lp-unit-field { display: flex; gap: 8px; align-items: center; }
+.lp-unit-field .lp-num, .lp-unit-field select { margin: 0; }
+.lp-unit-field select { width: auto; }

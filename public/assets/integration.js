@@ -20,6 +20,21 @@
       syncType();
     }
 
+    // ------------------------------------------------------------ Largeur maximale : bornes selon l'unité (% ou pixels)
+    var widthUnit = document.querySelector('[data-width-unit]');
+    var widthInput = document.querySelector('[data-width-input]');
+    if (widthUnit && widthInput) {
+      widthUnit.addEventListener('change', function () {
+        var px = widthUnit.value === 'px';
+        widthInput.min = px ? '320' : '10';
+        widthInput.max = px ? '3000' : '100';
+        // valeur incohérente avec la nouvelle unité (ex. 900 en %) : effacée plutôt que mal interprétée
+        var v = parseInt(widthInput.value, 10);
+        if (v && (v < Number(widthInput.min) || v > Number(widthInput.max))) { widthInput.value = ''; }
+        widthInput.focus();
+      });
+    }
+
     // ------------------------------------------------------------ Paramètres d'un layer : renommer, couleurs
     var nameInput = document.querySelector('[data-lp-name]');
     var renameBtn = document.querySelector('[data-lp-rename]');

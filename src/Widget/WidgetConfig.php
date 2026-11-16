@@ -108,8 +108,10 @@ final class WidgetConfig
             'container' => $sel($in['container'] ?? ''),
             'url_state' => !empty($in['url_state']),
             'gap' => max(0, min(80, $gap)),
-            // largeur maximale de la fenêtre en pixels (sauf plein écran) ; 0 = largeur par défaut de la mise en page
-            'max_width' => ($mw = (int) ($in['max_width'] ?? 0)) > 0 ? max(320, min(3000, $mw)) : 0,
+            // largeur maximale de la fenêtre (sauf plein écran) en % de l'écran (par défaut) ou en pixels ; 0 = largeur par défaut
+            // (réglage enregistré avant le choix de l'unité : en pixels)
+            'max_width_unit' => $unit = (($in['max_width_unit'] ?? (isset($in['max_width']) && (int) $in['max_width'] > 0 ? 'px' : 'pct')) === 'px' ? 'px' : 'pct'),
+            'max_width' => ($mw = (int) ($in['max_width'] ?? 0)) > 0 ? ($unit === 'px' ? max(320, min(3000, $mw)) : max(10, min(100, $mw))) : 0,
             // caractères tapés avant d'afficher les résultats
             'min_chars' => max(1, min(10, (int) ($in['min_chars'] ?? 2))),
             // identité de marque : logo (https uniquement) et couleurs #rrggbb (vide = couleurs par défaut du widget)
