@@ -309,6 +309,8 @@ final class SearchService
             'price_asc' => [...$s, 'sort_price:asc'],
             'price_desc' => [...$s, 'sort_price:desc'],
             'newest' => [...$s, 'created_ts:desc'],
+            'name_asc' => [...$s, 'name:asc'],
+            'name_desc' => [...$s, 'name:desc'],
             'margin_desc' => ['margin_rate:desc'],
             'popularity_desc' => ['sales_30d:desc'],
             'score_desc' => ['biz_score:desc'],
@@ -384,6 +386,7 @@ final class SearchService
             $facets[] = $this->facet('attr.' . $code, (string) $label, $dist['attr.' . $code] ?? [], $r->attrs[$code] ?? [], false);
         }
         $facets = array_values(array_filter($facets, static fn ($f) => $f['values'] !== []));
+        $facets = self::arrangeFacets($facets, $r->lang);
 
         $posts = [];
         foreach ($res['posts']['hits'] ?? [] as $p) {
@@ -595,6 +598,25 @@ final class SearchService
     private static function num(float $f): string
     {
         return rtrim(rtrim(number_format($f, 4, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Ordre, nom affiché et visibilité des filtres (Intégration › Filtres). Un filtre masqué reste appliqué
+     * s'il est déjà sélectionné (lien partagé), mais n'est plus proposé.
+     */
+    public static function arrangeFacets(array $facets, string $lang): array
+    {
+        $conf = [];
+        foreach (\DeepFind\Widget\WidgetConfig::filters($lang) as $i => $f) {
+            $conf[$f['code']] = [$i, $f['label'], $f['visible']];
+        }
+        $facets = array_values(array_filter($facets, static fn ($f) => ($conf[$f['code']][2] ?? true)));
+        foreach ($facets as &$f) {
+            $f['label'] = $conf[$f['code']][1] ?? $f['label'];
+        }
+        unset($f);
+        usort($facets, static fn ($a, $b) => ($conf[$a['code']][0] ?? 999) <=> ($conf[$b['code']][0] ?? 999));
+        return $facets;
     }
 
     public static function label(string $code, string $lang): string

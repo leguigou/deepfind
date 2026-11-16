@@ -684,3 +684,43 @@ textarea.bn-code-area::placeholder { color: #9a9aae; }
 .pj-table .name-input { min-width: 130px; max-width: 170px; }
 .pj-table td.actions { min-width: 150px; }
 .pj-table .actions { flex-wrap: wrap; }
+
+/* Intégration : onglets, layers, listes ordonnées (filtres, tris) */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 0 0 18px; border-bottom: 1px solid var(--border); }
+.tab { padding: 10px 16px; color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab:hover { color: var(--text); }
+.tab.tab-on { color: var(--text); border-bottom-color: var(--accent); }
+.ly-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.ly-card { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0; }
+.ly-card.ly-edit { border-color: var(--accent); }
+.ly-check { width: 22px; flex: 0 0 22px; color: var(--ok, #2fbf71); }
+.ly-check .admin-icon { width: 22px; height: 22px; }
+.ly-info { flex: 1; min-width: 180px; }
+.ly-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ly-actions form { margin: 0; }
+.ly-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 12px 0 16px; }
+.ly-type { position: relative; display: flex !important; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; font-weight: 400 !important; }
+.ly-type input { position: absolute; opacity: 0; }
+.ly-type:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ly-type:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ly-pic { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; height: 84px; padding: 16px 8px 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; }
+.ly-pic::before { content: ""; position: absolute; left: 8px; right: 8px; top: 5px; height: 6px; border-radius: 3px; background: var(--muted); opacity: .45; }
+.ly-pic i { border-radius: 3px; background: var(--accent); opacity: .55; }
+.ly-pic-below { padding: 24px 22px 8px; }
+.ly-pic-below::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, .25); z-index: -0; pointer-events: none; }
+.ly-pic-floating { padding: 18px 18px 10px; }
+.ly-pic-floating i { opacity: .7; }
+.ly-pic-embedded { grid-template-columns: 26px repeat(3, 1fr); }
+.ly-pic-embedded i:first-child { grid-row: span 2; background: var(--muted); opacity: .3; }
+.ly-table input:not([type=checkbox]), .ly-table select { margin: 0; width: 100%; }
+.ly-grip-col { width: 92px; }
+.ly-grip { white-space: nowrap; }
+.ly-handle { display: inline-flex; vertical-align: middle; cursor: grab; color: var(--muted); margin-right: 4px; }
+.icon-btn-xs { display: inline-grid; width: 24px; height: 24px; font-size: 12px; vertical-align: middle; margin-left: 2px; }
+tr.ly-dragging { opacity: .45; }
+.ly-search { margin: 0 0 12px; width: 100%; }
+.ly-code summary { cursor: pointer; }
+.ly-code[open] summary { margin-bottom: 10px; }
+.form-foot { display: flex; justify-content: flex-end; }
+[data-layer-only][hidden] { display: none !important; }
+.ly-pic-floating { background: rgba(0, 0, 0, .16); }

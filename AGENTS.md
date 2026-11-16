@@ -56,7 +56,9 @@ src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode 
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
-src/Http/ApiController.php     /api/v1/config (projet actif ?), /api/v1/search, /api/v1/click, /api/v1/health
+src/Http/ApiController.php     /api/v1/config (projet actif ? + layer actif, filtres, tris), /api/v1/search, /api/v1/click, /api/v1/health
+src/Widget/WidgetConfig.php    page Intégration : layers (table layers, un seul actif : below | fullscreen | floating | embedded),
+                               filtres (ordre, nom, visibilité : widget_filters_<lang>) et tris (widget_sorts_<lang>) envoyés au widget
 src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
 src/Project.php                projet courant (session extranet / clé publique API / source importée) ; préfixe d'index par projet ;
                                projet désactivé (projects.active = 0) → le widget ne prend pas la main sur le site

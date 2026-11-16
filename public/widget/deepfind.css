@@ -143,3 +143,41 @@ html.df-lock { overflow: hidden; }
 .df-banner img { display: block; max-width: 100%; height: auto; }
 .df-banner-img { width: 100%; object-fit: cover; }
 .df-banner a { color: inherit; }
+
+/* Filtre prix (plage min / max) */
+.df-range { display: flex; align-items: center; gap: 6px; }
+.df-range-input { width: 0; flex: 1; min-width: 0; padding: 7px 8px; border: 1px solid var(--df-border); border-radius: 6px; font: inherit; font-size: 14px; color: var(--df-text); background: #fff; }
+.df-range-sep { color: var(--df-muted); }
+.df-range-ok { padding: 7px 10px; border: 0; border-radius: 6px; background: var(--df-accent); color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* Types de layer (extranet › Intégration). below = sous la barre (règles ci-dessus) */
+.df-bar { display: none; }
+.df-type-fullscreen .df-layer, .df-type-floating .df-layer { grid-template-rows: auto minmax(0, 1fr); }
+.df-type-fullscreen .df-bar, .df-type-floating .df-bar {
+  display: flex; grid-column: 1 / -1; align-items: center; gap: 10px; padding: 12px 64px 12px 20px; border-bottom: 1px solid var(--df-border);
+}
+.df-bar-input {
+  flex: 1; min-width: 0; height: 46px; padding: 0 16px; border: 1px solid var(--df-border); border-radius: 999px;
+  background: var(--df-hover); color: var(--df-text); font: inherit; font-size: 17px; outline: none;
+}
+.df-bar-input:focus { border-color: var(--df-accent); background: #fff; }
+.df-type-fullscreen .df-close, .df-type-floating .df-close { top: 18px; }
+.df-type-fullscreen .df-head { margin-right: 0; }
+.df-type-floating .df-head { margin-right: 0; }
+/* Plein écran : toute la page */
+.df-type-fullscreen .df-layer { inset: 0; border-radius: 0; box-shadow: none; }
+/* Flottant : panneau centré au-dessus de la page assombrie */
+.df-type-floating .df-layer { top: 5vh; bottom: 5vh; left: max(var(--df-margin), calc((100% - 1200px) / 2)); right: max(var(--df-margin), calc((100% - 1200px) / 2)); }
+/* Intégré : dans un bloc du site, la page défile normalement */
+.df-overlay.df-type-embedded { position: relative; inset: auto; z-index: auto; pointer-events: auto; }
+.df-type-embedded .df-backdrop, .df-type-embedded .df-ring { display: none; }
+.df-type-embedded .df-layer { position: relative; inset: auto; min-height: 60vh; border-radius: var(--df-radius); box-shadow: none; border: 1px solid var(--df-border); animation: none; }
+.df-type-embedded .df-main, .df-type-embedded .df-side { overflow: visible; }
+.df-type-embedded .df-side { align-self: start; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; border-right: 0; }
+.df-type-embedded .df-main { border-left: 1px solid var(--df-border); }
+@media (max-width: 900px) {
+  .df-type-fullscreen .df-bar, .df-type-floating .df-bar { padding: 10px 56px 10px 12px; }
+  .df-type-floating .df-layer { top: 0; bottom: 0; left: 0; right: 0; border-radius: 0; }
+  .df-type-embedded .df-layer { border: 0; }
+  .df-type-embedded .df-side { position: absolute; max-height: none; }
+}

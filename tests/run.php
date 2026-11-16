@@ -556,6 +556,41 @@ if ($base) {
     [$cs] = $get("/api/v1/search?key=$key&q=palme");
     check('projet réactivé', ($cf['enabled'] ?? null) === true && $cs === 200);
 
+    // Intégration : layers (un seul actif), filtres et tris renvoyés au widget
+    $WC = DeepFind\Widget\WidgetConfig::class;
+    DeepFind\Project::use($prodId);
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    check('intégration : sans layer, affichage par défaut + filtres et tris par défaut', ($cf['layer'] ?? 'x') === null
+        && ($cf['sorts']['relevance'] ?? '') === 'Pertinence' && array_column($cf['sorts']['items'] ?? [], 'key') === ['price_asc', 'price_desc', 'newest']
+        && in_array('price', array_column($cf['filters'] ?? [], 'code'), true));
+    $l1 = $WC::createLayer('Cabesto', 'fullscreen');
+    $l2 = $WC::createLayer('Essai', 'embedded');
+    check('intégration : premier layer actif d\'office, le suivant non', $WC::activeLayer()['id'] === $l1 && !$WC::layer($l2)['active']);
+    $WC::saveLayer($l2, 'Essai intégré', 'embedded', ['container' => 'main#maincontent<script>', 'input' => '#search', 'url_state' => '1', 'gap' => 500]);
+    $WC::activateLayer($l2, true);
+    $al = $WC::activeLayer();
+    check('intégration : activation exclusive, réglages nettoyés', $al['id'] === $l2 && !$WC::layer($l1)['active'] && $al['settings']['container'] === 'main#maincontentscript'
+        && $al['settings']['url_state'] === true && $al['settings']['gap'] === 80);
+    $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'label' => '', 'visible' => false], ['code' => 'inconnu', 'visible' => true]]);
+    $WC::saveSorts('fr', 'Les plus pertinents', [['key' => 'name_asc', 'label' => 'Nom A-Z'], ['key' => 'price_desc', 'label' => ''], ['key' => 'margin_desc', 'label' => 'interdit']]);
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    $codes = array_column($cf['filters'] ?? [], 'code');
+    check('intégration : config widget (layer actif, ordre des filtres, tris sans tri interne)', ($cf['layer']['type'] ?? '') === 'embedded'
+        && ($cf['layer']['container'] ?? '') === 'main#maincontentscript' && array_slice($codes, 0, 2) === ['price', 'brand'] && !in_array('inconnu', $codes, true)
+        && ($cf['filters'][0]['label'] ?? '') === 'Budget' && ($cf['filters'][1]['visible'] ?? true) === false
+        && ($cf['sorts']['relevance'] ?? '') === 'Les plus pertinents' && ($cf['sorts']['items'] ?? []) === [['key' => 'name_asc', 'label' => 'Nom A-Z'], ['key' => 'price_desc', 'label' => 'Prix décroissant']]
+        && !str_contains(json_encode($cf), 'margin'));
+    [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=3");
+    check('intégration : filtre masqué (marques) absent des résultats', !in_array('brand', array_column($d['facets'] ?? [], 'code'), true));
+    $WC::activateLayer($l2, false);
+    $WC::deleteLayer($l1);
+    $WC::deleteLayer($l2);
+    DeepFind\Settings::set('widget_filters_fr', '');
+    DeepFind\Settings::set('widget_sorts_fr', '');
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    check('intégration : layer désactivé = affichage par défaut', ($cf['layer'] ?? 'x') === null && $WC::layers() === []);
+    check('tri par nom accepté par l\'API publique', DeepFind\Search\SearchRequest::fromArray(['q' => 'x', 'sort' => 'name_desc'])->sort === 'name_desc');
+
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }

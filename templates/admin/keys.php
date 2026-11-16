@@ -1,4 +1,3 @@
-<?php $base = $appUrl !== '' ? $appUrl : 'https://search.cabesto.com'; ?>
 <p class="muted">La clé publique est visible dans le code des pages du site : c'est normal. Elle est protégée par la liste des domaines autorisés et par les seuils anti-robots.</p>
 <form method="post" action="<?= e(url('/admin/keys/create')) ?>" class="card form inline">
   <?= csrf_field() ?>
@@ -34,26 +33,4 @@
   </tbody>
 </table>
 
-<h2>Intégration sur le site (Magento)</h2>
-<p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème :</p>
-<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=7" defer
-  data-key="<?= e($keys[0]['public_key'] ?? 'pk_VOTRE_CLE') ?>"
-  data-lang="fr"
-  data-input="#search"
-  data-results-url="https://www.cabesto.com/fr/catalogsearch/result/?q="&gt;&lt;/script&gt;</pre>
-<table class="table compact">
-  <thead><tr><th>Attribut</th><th>Rôle</th></tr></thead>
-  <tbody>
-    <tr><td><code>data-key</code></td><td>Clé publique (obligatoire)</td></tr>
-    <tr><td><code>data-lang</code></td><td>Langue des résultats (fr par défaut)</td></tr>
-    <tr><td><code>data-input</code></td><td>Sélecteur CSS du ou des champs de recherche du site</td></tr>
-    <tr><td><code>data-gap</code></td><td>Écart en pixels entre la barre de recherche et la fenêtre (12 par défaut). La fenêtre s'ouvre juste sous la barre, le reste de la page est assombri</td></tr>
-    <tr><td><code>data-position="anchor"</code> + <code>data-anchor</code></td><td>Ouvrir plutôt la fenêtre sous un élément du site (ex. <code>header.page-header</code>)</td></tr>
-    <tr><td><code>data-enter</code></td><td><code>off</code> : la touche Entrée laisse seulement la fenêtre DeepFind ; <code>on</code> : elle ouvre la page de résultats. Sans attribut : réglage <a href="<?= e(url('/admin/settings')) ?>">Paramètres › Widget sur le site</a></td></tr>
-    <tr><td><code>data-results-url</code></td><td>Page « Tout voir » (la requête est ajoutée à la fin). Vide = bouton masqué</td></tr>
-    <tr><td><code>data-currency</code>, <code>data-locale</code></td><td>Format des prix (EUR, fr-FR par défaut)</td></tr>
-    <tr><td><code>data-min-chars</code>, <code>data-page-size</code></td><td>Caractères avant recherche (2), produits par page (20)</td></tr>
-    <tr><td><code>data-native</code></td><td>Par défaut, l'autocomplétion d'origine du site (Magento…) est neutralisée pour ne pas s'ouvrir en même temps. <code>keep</code> = la laisser fonctionner</td></tr>
-    <tr><td><code>data-hide</code></td><td>Sélecteurs CSS supplémentaires de panneaux d'origine à masquer (ex. <code>.mon-popup-recherche</code>)</td></tr>
-  </tbody>
-</table>
+<p class="muted">Le code à ajouter sur le site et l'affichage du widget (layers, filtres, options de tri) se règlent dans <a href="<?= e(url('/admin/integration')) ?>">Intégration</a>.</p>

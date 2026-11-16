@@ -27,7 +27,8 @@ $navGroups = [
     ]],
     'administration' => ['Administration & technique', 'settings', [
         'projects' => ['/admin/projects', 'Projets', 'folder'],
-        'keys' => ['/admin/keys', 'Clés & intégration', 'key'],
+        'keys' => ['/admin/keys', 'Clés', 'key'],
+        'integration' => ['/admin/integration', 'Intégration', 'code'],
         'cache' => ['/admin/cache', 'Cache', 'database'],
         'settings' => ['/admin/settings', 'Paramètres', 'settings'],
     ]],
