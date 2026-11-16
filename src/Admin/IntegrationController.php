@@ -30,6 +30,9 @@ final class IntegrationController
             'addable' => WidgetConfig::addableFilters($lang),
             'sorts' => WidgetConfig::sorts($lang),
             'sortItems' => WidgetConfig::sortItems($lang),
+            // favori « Tester DeepFind » : clés actives (avec leurs domaines) et jeton d'aperçu de chaque layer
+            'testKeys' => Db::all('SELECT name, public_key, allowed_origins FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id', [\DeepFind\Project::id()]),
+            'previewTokens' => array_combine(array_column($layers, 'id'), array_map(static fn ($l) => WidgetConfig::previewToken($l['id']), $layers)) ?: [],
             'firstKey' => (string) (Db::value('SELECT public_key FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id LIMIT 1', [\DeepFind\Project::id()]) ?? ''),
             'appUrl' => rtrim((string) Config::get('APP_URL', ''), '/'),
         ], 'Intégration');

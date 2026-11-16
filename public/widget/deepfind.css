@@ -230,3 +230,12 @@ html.df-lock { overflow: hidden; }
 .df-overlay > .df-close:hover { transform: scale(1.06); }
 .df-overlay > .df-close:focus-visible { outline: 3px solid var(--df-accent); outline-offset: 2px; }
 @media (max-width: 900px) { .df-overlay > .df-close { right: 10px; } }
+
+/* Aperçu (favori « Tester DeepFind ») : bandeau en bas à gauche, au-dessus de tout */
+.df-preview-bar {
+  position: fixed; left: 16px; bottom: 16px; z-index: 2147483600; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+  padding: 10px 12px 10px 16px; border-radius: 12px; background: #1d2b4f; color: #fff; font: 14px/1.4 system-ui, sans-serif;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+}
+.df-preview-bar.df-preview-error { background: #8a1c1c; }
+.df-preview-quit { flex: none; padding: 6px 12px; border: 0; border-radius: 999px; background: #fff; color: #1d2b4f; font: inherit; font-weight: 600; cursor: pointer; }

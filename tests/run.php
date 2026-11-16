@@ -615,6 +615,12 @@ if ($base) {
         && $ls['settings']['css_mobile'] === '.df-name { font-size: 12px; }' && $ls['settings']['card_template_mobile'] === '<p>{{price}}</p>');
     check('intégration : activation exclusive, réglages nettoyés', $al['id'] === $l2 && !$WC::layer($l1)['active'] && $al['settings']['container'] === 'main#maincontentscript'
         && $al['settings']['url_state'] === true && $al['settings']['gap'] === 80);
+    // Favori « Tester DeepFind » : jeton d'aperçu d'un layer inactif, refusé s'il est modifié
+    $tok = $WC::previewToken($l1);
+    [, $pv] = $get("/api/v1/config?key=$key&lang=fr&preview=" . rawurlencode($tok));
+    [, $pvBad] = $get("/api/v1/config?key=$key&lang=fr&preview=" . rawurlencode(substr($tok, 0, -1) . (str_ends_with($tok, 'a') ? 'b' : 'a')));
+    check('aperçu : layer inactif servi avec un jeton valide, refusé sinon', ($pv['preview']['layer'] ?? '') === 'Cabesto' && ($pv['layer']['type'] ?? '') === 'below'
+        && ($pvBad['preview']['error'] ?? '') === 'expired' && ($pvBad['layer']['type'] ?? '') === 'embedded');
     $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'label' => '', 'visible' => false], ['code' => 'inconnu', 'visible' => true]]);
     $WC::saveSorts('fr', 'Les plus pertinents', [['field' => 'name', 'dir' => 'asc', 'label' => 'Nom A-Z'], ['field' => 'price', 'dir' => 'desc', 'label' => ''],
         ['field' => 'margin_rate', 'dir' => 'desc', 'label' => 'interdit'], ['field' => 'name', 'dir' => 'asc', 'label' => 'doublon']]);

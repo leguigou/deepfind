@@ -45,7 +45,68 @@ $types = WidgetConfig::TYPES;
     <div class="card muted">Aucun layer : le widget s'affiche sous la barre de recherche, avec les réglages du code du site.</div>
   <?php endif; ?>
 </div>
-<p><button type="button" class="btn btn-light" data-dialog-open="ly-dialog">Créer un nouveau layer</button></p>
+<p class="ly-buttons">
+  <button type="button" class="btn btn-light" data-dialog-open="ly-dialog">Créer un nouveau layer</button>
+  <button type="button" class="btn btn-light" data-dialog-open="test-dialog"><?= admin_icon('eye') ?> Tester DeepFind sur le site</button>
+</p>
+
+<dialog id="test-dialog" class="modal test-dialog" aria-labelledby="test-title" data-test-bookmark
+  data-base="<?= e($base) ?>" data-version="<?= e((string) \DeepFind\Widget\WidgetConfig::WIDGET_VERSION) ?>" data-lang="<?= e($lang) ?>">
+  <div class="modal-head">
+    <div class="modal-title"><h2 id="test-title">Tester DeepFind sur le site</h2>
+      <p class="muted small">Un favori à ajouter dans Chrome : sur une page du site, un clic affiche le widget avec le layer choisi.
+        Seul votre navigateur voit le test ; rien ne change pour les visiteurs.</p></div>
+    <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>
+  </div>
+  <div class="modal-body">
+    <?php if (!$testKeys): ?>
+      <p class="flash flash-warn">Aucune clé active : créez-en une dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>, avec le domaine du site à tester.</p>
+    <?php else: ?>
+    <div class="grid2">
+      <label>Layer à tester
+        <select data-test-layer>
+          <option value="">Layer actif du site (sans aperçu)</option>
+          <?php foreach ($layers as $l): ?>
+            <option value="<?= e($previewTokens[$l['id']] ?? '') ?>" <?= $l['active'] ? 'selected' : '' ?>><?= e($l['name']) ?> — <?= e($types[$l['type']][0]) ?><?= $l['active'] ? ' (actif)' : '' ?></option>
+          <?php endforeach; ?>
+        </select>
+        <small class="muted">Un layer inactif peut être testé : il n'est montré qu'à vous.</small>
+      </label>
+      <label>Clé utilisée
+        <select data-test-key>
+          <?php foreach ($testKeys as $k): ?>
+            <option value="<?= e($k['public_key']) ?>"><?= e($k['name']) ?> — <?= e($k['allowed_origins'] !== '' ? $k['allowed_origins'] : 'tous les domaines') ?></option>
+          <?php endforeach; ?>
+        </select>
+        <small class="muted">Le site testé doit faire partie des domaines autorisés de la clé.</small>
+      </label>
+    </div>
+
+    <div class="test-drag">
+      <a href="#" class="btn test-bookmark" data-test-link draggable="true" title="Glissez ce bouton dans la barre de favoris"><?= admin_icon('eye') ?> Tester DeepFind</a>
+      <button type="button" class="btn btn-sm btn-light" data-test-copy><?= admin_icon('copy', 'key-copy') ?><?= admin_icon('check', 'key-copied') ?> Copier le lien du favori</button>
+    </div>
+
+    <ol class="test-steps">
+      <li><strong>Affichez la barre de favoris de Chrome</strong> : <kbd>Ctrl</kbd> + <kbd>Maj</kbd> + <kbd>B</kbd> (sur Mac : <kbd>⌘</kbd> + <kbd>Maj</kbd> + <kbd>B</kbd>).</li>
+      <li><strong>Glissez le bouton « Tester DeepFind »</strong> ci-dessus jusque dans la barre de favoris, puis relâchez.
+        <br><span class="muted small">Si le glisser ne marche pas : cliquez sur « Copier le lien du favori », puis clic droit dans la barre de favoris › <em>Ajouter une page…</em>,
+          nom « Tester DeepFind », et collez le lien dans le champ <em>URL</em>.</span></li>
+      <li><strong>Ouvrez le site</strong> dans un onglet, par exemple <code>https://www.cabesto.com</code>.</li>
+      <li><strong>Cliquez sur le favori « Tester DeepFind »</strong>. Un bandeau « Aperçu DeepFind » apparaît en bas à gauche.
+        <br><span class="muted small">Si DeepFind est déjà installé sur le site, la page se recharge d'abord toute seule en mode aperçu.</span></li>
+      <li><strong>Tapez une recherche</strong> dans la barre de recherche du site : le widget s'affiche avec le layer choisi.</li>
+      <li><strong>Pour voir le rendu mobile</strong> : <kbd>F12</kbd>, puis l'icône téléphone (<kbd>Ctrl</kbd> + <kbd>Maj</kbd> + <kbd>M</kbd>) ; choisissez un modèle de téléphone, rechargez la page et cliquez de nouveau sur le favori.</li>
+      <li><strong>Pour arrêter</strong> : bouton « Quitter l'aperçu » du bandeau, ou fermez l'onglet.</li>
+    </ol>
+    <p class="muted small">Le favori reste valable <?= \DeepFind\Widget\WidgetConfig::PREVIEW_DAYS ?> jours pour le layer choisi ; recréez-le ensuite (ou après un changement de layer à tester).
+      Les modifications enregistrées dans le layer sont visibles en rechargeant la page du site. Si le site est déjà en aperçu, changer de page garde l'aperçu ;
+      sinon, recliquez sur le favori après chaque changement de page. Si rien ne s'affiche, le site bloque peut-être les scripts extérieurs (politique de sécurité) :
+      dites-le à l'équipe technique.</p>
+    <?php endif; ?>
+  </div>
+  <div class="modal-foot"><button type="button" class="btn btn-light" data-dialog-close>Fermer</button></div>
+</dialog>
 
 
 <dialog id="ly-dialog" class="modal" aria-labelledby="ly-title">
@@ -222,7 +283,7 @@ $types = WidgetConfig::TYPES;
   <summary><strong>Code à ajouter sur le site</strong></summary>
   <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème.
     Les clés se gèrent dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>.</p>
-  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=16" defer
+  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=<?= \DeepFind\Widget\WidgetConfig::WIDGET_VERSION ?>" defer
   data-key="<?= e($firstKey !== '' ? $firstKey : 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"
