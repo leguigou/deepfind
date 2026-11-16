@@ -880,3 +880,9 @@ dialog.modal.test-dialog { width: min(900px, calc(100vw - 32px)); }
 .test-drag [data-test-copy].is-copied .key-copied { display: block; color: var(--ok); }
 .test-steps { margin: 14px 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; line-height: 1.5; }
 kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; background: var(--surface-2); font: 12px ui-monospace, monospace; }
+
+/* Historique des imports : avancement sous le statut, écart avec l'import précédent */
+.prog-mini { margin-top: 6px; min-width: 120px; }
+.diff { display: inline-flex; gap: 8px; font-weight: 700; }
+.diff-plus { color: var(--ok); }
+.diff-minus { color: var(--ko); }

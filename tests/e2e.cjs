@@ -108,13 +108,14 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // Paramètres : interrupteurs marche/arrêt
   await page.goto(BASE + '/admin/settings');
-  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 3);
+  // anti-robots, touche Entrée, autocomplétion d'origine, journaux
+  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 4);
   await page.click('label.toggle:has(input[name=block_bad_user_agents])');
-  await page.click('form.form > button.btn');
+  await page.click('form.st .st-foot button.btn');
   check('interrupteur : désactivé et enregistré', (await page.isChecked('input[name=block_bad_user_agents][type=checkbox]')) === false);
   await page.screenshot({ path: OUT + '/14-parametres-interrupteurs.png', fullPage: false });
   await page.click('label.toggle:has(input[name=block_bad_user_agents])');
-  await page.click('form.form > button.btn');
+  await page.click('form.st .st-foot button.btn');
   check('interrupteur : réactivé', await page.isChecked('input[name=block_bad_user_agents][type=checkbox]'));
 
   // Pertinence & classement

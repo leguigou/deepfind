@@ -86,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=19'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=20'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -758,10 +758,28 @@
       var left = window.innerWidth - w - 40;
       out = lr.top >= 56 && (!spot || spot.right < left - 8 || spot.bottom < lr.top - 52 || spot.top > lr.top - 6);
     }
+    // pastille d'aperçu (toujours en haut à droite) : le bouton fermer reste dans la fenêtre s'il la toucherait
+    var badge = document.querySelector('.df-preview-bar');
+    if (out && badge) {
+      var br = badge.getBoundingClientRect();
+      var top = layer.getBoundingClientRect().top - 50;
+      if (top < br.bottom + 6) { out = false; }
+    }
     var parent = out ? overlay : layer;
     if (closeBtn.parentNode !== parent) { parent.appendChild(closeBtn); }
-    var badge = document.querySelector('.df-preview-bar');
-    if (badge) { badge.classList.toggle('df-preview-left', !overlay.hidden && (out || cfg.type === 'fullscreen' || cfg.type === 'floating')); }
+    // bouton fermer dans la fenêtre mais sous la pastille (plein écran, flottant sur mobile) : décalé à sa gauche,
+    // et la barre de recherche du layer garde la place du bouton
+    closeBtn.style.right = '';
+    bar.style.paddingRight = '';
+    if (badge && !out && !overlay.hidden) {
+      var b2 = badge.getBoundingClientRect();
+      var c2 = closeBtn.getBoundingClientRect();
+      if (c2.width && !(c2.right < b2.left || c2.left > b2.right || c2.bottom < b2.top || c2.top > b2.bottom)) {
+        var right = Math.round(layer.getBoundingClientRect().right - b2.left + 8);
+        closeBtn.style.right = right + 'px';
+        if (usesBar()) { bar.style.paddingRight = (right + c2.width + 12) + 'px'; }
+      }
+    }
   }
   function open() {
     if (cfg.type === 'embedded') {
@@ -1141,7 +1159,7 @@
     mk('path', { d: 'M21.2 21.2 27.6 27.6', stroke: paint, 'stroke-width': '4.2', 'stroke-linecap': 'round' }, svg);
     return svg;
   }
-  // Pastille discrète en haut à droite (détail au survol) ; passe à gauche si elle gênerait le bouton fermer de la fenêtre
+  // Pastille discrète, toujours en haut à droite (détail au survol)
   function previewBadge(detail, isError) {
     if (isError) { console.warn('[DeepFind] ' + detail); }
     var show = function () {

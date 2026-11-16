@@ -11,7 +11,7 @@ $variants = is_array($d['variants'] ?? null) ? $d['variants'] : [];
       <h2 id="<?= e($dlgId) ?>-t"><a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a></h2>
       <span class="muted"><?= e($pr['brand'] ?? '') ?></span> · <code><?= e($pr['sku']) ?></code>
       <?php if (!empty($pr['type'])): ?> · <span class="muted"><?= e($pr['type']) ?></span><?php endif; ?>
-      <?php if ($isDisabled): ?> <span class="badge badge-ko">désactivé</span><?php endif; ?>
+      <?php if ($isDisabled): ?> <span class="badge <?= $disLabel === 'désactivé manu' ? 'badge-ko' : 'badge-warn' ?>"><?= e($disLabel ?? 'désactivé') ?></span><?php endif; ?>
       <?php if (!empty($pr['rule'])): ?> <span class="badge badge-info">règle : <?= e($pr['rule']) ?></span><?php endif; ?>
     </div>
     <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>

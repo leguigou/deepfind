@@ -210,7 +210,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.cabesto.com/widget/deepfind.js?v=19" defer
+<script src="https://search.cabesto.com/widget/deepfind.js?v=20" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -226,7 +226,7 @@ Ajoutez ce code avant `</body>`, par exemple dans *Contenu › Design › Config
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres marques/catégories/attributs, case « En stock », case « En promotion », tri par prix ou nouveauté, articles de blog, touche Entrée (redirection ou page « Tout voir »), touche Échap, version mobile avec bouton « Filtres ».
 - **Statistiques de clics** : chaque clic est mesuré (`sendBeacon`), sans cookie. Un identifiant aléatoire est créé à chaque chargement de page.
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
-- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=18` en `?v=19`) pour forcer le rechargement par les navigateurs.
+- Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=19` en `?v=20`) pour forcer le rechargement par les navigateurs.
 
 ## 5. Formats des flux et mapping
 
@@ -570,6 +570,12 @@ FAKE_MEILI_DIR=tests/_tmp/meili php -S 127.0.0.1:7799 tests/fake-meili.php
 
 ```bash
 DEEPFIND_ENV_FILE=$PWD/tests/_tmp/.env php -d apc.enable_cli=1 -S 127.0.0.1:8080 -t public public/index.php
+```
+
+Dans un troisième terminal, démarrez le worker des imports (le test lance un import manuel et suit son avancement) :
+
+```bash
+DEEPFIND_ENV_FILE=$PWD/tests/_tmp/.env php bin/console queue:work --max-time=900 --sleep=1
 ```
 
 Puis lancez le test du navigateur :
