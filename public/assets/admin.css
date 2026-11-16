@@ -808,3 +808,6 @@ dialog.modal.lp-editor { width: min(1100px, calc(100vw - 32px)); }
 [data-key-copy].is-copied .key-copy { display: none; }
 [data-key-copy].is-copied .key-copied { display: block; color: var(--ok); }
 .key-delete { color: var(--ko); }
+.flt-limit { width: 80px; }
+[data-filter-limit-row][hidden] { display: none !important; }
+.modal-head .toggle { margin: 0 4px 0 auto !important; }

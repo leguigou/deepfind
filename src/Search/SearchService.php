@@ -567,7 +567,7 @@ final class SearchService
         } else {
             usort($values, static fn ($a, $b) => $b['count'] <=> $a['count'] ?: strnatcasecmp($a['value'], $b['value']));
         }
-        return ['code' => $code, 'label' => $label, 'values' => array_slice($values, 0, max(5, Settings::int('facet_values_limit')))];
+        return ['code' => $code, 'label' => $label, 'values' => array_slice($values, 0, 100)]; // coupé par arrangeFacets()
     }
 
     private function empty(SearchRequest $r): array
@@ -609,11 +609,15 @@ final class SearchService
     {
         $conf = [];
         foreach (\DeepFind\Widget\WidgetConfig::filters($lang) as $i => $f) {
-            $conf[$f['code']] = [$i, $f['label'], $f['visible']];
+            $conf[$f['code']] = [$i, $f['label'], $f['visible'], $f['limit']];
         }
-        $facets = array_values(array_filter($facets, static fn ($f) => ($conf[$f['code']][2] ?? true)));
+        // filtre non ajouté ou désactivé : plus proposé (une valeur déjà sélectionnée reste appliquée)
+        $facets = array_values(array_filter($facets, static fn ($f) => ($conf[$f['code']][2] ?? false)));
+        // valeurs renvoyées : réglage « Valeurs max. par filtre », au moins le nombre affiché choisi pour ce filtre
+        $max = max(5, Settings::int('facet_values_limit'));
         foreach ($facets as &$f) {
             $f['label'] = $conf[$f['code']][1] ?? $f['label'];
+            $f['values'] = array_slice($f['values'], 0, max($max, (int) ($conf[$f['code']][3] ?? 0)));
         }
         unset($f);
         usort($facets, static fn ($a, $b) => ($conf[$a['code']][0] ?? 999) <=> ($conf[$b['code']][0] ?? 999));

@@ -1,5 +1,5 @@
 <?php
-/** @var string $tab @var string $lang @var array $layers @var array $filters @var array $sorts @var string $firstKey @var string $appUrl */
+/** @var string $tab @var string $lang @var array $layers @var array $filters @var array $addable @var array $sorts @var string $firstKey @var string $appUrl */
 use DeepFind\Admin\IntegrationController;
 use DeepFind\Widget\WidgetConfig;
 
@@ -77,13 +77,15 @@ $types = WidgetConfig::TYPES;
 </dialog>
 
 <?php elseif ($tab === 'filters'): ?>
-<p class="muted">Choisissez les filtres proposés aux visiteurs à côté des résultats, leur nom et leur ordre (faites glisser les lignes).
-  Les filtres d'attributs apparaissent ici après un import. Langue : <strong><?= e(strtoupper($lang)) ?></strong>.</p>
+<div class="page-actions">
+  <p class="muted">Ajoutez les filtres proposés aux visiteurs à côté des résultats, choisissez leur nom, leur ordre (faites glisser les lignes)
+    et le nombre de valeurs affichées. Langue : <strong><?= e(strtoupper($lang)) ?></strong>.</p>
+  <button type="button" class="btn" data-dialog-open="flt-dialog" <?= $addable ? '' : 'disabled title="Tous les filtres disponibles sont déjà ajoutés"' ?>>+ Ajouter un filtre</button>
+</div>
 <form method="post" action="<?= e(url('/admin/integration/filters')) ?>" class="card" data-order-form="filters">
-  <?= csrf_field() ?><input type="hidden" name="payload" value="">
-  <input type="search" class="ly-search" placeholder="Rechercher" aria-label="Rechercher un filtre" data-order-search>
+  <?= csrf_field() ?><input type="hidden" name="payload" value=""><input type="hidden" name="removed" value="">
   <table class="table ly-table">
-    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Statut</th></tr></thead>
+    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Statut</th><th></th></tr></thead>
     <tbody data-order-list>
     <?php foreach ($filters as $f): ?>
       <tr draggable="true" data-row data-code="<?= e($f['code']) ?>">
@@ -91,14 +93,60 @@ $types = WidgetConfig::TYPES;
         <td><input data-f="label" value="<?= e($f['label']) ?>" placeholder="<?= e($f['default_label']) ?>" maxlength="60" aria-label="Nom affiché"></td>
         <td><code><?= e($f['code']) ?></code></td>
         <td><?= e(WidgetConfig::APPEARANCES[$f['appearance']]) ?></td>
+        <td><?php if ($f['appearance'] === 'terms'): ?>
+          <input data-f="limit" type="number" min="1" max="100" value="<?= (int) $f['limit'] ?>" class="flt-limit" aria-label="Valeurs affichées pour « <?= e($f['label']) ?> »">
+        <?php else: ?><span class="muted">—</span><?php endif; ?></td>
         <td><label class="toggle toggle-sm"><input type="checkbox" role="switch" data-f="visible" <?= $f['visible'] ? 'checked' : '' ?> aria-label="Afficher « <?= e($f['label']) ?> »"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label></td>
+        <td><button type="button" class="icon-btn icon-btn-sm" data-remove data-remove-save title="Retirer" aria-label="Retirer le filtre « <?= e($f['label']) ?> »"
+          data-remove-confirm="Retirer le filtre « <?= e($f['label']) ?> » ? Il ne sera plus proposé aux visiteurs (vous pourrez l'ajouter de nouveau)."><?= admin_icon('trash') ?></button></td>
       </tr>
     <?php endforeach; ?>
+    <?php if (!$filters): ?><tr><td colspan="7" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
     </tbody>
   </table>
-  <p class="muted small">« En stock » et « En promotion » s'affichent en haut des résultats (ordinateur) ; leur ordre ne change pas. Un filtre masqué n'est plus proposé.</p>
+  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ».
+    « En stock » et « En promotion » s'affichent en haut des résultats (ordinateur). Un filtre désactivé ou retiré n'est plus proposé.</p>
   <div class="form-foot"><button class="btn">Enregistrer</button></div>
 </form>
+
+<dialog id="flt-dialog" class="modal" aria-labelledby="flt-title">
+  <form method="post" action="<?= e(url('/admin/integration/filters/add')) ?>" class="form modal-form" data-filter-add>
+    <?= csrf_field() ?>
+    <div class="modal-head">
+      <div class="modal-title"><h2 id="flt-title">Ajouter un filtre</h2></div>
+      <label class="toggle"><span class="toggle-text">Statut</span><input type="checkbox" role="switch" name="visible" value="1" checked><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
+      <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <label>Champ
+        <select name="code" required data-filter-code>
+          <option value="" disabled selected>Sélectionner un champ</option>
+          <?php
+          $groups = ['Champs principaux' => static fn ($c) => !str_starts_with($c, 'attr.'), 'Attributs' => static fn ($c) => str_starts_with($c, 'attr.')];
+          foreach ($groups as $glabel => $keep):
+              $opts = array_filter($addable, $keep, ARRAY_FILTER_USE_KEY);
+              if (!$opts) { continue; } ?>
+            <optgroup label="<?= e($glabel) ?>">
+              <?php foreach ($opts as $code => [$label, $appearance]): ?>
+                <option value="<?= e($code) ?>" data-label="<?= e($label) ?>" data-appearance="<?= e($appearance) ?>" data-limit="<?= WidgetConfig::defaultLimit($code) ?>"><?= e($label) ?> (<?= e($code) ?>)</option>
+              <?php endforeach; ?>
+            </optgroup>
+          <?php endforeach; ?>
+        </select>
+        <small class="muted" data-filter-appearance>Les attributs disponibles sont ceux marqués « filtrables » dans le mapping des flux (après un import).</small>
+      </label>
+      <label>Nom affiché <input name="label" maxlength="60" placeholder="Nom vu par les visiteurs" data-filter-label></label>
+      <label data-filter-limit-row hidden>Valeurs affichées
+        <input name="limit" type="number" min="1" max="100" value="8" class="flt-limit" data-filter-limit>
+        <small class="muted">Nombre de valeurs visibles ; les suivantes derrière « + N ».</small>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-light" data-dialog-close>Annuler</button>
+      <button class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
 
 <?php else:
   $sortRow = static function (?array $s) use ($lang): void {
@@ -158,7 +206,7 @@ $types = WidgetConfig::TYPES;
   <summary><strong>Code à ajouter sur le site (Magento)</strong></summary>
   <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème.
     Les clés se gèrent dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>.</p>
-  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=10" defer
+  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=11" defer
   data-key="<?= e($firstKey !== '' ? $firstKey : 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"

@@ -27,6 +27,7 @@ final class IntegrationController
             'lang' => $lang,
             'layers' => $layers,
             'filters' => WidgetConfig::filters($lang),
+            'addable' => WidgetConfig::addableFilters($lang),
             'sorts' => WidgetConfig::sorts($lang),
             'sortItems' => WidgetConfig::sortItems($lang),
             'firstKey' => (string) (Db::value('SELECT public_key FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id LIMIT 1', [\DeepFind\Project::id()]) ?? ''),
@@ -104,7 +105,24 @@ final class IntegrationController
     {
         $in = json_decode((string) ($_POST['payload'] ?? '[]'), true);
         WidgetConfig::saveFilters(Auth::lang(), is_array($in) ? $in : []);
-        Auth::flash('ok', 'Filtres enregistrés.');
+        Auth::flash('ok', ($_POST['removed'] ?? '') !== '' ? 'Filtre retiré.' : 'Filtres enregistrés.');
+        App::back('/admin/integration', ['tab' => 'filters']);
+    }
+
+    /** Fenêtre « Ajouter un filtre » : ajouté à la fin de la liste. */
+    public function addFilter(): void
+    {
+        $lang = Auth::lang();
+        $code = (string) ($_POST['code'] ?? '');
+        if (!isset(WidgetConfig::addableFilters($lang)[$code])) {
+            Auth::flash('error', 'Choisissez un champ disponible.');
+            App::back('/admin/integration', ['tab' => 'filters']);
+            return;
+        }
+        $list = array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'visible' => $f['visible'], 'limit' => $f['limit']], WidgetConfig::filters($lang));
+        $list[] = ['code' => $code, 'label' => (string) ($_POST['label'] ?? ''), 'visible' => isset($_POST['visible']), 'limit' => (int) ($_POST['limit'] ?? 0)];
+        WidgetConfig::saveFilters($lang, $list);
+        Auth::flash('ok', 'Filtre ajouté.');
         App::back('/admin/integration', ['tab' => 'filters']);
     }
 

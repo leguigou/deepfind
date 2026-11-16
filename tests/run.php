@@ -604,7 +604,12 @@ if ($base) {
         && ($cf['filters'][0]['label'] ?? '') === 'Budget' && ($cf['filters'][1]['visible'] ?? true) === false
         && ($cf['sorts']['relevance'] ?? '') === 'Les plus pertinents' && ($cf['sorts']['items'] ?? []) === [['key' => 'name:asc', 'label' => 'Nom A-Z'], ['key' => 'price:desc', 'label' => 'Prix décroissant']]
         && !str_contains(json_encode($cf), 'margin'));
+    check('intégration : seuls les filtres ajoutés restent, les autres sont proposés à l\'ajout', count($codes) === 2
+        && isset($WC::addableFilters('fr')['category']) && !isset($WC::addableFilters('fr')['price']));
+    $WC::saveFilters('fr', [['code' => 'price', 'label' => 'Budget', 'visible' => true], ['code' => 'brand', 'visible' => false], ['code' => 'category', 'visible' => true, 'limit' => 3]]);
     [, $d] = $get("/api/v1/search?key=$key&q=palme&limit=3");
+    $cat = array_values(array_filter($d['facets'] ?? [], static fn ($f) => $f['code'] === 'category'))[0] ?? null;
+    check('intégration : nombre de valeurs affichées transmis au widget', ($WC::filters('fr')[2]['limit'] ?? 0) === 3 && $cat !== null);
     check('intégration : filtre masqué (marques) absent des résultats', !in_array('brand', array_column($d['facets'] ?? [], 'code'), true));
     $WC::activateLayer($l2, false);
     $WC::deleteLayer($l1);

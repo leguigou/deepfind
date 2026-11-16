@@ -83,6 +83,7 @@ final class App
         'POST /admin/integration/layer/active' => [IntegrationController::class, 'activateLayer'],
         'POST /admin/integration/layer/delete' => [IntegrationController::class, 'deleteLayer'],
         'POST /admin/integration/filters' => [IntegrationController::class, 'saveFilters'],
+        'POST /admin/integration/filters/add' => [IntegrationController::class, 'addFilter'],
         'POST /admin/integration/sorts' => [IntegrationController::class, 'saveSorts'],
         'GET /admin/stats' => [StatsController::class, 'stats'],
         'GET /admin/logs' => [StatsController::class, 'logs'],

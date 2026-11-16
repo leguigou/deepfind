@@ -56,6 +56,26 @@
       }
     });
 
+    // ------------------------------------------------------------ Fenêtre « Ajouter un filtre » : nom et nombre de valeurs selon le champ
+    var addForm = document.querySelector('[data-filter-add]');
+    if (addForm) {
+      var code = addForm.querySelector('[data-filter-code]');
+      var flabel = addForm.querySelector('[data-filter-label]');
+      var limitRow = addForm.querySelector('[data-filter-limit-row]');
+      var limitInput = addForm.querySelector('[data-filter-limit]');
+      var appearanceHelp = addForm.querySelector('[data-filter-appearance]');
+      var names = { terms: 'Liste de valeurs', range: 'Plage (min / max)', toggle: 'Case à cocher' };
+      var lastAuto = '';
+      code.addEventListener('change', function () {
+        var o = code.options[code.selectedIndex];
+        var ap = o.getAttribute('data-appearance');
+        if (flabel.value === '' || flabel.value === lastAuto) { flabel.value = o.getAttribute('data-label'); lastAuto = flabel.value; }
+        limitRow.hidden = ap !== 'terms';
+        limitInput.value = o.getAttribute('data-limit');
+        appearanceHelp.textContent = 'Apparence : ' + (names[ap] || ap) + '.';
+      });
+    }
+
     // ------------------------------------------------------------ Listes ordonnées (filtres, tris)
     document.querySelectorAll('[data-order-form]').forEach(function (form) {
       var kind = form.getAttribute('data-order-form');
@@ -80,7 +100,18 @@
           list.insertBefore(dragged, ev.clientY > r.top + r.height / 2 ? tr.nextSibling : tr);
         });
         var rm = tr.querySelector('[data-remove]');
-        if (rm) { rm.addEventListener('click', function () { tr.remove(); syncMissing(); }); }
+        if (rm) {
+          rm.addEventListener('click', function () {
+            // Filtres : retrait enregistré tout de suite (après confirmation) ; tris : retiré de la liste, à enregistrer
+            if (!rm.hasAttribute('data-remove-save')) { tr.remove(); syncMissing(); return; }
+            window.DeepFindUI.confirm(rm.getAttribute('data-remove-confirm'), { ok: 'Retirer', danger: true }).then(function (yes) {
+              if (!yes) { return; }
+              tr.remove();
+              form.querySelector('input[name=removed]').value = '1';
+              if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+            });
+          });
+        }
         // Tri : champ → ordres possibles selon son type (texte, nombre, date) → nom affiché par défaut
         var field = tr.querySelector('select[data-f="field"]');
         var dir = tr.querySelector('select[data-f="dir"]');
@@ -134,20 +165,13 @@
         });
       }
 
-      var search = form.querySelector('[data-order-search]');
-      if (search) {
-        search.addEventListener('input', function () {
-          var q = search.value.trim().toLowerCase();
-          rows().forEach(function (tr) { tr.hidden = q !== '' && tr.textContent.toLowerCase().indexOf(q) === -1 && tr.querySelector('input').value.toLowerCase().indexOf(q) === -1; });
-        });
-        search.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); } });
-      }
-
       form.addEventListener('submit', function () {
         var payload;
         if (kind === 'filters') {
           payload = rows().map(function (tr) {
-            return { code: tr.getAttribute('data-code'), label: tr.querySelector('[data-f="label"]').value, visible: tr.querySelector('[data-f="visible"]').checked };
+            var limit = tr.querySelector('[data-f="limit"]');
+            return { code: tr.getAttribute('data-code'), label: tr.querySelector('[data-f="label"]').value, visible: tr.querySelector('[data-f="visible"]').checked,
+              limit: limit ? parseInt(limit.value, 10) || 0 : 0 };
           });
         } else {
           payload = {

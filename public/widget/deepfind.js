@@ -80,7 +80,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=10'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=11'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -482,19 +482,24 @@
     var byCode = {};
     facets.forEach(function (f) { byCode[f.code] = f; });
     var ordered = [];
+    var limits = {};
     if (cfg.filters) {
+      // seuls les filtres ajoutés et actifs dans l'extranet, dans leur ordre
       cfg.filters.forEach(function (c) {
-        if (c.code === 'price' && c.visible) { ordered.push({ price: true, label: c.label }); }
-        else if (byCode[c.code]) { ordered.push(byCode[c.code]); delete byCode[c.code]; }
+        if (!c.visible) { return; }
+        if (c.limit) { limits[c.code] = c.limit; }
+        if (c.code === 'price') { ordered.push({ price: true, label: c.label }); }
+        else if (byCode[c.code]) { ordered.push(byCode[c.code]); }
       });
+    } else {
+      ordered = facets;
     }
-    facets.forEach(function (f) { if (byCode[f.code]) { ordered.push(f); } });
     ordered.forEach(function (f) {
       if (f.price) { renderPrice(f.label, data.price_range); return; }
       var sec = el('div', 'df-sec');
       sec.appendChild(el('h3', null, f.label));
       var list = el('ul', 'df-facet');
-      var max = f.code === 'brand' ? 12 : 8;
+      var max = limits[f.code] || (f.code === 'brand' ? 12 : 8);
       f.values.forEach(function (v, i) {
         var li = el('li');
         if (i >= max && !v.selected) { li.className = 'df-more-item'; li.hidden = true; }
@@ -922,12 +927,17 @@
       document.head.appendChild(st);
     }
     setupSorts();
-    (cfg.filters || []).forEach(function (f) {
-      var tg = f.code === 'in_stock' ? tgStock : (f.code === 'on_sale' ? tgSale : null);
-      if (!tg) { return; }
-      tg.text.nodeValue = ' ' + f.label;
-      tg.label.hidden = !f.visible;
-    });
+    if (cfg.filters) {
+      // « En stock » / « En promotion » : masqués s'ils ne sont pas ajoutés (ou désactivés) dans l'extranet
+      tgStock.label.hidden = true;
+      tgSale.label.hidden = true;
+      cfg.filters.forEach(function (f) {
+        var tg = f.code === 'in_stock' ? tgStock : (f.code === 'on_sale' ? tgSale : null);
+        if (!tg) { return; }
+        tg.text.nodeValue = ' ' + f.label;
+        tg.label.hidden = !f.visible;
+      });
+    }
   }
 
   function init() {
