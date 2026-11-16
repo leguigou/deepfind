@@ -86,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=17'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=18'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -760,6 +760,8 @@
     }
     var parent = out ? overlay : layer;
     if (closeBtn.parentNode !== parent) { parent.appendChild(closeBtn); }
+    var badge = document.querySelector('.df-preview-bar');
+    if (badge) { badge.classList.toggle('df-preview-left', !overlay.hidden && (out || cfg.type === 'fullscreen' || cfg.type === 'floating')); }
   }
   function open() {
     if (cfg.type === 'embedded') {
@@ -796,6 +798,7 @@
   function close() {
     var wasOpen = !overlay.hidden;
     overlay.hidden = true;
+    placeClose();
     setFiltersOpen(false);
     document.documentElement.classList.remove('df-lock');
     if (host) {
@@ -1118,12 +1121,17 @@
     preview = ds.preview || window.sessionStorage.getItem(PREVIEW_KEY) || '';
   } catch (e) { preview = ds.preview || ''; }
   if (preview && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9a-f]{24}$/.test(preview)) { preview = ''; }
-  function previewBadge(text, isError) {
+  // Pastille discrète en haut à droite (détail au survol) ; passe à gauche si elle gênerait le bouton fermer de la fenêtre
+  function previewBadge(detail, isError) {
+    if (isError) { console.warn('[DeepFind] ' + detail); }
     var show = function () {
       var bar = el('div', 'df-preview-bar' + (isError ? ' df-preview-error' : ''));
       bar.setAttribute('role', 'status');
-      bar.appendChild(el('span', null, text));
-      var quit = el('button', 'df-preview-quit', 'Quitter l\'aperçu');
+      bar.title = detail;
+      bar.appendChild(el('span', null, isError ? 'Aperçu DeepFind indisponible' : 'Aperçu DeepFind'));
+      var quit = el('button', 'df-preview-quit', 'Quitter');
+      quit.title = 'Quitter l\'aperçu';
+      quit.setAttribute('aria-label', 'Quitter l\'aperçu DeepFind');
       quit.type = 'button';
       quit.addEventListener('click', function () {
         try { window.sessionStorage.removeItem(PREVIEW_KEY); } catch (e) { /* ignoré */ }
@@ -1213,7 +1221,7 @@
     fetchCfg().then(function (c) {
       if (preview) {
         if (!c.enabled) { previewBadge('Aperçu DeepFind impossible : le projet est désactivé dans l\'extranet.', true); }
-        else if (c.preview && c.preview.layer) { previewBadge('Aperçu DeepFind : layer « ' + c.preview.layer + ' » (visible seulement dans ce navigateur)', false); }
+        else if (c.preview && c.preview.layer) { previewBadge('Layer « ' + c.preview.layer + ' » — visible seulement dans ce navigateur', false); }
         else { previewBadge('Lien de test DeepFind expiré ou non valable pour ce site : recréez le favori dans l\'extranet. Affichage actuel du site.', true); }
       }
       if (c.enabled) { activate(); } else { console.info('[DeepFind] projet désactivé : la recherche du site reste inchangée'); }
