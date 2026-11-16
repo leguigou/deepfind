@@ -17,6 +17,11 @@
         Désactivée : un lien vers la page est proposé en haut des résultats, et la recherche reste possible.</small></div>
       <label class="toggle"><input type="checkbox" role="switch" data-f="auto" aria-label="Redirection automatique"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
     </div>
+    <div class="cr-row">
+      <div><strong>Ouvrir dans un nouvel onglet</strong><br><small class="muted">Activé : la page s'ouvre dans un nouvel onglet et le site reste ouvert.
+        Désactivé : la page remplace la page actuelle.</small></div>
+      <label class="toggle"><input type="checkbox" role="switch" data-f="new_tab" aria-label="Ouvrir dans un nouvel onglet"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
+    </div>
     <label>URL de destination
       <input data-f="url" type="url" placeholder="ex. : https://www.cabesto.com/fr/livraison" required></label>
 

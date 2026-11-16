@@ -164,7 +164,7 @@
   main.appendChild(sentinel);
 
   // ------------------------------------------------------------------ État
-  var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, ids: {} };
+  var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, redirectNewTab: false, ids: {} };
   var controller = null;
   var cache = new Map();
   var timer = null;
@@ -224,11 +224,13 @@
     });
   }
 
-  function showNotice(text, href) {
+  function showNotice(text, href, newTab) {
     notice.textContent = '';
     if (!text) { notice.hidden = true; return; }
     if (href) {
-      var a = el('a', null, text); a.href = href; notice.appendChild(a);
+      var a = el('a', null, text); a.href = href;
+      if (newTab) { a.target = '_blank'; a.rel = 'noopener'; }
+      notice.appendChild(a);
     } else {
       notice.textContent = text;
     }
@@ -309,12 +311,13 @@
     state.hasMore = !!data.has_more;
     state.redirect = safeUrl(data.redirect);
     state.redirectAuto = !!data.redirect_auto;
+    state.redirectNewTab = !!data.redirect_new_tab;
     if (!append) {
       renderBanner(data.banner || null);
       grid.textContent = '';
       state.ids = {};
       main.scrollTop = 0;
-      if (state.redirect) { showNotice(t.goTo + ' « ' + state.q + ' » →', state.redirect); }
+      if (state.redirect) { showNotice(t.goTo + ' « ' + state.q + ' » →', state.redirect, state.redirectNewTab); }
       else if (data.approximate) { showNotice(t.approx.replace('%s', state.q), null); }
       else { showNotice(null, null); }
       notice.classList.toggle('df-notice-approx', !!data.approximate && !state.redirect);
@@ -577,7 +580,7 @@
       if (ev.key !== 'Enter') { return; }
       // Redirection automatique : prioritaire, même si la touche Entrée n'ouvre pas la page de résultats
       var typed = ev.target.value.trim();
-      if (state.redirect && state.redirectAuto && typed === state.q) { ev.preventDefault(); window.location.href = state.redirect; return; }
+      if (state.redirect && state.redirectAuto && typed === state.q) { ev.preventDefault(); openRedirect(); return; }
       if (!enterSubmit) {
         // Entrée désactivée : on reste sur la fenêtre DeepFind (recherche lancée tout de suite)
         ev.preventDefault();
@@ -598,12 +601,23 @@
    * sinon (autocomplétion d'origine neutralisée) l'adresse du formulaire du site, que son propre script ne gère plus.
    * @return boolean vrai si la navigation est prise en charge
    */
+  // Redirection DeepFind : nouvel onglet (si choisi et autorisé par le navigateur), sinon la page actuelle est remplacée
+  function openRedirect() {
+    if (state.redirectNewTab) {
+      // pas d'option « noopener » ici : avec elle, window.open renvoie toujours null et on ne saurait pas si l'onglet est bloqué
+      var w = window.open(state.redirect, '_blank');
+      if (w) { try { w.opener = null; } catch (e) { /* ignoré */ } return; }
+    }
+    window.location.href = state.redirect;
+  }
+
   function goToResults(input) {
     var q = input.value.trim();
     if (!q) { return false; }
     var url = '';
     if (state.redirect && state.redirectAuto && q === state.q) {
-      url = state.redirect;
+      openRedirect();
+      return true;
     } else if (cfg.resultsUrl) {
       url = cfg.resultsUrl + encodeURIComponent(q);
     } else if (cfg.blockNative && input.form && (input.form.method || 'get').toLowerCase() === 'get') {

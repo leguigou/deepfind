@@ -22,7 +22,7 @@ use DeepFind\Rules\CustomResults;
       <td><a href="<?= e(url('/admin/redirects/edit', ['id' => $r['id']])) ?>"><strong><?= e($r['name']) ?></strong></a></td>
       <td><div class="chips"><?php foreach ($r['terms'] as $t): ?><span class="chip" title="<?= $t['match'] === 'broad' ? 'Correspondance large' : 'Correspondance exacte' ?>"><span class="chip-ico"><?= $t['match'] === 'broad' ? '≈' : '=' ?></span><?= e($t['term']) ?></span><?php endforeach; ?></div></td>
       <td class="ellipsis"><a href="<?= e($r['url']) ?>" target="_blank" rel="noopener"><?= e($r['url']) ?></a></td>
-      <td><?= $r['auto'] ? '<span class="badge badge-ok">automatique</span>' : '<span class="badge badge-info">lien proposé</span>' ?></td>
+      <td><?= $r['auto'] ? '<span class="badge badge-ok">automatique</span>' : '<span class="badge badge-info">lien proposé</span>' ?><?= !empty($r['new_tab']) ? '<br><span class="muted small">nouvel onglet</span>' : '' ?></td>
       <td class="nowrap"><?= $r['starts_at'] ? e(date('d/m/Y', (int) strtotime($r['starts_at'])) . ' → ' . date('d/m/Y', (int) strtotime((string) $r['ends_at']))) : 'En continu' ?>
         <?= $per === 'scheduled' ? '<br><span class="badge badge-info">programmée</span>' : ($per === 'expired' ? '<br><span class="badge badge-warn">terminée</span>' : '') ?></td>
       <td class="actions">

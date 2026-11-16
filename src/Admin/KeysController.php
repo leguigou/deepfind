@@ -36,7 +36,8 @@ final class KeysController
         $id = (int) ($_POST['id'] ?? 0);
         $row = Db::one('SELECT public_key FROM api_keys WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
         if ($row !== null) {
-            Db::update('api_keys', [
+            $name = trim((string) ($_POST['name'] ?? ''));
+            Db::update('api_keys', ($name !== '' ? ['name' => \DeepFind\Text::truncate($name, 100)] : []) + [
                 'allowed_origins' => ApiKeys::cleanOrigins((string) ($_POST['origins'] ?? '')),
                 'langs' => preg_replace('/[^a-z,]/', '', strtolower((string) ($_POST['langs'] ?? 'fr'))) ?: 'fr',
                 'active' => isset($_POST['active']) ? 1 : 0,
