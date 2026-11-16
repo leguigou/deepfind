@@ -13,10 +13,10 @@
   <tbody>
   <?php foreach ($keys as $k): ?>
     <tr>
-      <td><strong><?= e($k['name']) ?></strong><br><span class="muted"><?= fmt_dt($k['created_at']) ?></span></td>
+      <td><input name="name" form="key-<?= (int) $k['id'] ?>" value="<?= e($k['name']) ?>" required maxlength="100" aria-label="Nom de la clé" class="name-input"><br><span class="muted"><?= fmt_dt($k['created_at']) ?></span></td>
       <td><code class="select"><?= e($k['public_key']) ?></code></td>
       <td colspan="3">
-        <form method="post" action="<?= e(url('/admin/keys/update')) ?>" class="inline-form">
+        <form method="post" action="<?= e(url('/admin/keys/update')) ?>" class="inline-form" id="key-<?= (int) $k['id'] ?>">
           <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $k['id'] ?>">
           <input name="origins" value="<?= e($k['allowed_origins']) ?>" placeholder="(tous les domaines : déconseillé)">
           <input name="langs" value="<?= e($k['langs']) ?>" size="6">
@@ -36,7 +36,7 @@
 
 <h2>Intégration sur le site (Magento)</h2>
 <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème :</p>
-<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=7" defer
+<pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=8" defer
   data-key="<?= e($keys[0]['public_key'] ?? 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"

@@ -229,13 +229,15 @@ if ($base) {
     sort($sorted);
     check('API : tri prix croissant', $prices === $sorted);
     [, $d] = $get("/api/v1/search?key=$key&q=retour");
-    check('API : redirection (ancien format converti, automatique)', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours' && ($d['redirect_auto'] ?? false) === true);
+    check('API : redirection (ancien format converti, automatique)', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours' && ($d['redirect_auto'] ?? false) === true
+        && ($d['redirect_new_tab'] ?? true) === false);
     $RD = DeepFind\Rules\Redirections::class;
-    [$rdl, $rdErr] = $RD::sanitize(['name' => 'Livraison', 'active' => true, 'auto' => false, 'url' => 'https://www.example.com/livraison',
+    [$rdl, $rdErr] = $RD::sanitize(['name' => 'Livraison', 'active' => true, 'auto' => false, 'new_tab' => true, 'url' => 'https://www.example.com/livraison',
         'terms' => [['term' => 'livraison', 'match' => 'broad']]]);
     $rdId = $RD::save('fr', $rdl, null);
     [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('délai de livraison') . "&limit=3");
     check('redirection : terme large, lien proposé (non automatique)', $rdErr === [] && ($d['redirect'] ?? '') === 'https://www.example.com/livraison' && ($d['redirect_auto'] ?? true) === false);
+    check('redirection : ouverture dans un nouvel onglet enregistrée et transmise', ($d['redirect_new_tab'] ?? false) === true && $RD::find($rdId, 'fr')['new_tab'] === true);
     $rdl['starts_at'] = '2099-01-01';
     $rdl['ends_at'] = '2099-12-31';
     $RD::save('fr', $rdl, $rdId);

@@ -10,6 +10,7 @@
     f('name').value = r.name || '';
     f('active').checked = r.active !== false;
     f('auto').checked = r.auto !== false;
+    f('new_tab').checked = r.new_tab === true;
     f('url').value = r.url || '';
     form.addEventListener('submit', function (ev) {
       editor.addPending();
@@ -20,7 +21,7 @@
       else if (period.on && (!period.start || !period.end)) { problem = 'Choisissez la date de début et la date de fin de la période.'; }
       if (problem) { ev.preventDefault(); window.DeepFindUI.alert(problem); return; }
       form.querySelector('input[name=payload]').value = JSON.stringify({
-        id: r.id || 0, name: f('name').value, active: f('active').checked, auto: f('auto').checked, url: f('url').value.trim(),
+        id: r.id || 0, name: f('name').value, active: f('active').checked, auto: f('auto').checked, new_tab: f('new_tab').checked, url: f('url').value.trim(),
         terms: editor.terms, duration: period.on ? 'period' : 'always', starts_at: period.start, ends_at: period.end
       });
     });

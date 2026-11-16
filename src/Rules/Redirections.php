@@ -32,7 +32,7 @@ final class Redirections
     private static function decode(array $r): array
     {
         return ['id' => (int) $r['id'], 'name' => (string) $r['name'], 'active' => (int) $r['active'] === 1, 'auto' => (int) $r['auto'] === 1,
-            'url' => (string) $r['url'], 'terms' => json_decode((string) $r['terms'], true) ?: [], 'starts_at' => $r['starts_at'] ?: null, 'ends_at' => $r['ends_at'] ?: null];
+            'new_tab' => (int) ($r['new_tab'] ?? 0) === 1, 'url' => (string) $r['url'], 'terms' => json_decode((string) $r['terms'], true) ?: [], 'starts_at' => $r['starts_at'] ?: null, 'ends_at' => $r['ends_at'] ?: null];
     }
 
     /** Redirection de cette recherche (la plus récente qui correspond), ou null. */
@@ -96,7 +96,7 @@ final class Redirections
         if ($errors !== []) {
             return [null, $errors];
         }
-        return [['name' => $name, 'active' => !empty($in['active']), 'auto' => !empty($in['auto']), 'url' => $url, 'terms' => array_values($terms),
+        return [['name' => $name, 'active' => !empty($in['active']), 'auto' => !empty($in['auto']), 'new_tab' => !empty($in['new_tab']), 'url' => $url, 'terms' => array_values($terms),
             'starts_at' => $start, 'ends_at' => $end], []];
     }
 
@@ -108,7 +108,7 @@ final class Redirections
 
     public static function save(string $lang, array $r, ?int $id): int
     {
-        $row = ['name' => $r['name'], 'active' => $r['active'] ? 1 : 0, 'auto' => $r['auto'] ? 1 : 0, 'url' => $r['url'], 'terms' => Text::json($r['terms']),
+        $row = ['name' => $r['name'], 'active' => $r['active'] ? 1 : 0, 'auto' => $r['auto'] ? 1 : 0, 'new_tab' => !empty($r['new_tab']) ? 1 : 0, 'url' => $r['url'], 'terms' => Text::json($r['terms']),
             'starts_at' => $r['starts_at'], 'ends_at' => $r['ends_at'], 'updated_at' => date('Y-m-d H:i:s')];
         if ($id) {
             Db::update('redirections', $row, 'id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]);
