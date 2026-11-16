@@ -531,6 +531,10 @@ if ($base) {
     DeepFind\Rules\RulesRepository::bumpVersion();
     @unlink(APP_ROOT . '/var/feeds-local/test_moins_un.xml');
 
+    // Conditions des règles : recherche dans toutes les valeurs d'un champ (au-delà des 100 renvoyées par une recherche)
+    $fs = array_column($meiliT->facetSearch('deepfind_products_fr', 'brand', 'cre'), 'count', 'value');
+    check('valeurs des conditions : recherche dans toutes les marques', isset($fs['CRESSI']) && $fs['CRESSI'] > 0 && !isset($fs['SEAC']), json_encode($fs));
+
     // Progression : comptage et étapes enregistrées
     $run = DeepFind\Db::one("SELECT * FROM import_runs WHERE type = 'full' AND status = 'success' ORDER BY id LIMIT 1");
     check('progression : total compté et étape finale', (int) $run['items_total'] === (int) $run['items_read'] && $run['phase'] === 'done');

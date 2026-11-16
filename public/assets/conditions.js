@@ -21,17 +21,25 @@
   }
 
   // ---------------------------------------------------------------- Valeurs proposées
+  // cb(valeurs, incomplet) : « incomplet » = le moteur n'en a renvoyé qu'une partie (100 au plus) ; voir searchValues()
   function loadValues(code, cb) {
     var def = byCode[code];
     if (def && def.static) {
-      cb(Object.keys(def.static).map(function (v) { return { value: v, label: def.static[v] }; }));
+      cb(Object.keys(def.static).map(function (v) { return { value: v, label: def.static[v] }; }), false);
       return;
     }
-    if (code === 'sku') { cb([]); return; }
-    if (valuesCache[code]) { cb(valuesCache[code]); return; }
+    if (code === 'sku') { cb([], false); return; }
+    if (valuesCache[code]) { cb(valuesCache[code].values, valuesCache[code].truncated); return; }
     fetch(valuesUrl + '?field=' + encodeURIComponent(code), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : { values: [] }; })
-      .then(function (d) { valuesCache[code] = d.values || []; cb(valuesCache[code]); })
+      .then(function (d) { valuesCache[code] = { values: d.values || [], truncated: !!d.truncated }; cb(valuesCache[code].values, valuesCache[code].truncated); })
+      .catch(function () { cb([], false); });
+  }
+  // Recherche parmi TOUTES les valeurs du champ (pas seulement celles chargées au départ)
+  function searchValues(code, q, cb) {
+    fetch(valuesUrl + '?field=' + encodeURIComponent(code) + '&q=' + encodeURIComponent(q), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : { values: [] }; })
+      .then(function (d) { cb(d.values || []); })
       .catch(function () { cb([]); });
   }
 
@@ -52,10 +60,15 @@
     allRow.appendChild(allCb);
     allRow.appendChild(document.createTextNode(' Toutes les valeurs'));
     var list = el('div', 'ms-list');
+    var hint = el('div', 'ms-hint muted small', 'Liste limitée aux 100 premières valeurs : tapez dans « Rechercher… » pour chercher parmi toutes.');
+    hint.hidden = true;
+    var truncated = false;
+    var remoteTimer = null;
     var addFree = el('button', 'btn btn-sm btn-light ms-add');
     addFree.type = 'button';
     addFree.hidden = true;
     panel.appendChild(search);
+    panel.appendChild(hint);
     panel.appendChild(allRow);
     panel.appendChild(list);
     panel.appendChild(addFree);
@@ -138,7 +151,23 @@
       renderToggle();
       renderList();
     });
-    search.addEventListener('input', renderList);
+    search.addEventListener('input', function () {
+      renderList();
+      // liste incomplète : on interroge le moteur sur toutes les valeurs et on ajoute celles qui manquent
+      var q = search.value.trim();
+      clearTimeout(remoteTimer);
+      if (!truncated || q === '') { return; }
+      remoteTimer = setTimeout(function () {
+        searchValues(code, q, function (found) {
+          var known = {};
+          all.forEach(function (o) { known[o.value] = true; });
+          var added = found.filter(function (o) { return !known[o.value]; });
+          if (!added.length) { return; }
+          all = all.concat(added).sort(function (a, b) { return a.label.localeCompare(b.label, 'fr', { numeric: true, sensitivity: 'base' }); });
+          if (search.value.trim() === q) { renderList(); }
+        });
+      }, 250);
+    });
     search.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter') { ev.preventDefault(); addSearchValue(); }
       if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); panel.hidden = true; toggle.focus(); }
@@ -150,7 +179,7 @@
       panel.hidden = !open;
       if (open) { search.focus(); }
     });
-    loadValues(code, function (vals) { all = vals; renderToggle(); renderList(); });
+    loadValues(code, function (vals, isTruncated) { all = vals.slice(); truncated = isTruncated; hint.hidden = !truncated; renderToggle(); renderList(); });
     renderToggle();
     box.getValues = function () { return sel.slice(); };
     return box;

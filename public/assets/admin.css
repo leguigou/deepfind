@@ -889,3 +889,4 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 [data-filter-order-row][hidden] { display: none !important; }
 .flt-order { width: auto; margin: 0; }
 .flt-order { min-width: 130px; }
+.ms-hint { padding: 4px 10px 6px; line-height: 1.35; }

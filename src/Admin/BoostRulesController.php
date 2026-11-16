@@ -72,6 +72,9 @@ final class BoostRulesController
     }
 
     /** Valeurs proposées pour un champ (compteurs de filtres du moteur), en JSON. */
+    /** Valeurs renvoyées au plus par le moteur pour un champ (faceting.maxValuesPerFacet, IndexSettings). */
+    private const MAX_FACET_VALUES = 100;
+
     public function values(): void
     {
         $lang = Auth::lang();
@@ -89,16 +92,28 @@ final class BoostRulesController
             Response::json(['values' => $out]);
             return;
         }
+        // Sans texte : les valeurs que renvoie une recherche (100 au plus par champ, réglage du moteur) ;
+        // avec texte (champ « Rechercher… » de la liste) : recherche dans TOUTES les valeurs du champ.
+        $q = mb_substr(trim((string) ($_GET['q'] ?? '')), 0, 100, 'UTF-8');
         $values = [];
+        $truncated = false;
         try {
-            $res = MeiliClient::search()->multiSearch([['indexUid' => Config::productIndex($lang), 'q' => '', 'limit' => 0, 'facets' => [$field]]]);
-            foreach ($res[0]['facetDistribution'][$field] ?? [] as $v => $n) {
-                $values[] = ['value' => (string) $v, 'label' => (string) $v, 'count' => (int) $n];
+            $meili = MeiliClient::search();
+            if ($q !== '') {
+                foreach ($meili->facetSearch(Config::productIndex($lang), $field, $q) as $h) {
+                    $values[] = ['value' => $h['value'], 'label' => $h['value'], 'count' => $h['count']];
+                }
+            } else {
+                $res = $meili->multiSearch([['indexUid' => Config::productIndex($lang), 'q' => '', 'limit' => 0, 'facets' => [$field]]]);
+                foreach ($res[0]['facetDistribution'][$field] ?? [] as $v => $n) {
+                    $values[] = ['value' => (string) $v, 'label' => (string) $v, 'count' => (int) $n];
+                }
+                $truncated = count($values) >= self::MAX_FACET_VALUES;
             }
         } catch (\Throwable) {
             // index absent : saisie libre uniquement
         }
         usort($values, static fn ($a, $b) => strnatcasecmp($a['value'], $b['value']));
-        Response::json(['values' => $values]);
+        Response::json(['values' => $values, 'truncated' => $truncated]);
     }
 }
