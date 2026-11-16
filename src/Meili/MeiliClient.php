@@ -136,9 +136,12 @@ final class MeiliClient
     }
 
     /** @return list<array<string,mixed>> */
-    public function fetchDocuments(string $uid, string $filter, int $limit = 1000, int $offset = 0): array
+    public function fetchDocuments(string $uid, string $filter, int $limit = 1000, int $offset = 0, array $fields = []): array
     {
         $body = ['limit' => $limit, 'offset' => $offset];
+        if ($fields !== []) {
+            $body['fields'] = $fields;
+        }
         if ($filter !== '') {
             $body['filter'] = $filter;
         }

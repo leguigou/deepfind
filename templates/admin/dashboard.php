@@ -16,7 +16,7 @@
   <tbody>
   <?php foreach ($indexes as $i): ?>
     <tr><td><?= e(strtoupper($i['lang'])) ?></td><td><?= e($i['label']) ?></td><td><code><?= e($i['uid']) ?></code></td>
-      <td class="num"><?= $i['count'] === null ? '<span class="muted">non créé</span>' : fmt_n($i['count']) ?></td></tr>
+      <td class="num"><?= $i['count'] === null ? '<span class="muted">non créé</span>' : fmt_n($i['count']) ?><?= !empty($i['off']) ? '<br><small class="muted" title="Absents du dernier flux complet : gardés dans l\'index, jamais proposés aux visiteurs">+ ' . fmt_n($i['off']) . ' désactivés auto</small>' : '' ?></td></tr>
   <?php endforeach; ?>
   </tbody>
 </table>

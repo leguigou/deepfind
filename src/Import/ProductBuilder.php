@@ -181,6 +181,9 @@ final class ProductBuilder
         if ($doc['final_price'] <= 0) {
             return 'prix manquant ou nul';
         }
+        // vendable : présent dans le flux complet. Fixé ici seulement (pas dans computeDerived, aussi appelé par le recalcul
+        // des scores et l'import partiel) : un produit « désactivé auto » (available = 0) n'est réactivé que par le flux complet.
+        $doc['available'] = 1;
         return $doc;
     }
 

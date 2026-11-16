@@ -43,3 +43,7 @@ echo "$TEST_KEY" > "$TMP/key"
 
 TEST_BASE_URL=http://127.0.0.1:8080 TEST_KEY=$TEST_KEY php tests/run.php
 if grep -E "Fatal|Warning|Deprecated|Notice" "$TMP/web.log"; then echo "Avertissements PHP détectés (voir ci-dessus)"; exit 1; fi
+
+# Base laissée prête pour le test du navigateur (tests/e2e.cjs) : il enchaîne bien plus de 15 recherches « palme »
+# en une minute depuis la même adresse ; la limite anti-robots « même recherche » est relevée pour ce test seulement.
+php -r 'require "src/bootstrap.php"; DeepFind\Settings::set("same_query_per_minute", "500");'

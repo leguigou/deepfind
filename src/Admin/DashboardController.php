@@ -22,11 +22,16 @@ final class DashboardController
                 if ($healthy) {
                     try {
                         $count = $meili->getIndex($uid) !== null ? (int) ($meili->stats($uid)['numberOfDocuments'] ?? 0) : null;
+                        // produits gardés comme non vendables (absents du dernier flux complet) : comptés à part
+                        if ($count !== null && $label === 'Produits' && \DeepFind\Settings::get('available_filter_' . $lang) === '1') {
+                            $off = (int) ($meili->multiSearch([['indexUid' => $uid, 'q' => '', 'limit' => 0, 'filter' => 'available = 0']])[0]['estimatedTotalHits'] ?? 0);
+                        }
                     } catch (\Throwable) {
                         $count = null;
                     }
                 }
-                $indexes[] = ['lang' => $lang, 'label' => $label, 'uid' => $uid, 'count' => $count];
+                $indexes[] = ['lang' => $lang, 'label' => $label, 'uid' => $uid, 'count' => isset($off) ? $count - $off : $count, 'off' => $off ?? 0];
+                unset($off);
             }
         }
         $warnings = [];

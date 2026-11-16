@@ -108,6 +108,9 @@ check('agrégat : HTML retiré du nom', $doc['name'] === 'Palme Test' || $doc['n
 check('agrégat : identifiant Meilisearch valide', preg_match('/^[a-zA-Z0-9_\-]+$/', $doc['id']) === 1);
 check('rejet si prix manquant', $b->build(['fields' => ['sku' => 'X', 'name' => 'X', 'url' => 'https://x'], 'categories' => [], 'attributes' => []], []) === 'prix manquant ou nul');
 check('rejet si désactivé', $b->build(['fields' => ['sku' => 'X', 'name' => 'X', 'url' => 'https://x', 'enabled' => 0], 'categories' => [], 'attributes' => []], []) === 'désactivé');
+$okDoc = $b->build(['fields' => ['sku' => 'AV1', 'name' => 'Palme AV', 'url' => 'https://x', 'price' => 10], 'categories' => [], 'attributes' => []], []);
+check('produit du flux : vendable (available = 1)', is_array($okDoc) && $okDoc['available'] === 1);
+check('recalcul (scores, delta) : un produit désactivé auto le reste', is_array($okDoc) && $b->computeDerived(['available' => 0] + $okDoc)['available'] === 0);
 
 // Lecture XML en flux
 $tmp = tempnam(sys_get_temp_dir(), 'df');
@@ -492,6 +495,42 @@ if ($base) {
     check('recalcul des scores : clics pris en compte', (int) ($after['clicks_30d'] ?? 0) === 40 && $after['biz_score'] > $target['biz_score']);
     DeepFind\Db::exec("DELETE FROM click_logs WHERE ip_hash = 'testtesttesttest'");
 
+    // Flux complet : produit absent = désactivé auto (gardé dans l'index, jamais proposé), réactivé s'il revient ;
+    // un produit désactivé à la main le reste quoi qu'il arrive. Écart avec l'import précédent dans le rapport.
+    $feed = (string) file_get_contents(APP_ROOT . '/samples/products_fr.xml');
+    $gone = 'C4-PREDATOR';
+    $minus = preg_replace('#<product>(?:(?!</product>).)*<sku>' . $gone . '</sku>.*?</product>\s*#s', '', $feed, 1);
+    @mkdir(APP_ROOT . '/var/feeds-local', 0775, true);
+    file_put_contents(APP_ROOT . '/var/feeds-local/test_moins_un.xml', $minus);
+    $srcFr = DeepFind\Db::one("SELECT * FROM sources WHERE code = 'produits_fr'");
+    $manual = 'SEAC-X-VISION';
+    DeepFind\Rules\RulesRepository::addRule('fr', '*', $manual, 'hide', null, '', '');
+    DeepFind\Db::exec("UPDATE sources SET url = 'var/feeds-local/test_moins_un.xml' WHERE id = ?", [$srcFr['id']]);
+    $r1 = (new DeepFind\Import\Importer($meiliT))->run(DeepFind\Db::one('SELECT * FROM sources WHERE id = ?', [$srcFr['id']]), 'full', 'cli');
+    $rep1 = json_decode((string) $r1['report'], true) ?: [];
+    check('flux complet : produit absent compté « désactivé auto » dans l\'écart', $r1['status'] === 'success' && ($rep1['auto_disabled'] ?? -1) === 1 && ($rep1['reactivated'] ?? -1) === 0, json_encode($rep1));
+    $kept = $meiliT->fetchDocuments('deepfind_products_fr', 'sku = "' . $gone . '"', 1)[0] ?? null;
+    check('flux complet : produit absent gardé dans l\'index, non vendable', $kept !== null && (int) $kept['available'] === 0 && (int) ($kept['absent_since'] ?? 0) > 0);
+    DeepFind\CacheVersion::bump();
+    [, $pubGone] = $get("/api/v1/search?key=$key&q=predator&limit=48");
+    check('flux complet : produit absent retiré de la recherche publique', !in_array($gone, array_column($pubGone['products'] ?? [], 'sku'), true));
+    $intGone = $svc->search(DeepFind\Search\SearchRequest::fromArray(['q' => 'predator', 'lang' => 'fr', 'limit' => 48], true), true, true);
+    $g = array_values(array_filter($intGone['products'], static fn ($x) => $x['sku'] === $gone))[0] ?? [];
+    check('aperçu : « désactivé auto » distinct de « désactivé manu »', !empty($g['disabled_auto']) && empty($g['disabled_manual']) && !empty($g['disabled']));
+    // retour dans le flux : réactivé ; le produit désactivé à la main reste désactivé
+    DeepFind\Db::exec("UPDATE sources SET url = ? WHERE id = ?", [$srcFr['url'], $srcFr['id']]);
+    $r2 = (new DeepFind\Import\Importer($meiliT))->run(DeepFind\Db::one('SELECT * FROM sources WHERE id = ?', [$srcFr['id']]), 'full', 'cli');
+    $rep2 = json_decode((string) $r2['report'], true) ?: [];
+    DeepFind\CacheVersion::bump();
+    [, $pubBack] = $get("/api/v1/search?key=$key&q=predator&limit=48");
+    [, $pubMan] = $get("/api/v1/search?key=$key&q=" . rawurlencode('seac x-vision') . "&limit=48");
+    check('flux complet : produit revenu réactivé automatiquement (écart +1)', ($rep2['reactivated'] ?? 0) === 1 && ($rep2['auto_disabled'] ?? -1) === 0
+        && in_array($gone, array_column($pubBack['products'] ?? [], 'sku'), true), json_encode($rep2));
+    check('flux complet : produit désactivé à la main non réactivé par le flux', !in_array($manual, array_column($pubMan['products'] ?? [], 'sku'), true));
+    DeepFind\Db::exec("DELETE FROM query_rules WHERE query = '*' AND sku = ?", [$manual]);
+    DeepFind\Rules\RulesRepository::bumpVersion();
+    @unlink(APP_ROOT . '/var/feeds-local/test_moins_un.xml');
+
     // Progression : comptage et étapes enregistrées
     $run = DeepFind\Db::one("SELECT * FROM import_runs WHERE type = 'full' AND status = 'success' ORDER BY id LIMIT 1");
     check('progression : total compté et étape finale', (int) $run['items_total'] === (int) $run['items_read'] && $run['phase'] === 'done');
@@ -581,9 +620,9 @@ if ($base) {
     $WC = DeepFind\Widget\WidgetConfig::class;
     DeepFind\Project::use($prodId);
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
-    check('intégration : sans layer, affichage par défaut + filtres et tris par défaut', ($cf['layer'] ?? 'x') === null
+    check('intégration : sans layer, affichage par défaut + filtres et tris par défaut', (array_key_exists('layer', $cf) && $cf['layer'] === null)
         && ($cf['sorts']['relevance'] ?? '') === 'Pertinence' && array_column($cf['sorts']['items'] ?? [], 'key') === ['price:asc', 'price:desc', 'created:desc']
-        && in_array('price', array_column($cf['filters'] ?? [], 'code'), true));
+        && in_array('price', array_column($cf['filters'] ?? [], 'code'), true), json_encode([$c, $cf['layer'] ?? 'x', $cf['sorts'] ?? null, array_column($cf['filters'] ?? [], 'code')]));
     $l1 = $WC::createLayer('Cabesto', 'fullscreen');
     $l2 = $WC::createLayer('Essai', 'embedded');
     check('intégration : premier layer actif d\'office, le suivant non', $WC::activeLayer()['id'] === $l1 && !$WC::layer($l2)['active']);
@@ -645,12 +684,12 @@ if ($base) {
     DeepFind\Settings::set('widget_filters_fr', '');
     DeepFind\Settings::set('widget_sorts_fr', '');
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
-    check('intégration : layer désactivé = affichage par défaut', ($cf['layer'] ?? 'x') === null && $WC::layers() === []);
+    check('intégration : layer désactivé = affichage par défaut', (array_key_exists('layer', $cf) && $cf['layer'] === null) && $WC::layers() === [], json_encode([$cf['layer'] ?? 'x', count($WC::layers())]));
     $SR = DeepFind\Search\SearchRequest::class;
     check('tris : champ:ordre accepté, marge refusée, ancienne clé conservée', $SR::fromArray(['q' => 'x', 'sort' => 'brand:desc'])->sort === 'brand:desc'
         && $SR::fromArray(['q' => 'x', 'sort' => 'margin_rate:desc'])->sort === 'relevance' && $SR::fromArray(['q' => 'x', 'sort' => 'price_asc'])->sort === 'price_asc');
-    [$c] = $get("/api/v1/search?key=$key&q=palme&sort=" . rawurlencode('price:desc'));
-    check('tris : nouveau format accepté par l\'API', $c === 200);
+    [$c, $dSort] = $get("/api/v1/search?key=$key&q=tuba&sort=" . rawurlencode('price:desc')); // autre mot : limite « même recherche » de l'anti-robots
+    check('tris : nouveau format accepté par l\'API', $c === 200, json_encode([$c, $dSort]));
 
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');

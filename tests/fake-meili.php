@@ -97,6 +97,15 @@ function clause(array $doc, string $c): bool
     if (preg_match('/^([\w.]+)\s*(=|!=|>=|<=|>|<)\s*(.+)$/s', $c, $m)) {
         $raw = trim($m[3]);
         $val = preg_match('/^"(.*)"$/s', $raw, $q) ? stripcslashes($q[1]) : $raw;
+        if ($m[2] === '!=') {
+            // comme Meilisearch : vrai si aucune valeur n'est égale (champ absent compris)
+            foreach (flat(getPath($doc, $m[1])) as $dv) {
+                if (mb_strtolower((string) $dv) === mb_strtolower((string) $val)) {
+                    return false;
+                }
+            }
+            return true;
+        }
         foreach (flat(getPath($doc, $m[1])) as $dv) {
             $ok = match ($m[2]) {
                 '=' => mb_strtolower((string) $dv) === mb_strtolower((string) $val),

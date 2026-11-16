@@ -31,7 +31,7 @@ final class IndexSettings
     {
         $filterable = [
             'id', 'sku', 'all_skus', 'all_eans', 'brand', 'category_names', 'category_ids', 'in_stock', 'on_sale',
-            'final_price', 'margin_rate', 'type', 'is_new',
+            'final_price', 'margin_rate', 'type', 'is_new', 'available',
         ];
         foreach ($filterableAttrCodes as $code) {
             $filterable[] = 'attr.' . $code;

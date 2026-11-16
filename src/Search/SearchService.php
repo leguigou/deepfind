@@ -21,7 +21,7 @@ final class SearchService
 {
     private const PUBLIC_FIELDS = ['id', 'sku', 'name', 'brand', 'url', 'image', 'image_hover', 'price', 'final_price',
         'has_price_range', 'on_sale', 'discount_percent', 'in_stock', 'rating', 'reviews_count', 'is_new'];
-    private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'boost_total', 'clicks_30d', 'type', 'category_names'];
+    private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'boost_total', 'clicks_30d', 'type', 'category_names', 'available', 'absent_since'];
     private const POST_FIELDS = ['id', 'title', 'url', 'image', 'excerpt', 'published_ts'];
     // Aperçu interne uniquement : fiche détaillée et champs où la recherche a été trouvée.
     private const DETAIL_FIELDS = ['short_description', 'description', 'ean', 'all_skus', 'all_eans', 'category_paths', 'category_terms',
@@ -66,6 +66,12 @@ final class SearchService
 
         $groups = $this->userFilterGroups($r, $internal);
         $base = array_values($groups);
+        // Produits absents du dernier flux complet (non vendables, « désactivés auto ») : jamais proposés, sauf aperçu « Désactivés »
+        // (filtre actif seulement une fois l'index reconstruit avec le champ « available », pour ne pas casser l'index existant)
+        $availFilter = Settings::get('available_filter_' . $r->lang) === '1';
+        if ($availFilter && !$withDisabled) {
+            $base[] = 'available != 0';
+        }
         if ($hides !== []) {
             $base[] = Filter::notIn('all_skus', $hides);
         }
@@ -156,6 +162,9 @@ final class SearchService
                 $others = $groups;
                 unset($others[$field]);
                 $f = array_values($others);
+                if ($availFilter && !$withDisabled) {
+                    $f[] = 'available != 0';
+                }
                 if ($hides !== []) {
                     $f[] = Filter::notIn('all_skus', $hides);
                 }
@@ -164,10 +173,11 @@ final class SearchService
             }
         }
 
-        // Aperçu interne : produits désactivés (masqués de toutes les recherches) qui correspondraient à cette recherche.
-        if ($internal && $rules['hide_all'] !== []) {
+        // Aperçu interne : produits désactivés (manuellement, ou auto car absents du flux) qui correspondraient à cette recherche.
+        if ($internal && ($rules['hide_all'] !== [] || $availFilter)) {
+            $off = array_values(array_filter([$rules['hide_all'] !== [] ? Filter::in('all_skus', $rules['hide_all']) : null, $availFilter ? 'available = 0' : null]));
             $queries[] = ['indexUid' => $productIndex, 'q' => $r->q, 'limit' => 50, 'attributesToRetrieve' => $fields,
-                'filter' => [...array_values($groups), Filter::in('all_skus', $rules['hide_all'])]];
+                'filter' => [...array_values($groups), $off]];
             $names[] = 'disabled';
         }
 
@@ -450,13 +460,16 @@ final class SearchService
             }
         }
         if ($internal) {
-            $p['disabled'] = false;
+            // désactivé manu (bouton « Désactiver ») ou auto (absent du dernier flux complet)
+            $p['disabled_manual'] = false;
             foreach ($h['all_skus'] ?? [$h['sku'] ?? ''] as $s) {
                 if (isset($this->hideAll[mb_strtoupper((string) $s, 'UTF-8')])) {
-                    $p['disabled'] = true;
+                    $p['disabled_manual'] = true;
                     break;
                 }
             }
+            $p['disabled_auto'] = (int) ($h['available'] ?? 1) === 0;
+            $p['disabled'] = $p['disabled_manual'] || $p['disabled_auto'];
             $p['details'] = array_intersect_key($h, array_flip(self::DETAIL_FIELDS));
             $p['matched'] = $this->matched($h);
         }

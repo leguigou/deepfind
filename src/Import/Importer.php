@@ -152,14 +152,19 @@ final class Importer
         $builder = ProductBuilder::forLang($lang);
         $synonyms = RulesRepository::meiliSynonyms($lang);
 
+        // État de l'index en ligne avant l'import : vendables / désactivés auto (pour le comparatif et la réactivation)
+        $previous = $this->liveAvailability($live);
+        $seen = [];
+
         $this->prepareTmpIndex($tmp, IndexSettings::products($lang, [], $synonyms));
         $tasks = [];
         $batch = [];
-        $push = function (array|string $doc, string $sku) use (&$batch, &$tasks, $tmp): void {
+        $push = function (array|string $doc, string $sku) use (&$batch, &$tasks, $tmp, &$seen): void {
             if (is_string($doc)) {
                 $this->reject($doc, $sku);
                 return;
             }
+            $seen[(string) $doc['id']] = true;
             $batch[] = $doc;
             $this->report['indexed']++;
             if (count($batch) >= self::BATCH) {
@@ -184,6 +189,8 @@ final class Importer
         if ($batch !== []) {
             $tasks[] = $this->meili->addDocuments($tmp, $batch);
         }
+        // Produits absents du flux (ou rejetés) : gardés dans l'index comme non vendables, réactivés s'ils reviennent
+        $tasks = [...$tasks, ...$this->retainAbsent($live, $tmp, $previous, $seen)];
         $this->log('Attente de l\'indexation Meilisearch…');
         $this->waitTasks($tasks);
 
@@ -201,8 +208,10 @@ final class Importer
         }
         $this->report['filterable_attributes'] = $filterable;
 
-        $this->swapIfSafe($live, $tmp, IndexSettings::products($lang, $filterable, $synonyms));
+        $this->swapIfSafe($live, $tmp, IndexSettings::products($lang, $filterable, $synonyms), count($seen), $previous === null ? null : count($previous['on']));
         Settings::set('attr_labels_' . $lang, Text::json(array_intersect_key($labels, array_flip($filterable))));
+        // l'index en ligne connaît maintenant le champ « available » : les recherches peuvent filtrer dessus
+        Settings::set('available_filter_' . $lang, '1');
         RulesRepository::bumpVersion();
     }
 
@@ -554,13 +563,17 @@ final class Importer
     }
 
     /** Contrôle anti-catastrophe puis bascule atomique de l'index temporaire vers l'index en ligne. */
-    private function swapIfSafe(string $live, string $tmp, array $liveSettings): void
+    /**
+     * Contrôle de baisse puis bascule. $sellable / $previousSellable : produits vendables (présents dans le flux) après / avant ;
+     * les produits gardés comme non vendables ne comptent pas (sinon un flux vide passerait le contrôle).
+     */
+    private function swapIfSafe(string $live, string $tmp, array $liveSettings, ?int $sellable = null, ?int $previousSellable = null): void
     {
         $this->progress('swap', [], true);
-        $newCount = (int) ($this->meili->stats($tmp)['numberOfDocuments'] ?? 0);
-        $this->report['index_documents'] = $newCount;
+        $this->report['index_documents'] = (int) ($this->meili->stats($tmp)['numberOfDocuments'] ?? 0);
+        $newCount = $sellable ?? $this->report['index_documents'];
         $liveIndex = $this->meili->getIndex($live);
-        $oldCount = $liveIndex !== null ? (int) ($this->meili->stats($live)['numberOfDocuments'] ?? 0) : 0;
+        $oldCount = $previousSellable ?? ($liveIndex !== null ? (int) ($this->meili->stats($live)['numberOfDocuments'] ?? 0) : 0);
         $this->report['previous_documents'] = $oldCount;
         $maxDrop = max(0, Settings::int('max_drop_percent'));
         if ($newCount === 0) {
@@ -583,7 +596,92 @@ final class Importer
         $this->meili->deleteIndex($tmp);
         // Les réglages voyagent avec l'index ; on les réapplique pour être sûr (synonymes modifiés pendant l'import).
         $this->meili->updateSettings($live, ['synonyms' => $liveSettings['synonyms']]);
-        $this->log(sprintf('Bascule effectuée : %d documents en ligne (avant : %d).', $newCount, $oldCount));
+        $kept = $this->report['index_documents'] - $newCount;
+        $this->log(sprintf('Bascule effectuée : %d produits vendables en ligne (avant : %d)', $newCount, $oldCount)
+            . ($kept > 0 ? sprintf(', %d gardé(s) non vendable(s) (désactivés auto).', $kept) : '.'));
+    }
+
+    /** Nombre de jours pendant lesquels un produit absent du flux reste dans l'index (désactivé auto) avant d'être retiré. */
+    public const RETAIN_DAYS = 90;
+
+    /**
+     * Index en ligne : identifiants vendables (« on ») et désactivés auto (« off » => absent depuis, timestamp).
+     * null si l'index n'existe pas encore (premier import).
+     * @return ?array{on: array<string,true>, off: array<string,int>}
+     */
+    private function liveAvailability(string $live): ?array
+    {
+        if ($this->meili->getIndex($live) === null) {
+            return null;
+        }
+        $on = [];
+        $off = [];
+        for ($offset = 0; ; $offset += 5000) {
+            $docs = $this->meili->fetchDocuments($live, '', 5000, $offset, ['id', 'available', 'absent_since']);
+            foreach ($docs as $d) {
+                if ((int) ($d['available'] ?? 1) === 0) {
+                    $off[(string) $d['id']] = (int) ($d['absent_since'] ?? time());
+                } else {
+                    $on[(string) $d['id']] = true;
+                }
+            }
+            if (count($docs) < 5000) {
+                break;
+            }
+        }
+        return ['on' => $on, 'off' => $off];
+    }
+
+    /**
+     * Copie dans l'index temporaire les produits absents du flux, marqués non vendables (available = 0), et calcule
+     * le comparatif avec l'import précédent : désactivés auto (vendables avant, absents maintenant) et ajoutés / réactivés.
+     * @param array<string,true> $seen identifiants présents dans ce flux
+     * @return list<int> tâches Meilisearch
+     */
+    private function retainAbsent(string $live, string $tmp, ?array $previous, array $seen): array
+    {
+        if ($previous === null) {
+            $this->report['added'] = count($seen);
+            $this->report['auto_disabled'] = 0;
+            $this->report['reactivated'] = 0;
+            return [];
+        }
+        $now = time();
+        $limit = $now - self::RETAIN_DAYS * 86400;
+        $absent = [];
+        foreach ($previous['on'] as $id => $_) {
+            if (!isset($seen[$id])) {
+                $absent[$id] = $now; // devient non vendable à cet import
+            }
+        }
+        $reactivated = 0;
+        foreach ($previous['off'] as $id => $since) {
+            if (isset($seen[$id])) {
+                $reactivated++;
+            } elseif ($since >= $limit) {
+                $absent[$id] = $since; // toujours absent : garde sa date
+            }
+        }
+        $this->report['auto_disabled'] = count(array_diff_key($previous['on'], $seen));
+        $this->report['reactivated'] = $reactivated;
+        $this->report['added'] = count(array_diff_key($seen, $previous['on'], $previous['off'])); // nouveaux SKU
+        $this->report['retained_unavailable'] = count($absent);
+        $tasks = [];
+        foreach (array_chunk(array_keys($absent), 500) as $chunk) {
+            $docs = $this->meili->fetchDocuments($live, self::inFilter('id', $chunk), count($chunk));
+            foreach ($docs as &$d) {
+                $d['available'] = 0;
+                $d['absent_since'] = $absent[(string) $d['id']] ?? $now;
+            }
+            unset($d);
+            if ($docs !== []) {
+                $tasks[] = $this->meili->addDocuments($tmp, $docs);
+            }
+        }
+        if ($absent !== []) {
+            $this->log(sprintf('%d produit(s) absent(s) du flux gardé(s) comme non vendables (désactivés auto)', count($absent)));
+        }
+        return $tasks;
     }
 
     private function reject(string $reason, string $sku): void

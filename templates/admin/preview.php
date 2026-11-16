@@ -1,7 +1,7 @@
 <?php $sorts = ['relevance' => 'Pertinence', 'price_asc' => 'Prix croissant', 'price_desc' => 'Prix décroissant', 'newest' => 'Nouveautés',
     'margin_desc' => 'Rentabilité (marge)', 'popularity_desc' => 'Ventes 30 j', 'score_desc' => 'Score métier']; ?>
 <p class="muted">Vue réservée à l'équipe : marge, score métier et règles appliquées sont visibles ici mais <strong>jamais envoyés au site public</strong>.
-  <strong>Boost</strong> : multiplie la pertinence du produit sur toutes les recherches (crée une <a href="<?= e(url('/admin/boost-rules')) ?>">règle de boost</a> « Produit SKU »). <strong>Épingler</strong> : place le produit à cette position pour cette recherche exacte (<a href="<?= e(url('/admin/custom-results')) ?>">résultat personnalisé</a> « Recherche « … » »). <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index). <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
+  <strong>Boost</strong> : multiplie la pertinence du produit sur toutes les recherches (crée une <a href="<?= e(url('/admin/boost-rules')) ?>">règle de boost</a> « Produit SKU »). <strong>Épingler</strong> : place le produit à cette position pour cette recherche exacte (<a href="<?= e(url('/admin/custom-results')) ?>">résultat personnalisé</a> « Recherche « … » »). <strong>Désactiver</strong> : retire le produit de toutes les recherches du site (il reste dans le flux et l'index) ; « désactivé manu » : seul « Activer » le fait revenir. « Désactivé auto » : absent du dernier flux complet, il revient de lui-même quand il réapparaît dans le flux. <strong>Détails</strong> : fiche du produit et champs où les mots ont été trouvés. Effet immédiat, la page se recharge sur la même recherche.</p>
 <form method="get" class="card form inline">
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
@@ -67,12 +67,13 @@
     <table class="table compact pv-table">
       <thead><tr><th>#</th><th></th><th>Produit</th><th class="num">Prix</th><th>Stock</th><th class="num">Marge</th><th class="num" title="Ventes 30 j (flux) / clics 30 j dans la recherche (en direct)">Ventes / clics</th><th class="num" title="(Pertinence du moteur + bonus « mot au début du nom ») × règles de boost">Pertinence</th><th class="num">Score métier</th></tr></thead>
       <tbody>
-      <?php $rank = 0; foreach ($result['products'] as $i => $pr): $off = !empty($pr['disabled']); if (!$off) { $rank++; } ?>
+      <?php $rank = 0; foreach ($result['products'] as $i => $pr): $off = !empty($pr['disabled']); if (!$off) { $rank++; }
+          $man = !empty($pr['disabled_manual']); $auto = !empty($pr['disabled_auto']); ?>
         <tr class="<?= $off ? 'pv-row-disabled' : ($pr['in_stock'] ? '' : 'dim') ?>">
-          <td><?= $off ? '<span class="muted" title="Désactivé : non affiché sur le site">—</span>' : $rank ?></td>
+          <td><?= $off ? '<span class="muted" title="Désactivé (' . ($man ? 'manu' : 'auto') . ') : non affiché sur le site">—</span>' : $rank ?></td>
           <td><?php if ($pr['image']): ?><img class="pv-thumb" src="<?= e($pr['image']) ?>" alt="" loading="lazy"><?php endif; ?></td>
           <td class="pv-product">
-            <a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code><?= $off ? ' <span class="badge badge-ko">désactivé</span>' : '' ?><?= !empty($pr['matched_variant']) ? ' <small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?>
+            <a href="<?= e($pr['url']) ?>" target="_blank" rel="noopener"><?= e($pr['name']) ?></a><br><span class="muted"><?= e($pr['brand']) ?></span> · <code><?= e($pr['sku']) ?></code><?= $man ? ' <span class="badge badge-ko" title="Désactivé avec le bouton « Désactiver » : reste désactivé même s\'il est dans le flux">désactivé manu</span>' : '' ?><?= $auto ? ' <span class="badge badge-warn" title="Absent du dernier flux complet' . (!empty($pr['absent_since']) ? ' depuis le ' . e(date('d/m/Y', (int) $pr['absent_since'])) : '') . ' : réactivé automatiquement s\'il revient dans le flux">désactivé auto</span>' : '' ?><?= !empty($pr['matched_variant']) ? ' <small>variante ' . e($pr['matched_variant']['sku']) . '</small>' : '' ?>
             <div class="pv-actions">
               <span class="pv-label">Boost</span>
               <?php $cur = (float) ($adminBoosts[mb_strtoupper($pr['sku'], 'UTF-8')] ?? 1.0); $curKey = rtrim(rtrim(number_format($cur, 2, '.', ''), '0'), '.'); ?>
@@ -96,8 +97,8 @@
                 <button class="btn btn-sm btn-light" title="Afficher ce produit à cette position pour cette recherche">Épingler</button></form>
             <?php endif; ?>
             <form method="post" action="<?= e(url('/admin/preview/toggle')) ?>"><?= csrf_field() ?>
-              <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="<?= $off ? 'on' : 'off' ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
-              <?php if ($off): ?>
+              <input type="hidden" name="sku" value="<?= e($pr['sku']) ?>"><input type="hidden" name="state" value="<?= $man ? 'on' : 'off' ?>"><input type="hidden" name="back" value="<?= e($back) ?>">
+              <?php if ($man): ?>
               <button class="btn btn-sm" title="Faire réapparaître ce produit dans les recherches du site">Activer</button></form>
               <?php else: ?>
               <button class="btn btn-sm btn-light btn-danger-soft" title="Retirer ce produit de toutes les recherches du site"
@@ -125,5 +126,5 @@
     </div>
     </div>
   </div>
-  <?php foreach ($result['products'] as $i => $pr) { $dlgId = 'pv-d-' . $i; $isDisabled = !empty($pr['disabled']); include __DIR__ . '/_preview_product.php'; } ?>
+  <?php foreach ($result['products'] as $i => $pr) { $dlgId = 'pv-d-' . $i; $isDisabled = !empty($pr['disabled']); $disLabel = !empty($pr['disabled_manual']) ? 'désactivé manu' : 'désactivé auto'; include __DIR__ . '/_preview_product.php'; } ?>
 <?php endif; ?>
