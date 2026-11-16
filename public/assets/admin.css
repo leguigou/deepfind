@@ -680,7 +680,16 @@ textarea.bn-code-area { margin: 0; border-radius: 0 0 10px 10px; background: #1f
 /* Textes indicatifs des champs : lisibles dans les deux thèmes (le navigateur les rend trop pâles et semi-transparents) */
 input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; }
 textarea.bn-code-area::placeholder { color: #9a9aae; }
-.pj-state form { margin: 6px 0 0; }
+.pj-state form { margin: 0; }
+.pj-name { min-width: 200px; }
+.pj-name-line { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; vertical-align: middle; }
+.pj-rename { display: inline; margin-left: 6px; }
+.pj-rename > summary { list-style: none; display: inline-grid; vertical-align: middle; }
+.pj-rename > summary::-webkit-details-marker { display: none; }
+.pj-rename[open] > summary { color: var(--accent); border-color: var(--accent); }
+.pj-rename > form { margin-top: 8px; }
+.icon-btn-sm { width: 28px; height: 28px; flex-basis: 28px; }
+.icon-btn-sm .admin-icon { width: 15px; height: 15px; }
 .pj-table .name-input { min-width: 130px; max-width: 170px; }
 .pj-table td.actions { min-width: 150px; }
 .pj-table .actions { flex-wrap: wrap; }

@@ -9,23 +9,28 @@
   <tbody>
   <?php foreach ($rows as $r): ?>
     <tr class="<?= $r['id'] === $current ? 'row-current' : '' ?>">
-      <td>
-        <form method="post" action="<?= e(url('/admin/projects/rename')) ?>" class="inline-form">
-          <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
-          <input name="name" value="<?= e($r['name']) ?>" aria-label="Nom du projet" class="name-input">
-          <button class="btn btn-sm btn-light">Renommer</button>
-        </form>
-        <?= $r['id'] === $current ? '<span class="badge badge-ok">projet actif</span>' : '' ?>
+      <td class="pj-name">
+        <div class="pj-name-line">
+          <strong><?= e($r['name']) ?></strong>
+          <?= $r['id'] === $current ? '<span class="badge badge-ok">projet actif</span>' : '' ?>
+        </div>
+        <details class="pj-rename">
+          <summary class="icon-btn icon-btn-sm" title="Renommer" aria-label="Renommer « <?= e($r['name']) ?> »"><?= admin_icon('pencil') ?></summary>
+          <form method="post" action="<?= e(url('/admin/projects/rename')) ?>" class="inline-form">
+            <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
+            <input name="name" value="<?= e($r['name']) ?>" aria-label="Nom du projet" class="name-input" required maxlength="100">
+            <button class="btn btn-sm">Enregistrer</button>
+          </form>
+        </details>
       </td>
       <td class="pj-state">
         <?php $on = (int) ($r['active'] ?? 1) === 1; ?>
-        <span class="badge <?= $on ? 'badge-ok' : 'badge-ko' ?>"><?= $on ? 'Actif' : 'Désactivé' ?></span>
         <form method="post" action="<?= e(url('/admin/projects/active')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>"><input type="hidden" name="active" value="<?= $on ? '0' : '1' ?>">
-          <?php if ($on): ?>
-            <button class="btn btn-sm btn-light btn-danger-soft" data-confirm="Désactiver « <?= e($r['name']) ?> » ? Sur les sites qui utilisent ses clés, le widget ne s'active plus : pas de fenêtre de recherche DeepFind, la recherche d'origine du site reprend la main.">Désactiver</button>
-          <?php else: ?>
-            <button class="btn btn-sm" data-confirm="Réactiver « <?= e($r['name']) ?> » ? Le widget reprend la recherche des sites qui utilisent ses clés.">Activer</button>
-          <?php endif; ?>
+          <label class="toggle toggle-sm"><input type="checkbox" role="switch" <?= $on ? 'checked' : '' ?> aria-label="Widget de « <?= e($r['name']) ?> » actif"
+            data-confirm-change="<?= $on
+              ? 'Désactiver « ' . e($r['name']) . ' » ? Sur les sites qui utilisent ses clés, le widget ne s\'active plus : pas de fenêtre de recherche DeepFind, la recherche d\'origine du site reprend la main.'
+              : 'Réactiver « ' . e($r['name']) . ' » ? Le widget reprend la recherche des sites qui utilisent ses clés.' ?>"
+            data-confirm-ok="<?= $on ? 'Désactiver' : 'Activer' ?>"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text"><?= $on ? 'Actif' : 'Désactivé' ?></span></label>
         </form>
       </td>
       <td><code><?= e($r['code']) ?></code><br><span class="muted small"><?= e($r['index_prefix']) ?>products_…</span></td>
