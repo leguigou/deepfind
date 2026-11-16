@@ -560,6 +560,12 @@ if ($base) {
     // Projet désactivé : l'API le signale au widget, qui ne prend pas la main ; recherche refusée
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     check('config widget : projet actif', $c === 200 && ($cf['enabled'] ?? null) === true && array_key_exists('enter_submit', $cf));
+    check('config widget : autocomplétion d\'origine bloquée par défaut', ($cf['block_native'] ?? null) === true);
+    DeepFind\Settings::set('widget_block_native', '0');
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
+    check('config widget : réglage « bloquer l\'autocomplétion » désactivable', ($cf['block_native'] ?? null) === false);
+    DeepFind\Settings::set('widget_block_native', '1');
+    [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     DeepFind\Project::setActive($prodId, false);
     [$c, $cf] = $get("/api/v1/config?key=$key&lang=fr");
     [$cs] = $get("/api/v1/search?key=$key&q=palme");
@@ -586,7 +592,15 @@ if ($base) {
     $al = $WC::activeLayer();
     $WC::saveLayer($l1, 'Cabesto', 'below', ['min_chars' => 0, 'logo' => 'javascript:alert(1)', 'color_primary' => '#1069F9', 'color_text' => 'red',
         'css' => '.df-title { color: red; }', 'card_template' => '<div onclick="x()">{{ name }}<script>alert(1)</script><img src="{{image}}"></div>',
-        'css_mobile' => '.df-name { font-size: 12px; }', 'card_template_mobile' => '<p>{{price}}<iframe src="x"></iframe></p>']);
+        'css_mobile' => '.df-name { font-size: 12px; }', 'card_template_mobile' => '<p>{{price}}<iframe src="x"></iframe></p>', 'max_width' => 100]);
+    check('intégration : largeur maximale bornée (320 px minimum, vide = par défaut)', $WC::layer($l1)['settings']['max_width'] === 320
+        && $WC::cleanSettings(['max_width' => ''])['max_width'] === 0 && $WC::cleanSettings(['max_width' => '980'])['max_width'] === 980
+        && $WC::cleanSettings([])['max_width_unit'] === 'pct' && $WC::cleanSettings(['max_width' => '85', 'max_width_unit' => 'pct']) ['max_width'] === 85
+        && $WC::cleanSettings(['max_width' => '900', 'max_width_unit' => 'pct'])['max_width'] === 100);
+    $pc = $WC::cleanSettings([]);
+    $pc2 = $WC::cleanSettings(['cols_desktop' => 12, 'cols_mobile' => 0, 'per_page_desktop' => 100, 'per_page_mobile' => 2]);
+    check('intégration : nombre de produits (défauts et bornes)', [$pc['cols_desktop'], $pc['cols_mobile'], $pc['per_page_desktop'], $pc['per_page_mobile']] === [0, 2, 20, 20]
+        && [$pc2['cols_desktop'], $pc2['cols_mobile'], $pc2['per_page_desktop'], $pc2['per_page_mobile']] === [8, 1, 48, 4]);
     $ls = $WC::layer($l1);
     check('intégration : mise en page modifiable, identité et personnalisation nettoyées', $ls['type'] === 'below' && $ls['settings']['min_chars'] === 1
         && $ls['settings']['logo'] === '' && $ls['settings']['color_primary'] === '#1069f9' && $ls['settings']['color_text'] === ''

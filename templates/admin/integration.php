@@ -222,7 +222,7 @@ $types = WidgetConfig::TYPES;
   <summary><strong>Code à ajouter sur le site</strong></summary>
   <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème.
     Les clés se gèrent dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>.</p>
-  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=12" defer
+  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=15" defer
   data-key="<?= e($firstKey !== '' ? $firstKey : 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"
@@ -241,7 +241,7 @@ $types = WidgetConfig::TYPES;
       <tr><td><code>data-results-url</code></td><td>Page « Tout voir » (la requête est ajoutée à la fin). Vide = bouton masqué</td></tr>
       <tr><td><code>data-currency</code>, <code>data-locale</code></td><td>Format des prix (EUR, fr-FR par défaut)</td></tr>
       <tr><td><code>data-min-chars</code>, <code>data-page-size</code></td><td>Caractères avant recherche (2), produits par page (20)</td></tr>
-      <tr><td><code>data-native</code></td><td>Par défaut, l'autocomplétion d'origine du site (Magento…) est neutralisée pour ne pas s'ouvrir en même temps. <code>keep</code> = la laisser fonctionner</td></tr>
+      <tr><td><code>data-native</code></td><td>Autocomplétion d'origine du site (Magento…) : <code>keep</code> = la laisser fonctionner, <code>block</code> = la neutraliser. Sans attribut : réglage <a href="<?= e(url('/admin/settings')) ?>">Paramètres › Widget sur le site</a> (neutralisée par défaut)</td></tr>
       <tr><td><code>data-hide</code></td><td>Sélecteurs CSS supplémentaires de panneaux d'origine à masquer (ex. <code>.mon-popup-recherche</code>)</td></tr>
     </tbody>
   </table>

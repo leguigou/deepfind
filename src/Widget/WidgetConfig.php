@@ -108,8 +108,17 @@ final class WidgetConfig
             'container' => $sel($in['container'] ?? ''),
             'url_state' => !empty($in['url_state']),
             'gap' => max(0, min(80, $gap)),
+            // largeur maximale de la fenêtre (sauf plein écran) en % de l'écran (par défaut) ou en pixels ; 0 = largeur par défaut
+            // (réglage enregistré avant le choix de l'unité : en pixels)
+            'max_width_unit' => $unit = (($in['max_width_unit'] ?? (isset($in['max_width']) && (int) $in['max_width'] > 0 ? 'px' : 'pct')) === 'px' ? 'px' : 'pct'),
+            'max_width' => ($mw = (int) ($in['max_width'] ?? 0)) > 0 ? ($unit === 'px' ? max(320, min(3000, $mw)) : max(10, min(100, $mw))) : 0,
             // caractères tapés avant d'afficher les résultats
             'min_chars' => max(1, min(10, (int) ($in['min_chars'] ?? 2))),
+            // nombre de produits : par ligne (0 = automatique selon la largeur, ordinateur) et chargés à la fois, ordinateur / mobile
+            'cols_desktop' => max(0, min(8, (int) ($in['cols_desktop'] ?? 0))),
+            'cols_mobile' => max(1, min(3, (int) ($in['cols_mobile'] ?? 2))),
+            'per_page_desktop' => max(4, min(48, (int) ($in['per_page_desktop'] ?? 20))),
+            'per_page_mobile' => max(4, min(48, (int) ($in['per_page_mobile'] ?? 20))),
             // identité de marque : logo (https uniquement) et couleurs #rrggbb (vide = couleurs par défaut du widget)
             'logo' => preg_match('#^https://[^\s"\'<>]+$#i', $logo) ? mb_substr($logo, 0, 500, 'UTF-8') : '',
             'color_primary' => $color($in['color_primary'] ?? ''),

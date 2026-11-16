@@ -4,20 +4,58 @@
   'use strict';
   document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------------------------ Paramètres d'un layer : mise en page (champs propres au type)
-    var typeSel = document.querySelector('[data-layer-type]');
-    if (typeSel) {
-      var typeHelp = document.querySelector('[data-layer-type-help]');
+    // (fenêtre « Mise en page » : boutons radio data-layer-type ; résumé mis à jour : image, nom, description)
+    var typeRadios = document.querySelectorAll('input[data-layer-type]');
+    if (typeRadios.length) {
       var syncType = function () {
+        var cur = document.querySelector('input[data-layer-type]:checked');
+        if (!cur) { return; }
         document.querySelectorAll('[data-layer-only]').forEach(function (n) {
-          var on = n.getAttribute('data-layer-only') === typeSel.value;
+          var on = n.getAttribute('data-layer-only').split(' ').indexOf(cur.value) !== -1;
           n.hidden = !on;
           n.querySelectorAll('input[name=container]').forEach(function (i) { i.required = on; });
         });
-        var o = typeSel.options[typeSel.selectedIndex];
-        if (typeHelp && o) { typeHelp.textContent = o.getAttribute('data-help') || ''; }
+        var pic = document.querySelector('[data-layer-type-pic]');
+        if (pic) { pic.className = 'ly-pic ly-pic-' + cur.value; }
+        var nm = document.querySelector('[data-layer-type-name]');
+        if (nm) { nm.textContent = cur.getAttribute('data-name'); }
+        var hp = document.querySelector('[data-layer-type-help]');
+        if (hp) { hp.textContent = cur.getAttribute('data-help'); }
       };
-      typeSel.addEventListener('change', syncType);
+      typeRadios.forEach(function (r) { r.addEventListener('change', syncType); });
       syncType();
+    }
+
+    // ------------------------------------------------------------ Largeur maximale : bornes selon l'unité (% ou pixels)
+    var widthUnit = document.querySelector('[data-width-unit]');
+    var widthInput = document.querySelector('[data-width-input]');
+    if (widthUnit && widthInput) {
+      widthUnit.addEventListener('change', function () {
+        var px = widthUnit.value === 'px';
+        widthInput.min = px ? '320' : '10';
+        widthInput.max = px ? '3000' : '100';
+        // valeur incohérente avec la nouvelle unité (ex. 900 en %) : effacée plutôt que mal interprétée
+        var v = parseInt(widthInput.value, 10);
+        if (v && (v < Number(widthInput.min) || v > Number(widthInput.max))) { widthInput.value = ''; }
+        widthInput.focus();
+      });
+    }
+
+    // ------------------------------------------------------------ Nombre de produits : aperçu de la grille (ordinateur / mobile)
+    var products = document.querySelector('[data-products]');
+    if (products) {
+      var paint = function (dev) {
+        var sel = products.querySelector('[data-cols="' + dev + '"]');
+        var box = products.querySelector('[data-preview="' + dev + '"]');
+        var cols = parseInt(sel.value, 10) || 4; // automatique : 4 sur l'aperçu
+        box.textContent = '';
+        box.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+        for (var i = 0; i < cols * 2; i++) { box.appendChild(document.createElement('i')); }
+      };
+      ['desktop', 'mobile'].forEach(function (dev) {
+        products.querySelector('[data-cols="' + dev + '"]').addEventListener('change', function () { paint(dev); });
+        paint(dev);
+      });
     }
 
     // ------------------------------------------------------------ Paramètres d'un layer : renommer, couleurs

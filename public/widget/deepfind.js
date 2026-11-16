@@ -3,7 +3,8 @@
  * <script src="https://search.example.com/widget/deepfind.js" defer
  *         data-key="pk_…" data-lang="fr" data-input="#search" data-anchor="header"
  *         data-results-url="https://www.example.com/catalogsearch/result/?q="></script>
- * data-native="keep"   : laisse fonctionner l'autocomplétion d'origine du site (par défaut : elle est neutralisée)
+ * data-native="keep"   : laisse fonctionner l'autocomplétion d'origine du site ; "block" : la neutralise
+ *                        (sans attribut : réglage de l'extranet, Paramètres › Widget sur le site ; activé par défaut)
  * data-hide=".panneau" : sélecteurs CSS supplémentaires de panneaux d'origine à masquer
  * data-position="anchor" : panneau sous data-anchor (par défaut : juste sous la barre de recherche, avec data-gap px d'écart)
  * data-enter="off"     : la touche Entrée n'ouvre pas la page de résultats (sinon : réglage de l'extranet, Paramètres › Widget)
@@ -31,7 +32,7 @@
     pageSize: Math.min(48, parseInt(ds.pageSize || '20', 10)),
     debounce: parseInt(ds.debounce || '180', 10),
     // Autocomplétion d'origine du site (Magento…) : neutralisée par défaut pour ne pas s'ouvrir en même temps
-    blockNative: ds.native !== 'keep',
+    blockNative: ds.native !== 'keep', // remplacé par le réglage de l'extranet si data-native est absent (voir applyCfg)
     hide: ds.hide || '',
     position: ds.position === 'anchor' ? 'anchor' : 'input',
     gap: parseInt(ds.gap || '12', 10),
@@ -48,7 +49,12 @@
     customCss: '',
     customCssMobile: '',
     cardTemplateDesktop: '',
-    cardTemplateMobile: ''
+    cardTemplateMobile: '',
+    maxWidth: 0,
+    maxWidthUnit: '%',
+    pageSizeMobile: 0,
+    colsDesktop: 0,
+    colsMobile: 2
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -80,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=12'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=15'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -216,7 +222,7 @@
     p.set('lang', cfg.lang);
     p.set('q', state.q);
     p.set('offset', String(offset));
-    p.set('limit', String(cfg.pageSize));
+    p.set('limit', String(mobile.matches && cfg.pageSizeMobile ? cfg.pageSizeMobile : cfg.pageSize));
     p.set('sid', sid);
     if (offset > 0) { p.set('posts', '0'); }
     if (tgStock.input.checked) { p.set('in_stock', '1'); }
@@ -740,7 +746,8 @@
     if (cfg.type === 'below' && !overlay.hidden) {
       var lr = layer.getBoundingClientRect();
       var spot = activeInput ? searchBox(activeInput).getBoundingClientRect() : null;
-      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - 1440) / 2);
+      var maxPx = !cfg.maxWidth ? 1440 : (cfg.maxWidthUnit === '%' ? window.innerWidth * cfg.maxWidth / 100 : cfg.maxWidth);
+      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - maxPx) / 2);
       var left = window.innerWidth - w - 40;
       out = lr.top >= 56 && (!spot || spot.right < left - 8 || spot.bottom < lr.top - 52 || spot.top > lr.top - 6);
     }
@@ -1006,6 +1013,9 @@
   function applyDisplay() {
     overlay.className = 'df-overlay df-type-' + cfg.type;
     bar.hidden = !usesBar();
+    if (cfg.maxWidth) { overlay.style.setProperty('--df-width', cfg.maxWidth + cfg.maxWidthUnit); }
+    if (cfg.colsDesktop) { overlay.style.setProperty('--df-cols', String(cfg.colsDesktop)); overlay.classList.add('df-has-cols'); }
+    overlay.style.setProperty('--df-cols-m', String(cfg.colsMobile || 2));
     var hex = function (c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : ''; };
     if (cfg.colors) {
       if (hex(cfg.colors.primary)) { overlay.style.setProperty('--df-accent', cfg.colors.primary); }
@@ -1094,7 +1104,7 @@
   }
   function writeCfg(c) {
     try {
-      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false,
+      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1104,6 +1114,8 @@
     if (cfg.enter === null && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
+    if (ds.native !== 'keep' && ds.native !== 'block' && c.block_native !== undefined) { cfg.blockNative = c.block_native !== false; }
+    if (ds.native === 'block') { cfg.blockNative = true; }
     var l = c.layer;
     if (l && TYPES[l.type]) {
       cfg.type = l.type;
@@ -1115,6 +1127,16 @@
       if (ds.minChars === undefined && l.min_chars) { cfg.minChars = Math.max(1, parseInt(l.min_chars, 10) || 2); }
       cfg.logo = safeUrl(l.logo);
       cfg.colors = { primary: l.color_primary, contrast: l.color_contrast, text: l.color_text };
+      // largeur maximale : % de l'écran (ou du bloc pour Intégré) ou pixels
+      cfg.maxWidth = l.type !== 'fullscreen' && l.max_width > 0 ? parseInt(l.max_width, 10) : 0;
+      cfg.maxWidthUnit = l.max_width_unit === 'px' ? 'px' : '%';
+      // nombre de produits (Personnalisation avancée) : chargés à la fois (data-page-size prioritaire) et par ligne
+      if (ds.pageSize === undefined) {
+        if (l.per_page_desktop) { cfg.pageSize = Math.min(48, Math.max(4, parseInt(l.per_page_desktop, 10) || 20)); }
+        if (l.per_page_mobile) { cfg.pageSizeMobile = Math.min(48, Math.max(4, parseInt(l.per_page_mobile, 10) || 20)); }
+      }
+      cfg.colsDesktop = Math.min(8, Math.max(0, parseInt(l.cols_desktop, 10) || 0));
+      cfg.colsMobile = Math.min(3, Math.max(1, parseInt(l.cols_mobile, 10) || 2));
       cfg.customCss = typeof l.css === 'string' ? l.css : '';
       cfg.customCssMobile = typeof l.css_mobile === 'string' ? l.css_mobile : '';
       cfg.cardTemplateDesktop = typeof l.card_template === 'string' ? l.card_template : '';
