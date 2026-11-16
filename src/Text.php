@@ -15,6 +15,12 @@ final class Text
     ];
 
     /** Normalisation des requêtes pour les règles et les statistiques : minuscules, sans accents, espaces réduits. */
+    /** Minuscules sans accents, sans autre changement ni coupure (« Plongée » → « plongee »). */
+    public static function fold(string $s): string
+    {
+        return strtr(mb_strtolower(trim($s), 'UTF-8'), self::ACCENTS);
+    }
+
     public static function normalize(string $s, int $max = 100): string
     {
         $s = mb_strtolower(trim($s), 'UTF-8');

@@ -413,7 +413,8 @@ if ($base) {
     check('boost : texte contient / commence par / finit par (sans majuscules)', $BR::matches($tc('brand', 'contains', 'ESS'), $doc)
         && $BR::matches($tc('brand', 'starts', 'cre'), $doc) && $BR::matches($tc('brand', 'ends', 'SSI'), $doc) && !$BR::matches($tc('brand', 'starts', 'ssi'), $doc));
     check('boost : texte sur un champ à plusieurs valeurs et un attribut', $BR::matches($tc('category_names', 'starts', 'plong'), $doc)
-        && $BR::matches($tc('attr.couleur', 'ends', 'une'), $doc) && !$BR::matches($tc('attr.taille', 'contains', 'x'), $doc));
+        && $BR::matches($tc('attr.couleur', 'ends', 'une'), $doc) && $BR::matches($tc('category_names', 'contains', 'PLONGEE'), $doc)
+        && $BR::matches($tc('brand', 'starts', 'Crèss'), $doc) && !$BR::matches($tc('attr.taille', 'contains', 'x'), $doc));
     check('boost : texte ne contient pas', $BR::matches($tc('category_names', 'not_contains', 'chaussure'), $doc)
         && !$BR::matches($tc('category_names', 'not_contains', 'palm'), $doc) && $BR::matches($tc('attr.taille', 'not_contains', 'x'), $doc));
     [$okText] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'ends', 'text' => ' ssi '], ['field' => 'in_stock', 'match' => 'contains', 'text' => '1']]], 'fr');
