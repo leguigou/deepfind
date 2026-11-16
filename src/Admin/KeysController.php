@@ -16,7 +16,7 @@ final class KeysController
             'active' => 'keys',
             'keys' => Db::all('SELECT * FROM api_keys WHERE project_id = ? ORDER BY id', [\DeepFind\Project::id()]),
             'appUrl' => rtrim((string) Config::get('APP_URL', ''), '/'),
-        ], 'Clés & intégration');
+        ], 'Clés');
     }
 
     public function create(): void

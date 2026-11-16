@@ -150,7 +150,7 @@ final class ApiController
         Response::json([
             'enabled' => \DeepFind\Project::isActive(),
             'enter_submit' => Settings::int('widget_enter_submit') === 1,
-        ], 200, $cors + ['Cache-Control' => 'private, max-age=60']);
+        ] + \DeepFind\Widget\WidgetConfig::forWidget($lang), 200, $cors + ['Cache-Control' => 'private, max-age=60']);
     }
 
     private function health(): void

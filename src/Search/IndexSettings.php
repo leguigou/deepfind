@@ -22,6 +22,9 @@ final class IndexSettings
         return self::STOP_WORDS[$lang] ?? [];
     }
 
+    /** Champs triables des produits (name : options de tri « Nom de A à Z / Z à A » du widget). */
+    public const SORTABLE = ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d', 'name'];
+
     /** @param list<string> $filterableAttrCodes */
     public static function products(string $lang, array $filterableAttrCodes, array $synonyms): array
     {
@@ -36,7 +39,7 @@ final class IndexSettings
             // Ordre = importance (réglable dans l'extranet : Pertinence & classement)
             'searchableAttributes' => Relevance::searchableAttributes(),
             'filterableAttributes' => $filterable,
-            'sortableAttributes' => ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d'],
+            'sortableAttributes' => self::SORTABLE,
             // "sort" après "words" : un tri demandé (prix, stock) ne fait pas passer un produit peu pertinent devant.
             // Position de biz_score selon l'importance choisie pour le score métier.
             'rankingRules' => Relevance::rankingRules(),

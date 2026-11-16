@@ -7,6 +7,8 @@
  * data-hide=".panneau" : sélecteurs CSS supplémentaires de panneaux d'origine à masquer
  * data-position="anchor" : panneau sous data-anchor (par défaut : juste sous la barre de recherche, avec data-gap px d'écart)
  * data-enter="off"     : la touche Entrée n'ouvre pas la page de résultats (sinon : réglage de l'extranet, Paramètres › Widget)
+ * Le layer actif (extranet › Intégration) choisit l'affichage : below (sous la barre, par défaut), fullscreen, floating
+ * (panneau centré), embedded (dans un bloc du site) ; il peut aussi remplacer data-input. Filtres et tris viennent aussi de l'extranet.
  */
 (function () {
   'use strict';
@@ -34,7 +36,13 @@
     position: ds.position === 'anchor' ? 'anchor' : 'input',
     gap: parseInt(ds.gap || '12', 10),
     // Entrée → page de résultats : data-enter (on/off) prioritaire, sinon réglage renvoyé par l'API
-    enter: ds.enter === 'off' ? false : (ds.enter === 'on' ? true : null)
+    enter: ds.enter === 'off' ? false : (ds.enter === 'on' ? true : null),
+    // Réglages de l'extranet (Intégration), reçus par /config : layer actif, filtres, tris
+    type: 'below',
+    container: '',
+    urlState: false,
+    filters: null,
+    sorts: null
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -48,13 +56,15 @@
       none: 'Aucun résultat pour', tryOther: 'Vérifiez l\'orthographe ou essayez un terme plus général.', from: 'dès', outOfStock: 'Rupture',
       isNew: 'Nouveau', close: 'Fermer', busy: 'Trop de recherches en peu de temps, patientez quelques secondes…', error: 'Recherche momentanément indisponible.',
       goTo: 'Voir la page', closeFilters: 'Fermer les filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…',
-      approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants' },
+      approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants',
+      price: 'Prix', min: 'Min', max: 'Max', apply: 'OK', search: 'Rechercher' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
       isNew: 'New', close: 'Close', busy: 'Too many searches, please wait a few seconds…', error: 'Search temporarily unavailable.',
       goTo: 'Go to page', closeFilters: 'Close filters', clear: 'Clear filters', results: 'results', loading: 'Loading…',
-      approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products' }
+      approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products',
+      price: 'Price', min: 'Min', max: 'Max', apply: 'OK', search: 'Search' }
   };
   var t = T[cfg.lang] || T.fr;
   var money;
@@ -64,7 +74,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=7'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=9'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -88,6 +98,16 @@
   layer.setAttribute('role', 'dialog');
   layer.setAttribute('aria-label', t.products);
   overlay.appendChild(layer);
+
+  // Barre de recherche du layer (plein écran, flottant) : le champ du site est alors masqué par la fenêtre
+  var bar = el('div', 'df-bar');
+  var barInput = el('input', 'df-bar-input');
+  barInput.type = 'search';
+  barInput.setAttribute('aria-label', t.search);
+  barInput.placeholder = t.search;
+  barInput.autocomplete = 'off';
+  bar.appendChild(barInput);
+  layer.appendChild(bar);
 
   var closeBtn = el('button', 'df-close', '×');
   closeBtn.type = 'button';
@@ -127,18 +147,25 @@
     cb.type = 'checkbox';
     cb.name = name;
     lab.appendChild(cb);
-    lab.appendChild(document.createTextNode(' ' + label));
+    var text = document.createTextNode(' ' + label);
+    lab.appendChild(text);
     var count = el('span', 'df-count');
     lab.appendChild(count);
-    return { label: lab, input: cb, count: count };
+    return { label: lab, input: cb, count: count, text: text };
   }
   var tgStock = toggle('in_stock', t.inStock);
   var tgSale = toggle('on_sale', t.onSale);
   var sortSel = el('select', 'df-sort');
   sortSel.setAttribute('aria-label', t.sort);
-  [['relevance', t.relevance], ['price_asc', t.priceAsc], ['price_desc', t.priceDesc], ['newest', t.newest]].forEach(function (o) {
-    var opt = el('option', null, o[1]); opt.value = o[0]; sortSel.appendChild(opt);
-  });
+  function setupSorts() {
+    var list = [['relevance', t.relevance], ['price_asc', t.priceAsc], ['price_desc', t.priceDesc], ['newest', t.newest]];
+    if (cfg.sorts && cfg.sorts.items) {
+      list = [['relevance', cfg.sorts.relevance || t.relevance]].concat(cfg.sorts.items.map(function (o) { return [o.key, o.label]; }));
+    }
+    sortSel.textContent = '';
+    list.forEach(function (o) { var opt = el('option', null, o[1]); opt.value = o[0]; sortSel.appendChild(opt); });
+    sortSel.hidden = list.length < 2;
+  }
   var seeAll = el('a', 'df-see-all');
   tools.appendChild(filtersBtn);
   tools.appendChild(sortSel);
@@ -165,13 +192,15 @@
 
   // ------------------------------------------------------------------ État
   var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, redirectNewTab: false, ids: {} };
+  state.priceMin = '';
+  state.priceMax = '';
   var controller = null;
   var cache = new Map();
   var timer = null;
   var activeInput = null;
   var mobile = window.matchMedia('(max-width: 900px)');
 
-  function resetFilters() { state.filters = {}; }
+  function resetFilters() { state.filters = {}; state.priceMin = ''; state.priceMax = ''; }
 
   function buildUrl(offset) {
     var p = new URLSearchParams();
@@ -185,6 +214,8 @@
     if (tgStock.input.checked) { p.set('in_stock', '1'); }
     if (tgSale.input.checked) { p.set('on_sale', '1'); }
     if (state.sort !== 'relevance') { p.set('sort', state.sort); }
+    if (state.priceMin !== '') { p.set('price_min', state.priceMin); }
+    if (state.priceMax !== '') { p.set('price_max', state.priceMax); }
     Object.keys(state.filters).sort().forEach(function (code) {
       state.filters[code].forEach(function (v) {
         if (code === 'brand' || code === 'category') { p.append(code + '[]', v); }
@@ -215,6 +246,7 @@
       if (id !== state.reqId) { return; }
       if (!cached) { cache.set(url, data); if (cache.size > 60) { cache.delete(cache.keys().next().value); } }
       render(data, append);
+      if (!append) { saveUrlState(); }
     }).catch(function (err) {
       if (err && err.name === 'AbortError') { return; }
       if (id !== state.reqId) { return; }
@@ -347,7 +379,7 @@
     grid.appendChild(frag);
     // Si le panneau n'est pas encore rempli, on charge la page suivante directement.
     requestAnimationFrame(function () {
-      if (state.hasMore && !state.loading && main.scrollHeight <= main.clientHeight + 200) { search(true); }
+      if (state.hasMore && !state.loading && needMore()) { search(true); }
     });
   }
 
@@ -393,7 +425,8 @@
   function renderSide(data) {
     sideContent.textContent = '';
     var facets = data.facets || [];
-    var hasFilter = tgStock.input.checked || tgSale.input.checked || Object.keys(state.filters).some(function (k) { return state.filters[k].length; });
+    var hasFilter = tgStock.input.checked || tgSale.input.checked || state.priceMin !== '' || state.priceMax !== ''
+      || Object.keys(state.filters).some(function (k) { return state.filters[k].length; });
     if (hasFilter) {
       var clear = el('button', 'df-clear', t.clear);
       clear.type = 'button';
@@ -405,7 +438,19 @@
       });
       sideContent.appendChild(clear);
     }
-    facets.forEach(function (f) {
+    // Ordre des filtres choisi dans l'extranet (Intégration › Filtres) ; le prix y prend sa place
+    var byCode = {};
+    facets.forEach(function (f) { byCode[f.code] = f; });
+    var ordered = [];
+    if (cfg.filters) {
+      cfg.filters.forEach(function (c) {
+        if (c.code === 'price' && c.visible) { ordered.push({ price: true, label: c.label }); }
+        else if (byCode[c.code]) { ordered.push(byCode[c.code]); delete byCode[c.code]; }
+      });
+    }
+    facets.forEach(function (f) { if (byCode[f.code]) { ordered.push(f); } });
+    ordered.forEach(function (f) {
+      if (f.price) { renderPrice(f.label, data.price_range); return; }
       var sec = el('div', 'df-sec');
       sec.appendChild(el('h3', null, f.label));
       var list = el('ul', 'df-facet');
@@ -457,6 +502,39 @@
     }
   }
 
+  // Filtre prix : plage min / max (bornes de la recherche en cours en indication)
+  function renderPrice(label, range) {
+    if (!range && state.priceMin === '' && state.priceMax === '') { return; }
+    var sec = el('div', 'df-sec df-price-sec');
+    sec.appendChild(el('h3', null, label || t.price));
+    var f = el('form', 'df-range');
+    var mk = function (name, ph, val) {
+      var i = el('input', 'df-range-input');
+      i.type = 'number'; i.min = '0'; i.step = 'any'; i.inputMode = 'decimal'; i.name = name;
+      i.placeholder = ph; i.value = val;
+      i.setAttribute('aria-label', (label || t.price) + ' ' + (name === 'min' ? t.min : t.max));
+      return i;
+    };
+    var lo = mk('min', range ? t.min + ' ' + Math.floor(range.min) : t.min, state.priceMin);
+    var hi = mk('max', range ? t.max + ' ' + Math.ceil(range.max) : t.max, state.priceMax);
+    var ok = el('button', 'df-range-ok', t.apply);
+    ok.type = 'submit';
+    f.appendChild(lo);
+    f.appendChild(el('span', 'df-range-sep', '–'));
+    f.appendChild(hi);
+    f.appendChild(ok);
+    f.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var clean = function (v) { v = String(v).replace(',', '.').trim(); return v !== '' && isFinite(v) && Number(v) >= 0 ? String(Number(v)) : ''; };
+      state.priceMin = clean(lo.value);
+      state.priceMax = clean(hi.value);
+      search(false);
+    });
+    sec.appendChild(f);
+    sideContent.appendChild(sec);
+  }
+
   // Ouverture d'un lien : clic (y compris Ctrl/Cmd + clic) et clic molette (nouvel onglet)
   function onOpen(a, fn) {
     a.addEventListener('click', fn);
@@ -484,7 +562,18 @@
     }
     return box;
   }
+  function usesBar() { return cfg.type === 'fullscreen' || cfg.type === 'floating'; }
+  function needMore() {
+    if (cfg.type === 'embedded') { return sentinel.getBoundingClientRect().top < window.innerHeight + 600; }
+    return main.scrollHeight <= main.clientHeight + 200;
+  }
   function position() {
+    if (cfg.type !== 'below') {
+      overlay.style.setProperty('--df-top', '0px');
+      backdrop.style.clipPath = '';
+      ring.hidden = true;
+      return;
+    }
     var w = window.innerWidth;
     var h = window.innerHeight;
     var spot = activeInput ? searchBox(activeInput).getBoundingClientRect() : null;
@@ -509,18 +598,52 @@
     ring.hidden = false;
     ring.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + sw + 'px;height:' + sh + 'px;border-radius:' + rad + 'px';
   }
+  // Layer intégré : les résultats prennent la place du contenu du bloc choisi (contenu masqué puis rendu à la fermeture)
+  var host = null;
   function open() {
-    if (!overlay.parentNode) { document.body.appendChild(overlay); }
+    if (cfg.type === 'embedded') {
+      host = host && host.isConnected ? host : document.querySelector(cfg.container);
+      if (!host) { cfg.type = 'below'; overlay.className = 'df-overlay df-type-below'; } // bloc introuvable : affichage par défaut
+    }
+    if (cfg.type === 'embedded') {
+      if (overlay.parentNode !== host) { host.appendChild(overlay); }
+      if (overlay.hidden) {
+        Array.prototype.forEach.call(host.children, function (c) {
+          if (c === overlay || c.hasAttribute('data-df-hidden')) { return; }
+          c.setAttribute('data-df-hidden', c.style.display);
+          c.style.display = 'none';
+        });
+        overlay.hidden = false;
+        var top = host.getBoundingClientRect().top;
+        if (top < 0 || top > window.innerHeight * 0.5) { host.scrollIntoView({ block: 'start' }); }
+      }
+      return;
+    }
+    if (!overlay.parentNode || overlay.parentNode !== document.body) { document.body.appendChild(overlay); }
     position();
     if (overlay.hidden) {
       overlay.hidden = false;
       document.documentElement.classList.add('df-lock');
+      if (usesBar()) {
+        barInput.value = activeInput ? activeInput.value : state.q;
+        barInput.focus({ preventScroll: true });
+        try { barInput.setSelectionRange(barInput.value.length, barInput.value.length); } catch (e) { /* type search */ }
+      }
     }
   }
   function close() {
+    var wasOpen = !overlay.hidden;
     overlay.hidden = true;
     setFiltersOpen(false);
     document.documentElement.classList.remove('df-lock');
+    if (host) {
+      Array.prototype.forEach.call(host.querySelectorAll('[data-df-hidden]'), function (c) {
+        c.style.display = c.getAttribute('data-df-hidden');
+        c.removeAttribute('data-df-hidden');
+      });
+    }
+    if (wasOpen && usesBar() && activeInput) { activeInput.value = barInput.value; }
+    clearUrlState();
   }
   function setFiltersOpen(isOpen, restoreFocus) {
     layer.classList.toggle('df-side-open', isOpen);
@@ -552,11 +675,11 @@
   }
 
   function onInput(ev) {
-    activeInput = ev.target;
+    if (ev.target !== barInput) { activeInput = ev.target; }
     var q = ev.target.value.trim();
     clearTimeout(timer);
     if (q.length < cfg.minChars) {
-      if (!q) { close(); }
+      if (!q && ev.target !== barInput) { close(); }
       return;
     }
     timer = setTimeout(function () {
@@ -689,7 +812,63 @@
     document.head.appendChild(hide);
   }
 
+  // ------------------------------------------------------------------ État dans l'URL (réglage du layer)
+  // #df=<JSON> : recherche, tri, filtres ; remplacé sans créer d'entrée d'historique, retiré à la fermeture
+  function saveUrlState() {
+    if (!cfg.urlState || !window.history || !history.replaceState) { return; }
+    var st = { q: state.q };
+    if (state.sort !== 'relevance') { st.s = state.sort; }
+    var f = {};
+    Object.keys(state.filters).forEach(function (k) { if (state.filters[k].length) { f[k] = state.filters[k]; } });
+    if (Object.keys(f).length) { st.f = f; }
+    if (tgStock.input.checked) { st.st = 1; }
+    if (tgSale.input.checked) { st.sa = 1; }
+    if (state.priceMin !== '') { st.pmin = state.priceMin; }
+    if (state.priceMax !== '') { st.pmax = state.priceMax; }
+    try { history.replaceState(history.state, '', location.pathname + location.search + '#df=' + encodeURIComponent(JSON.stringify(st))); } catch (e) { /* ignoré */ }
+  }
+  function clearUrlState() {
+    if (!cfg.urlState || location.hash.indexOf('#df=') !== 0) { return; }
+    try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) { /* ignoré */ }
+  }
+  function restoreUrlState() {
+    if (!cfg.urlState || location.hash.indexOf('#df=') !== 0) { return; }
+    var st;
+    try { st = JSON.parse(decodeURIComponent(location.hash.slice(4))); } catch (e) { return; }
+    if (!st || typeof st.q !== 'string' || st.q.trim().length < cfg.minChars) { return; }
+    state.q = st.q.trim().slice(0, 200);
+    state.sort = typeof st.s === 'string' ? st.s : 'relevance';
+    if (!Array.prototype.some.call(sortSel.options, function (o) { return o.value === state.sort; })) { state.sort = 'relevance'; }
+    sortSel.value = state.sort;
+    state.filters = {};
+    if (st.f && typeof st.f === 'object') {
+      Object.keys(st.f).forEach(function (k) { if (Array.isArray(st.f[k])) { state.filters[k] = st.f[k].map(String).slice(0, 50); } });
+    }
+    tgStock.input.checked = !!st.st;
+    tgSale.input.checked = !!st.sa;
+    state.priceMin = st.pmin ? String(Number(st.pmin) || '') : '';
+    state.priceMax = st.pmax ? String(Number(st.pmax) || '') : '';
+    activeInput = document.querySelector(cfg.input);
+    if (activeInput) { activeInput.value = state.q; }
+    open();
+    search(false);
+  }
+
+  // Réglages de l'extranet appliqués à l'interface : libellés et visibilité de « En stock » / « En promotion », tris
+  function applyDisplay() {
+    overlay.className = 'df-overlay df-type-' + cfg.type;
+    bar.hidden = !usesBar();
+    setupSorts();
+    (cfg.filters || []).forEach(function (f) {
+      var tg = f.code === 'in_stock' ? tgStock : (f.code === 'on_sale' ? tgSale : null);
+      if (!tg) { return; }
+      tg.text.nodeValue = ' ' + f.label;
+      tg.label.hidden = !f.visible;
+    });
+  }
+
   function init() {
+    applyDisplay();
     if (cfg.blockNative) { blockNative(); }
     syncFilterLayout();
     mobile.addEventListener('change', syncFilterLayout);
@@ -711,15 +890,19 @@
     tgSale.input.addEventListener('change', function () { search(false); });
     sortSel.addEventListener('change', function () { state.sort = sortSel.value; search(false); });
     filtersBtn.addEventListener('click', function () { setFiltersOpen(true); });
+    barInput.addEventListener('input', onInput);
+    barInput.addEventListener('keydown', handlers.keydown);
     if ('IntersectionObserver' in window) {
+      // Layer intégré : la page défile (et non le panneau)
       new IntersectionObserver(function (entries) {
         if (entries[0].isIntersecting && state.hasMore && !state.loading) { search(true); }
-      }, { root: main, rootMargin: '600px 0px' }).observe(sentinel);
+      }, { root: cfg.type === 'embedded' ? null : main, rootMargin: '600px 0px' }).observe(sentinel);
     } else {
-      main.addEventListener('scroll', function () {
-        if (state.hasMore && !state.loading && main.scrollTop + main.clientHeight > main.scrollHeight - 600) { search(true); }
+      (cfg.type === 'embedded' ? window : main).addEventListener('scroll', function () {
+        if (state.hasMore && !state.loading && needMore()) { search(true); }
       });
     }
+    restoreUrlState();
   }
 
   // ------------------------------------------------------------------ Démarrage
@@ -734,10 +917,28 @@
     try { var v = JSON.parse(window.sessionStorage.getItem(cfgKey) || 'null'); return v && Date.now() - v.t < 300000 ? v : null; } catch (e) { return null; }
   }
   function writeCfg(c) {
-    try { window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, t: Date.now() })); } catch (e) { /* stockage indisponible */ }
+    try {
+      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false,
+        layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
+    } catch (e) { /* stockage indisponible */ }
   }
+  var TYPES = { below: 1, fullscreen: 1, floating: 1, embedded: 1 };
   function applyCfg(c) {
-    if (cfg.enter === null && c && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
+    if (!c) { return; }
+    if (cfg.enter === null && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
+    // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
+    if (started) { return; }
+    var l = c.layer;
+    if (l && TYPES[l.type]) {
+      cfg.type = l.type;
+      if (l.input) { cfg.input = l.input; }
+      cfg.container = l.container || '';
+      cfg.urlState = !!l.url_state;
+      if (l.type === 'below' && ds.gap === undefined && l.gap !== undefined) { cfg.gap = parseInt(l.gap, 10) || 0; }
+      if (l.type === 'embedded' && !cfg.container) { cfg.type = 'below'; }
+    }
+    if (Array.isArray(c.filters)) { cfg.filters = c.filters; }
+    if (c.sorts && Array.isArray(c.sorts.items)) { cfg.sorts = c.sorts; }
   }
   function fetchCfg() {
     return fetch(cfg.api + '/config?key=' + encodeURIComponent(cfg.key) + '&lang=' + encodeURIComponent(cfg.lang), { credentials: 'omit', headers: { Accept: 'application/json' } })

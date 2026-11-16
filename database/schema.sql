@@ -307,3 +307,18 @@ CREATE TABLE IF NOT EXISTS kv_store (
   expires_at INT UNSIGNED NOT NULL,
   KEY idx_exp (expires_at)
 ) ENGINE=InnoDB;
+
+-- Layers du widget (page « Intégration ») : façon dont la fenêtre de recherche s'affiche sur le site.
+-- type : below (sous la barre), fullscreen, floating, embedded ; un seul layer actif par projet (aucun = affichage par défaut).
+-- settings (JSON) : input (sélecteur CSS du champ), container (bloc du site, type embedded), url_state (état dans l'URL), gap.
+CREATE TABLE IF NOT EXISTS layers (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(20) NOT NULL DEFAULT 'below',
+  active TINYINT(1) NOT NULL DEFAULT 0,
+  settings TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project (project_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

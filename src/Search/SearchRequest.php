@@ -11,7 +11,7 @@ use DeepFind\Text;
 /** Paramètres d'une recherche, validés. */
 final class SearchRequest
 {
-    public const SORTS = ['relevance', 'price_asc', 'price_desc', 'newest'];
+    public const SORTS = ['relevance', 'price_asc', 'price_desc', 'newest', 'name_asc', 'name_desc'];
     public const INTERNAL_SORTS = ['margin_desc', 'popularity_desc', 'score_desc'];
 
     public string $q = '';
