@@ -134,6 +134,34 @@
         });
       });
     });
+    // Clés : afficher / masquer la clé publique (data-key-reveal) et la copier (data-key-copy)
+    document.querySelectorAll('[data-key-reveal]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var box = b.parentNode.querySelector('[data-key-full]');
+        var shown = b.getAttribute('aria-pressed') !== 'true';
+        box.querySelector('code').textContent = box.getAttribute(shown ? 'data-key-full' : 'data-key-masked');
+        b.setAttribute('aria-pressed', String(shown));
+        b.title = shown ? 'Masquer la clé' : 'Afficher la clé';
+      });
+    });
+    document.querySelectorAll('[data-key-copy]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var key = b.parentNode.querySelector('[data-key-full]').getAttribute('data-key-full');
+        var done = function () {
+          b.classList.add('is-copied');
+          b.title = 'Clé copiée';
+          setTimeout(function () { b.classList.remove('is-copied'); b.title = 'Copier la clé'; }, 1600);
+        };
+        var fallback = function () {
+          var ta = document.createElement('textarea');
+          ta.value = key; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          try { if (document.execCommand('copy')) { done(); } } catch (e) { /* copie impossible */ }
+          ta.remove();
+        };
+        if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(key).then(done, fallback); } else { fallback(); }
+      });
+    });
     document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
       el.addEventListener('change', function () { el.form.submit(); });
     });
