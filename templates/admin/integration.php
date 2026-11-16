@@ -146,7 +146,7 @@ $types = WidgetConfig::TYPES;
 <form method="post" action="<?= e(url('/admin/integration/filters')) ?>" class="card" data-order-form="filters">
   <?= csrf_field() ?><input type="hidden" name="payload" value=""><input type="hidden" name="removed" value="">
   <table class="table ly-table">
-    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Déplié</th><th>Statut</th><th></th></tr></thead>
+    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Ordre des valeurs</th><th>Déplié</th><th>Statut</th><th></th></tr></thead>
     <tbody data-order-list>
     <?php foreach ($filters as $f): ?>
       <tr draggable="true" data-row data-code="<?= e($f['code']) ?>">
@@ -157,6 +157,12 @@ $types = WidgetConfig::TYPES;
         <td><?php if ($f['appearance'] === 'terms'): ?>
           <input data-f="limit" type="number" min="1" max="100" value="<?= (int) $f['limit'] ?>" class="flt-limit" aria-label="Valeurs affichées pour « <?= e($f['label']) ?> »">
         <?php else: ?><span class="muted">—</span><?php endif; ?></td>
+        <td><?php if ($f['appearance'] === 'terms'): ?>
+          <select data-f="order" class="flt-order" aria-label="Ordre des valeurs de « <?= e($f['label']) ?> »">
+            <option value="count" <?= $f['order'] === 'count' ? 'selected' : '' ?> title="Du plus grand nombre de produits au plus petit">Par nombre</option>
+            <option value="alpha" <?= $f['order'] === 'alpha' ? 'selected' : '' ?>>A à Z</option>
+          </select>
+        <?php else: ?><span class="muted">—</span><?php endif; ?></td>
         <td><?php if ($f['appearance'] !== 'toggle'): ?>
           <label class="toggle toggle-sm" title="Bloc déplié par défaut (le visiteur peut le replier)"><input type="checkbox" role="switch" data-f="open" <?= $f['open'] ? 'checked' : '' ?> aria-label="« <?= e($f['label']) ?> » déplié par défaut"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
         <?php else: ?><span class="muted">—</span><?php endif; ?></td>
@@ -165,10 +171,10 @@ $types = WidgetConfig::TYPES;
           data-remove-confirm="Retirer le filtre « <?= e($f['label']) ?> » ? Il ne sera plus proposé aux visiteurs (vous pourrez l'ajouter de nouveau)."><?= admin_icon('trash') ?></button></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$filters): ?><tr><td colspan="8" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
+    <?php if (!$filters): ?><tr><td colspan="9" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
     </tbody>
   </table>
-  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ». « Déplié » : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
+  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ». « Ordre des valeurs » : du plus grand nombre de produits au plus petit, ou alphabétique. « Déplié » : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
     « En stock » et « En promotion » s'affichent en haut des résultats (ordinateur). Un filtre désactivé ou retiré n'est plus proposé.</p>
   <div class="form-foot"><button class="btn">Enregistrer</button></div>
 </form>
@@ -199,7 +205,7 @@ $types = WidgetConfig::TYPES;
               if (!$opts) { continue; } ?>
             <optgroup label="<?= e($glabel) ?>">
               <?php foreach ($opts as $code => [$label, $appearance]): ?>
-                <option value="<?= e($code) ?>" data-label="<?= e($label) ?>" data-appearance="<?= e($appearance) ?>" data-limit="<?= WidgetConfig::defaultLimit($code) ?>"><?= e($label) ?> (<?= e($code) ?>)</option>
+                <option value="<?= e($code) ?>" data-label="<?= e($label) ?>" data-appearance="<?= e($appearance) ?>" data-limit="<?= WidgetConfig::defaultLimit($code) ?>" data-order="<?= e(WidgetConfig::defaultOrder($code)) ?>"><?= e($label) ?> (<?= e($code) ?>)</option>
               <?php endforeach; ?>
             </optgroup>
           <?php endforeach; ?>
@@ -210,6 +216,12 @@ $types = WidgetConfig::TYPES;
       <label data-filter-limit-row hidden>Valeurs affichées
         <input name="limit" type="number" min="1" max="100" value="8" class="flt-limit" data-filter-limit>
         <small class="muted">Nombre de valeurs visibles ; les suivantes derrière « + N ».</small>
+      </label>
+      <label data-filter-order-row hidden>Ordre des valeurs
+        <select name="order" data-filter-order>
+          <?php foreach (WidgetConfig::VALUE_ORDERS as $ok => $olabel): ?><option value="<?= e($ok) ?>"><?= e($olabel) ?></option><?php endforeach; ?>
+        </select>
+        <small class="muted">Les valeurs qui ont le plus de produits sont toujours celles proposées ; ce réglage choisit seulement leur ordre d'affichage.</small>
       </label>
       <div class="toggle-row" data-filter-open-row hidden>
         <label class="toggle"><input type="checkbox" role="switch" name="open" value="1" checked><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>

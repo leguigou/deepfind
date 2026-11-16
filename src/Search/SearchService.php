@@ -580,7 +580,7 @@ final class SearchService
         } else {
             usort($values, static fn ($a, $b) => $b['count'] <=> $a['count'] ?: strnatcasecmp($a['value'], $b['value']));
         }
-        return ['code' => $code, 'label' => $label, 'values' => array_slice($values, 0, 100)]; // coupé par arrangeFacets()
+        return ['code' => $code, 'label' => $label, 'values' => $values]; // tri et coupe définitifs : arrangeFacets()
     }
 
     private function empty(SearchRequest $r): array
@@ -622,15 +622,28 @@ final class SearchService
     {
         $conf = [];
         foreach (\DeepFind\Widget\WidgetConfig::filters($lang) as $i => $f) {
-            $conf[$f['code']] = [$i, $f['label'], $f['visible'], $f['limit']];
+            $conf[$f['code']] = [$i, $f['label'], $f['visible'], $f['limit'], $f['order']];
         }
         // filtre non ajouté ou désactivé : plus proposé (une valeur déjà sélectionnée reste appliquée)
         $facets = array_values(array_filter($facets, static fn ($f) => ($conf[$f['code']][2] ?? false)));
-        // valeurs renvoyées : réglage « Valeurs max. par filtre », au moins le nombre affiché choisi pour ce filtre
+        // valeurs renvoyées : réglage « Valeurs max. par filtre », au moins le nombre affiché choisi pour ce filtre.
+        // On garde d'abord les valeurs qui ont le plus de produits (et celles choisies par le visiteur), puis on applique
+        // l'ordre choisi dans l'extranet : sinon un ordre alphabétique couperait les dernières lettres de l'alphabet.
         $max = max(5, Settings::int('facet_values_limit'));
         foreach ($facets as &$f) {
             $f['label'] = $conf[$f['code']][1] ?? $f['label'];
-            $f['values'] = array_slice($f['values'], 0, max($max, (int) ($conf[$f['code']][3] ?? 0)));
+            $byCount = $f['values'];
+            usort($byCount, static fn ($a, $b) => $b['count'] <=> $a['count'] ?: strnatcasecmp($a['value'], $b['value']));
+            $keep = array_slice($byCount, 0, max($max, (int) ($conf[$f['code']][3] ?? 0)));
+            foreach (array_slice($byCount, count($keep)) as $v) {
+                if (!empty($v['selected'])) {
+                    $keep[] = $v;
+                }
+            }
+            if (($conf[$f['code']][4] ?? 'count') === 'alpha') {
+                usort($keep, static fn ($a, $b) => strnatcasecmp($a['value'], $b['value']));
+            }
+            $f['values'] = $keep;
         }
         unset($f);
         usort($facets, static fn ($a, $b) => ($conf[$a['code']][0] ?? 999) <=> ($conf[$b['code']][0] ?? 999));

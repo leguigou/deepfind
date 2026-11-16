@@ -678,6 +678,21 @@ if ($base) {
     $cat = array_values(array_filter($d['facets'] ?? [], static fn ($f) => $f['code'] === 'category'))[0] ?? null;
     check('intégration : nombre de valeurs affichées transmis au widget', ($WC::filters('fr')[2]['limit'] ?? 0) === 3 && $cat !== null);
     check('intégration : filtre masqué (marques) absent des résultats', !in_array('brand', array_column($d['facets'] ?? [], 'code'), true));
+    // Ordre des valeurs : par nombre de produits ou alphabétique ; la coupe garde toujours les valeurs les plus fréquentes
+    $SS = DeepFind\Search\SearchService::class;
+    $vals = [];
+    foreach (range(1, 40) as $i) {
+        $vals[] = ['value' => 'Marque ' . str_pad((string) $i, 2, '0', STR_PAD_LEFT), 'count' => $i, 'selected' => $i === 2];
+    }
+    check('filtres : marques triées A à Z par défaut, les catégories par nombre', $WC::defaultOrder('brand') === 'alpha' && $WC::defaultOrder('category') === 'count');
+    $WC::saveFilters('fr', [['code' => 'brand', 'visible' => true, 'limit' => 5, 'order' => 'alpha']]);
+    $fa = $SS::arrangeFacets([['code' => 'brand', 'label' => 'Marques', 'values' => $vals]], 'fr')[0]['values'];
+    $names = array_column($fa, 'value');
+    check('filtres : alphabétique parmi les plus fréquentes (fin d\'alphabet gardée), valeur choisie conservée', $names === array_merge(['Marque 02'], array_map(static fn ($i) => 'Marque ' . $i, range(11, 40)))
+        && count($names) === 31, json_encode($names));
+    $WC::saveFilters('fr', [['code' => 'brand', 'visible' => true, 'limit' => 5, 'order' => 'count']]);
+    $fc = array_column($SS::arrangeFacets([['code' => 'brand', 'label' => 'Marques', 'values' => $vals]], 'fr')[0]['values'], 'value');
+    check('filtres : ordre par nombre de produits (du plus grand au plus petit)', ($fc[0] ?? '') === 'Marque 40' && ($fc[29] ?? '') === 'Marque 11' && end($fc) === 'Marque 02');
     $WC::activateLayer($l2, false);
     $WC::deleteLayer($l1);
     $WC::deleteLayer($l2);

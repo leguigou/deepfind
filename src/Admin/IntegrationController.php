@@ -123,8 +123,8 @@ final class IntegrationController
             App::back('/admin/integration', ['tab' => 'filters']);
             return;
         }
-        $list = array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'visible' => $f['visible'], 'limit' => $f['limit'], 'open' => $f['open']], WidgetConfig::filters($lang));
-        $list[] = ['code' => $code, 'label' => (string) ($_POST['label'] ?? ''), 'visible' => isset($_POST['visible']), 'limit' => (int) ($_POST['limit'] ?? 0), 'open' => isset($_POST['open'])];
+        $list = array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'visible' => $f['visible'], 'limit' => $f['limit'], 'open' => $f['open'], 'order' => $f['order']], WidgetConfig::filters($lang));
+        $list[] = ['code' => $code, 'label' => (string) ($_POST['label'] ?? ''), 'visible' => isset($_POST['visible']), 'limit' => (int) ($_POST['limit'] ?? 0), 'open' => isset($_POST['open']), 'order' => (string) ($_POST['order'] ?? '')];
         WidgetConfig::saveFilters($lang, $list);
         Auth::flash('ok', 'Filtre ajouté.');
         App::back('/admin/integration', ['tab' => 'filters']);

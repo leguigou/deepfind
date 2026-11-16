@@ -164,6 +164,8 @@
         var openRow = addForm.querySelector('[data-filter-open-row]');
         if (openRow) { openRow.hidden = ap === 'toggle'; }
         limitInput.value = o.getAttribute('data-limit');
+        var orderRow = addForm.querySelector('[data-filter-order-row]');
+        if (orderRow) { orderRow.hidden = ap !== 'terms'; addForm.querySelector('[data-filter-order]').value = o.getAttribute('data-order') || 'count'; }
         appearanceHelp.textContent = 'Apparence : ' + (names[ap] || ap) + '.';
       });
     }
@@ -263,8 +265,9 @@
           payload = rows().map(function (tr) {
             var limit = tr.querySelector('[data-f="limit"]');
             var open = tr.querySelector('[data-f="open"]');
+            var order = tr.querySelector('[data-f="order"]');
             return { code: tr.getAttribute('data-code'), label: tr.querySelector('[data-f="label"]').value, visible: tr.querySelector('[data-f="visible"]').checked,
-              limit: limit ? parseInt(limit.value, 10) || 0 : 0, open: open ? open.checked : true };
+              limit: limit ? parseInt(limit.value, 10) || 0 : 0, open: open ? open.checked : true, order: order ? order.value : '' };
           });
         } else {
           payload = {
