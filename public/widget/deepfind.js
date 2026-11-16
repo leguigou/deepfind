@@ -51,7 +51,10 @@
     cardTemplateDesktop: '',
     cardTemplateMobile: '',
     maxWidth: 0,
-    maxWidthUnit: '%'
+    maxWidthUnit: '%',
+    pageSizeMobile: 0,
+    colsDesktop: 0,
+    colsMobile: 2
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -83,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=14'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=15'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -219,7 +222,7 @@
     p.set('lang', cfg.lang);
     p.set('q', state.q);
     p.set('offset', String(offset));
-    p.set('limit', String(cfg.pageSize));
+    p.set('limit', String(mobile.matches && cfg.pageSizeMobile ? cfg.pageSizeMobile : cfg.pageSize));
     p.set('sid', sid);
     if (offset > 0) { p.set('posts', '0'); }
     if (tgStock.input.checked) { p.set('in_stock', '1'); }
@@ -1011,6 +1014,8 @@
     overlay.className = 'df-overlay df-type-' + cfg.type;
     bar.hidden = !usesBar();
     if (cfg.maxWidth) { overlay.style.setProperty('--df-width', cfg.maxWidth + cfg.maxWidthUnit); }
+    if (cfg.colsDesktop) { overlay.style.setProperty('--df-cols', String(cfg.colsDesktop)); overlay.classList.add('df-has-cols'); }
+    overlay.style.setProperty('--df-cols-m', String(cfg.colsMobile || 2));
     var hex = function (c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : ''; };
     if (cfg.colors) {
       if (hex(cfg.colors.primary)) { overlay.style.setProperty('--df-accent', cfg.colors.primary); }
@@ -1125,6 +1130,13 @@
       // largeur maximale : % de l'écran (ou du bloc pour Intégré) ou pixels
       cfg.maxWidth = l.type !== 'fullscreen' && l.max_width > 0 ? parseInt(l.max_width, 10) : 0;
       cfg.maxWidthUnit = l.max_width_unit === 'px' ? 'px' : '%';
+      // nombre de produits (Personnalisation avancée) : chargés à la fois (data-page-size prioritaire) et par ligne
+      if (ds.pageSize === undefined) {
+        if (l.per_page_desktop) { cfg.pageSize = Math.min(48, Math.max(4, parseInt(l.per_page_desktop, 10) || 20)); }
+        if (l.per_page_mobile) { cfg.pageSizeMobile = Math.min(48, Math.max(4, parseInt(l.per_page_mobile, 10) || 20)); }
+      }
+      cfg.colsDesktop = Math.min(8, Math.max(0, parseInt(l.cols_desktop, 10) || 0));
+      cfg.colsMobile = Math.min(3, Math.max(1, parseInt(l.cols_mobile, 10) || 2));
       cfg.customCss = typeof l.css === 'string' ? l.css : '';
       cfg.customCssMobile = typeof l.css_mobile === 'string' ? l.css_mobile : '';
       cfg.cardTemplateDesktop = typeof l.card_template === 'string' ? l.card_template : '';

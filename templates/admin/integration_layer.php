@@ -32,14 +32,15 @@ $colors = [
   <section class="card lp-card">
     <h2 class="lp-title">Options du layer</h2>
     <div class="grid2">
-      <label>Mise en page
-        <select name="type" data-layer-type>
-          <?php foreach (WidgetConfig::TYPES as $k => [$tlabel, $thelp]): ?>
-            <option value="<?= e($k) ?>" data-help="<?= e($thelp) ?>" <?= $type === $k ? 'selected' : '' ?>><?= e($tlabel) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <small class="muted" data-layer-type-help><?= e(WidgetConfig::TYPES[$type][1]) ?></small>
-      </label>
+      <div class="lp-field">
+        <span class="lp-field-label">Mise en page</span>
+        <div class="lp-type-current">
+          <span class="ly-pic ly-pic-<?= e($type) ?>" aria-hidden="true" data-layer-type-pic><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="lp-type-text"><strong data-layer-type-name><?= e(WidgetConfig::TYPES[$type][0]) ?></strong>
+            <small class="muted" data-layer-type-help><?= e(WidgetConfig::TYPES[$type][1]) ?></small></span>
+          <button type="button" class="btn btn-sm btn-light" data-dialog-open="lp-type-dialog">Modifier</button>
+        </div>
+      </div>
       <label>Caractères pour afficher les résultats
         <input name="min_chars" type="number" min="1" max="10" value="<?= (int) $s['min_chars'] ?>" class="lp-num">
         <small class="muted">Nombre de caractères dans le champ de recherche pour commencer à afficher les résultats.</small>
@@ -78,6 +79,31 @@ $colors = [
     </label>
   </section>
 
+  <dialog id="lp-type-dialog" class="modal" aria-labelledby="lp-type-title">
+    <div class="modal-head">
+      <div class="modal-title"><h2 id="lp-type-title">Mise en page du layer</h2></div>
+      <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Choisissez une mise en page pour votre boutique</strong><br><span class="muted">Chaque mise en page définit où la recherche apparaît et comment les acheteurs y accèdent.
+        Les réglages propres à la mise en page (bloc d'affichage, écart, largeur) s'affichent ensuite dans « Options du layer ».</span></p>
+      <div class="ly-types" role="radiogroup" aria-label="Mise en page">
+        <?php foreach (WidgetConfig::TYPES as $k => [$tlabel, $thelp]): ?>
+          <label class="ly-type">
+            <input type="radio" name="type" value="<?= e($k) ?>" <?= $type === $k ? 'checked' : '' ?> data-layer-type data-name="<?= e($tlabel) ?>" data-help="<?= e($thelp) ?>">
+            <span class="ly-pic ly-pic-<?= e($k) ?>" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <strong><?= e($tlabel) ?></strong>
+            <small class="muted"><?= e($thelp) ?></small>
+          </label>
+        <?php endforeach; ?>
+      </div>
+      <p class="muted small">Le changement est appliqué au site après « Enregistrer ».</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn" data-dialog-close>Valider</button>
+    </div>
+  </dialog>
+
   <section class="card lp-card">
     <h2 class="lp-title">Identité de marque</h2>
     <p class="muted lp-intro">Personnalisez le logo et les couleurs de votre marque pour ce layer.</p>
@@ -114,7 +140,47 @@ $colors = [
       <button type="button" class="btn lp-edit-btn" data-dialog-open="<?= e($dlg) ?>">Modifier</button>
     </div>
     <?php endforeach; ?>
+    <?php $custom = $s['cols_desktop'] || $s['cols_mobile'] !== 2 || $s['per_page_desktop'] !== 20 || $s['per_page_mobile'] !== 20; ?>
+    <div class="lp-row">
+      <div><strong>Nombre de produits</strong>
+        <small class="muted">Produits par ligne et produits chargés à la fois, sur ordinateur et sur mobile.
+          <br><span class="badge <?= $custom ? 'badge-info' : '' ?>" data-products-summary>Ordinateur : <?= $s['cols_desktop'] ?: 'auto' ?> par ligne, <?= $s['per_page_desktop'] ?> à la fois · Mobile : <?= $s['cols_mobile'] ?> par ligne, <?= $s['per_page_mobile'] ?> à la fois</span></small></div>
+      <button type="button" class="btn lp-edit-btn" data-dialog-open="lp-products">Modifier</button>
+    </div>
   </section>
+
+  <dialog id="lp-products" class="modal lp-products" aria-labelledby="lp-products-title" data-products>
+    <div class="modal-head">
+      <div class="modal-title"><h2 id="lp-products-title">Nombre de produits</h2></div>
+      <button type="button" class="icon-btn modal-close" data-dialog-close aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="lp-products-grid">
+        <?php foreach (['desktop' => ['Ordinateur', 'auto', 8], 'mobile' => ['Mobile', '', 3]] as $dev => [$dlabel, $auto, $maxCols]): ?>
+          <fieldset class="lp-device">
+            <legend><?= e($dlabel) ?></legend>
+            <label>Produits par ligne
+              <select name="cols_<?= $dev ?>" data-cols="<?= $dev ?>">
+                <?php if ($auto): ?><option value="0" <?= $s['cols_desktop'] === 0 ? 'selected' : '' ?>>Automatique (selon la largeur)</option><?php endif; ?>
+                <?php for ($i = 1; $i <= $maxCols; $i++): ?><option value="<?= $i ?>" <?= $s['cols_' . $dev] === $i ? 'selected' : '' ?>><?= $i ?></option><?php endfor; ?>
+              </select>
+            </label>
+            <div class="lp-preview lp-preview-<?= $dev ?>" aria-hidden="true" data-preview="<?= $dev ?>"></div>
+            <label>Produits chargés à la fois
+              <input name="per_page_<?= $dev ?>" type="number" min="4" max="48" value="<?= (int) $s['per_page_' . $dev] ?>" class="lp-num" data-per-page="<?= $dev ?>">
+              <small class="muted">De 4 à 48. Les suivants se chargent quand le visiteur fait défiler les résultats.</small>
+            </label>
+          </fieldset>
+        <?php endforeach; ?>
+      </div>
+      <p class="muted small">Mobile = écrans de 900 px de large ou moins. « Automatique » : autant de produits que la largeur le permet (cartes d'environ 220 px).
+        L'attribut <code>data-page-size</code> du code du site, s'il est présent, reste prioritaire pour les produits chargés à la fois.</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-light" data-dialog-close>Fermer</button>
+      <button class="btn">Enregistrer</button>
+    </div>
+  </dialog>
 
   <?php
   // Éditeur plein écran : onglets Ordinateur / Mobile, restaurer la valeur par défaut, copier

@@ -597,6 +597,10 @@ if ($base) {
         && $WC::cleanSettings(['max_width' => ''])['max_width'] === 0 && $WC::cleanSettings(['max_width' => '980'])['max_width'] === 980
         && $WC::cleanSettings([])['max_width_unit'] === 'pct' && $WC::cleanSettings(['max_width' => '85', 'max_width_unit' => 'pct']) ['max_width'] === 85
         && $WC::cleanSettings(['max_width' => '900', 'max_width_unit' => 'pct'])['max_width'] === 100);
+    $pc = $WC::cleanSettings([]);
+    $pc2 = $WC::cleanSettings(['cols_desktop' => 12, 'cols_mobile' => 0, 'per_page_desktop' => 100, 'per_page_mobile' => 2]);
+    check('intégration : nombre de produits (défauts et bornes)', [$pc['cols_desktop'], $pc['cols_mobile'], $pc['per_page_desktop'], $pc['per_page_mobile']] === [0, 2, 20, 20]
+        && [$pc2['cols_desktop'], $pc2['cols_mobile'], $pc2['per_page_desktop'], $pc2['per_page_mobile']] === [8, 1, 48, 4]);
     $ls = $WC::layer($l1);
     check('intégration : mise en page modifiable, identité et personnalisation nettoyées', $ls['type'] === 'below' && $ls['settings']['min_chars'] === 1
         && $ls['settings']['logo'] === '' && $ls['settings']['color_primary'] === '#1069f9' && $ls['settings']['color_text'] === ''

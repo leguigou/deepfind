@@ -79,6 +79,7 @@ html.df-lock { overflow: hidden; }
 .df-notice { margin: 0 0 14px; padding: 10px 14px; border-radius: var(--df-radius); background: #eef2fb; font-size: 14px; }
 .df-notice a { color: var(--df-accent); font-weight: 600; }
 .df-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; }
+.df-has-cols .df-grid { grid-template-columns: repeat(var(--df-cols), minmax(0, 1fr)); }
 .df-card {
   display: flex; flex-direction: column; padding: 12px 12px 16px; border-radius: var(--df-radius); background: #fff;
   color: var(--df-text); text-decoration: none; box-shadow: 0 1px 6px rgba(20, 30, 60, .10); transition: box-shadow .15s, transform .15s;
@@ -134,7 +135,7 @@ html.df-lock { overflow: hidden; }
   .df-sort { min-width: 0; appearance: auto; }
   .df-see-all { display: flex; flex: none; align-items: center; margin-inline-start: auto; font-weight: 600; }
   .df-main { padding: 14px 16px 40px; }
-  .df-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .df-grid, .df-has-cols .df-grid { grid-template-columns: repeat(var(--df-cols-m, 2), minmax(0, 1fr)); gap: 12px; }
   .df-name { font-size: 14px; }
   .df-price { font-size: 16px; }
   .df-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0 0 16px; }
