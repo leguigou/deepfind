@@ -136,6 +136,19 @@ final class PreviewController
     {
         $keys = Db::all('SELECT name, public_key, langs FROM api_keys WHERE active = 1 AND project_id = ? ORDER BY id', [\DeepFind\Project::id()]);
         $key = (string) ($_GET['key'] ?? ($keys[0]['public_key'] ?? ''));
-        View::render('demo', ['keys' => $keys, 'key' => $key, 'lang' => Auth::lang()], 'Démo du widget', false);
+        // Layers à tester : l'actif en premier (choisi par défaut), puis les autres ; le widget les reçoit par jeton d'aperçu
+        $layers = \DeepFind\Widget\WidgetConfig::layers();
+        $active = array_values(array_filter($layers, static fn ($l) => $l['active']))[0] ?? null;
+        $layerId = isset($_GET['layer']) ? (int) $_GET['layer'] : (int) ($active['id'] ?? 0); // 0 = aucun layer (affichage par défaut)
+        $current = null;
+        foreach ($layers as $l) {
+            if ($l['id'] === $layerId) {
+                $current = $l;
+            }
+        }
+        View::render('demo', [
+            'keys' => $keys, 'key' => $key, 'lang' => Auth::lang(), 'layers' => $layers, 'layer' => $current, 'hasActive' => $active !== null,
+            'previewToken' => $current ? \DeepFind\Widget\WidgetConfig::previewToken($current['id']) : '',
+        ], 'Démo du widget', false);
     }
 }
