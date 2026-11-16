@@ -20,6 +20,42 @@
       text.addEventListener('input', function () { if (/^#[0-9a-f]{6}$/i.test(text.value.trim())) { picker.value = text.value.trim().toLowerCase(); } });
     });
 
+    // ------------------------------------------------------------ Éditeurs CSS / modèle : Ordinateur / Mobile, restaurer, copier
+    document.querySelectorAll('[data-editor]').forEach(function (dlg) {
+      var tabs = dlg.querySelectorAll('[data-editor-tab]');
+      var areas = dlg.querySelectorAll('[data-editor-device]');
+      var label = dlg.querySelector('[data-editor-device-label]');
+      var current = function () { return dlg.querySelector('[data-editor-device]:not([hidden])'); };
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () {
+          var dev = t.getAttribute('data-editor-tab');
+          tabs.forEach(function (o) { var on = o === t; o.classList.toggle('is-on', on); o.setAttribute('aria-selected', String(on)); });
+          areas.forEach(function (a) { a.hidden = a.getAttribute('data-editor-device') !== dev; });
+          if (label) { label.textContent = t.textContent; }
+          current().focus();
+        });
+      });
+      var restore = dlg.querySelector('[data-editor-restore]');
+      var def = dlg.querySelector('template[data-editor-default]');
+      if (restore && def) {
+        restore.addEventListener('click', function () {
+          var area = current();
+          if (area.value.trim() !== '' && !window.confirm('Remplacer le contenu actuel par le modèle par défaut ?')) { return; }
+          area.value = def.content.textContent; // modèle stocké comme texte (échappé côté serveur)
+          area.focus();
+        });
+      }
+      var copy = dlg.querySelector('[data-editor-copy]');
+      if (copy) {
+        copy.addEventListener('click', function () {
+          var text = current().value;
+          var done = function () { copy.classList.add('is-copied'); setTimeout(function () { copy.classList.remove('is-copied'); }, 1600); };
+          if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, function () {}); }
+          else { var a = current(); a.select(); try { if (document.execCommand('copy')) { done(); } } catch (e) { /* copie impossible */ } }
+        });
+      }
+    });
+
     // ------------------------------------------------------------ Listes ordonnées (filtres, tris)
     document.querySelectorAll('[data-order-form]').forEach(function (form) {
       var kind = form.getAttribute('data-order-form');

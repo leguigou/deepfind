@@ -62,7 +62,7 @@ final class IntegrationController
             App::back('/admin/integration');
             return;
         }
-        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'card_template']));
+        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile']));
         $settings['url_state'] = isset($_POST['url_state']);
         if ($l['type'] === 'embedded' && trim((string) ($settings['container'] ?? '')) === '') {
             Auth::flash('error', 'Layer intégré : indiquez le sélecteur CSS du bloc du site dans lequel afficher les résultats.');
@@ -75,7 +75,8 @@ final class IntegrationController
         if ($logo !== '' && $saved['logo'] === '') {
             Auth::flash('error', 'Logo ignoré : indiquez une adresse complète en https://');
         }
-        if (trim((string) ($settings['card_template'] ?? '')) !== '' && $saved['card_template'] !== trim((string) $settings['card_template'])) {
+        $changed = static fn (string $k) => trim((string) ($settings[$k] ?? '')) !== '' && $saved[$k] !== trim((string) $settings[$k]);
+        if ($changed('card_template') || $changed('card_template_mobile')) {
             Auth::flash('warn', 'Modèle de carte produit : des balises ou attributs non autorisés (scripts, événements, liens javascript…) ont été retirés.');
         }
         Auth::flash('ok', 'Layer enregistré (pris en compte sur le site sous 5 minutes).');

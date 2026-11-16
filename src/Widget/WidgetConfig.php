@@ -116,10 +116,27 @@ final class WidgetConfig
             'color_contrast' => $color($in['color_contrast'] ?? ''),
             'color_text' => $color($in['color_text'] ?? ''),
             // personnalisation avancée : CSS ajouté à la page (texte brut), modèle HTML de la carte produit (nettoyé)
+            // versions mobile (écrans ≤ 900 px) : vides = la version ordinateur s'applique partout
             'css' => mb_substr(str_replace("\0", '', (string) ($in['css'] ?? '')), 0, 20000, 'UTF-8'),
+            'css_mobile' => mb_substr(str_replace("\0", '', (string) ($in['css_mobile'] ?? '')), 0, 20000, 'UTF-8'),
             'card_template' => self::cleanCardTemplate((string) ($in['card_template'] ?? '')),
+            'card_template_mobile' => self::cleanCardTemplate((string) ($in['card_template_mobile'] ?? '')),
         ];
     }
+
+    /** Modèle proposé par « Restaurer les valeurs par défaut » : équivalent de la carte par défaut du widget. */
+    public const DEFAULT_CARD_TEMPLATE = <<<'HTML'
+<div class="df-media">
+  <img src="{{image}}" alt="">
+</div>
+<div class="df-brand">{{brand}}</div>
+<div class="df-name">{{name}}</div>
+<div class="df-price df-sale">
+  <span class="df-final">{{price}}</span>
+  <span class="df-old">{{old_price}}</span>
+  <span class="df-from">{{discount}}</span>
+</div>
+HTML;
 
     /** Variables du modèle de carte produit : {{nom}} => description (valeurs échappées par le widget). */
     public const CARD_VARS = [
