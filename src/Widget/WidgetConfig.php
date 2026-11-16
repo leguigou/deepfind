@@ -128,36 +128,54 @@ final class WidgetConfig
             // versions mobile (écrans ≤ 900 px) : vides = la version ordinateur s'applique partout
             'css' => mb_substr(str_replace("\0", '', (string) ($in['css'] ?? '')), 0, 20000, 'UTF-8'),
             'css_mobile' => mb_substr(str_replace("\0", '', (string) ($in['css_mobile'] ?? '')), 0, 20000, 'UTF-8'),
-            'card_template' => self::cleanCardTemplate((string) ($in['card_template'] ?? '')),
-            'card_template_mobile' => self::cleanCardTemplate((string) ($in['card_template_mobile'] ?? '')),
+            // modèle égal au modèle par défaut (ordinateur) ou à celui de l'ordinateur (mobile) : non stocké (vide = celui-ci)
+            'card_template' => $tplDesk = self::sameTemplate($d = self::cleanCardTemplate((string) ($in['card_template'] ?? '')), self::DEFAULT_CARD_TEMPLATE) ? '' : $d,
+            'card_template_mobile' => self::sameTemplate($m = self::cleanCardTemplate((string) ($in['card_template_mobile'] ?? '')), $tplDesk !== '' ? $tplDesk : self::DEFAULT_CARD_TEMPLATE) ? '' : $m,
         ];
     }
 
-    /** Modèle proposé par « Restaurer les valeurs par défaut » : équivalent de la carte par défaut du widget. */
+    /**
+     * Carte produit par défaut du widget : c'est CE modèle que le widget utilise quand aucun modèle n'est enregistré
+     * (copie identique dans public/widget/deepfind.js, DEFAULT_CARD ; un test vérifie qu'elles sont égales).
+     * Un élément de classe df-if-<variable> est retiré quand la variable est vide ; img.df-img change d'image au survol.
+     */
     public const DEFAULT_CARD_TEMPLATE = <<<'HTML'
-<div class="df-media">
-  <img src="{{image}}" alt="">
+<div class="df-media {{media_class}}">
+  <img class="df-img df-if-image" src="{{image}}" alt="">
+  <span class="df-badge df-badge-sale df-if-discount">{{discount}}</span>
+  <span class="df-badge df-badge-new df-if-new">{{new}}</span>
+  <span class="df-badge df-badge-oos df-if-out_of_stock">{{out_of_stock}}</span>
 </div>
-<div class="df-brand">{{brand}}</div>
+<div class="df-brand df-if-brand">{{brand}}</div>
 <div class="df-name">{{name}}</div>
-<div class="df-price df-sale">
+<div class="df-variant df-if-variant">{{variant}}</div>
+<div class="df-price {{price_class}}">
+  <span class="df-from df-if-from">{{from}}</span>
   <span class="df-final">{{price}}</span>
-  <span class="df-old">{{old_price}}</span>
-  <span class="df-from">{{discount}}</span>
+  <span class="df-old df-if-old_price">{{old_price}}</span>
 </div>
 HTML;
 
     /** Variables du modèle de carte produit : {{nom}} => description (valeurs échappées par le widget). */
     public const CARD_VARS = [
         'name' => 'Nom du produit', 'brand' => 'Marque', 'image' => 'Image', 'price' => 'Prix (formaté)',
-        'old_price' => 'Prix avant remise (vide sans remise)', 'discount' => 'Remise, ex. « -20% » (vide sans remise)', 'sku' => 'SKU',
-        'stock' => '« En stock » ou « Rupture »', 'new' => '« Nouveau » ou vide', 'rating' => 'Note des avis',
+        'old_price' => 'Prix avant remise (vide sans remise)', 'discount' => 'Remise, ex. « -20% » (vide sans remise)',
+        'from' => '« dès » si le prix varie selon la déclinaison', 'sku' => 'SKU', 'variant' => 'SKU de la déclinaison trouvée (sinon vide)',
+        'stock' => '« En stock » ou « Rupture »', 'out_of_stock' => '« Rupture » ou vide', 'new' => '« Nouveau » (sans remise affichée) ou vide',
+        'rating' => 'Note des avis', 'price_class' => 'Classe df-sale si en promotion', 'media_class' => 'Classe df-noimg sans image',
     ];
 
     /**
      * Modèle de carte : mêmes balises et attributs que les bannières (HtmlSanitizer), variables {{…}} conservées
      * (y compris dans href / src). Le widget le nettoie de nouveau après avoir remplacé les variables.
      */
+    /** Deux modèles identiques aux espaces près. */
+    public static function sameTemplate(string $a, string $b): bool
+    {
+        $n = static fn (string $s) => preg_replace('/\s+/', ' ', trim($s));
+        return $n($a) === $n($b);
+    }
+
     public static function cleanCardTemplate(string $html): string
     {
         $html = trim(mb_substr($html, 0, 10000, 'UTF-8'));
@@ -167,7 +185,8 @@ HTML;
         $vars = implode('|', array_keys(self::CARD_VARS));
         $html = preg_replace('/\{\{\s*(' . $vars . ')\s*\}\}/', '/__df__/$1', $html) ?? '';
         $html = \DeepFind\Security\HtmlSanitizer::clean($html);
-        return preg_replace('#/__df__/(' . $vars . ')#', '{{$1}}', $html) ?? '';
+        // (?![a-z_]) : « price » ne doit pas mordre sur « price_class »
+        return preg_replace('#/__df__/(' . $vars . ')(?![a-z_])#', '{{$1}}', $html) ?? '';
     }
 
     public static function createLayer(string $name, string $type): int

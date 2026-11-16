@@ -222,7 +222,7 @@ $types = WidgetConfig::TYPES;
   <summary><strong>Code à ajouter sur le site</strong></summary>
   <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème.
     Les clés se gèrent dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>.</p>
-  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=15" defer
+  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=16" defer
   data-key="<?= e($firstKey !== '' ? $firstKey : 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"

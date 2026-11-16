@@ -597,6 +597,13 @@ if ($base) {
         && $WC::cleanSettings(['max_width' => ''])['max_width'] === 0 && $WC::cleanSettings(['max_width' => '980'])['max_width'] === 980
         && $WC::cleanSettings([])['max_width_unit'] === 'pct' && $WC::cleanSettings(['max_width' => '85', 'max_width_unit' => 'pct']) ['max_width'] === 85
         && $WC::cleanSettings(['max_width' => '900', 'max_width_unit' => 'pct'])['max_width'] === 100);
+    // carte par défaut : même modèle côté extranet et widget, jamais stocké s'il n'est pas modifié
+    preg_match("/var DEFAULT_CARD = (.*?);\n/s", (string) file_get_contents(APP_ROOT . '/public/widget/deepfind.js'), $jm);
+    preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'/", $jm[1] ?? '', $jp);
+    check('carte par défaut : modèle identique dans le widget', implode('', array_map('stripcslashes', $jp[1])) === $WC::DEFAULT_CARD_TEMPLATE);
+    $dc = $WC::cleanSettings(['card_template' => $WC::DEFAULT_CARD_TEMPLATE, 'card_template_mobile' => $WC::DEFAULT_CARD_TEMPLATE]);
+    check('carte par défaut : nettoyage sans perte, non stockée si inchangée', $WC::sameTemplate($WC::cleanCardTemplate($WC::DEFAULT_CARD_TEMPLATE), $WC::DEFAULT_CARD_TEMPLATE)
+        && $dc['card_template'] === '' && $dc['card_template_mobile'] === '');
     $pc = $WC::cleanSettings([]);
     $pc2 = $WC::cleanSettings(['cols_desktop' => 12, 'cols_mobile' => 0, 'per_page_desktop' => 100, 'per_page_mobile' => 2]);
     check('intégration : nombre de produits (défauts et bornes)', [$pc['cols_desktop'], $pc['cols_mobile'], $pc['per_page_desktop'], $pc['per_page_mobile']] === [0, 2, 20, 20]

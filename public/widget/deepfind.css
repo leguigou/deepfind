@@ -101,7 +101,7 @@ html.df-lock { overflow: hidden; }
 .df-variant { font-size: 12px; color: var(--df-muted); margin-top: 2px; }
 .df-price { margin-top: auto; padding-top: 12px; font-size: 18px; font-weight: 700; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
 .df-sale .df-final { color: var(--df-sale); }
-.df-old { font-size: 13px; color: var(--df-muted); font-weight: 400; }
+.df-old { font-size: 13px; color: var(--df-muted); font-weight: 400; text-decoration: line-through; }
 .df-from { font-size: 13px; font-weight: 400; color: var(--df-muted); }
 .df-empty { padding: 40px 10px; text-align: center; color: var(--df-muted); }
 .df-empty strong { color: var(--df-text); font-size: 17px; }
@@ -219,8 +219,7 @@ html.df-lock { overflow: hidden; }
 /* Logo du layer (identité de marque) */
 .df-logo { display: block; flex: none; max-height: 40px; max-width: 160px; object-fit: contain; }
 .df-logo-top { margin: 0 0 14px; max-height: 34px; }
-/* Modèle de carte produit personnalisé : mise en page libre */
-.df-card-tpl { display: block; }
+/* Modèle de carte produit personnalisé : même mise en page (colonne) que la carte par défaut ; classe .df-card-tpl pour le CSS personnalisé */
 
 /* « Sous la barre » : bouton fermer sorti de la fenêtre, au-dessus de son coin droit (s'il y a la place) */
 .df-overlay > .df-close {

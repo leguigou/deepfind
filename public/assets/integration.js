@@ -95,7 +95,7 @@
       if (restore && def) {
         restore.addEventListener('click', function () {
           var area = current();
-          if (area.value.trim() !== '' && !window.confirm('Remplacer le contenu actuel par le modèle par défaut ?')) { return; }
+          if (area.value.trim() !== '' && !window.confirm('Remettre le modèle d\'origine dans cet onglet ? Vos modifications non enregistrées seront perdues.')) { return; }
           area.value = def.content.textContent; // modèle stocké comme texte (échappé côté serveur)
           area.focus();
         });
