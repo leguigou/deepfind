@@ -86,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=20'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=21'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1134,9 +1134,14 @@
    */
   var PREVIEW_KEY = 'df-preview';
   var preview = '';
+  // Page Démo de l'extranet (data-demo) : layer choisi dans la page, ni pastille ni mémorisation dans la session
+  var demo = ds.demo === '1';
   try {
-    if (ds.preview) { window.sessionStorage.setItem(PREVIEW_KEY, ds.preview); }
-    preview = ds.preview || window.sessionStorage.getItem(PREVIEW_KEY) || '';
+    if (demo) { preview = ds.preview || ''; }
+    else {
+      if (ds.preview) { window.sessionStorage.setItem(PREVIEW_KEY, ds.preview); }
+      preview = ds.preview || window.sessionStorage.getItem(PREVIEW_KEY) || '';
+    }
   } catch (e) { preview = ds.preview || ''; }
   if (preview && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9a-f]{24}$/.test(preview)) { preview = ''; }
   // Logo DeepFind (loupe à cercles), dessiné en SVG sans HTML inséré
@@ -1204,7 +1209,7 @@
     var l = c.layer;
     if (l && TYPES[l.type]) {
       cfg.type = l.type;
-      if (l.input) { cfg.input = l.input; }
+      if (l.input && !demo) { cfg.input = l.input; } // page Démo : son propre champ de recherche
       cfg.container = l.container || '';
       cfg.urlState = !!l.url_state;
       if (l.type === 'below' && ds.gap === undefined && l.gap !== undefined) { cfg.gap = parseInt(l.gap, 10) || 0; }
@@ -1258,7 +1263,7 @@
     fetchCfg().catch(function () { /* nouvel essai à la prochaine page */ });
   } else {
     fetchCfg().then(function (c) {
-      if (preview) {
+      if (preview && !demo) {
         if (!c.enabled) { previewBadge('Aperçu DeepFind impossible : le projet est désactivé dans l\'extranet.', true); }
         else if (c.preview && c.preview.layer) { previewBadge('Layer « ' + c.preview.layer + ' » — visible seulement dans ce navigateur', false); }
         else { previewBadge('Lien de test DeepFind expiré ou non valable pour ce site : recréez le favori dans l\'extranet. Affichage actuel du site.', true); }
