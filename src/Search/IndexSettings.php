@@ -50,7 +50,9 @@ final class IndexSettings
                 'disableOnAttributes' => ['sku', 'all_skus', 'all_eans'],
             ],
             'pagination' => ['maxTotalHits' => 1000],
-            'faceting' => ['maxValuesPerFacet' => 100],
+            // 100 valeurs par filtre, choisies parmi celles qui ont le plus de produits (l'ordre affiché est appliqué ensuite
+            // par SearchService::arrangeFacets) ; par défaut Meilisearch les choisirait par ordre alphabétique.
+            'faceting' => ['maxValuesPerFacet' => 100, 'sortFacetValuesBy' => ['*' => 'count']],
             'proximityPrecision' => 'byAttribute',
             'stopWords' => self::STOP_WORDS[$lang] ?? [],
             'synonyms' => $synonyms === [] ? new \stdClass() : $synonyms,

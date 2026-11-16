@@ -257,6 +257,15 @@ HTML;
         return $out;
     }
 
+    /** Ordre des valeurs d'un filtre « liste » : par nombre de produits (décroissant) ou alphabétique. */
+    public const VALUE_ORDERS = ['count' => 'Nombre de produits (du plus grand au plus petit)', 'alpha' => 'Ordre alphabétique (A à Z)'];
+
+    /** Ordre par défaut : alphabétique pour les marques, par nombre de produits pour les autres (comportement historique). */
+    public static function defaultOrder(string $code): string
+    {
+        return $code === 'brand' ? 'alpha' : 'count';
+    }
+
     /** Nombre de valeurs affichées par défaut dans un filtre « liste » (les suivantes derrière « + N »). */
     public static function defaultLimit(string $code): int
     {
@@ -267,7 +276,7 @@ HTML;
      * Filtres ajoutés, dans l'ordre choisi (nom affiché, statut, nombre de valeurs affichées).
      * Tant que rien n'est enregistré : tous les filtres disponibles. Ensuite : seulement ceux ajoutés
      * (un nouvel attribut importé se trouve dans « Ajouter un filtre ») ; ceux qui n'existent plus sont ignorés.
-     * @return list<array{code:string, label:string, default_label:string, appearance:string, visible:bool, limit:int, open:bool}>
+     * @return list<array{code:string, label:string, default_label:string, appearance:string, visible:bool, limit:int, open:bool, order:string}>
      */
     public static function filters(string $lang): array
     {
@@ -287,7 +296,8 @@ HTML;
                 'appearance' => $avail[$code][1], 'visible' => !empty($f['visible']),
                 'limit' => $limit >= 1 ? min(100, $limit) : self::defaultLimit($code),
                 // bloc déplié à l'ouverture de la fenêtre (le visiteur peut le replier / déplier)
-                'open' => !array_key_exists('open', $f) || !empty($f['open'])];
+                'open' => !array_key_exists('open', $f) || !empty($f['open']),
+                'order' => isset(self::VALUE_ORDERS[$f['order'] ?? '']) ? (string) $f['order'] : self::defaultOrder($code)];
         }
         return array_values($out);
     }
@@ -314,6 +324,7 @@ HTML;
                 $row['open'] = !array_key_exists('open', $f) || !empty($f['open']);
             }
             if ($avail[$code][1] === 'terms') {
+                $row['order'] = isset(self::VALUE_ORDERS[$f['order'] ?? '']) ? (string) $f['order'] : self::defaultOrder($code);
                 $row['limit'] = max(1, min(100, (int) ($f['limit'] ?? self::defaultLimit($code)) ?: self::defaultLimit($code)));
             }
             $out[$code] = $row;
