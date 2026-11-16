@@ -65,13 +65,14 @@ final class IntegrationController
         }
         $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile']));
         $settings['url_state'] = isset($_POST['url_state']);
-        if ($l['type'] === 'embedded' && trim((string) ($settings['container'] ?? '')) === '') {
+        $type = isset(WidgetConfig::TYPES[$_POST['type'] ?? '']) ? (string) $_POST['type'] : $l['type'];
+        if ($type === 'embedded' && trim((string) ($settings['container'] ?? '')) === '') {
             Auth::flash('error', 'Layer intégré : indiquez le sélecteur CSS du bloc du site dans lequel afficher les résultats.');
             App::back('/admin/integration/layer', ['id' => $id]);
             return;
         }
         $logo = trim((string) ($settings['logo'] ?? ''));
-        WidgetConfig::saveLayer($id, (string) ($_POST['name'] ?? ''), $l['type'], $settings);
+        WidgetConfig::saveLayer($id, (string) ($_POST['name'] ?? ''), $type, $settings);
         $saved = WidgetConfig::layer($id)['settings'];
         if ($logo !== '' && $saved['logo'] === '') {
             Auth::flash('error', 'Logo ignoré : indiquez une adresse complète en https://');
@@ -119,8 +120,8 @@ final class IntegrationController
             App::back('/admin/integration', ['tab' => 'filters']);
             return;
         }
-        $list = array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'visible' => $f['visible'], 'limit' => $f['limit']], WidgetConfig::filters($lang));
-        $list[] = ['code' => $code, 'label' => (string) ($_POST['label'] ?? ''), 'visible' => isset($_POST['visible']), 'limit' => (int) ($_POST['limit'] ?? 0)];
+        $list = array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'visible' => $f['visible'], 'limit' => $f['limit'], 'open' => $f['open']], WidgetConfig::filters($lang));
+        $list[] = ['code' => $code, 'label' => (string) ($_POST['label'] ?? ''), 'visible' => isset($_POST['visible']), 'limit' => (int) ($_POST['limit'] ?? 0), 'open' => isset($_POST['open'])];
         WidgetConfig::saveFilters($lang, $list);
         Auth::flash('ok', 'Filtre ajouté.');
         App::back('/admin/integration', ['tab' => 'filters']);

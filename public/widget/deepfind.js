@@ -63,14 +63,14 @@
       isNew: 'Nouveau', close: 'Fermer', busy: 'Trop de recherches en peu de temps, patientez quelques secondes…', error: 'Recherche momentanément indisponible.',
       goTo: 'Voir la page', closeFilters: 'Fermer les filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…',
       approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants',
-      price: 'Prix', min: 'Min', max: 'Max', apply: 'OK', search: 'Rechercher' },
+      price: 'Prix', min: 'Min.', max: 'Max.', apply: 'Valider', reset: 'Réinitialiser', search: 'Rechercher' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
       isNew: 'New', close: 'Close', busy: 'Too many searches, please wait a few seconds…', error: 'Search temporarily unavailable.',
       goTo: 'Go to page', closeFilters: 'Close filters', clear: 'Clear filters', results: 'results', loading: 'Loading…',
       approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products',
-      price: 'Price', min: 'Min', max: 'Max', apply: 'OK', search: 'Search' }
+      price: 'Price', min: 'Min.', max: 'Max.', apply: 'Apply', reset: 'Reset', search: 'Search' }
   };
   var t = T[cfg.lang] || T.fr;
   var money;
@@ -80,7 +80,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=11'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=12'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -200,13 +200,15 @@
   var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, redirectNewTab: false, ids: {} };
   state.priceMin = '';
   state.priceMax = '';
+  state.open = {};          // blocs de filtres dépliés / repliés par le visiteur (code => bool)
+  state.priceBounds = null; // bornes du curseur de prix : celles de la recherche sans filtre de prix
   var controller = null;
   var cache = new Map();
   var timer = null;
   var activeInput = null;
   var mobile = window.matchMedia('(max-width: 900px)');
 
-  function resetFilters() { state.filters = {}; state.priceMin = ''; state.priceMax = ''; }
+  function resetFilters() { state.filters = {}; state.priceMin = ''; state.priceMax = ''; state.priceBounds = null; }
 
   function buildUrl(offset) {
     var p = new URLSearchParams();
@@ -483,11 +485,13 @@
     facets.forEach(function (f) { byCode[f.code] = f; });
     var ordered = [];
     var limits = {};
+    var opens = {};
     if (cfg.filters) {
       // seuls les filtres ajoutés et actifs dans l'extranet, dans leur ordre
       cfg.filters.forEach(function (c) {
         if (!c.visible) { return; }
         if (c.limit) { limits[c.code] = c.limit; }
+        opens[c.code] = c.open !== false;
         if (c.code === 'price') { ordered.push({ price: true, label: c.label }); }
         else if (byCode[c.code]) { ordered.push(byCode[c.code]); }
       });
@@ -495,9 +499,9 @@
       ordered = facets;
     }
     ordered.forEach(function (f) {
-      if (f.price) { renderPrice(f.label, data.price_range); return; }
-      var sec = el('div', 'df-sec');
-      sec.appendChild(el('h3', null, f.label));
+      if (f.price) { renderPrice(f.label, data.price_range, opens.price); return; }
+      var parts = section(f.code, f.label, '', opens[f.code]);
+      var sec = parts.sec;
       var list = el('ul', 'df-facet');
       var max = limits[f.code] || (f.code === 'brand' ? 12 : 8);
       f.values.forEach(function (v, i) {
@@ -518,7 +522,7 @@
         li.appendChild(b);
         list.appendChild(li);
       });
-      sec.appendChild(list);
+      parts.body.appendChild(list);
       if (f.values.length > max) {
         var more = el('button', 'df-more', '+ ' + (f.values.length - max));
         more.type = 'button';
@@ -526,7 +530,7 @@
           list.querySelectorAll('.df-more-item').forEach(function (n) { n.hidden = false; });
           more.remove();
         });
-        sec.appendChild(more);
+        parts.body.appendChild(more);
       }
       sideContent.appendChild(sec);
     });
@@ -547,37 +551,122 @@
     }
   }
 
-  // Filtre prix : plage min / max (bornes de la recherche en cours en indication)
-  function renderPrice(label, range) {
-    if (!range && state.priceMin === '' && state.priceMax === '') { return; }
-    var sec = el('div', 'df-sec df-price-sec');
-    sec.appendChild(el('h3', null, label || t.price));
+  // Bloc de filtre repliable : titre cliquable ; état choisi par le visiteur gardé pendant la visite, sinon réglage de l'extranet
+  var secSeq = 0;
+  function section(code, label, cls, openByDefault) {
+    var sec = el('div', 'df-sec' + (cls ? ' ' + cls : ''));
+    var head = el('button', 'df-sec-head');
+    head.type = 'button';
+    head.appendChild(el('span', null, label));
+    head.appendChild(el('span', 'df-chev'));
+    var body = el('div', 'df-sec-body');
+    body.id = 'df-sec-' + (++secSeq);
+    head.setAttribute('aria-controls', body.id);
+    var isOpen = state.open[code] !== undefined ? state.open[code] : openByDefault !== false;
+    var apply = function () { head.setAttribute('aria-expanded', String(isOpen)); body.hidden = !isOpen; sec.classList.toggle('df-closed', !isOpen); };
+    head.addEventListener('click', function () { isOpen = !isOpen; state.open[code] = isOpen; apply(); });
+    apply();
+    var h = el('h3', 'df-sec-title');
+    h.appendChild(head);
+    sec.appendChild(h);
+    sec.appendChild(body);
+    return { sec: sec, body: body };
+  }
+
+  // Filtre prix : deux champs (min / max) + curseur à deux poignées, bornes = prix de la recherche sans filtre de prix
+  var currencySymbol = (function () {
+    try { var p = new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.currency }).formatToParts(0); for (var i = 0; i < p.length; i++) { if (p[i].type === 'currency') { return p[i].value; } } } catch (e) { /* ancien navigateur */ }
+    return cfg.currency === 'EUR' ? '€' : cfg.currency;
+  })();
+  function renderPrice(label, range, openByDefault) {
+    var filtered = state.priceMin !== '' || state.priceMax !== '';
+    if (range && (!filtered || !state.priceBounds)) { state.priceBounds = { min: Math.floor(range.min), max: Math.ceil(range.max) }; }
+    var bounds = state.priceBounds;
+    if (!bounds && !filtered) { return; }
+    if (bounds && bounds.max <= bounds.min && !filtered) { return; } // un seul prix : rien à filtrer
+    var parts = section('price', label || t.price, 'df-price-sec', openByDefault);
+    var lo0 = bounds ? bounds.min : 0;
+    var hi0 = bounds ? Math.max(bounds.max, lo0 + 1) : 1000;
     var f = el('form', 'df-range');
-    var mk = function (name, ph, val) {
+    var fields = el('div', 'df-range-fields');
+    var mk = function (name, val, ph) {
+      var wrap = el('label', 'df-range-field');
+      wrap.appendChild(el('span', 'df-range-label', name === 'min' ? t.min : t.max));
+      var box = el('span', 'df-range-box');
       var i = el('input', 'df-range-input');
       i.type = 'number'; i.min = '0'; i.step = 'any'; i.inputMode = 'decimal'; i.name = name;
-      i.placeholder = ph; i.value = val;
+      i.value = val; i.placeholder = String(ph);
       i.setAttribute('aria-label', (label || t.price) + ' ' + (name === 'min' ? t.min : t.max));
+      box.appendChild(i);
+      box.appendChild(el('span', 'df-range-cur', currencySymbol));
+      wrap.appendChild(box);
+      fields.appendChild(wrap);
       return i;
     };
-    var lo = mk('min', range ? t.min + ' ' + Math.floor(range.min) : t.min, state.priceMin);
-    var hi = mk('max', range ? t.max + ' ' + Math.ceil(range.max) : t.max, state.priceMax);
+    var lo = mk('min', state.priceMin, lo0);
+    var hi = mk('max', state.priceMax, hi0);
+    f.appendChild(fields);
+    // curseur : deux <input type="range"> superposés, la plage choisie est colorée
+    var slider = el('div', 'df-slider');
+    var fill = el('div', 'df-slider-fill');
+    var mkRange = function (val, lbl) {
+      var r = el('input', 'df-slider-input');
+      r.type = 'range'; r.min = String(lo0); r.max = String(hi0); r.step = '1'; r.value = String(val);
+      r.setAttribute('aria-label', (label || t.price) + ' ' + lbl);
+      slider.appendChild(r);
+      return r;
+    };
+    slider.appendChild(fill);
+    var num = function (v, d) { v = parseFloat(String(v).replace(',', '.')); return isFinite(v) ? v : d; };
+    var rLo = mkRange(Math.max(lo0, Math.min(hi0, num(state.priceMin, lo0))), t.min);
+    var rHi = mkRange(Math.max(lo0, Math.min(hi0, num(state.priceMax, hi0))), t.max);
+    var paint = function () {
+      var span = hi0 - lo0;
+      var a = (Number(rLo.value) - lo0) / span * 100;
+      var b = (Number(rHi.value) - lo0) / span * 100;
+      fill.style.left = a + '%';
+      fill.style.width = Math.max(0, b - a) + '%';
+    };
+    rLo.addEventListener('input', function () {
+      if (Number(rLo.value) > Number(rHi.value)) { rLo.value = rHi.value; }
+      lo.value = Number(rLo.value) <= lo0 ? '' : rLo.value;
+      paint();
+    });
+    rHi.addEventListener('input', function () {
+      if (Number(rHi.value) < Number(rLo.value)) { rHi.value = rLo.value; }
+      hi.value = Number(rHi.value) >= hi0 ? '' : rHi.value;
+      paint();
+    });
+    lo.addEventListener('input', function () { rLo.value = String(Math.max(lo0, Math.min(Number(rHi.value), num(lo.value, lo0)))); paint(); });
+    hi.addEventListener('input', function () { rHi.value = String(Math.min(hi0, Math.max(Number(rLo.value), num(hi.value, hi0)))); paint(); });
+    paint();
+    f.appendChild(slider);
+    var btns = el('div', 'df-range-btns');
+    var reset = el('button', 'df-range-reset', t.reset);
+    reset.type = 'button';
     var ok = el('button', 'df-range-ok', t.apply);
     ok.type = 'submit';
-    f.appendChild(lo);
-    f.appendChild(el('span', 'df-range-sep', '–'));
-    f.appendChild(hi);
-    f.appendChild(ok);
+    btns.appendChild(reset);
+    btns.appendChild(ok);
+    f.appendChild(btns);
+    reset.addEventListener('click', function () {
+      var had = state.priceMin !== '' || state.priceMax !== '';
+      state.priceMin = ''; state.priceMax = '';
+      lo.value = ''; hi.value = ''; rLo.value = String(lo0); rHi.value = String(hi0); paint();
+      if (had) { search(false); }
+    });
     f.addEventListener('submit', function (ev) {
       ev.preventDefault();
       ev.stopPropagation();
       var clean = function (v) { v = String(v).replace(',', '.').trim(); return v !== '' && isFinite(v) && Number(v) >= 0 ? String(Number(v)) : ''; };
-      state.priceMin = clean(lo.value);
-      state.priceMax = clean(hi.value);
+      var a = clean(lo.value), b = clean(hi.value);
+      if (a !== '' && b !== '' && Number(a) > Number(b)) { var x = a; a = b; b = x; } // min et max inversés
+      state.priceMin = a !== '' && Number(a) <= lo0 ? '' : a;
+      state.priceMax = b !== '' && Number(b) >= hi0 ? '' : b;
       search(false);
     });
-    sec.appendChild(f);
-    sideContent.appendChild(sec);
+    parts.body.appendChild(f);
+    sideContent.appendChild(parts.sec);
   }
 
   // Ouverture d'un lien : clic (y compris Ctrl/Cmd + clic) et clic molette (nouvel onglet)
@@ -645,6 +734,19 @@
   }
   // Layer intégré : les résultats prennent la place du contenu du bloc choisi (contenu masqué puis rendu à la fermeture)
   var host = null;
+  // Bouton fermer : au-dessus de la fenêtre « sous la barre » quand il y a la place (sans toucher la barre de recherche)
+  function placeClose() {
+    var out = false;
+    if (cfg.type === 'below' && !overlay.hidden) {
+      var lr = layer.getBoundingClientRect();
+      var spot = activeInput ? searchBox(activeInput).getBoundingClientRect() : null;
+      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - 1440) / 2);
+      var left = window.innerWidth - w - 40;
+      out = lr.top >= 56 && (!spot || spot.right < left - 8 || spot.bottom < lr.top - 52 || spot.top > lr.top - 6);
+    }
+    var parent = out ? overlay : layer;
+    if (closeBtn.parentNode !== parent) { parent.appendChild(closeBtn); }
+  }
   function open() {
     if (cfg.type === 'embedded') {
       host = host && host.isConnected ? host : document.querySelector(cfg.container);
@@ -668,6 +770,7 @@
     position();
     if (overlay.hidden) {
       overlay.hidden = false;
+      placeClose();
       document.documentElement.classList.add('df-lock');
       if (usesBar()) {
         barInput.value = activeInput ? activeInput.value : state.q;
@@ -958,7 +1061,7 @@
     backdrop.addEventListener('mousedown', function (ev) { ev.preventDefault(); dismiss(ev); });
     backdrop.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); });
     document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { dismiss(ev); } });
-    window.addEventListener('resize', function () { if (!overlay.hidden) { position(); } });
+    window.addEventListener('resize', function () { if (!overlay.hidden) { position(); placeClose(); } });
     tgStock.input.addEventListener('change', function () { search(false); });
     tgSale.input.addEventListener('change', function () { search(false); });
     sortSel.addEventListener('change', function () { state.sort = sortSel.value; search(false); });

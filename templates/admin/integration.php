@@ -85,7 +85,7 @@ $types = WidgetConfig::TYPES;
 <form method="post" action="<?= e(url('/admin/integration/filters')) ?>" class="card" data-order-form="filters">
   <?= csrf_field() ?><input type="hidden" name="payload" value=""><input type="hidden" name="removed" value="">
   <table class="table ly-table">
-    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Statut</th><th></th></tr></thead>
+    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Déplié</th><th>Statut</th><th></th></tr></thead>
     <tbody data-order-list>
     <?php foreach ($filters as $f): ?>
       <tr draggable="true" data-row data-code="<?= e($f['code']) ?>">
@@ -96,15 +96,18 @@ $types = WidgetConfig::TYPES;
         <td><?php if ($f['appearance'] === 'terms'): ?>
           <input data-f="limit" type="number" min="1" max="100" value="<?= (int) $f['limit'] ?>" class="flt-limit" aria-label="Valeurs affichées pour « <?= e($f['label']) ?> »">
         <?php else: ?><span class="muted">—</span><?php endif; ?></td>
+        <td><?php if ($f['appearance'] !== 'toggle'): ?>
+          <label class="toggle toggle-sm" title="Bloc déplié par défaut (le visiteur peut le replier)"><input type="checkbox" role="switch" data-f="open" <?= $f['open'] ? 'checked' : '' ?> aria-label="« <?= e($f['label']) ?> » déplié par défaut"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
+        <?php else: ?><span class="muted">—</span><?php endif; ?></td>
         <td><label class="toggle toggle-sm"><input type="checkbox" role="switch" data-f="visible" <?= $f['visible'] ? 'checked' : '' ?> aria-label="Afficher « <?= e($f['label']) ?> »"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label></td>
         <td><button type="button" class="icon-btn icon-btn-sm" data-remove data-remove-save title="Retirer" aria-label="Retirer le filtre « <?= e($f['label']) ?> »"
           data-remove-confirm="Retirer le filtre « <?= e($f['label']) ?> » ? Il ne sera plus proposé aux visiteurs (vous pourrez l'ajouter de nouveau)."><?= admin_icon('trash') ?></button></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$filters): ?><tr><td colspan="7" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
+    <?php if (!$filters): ?><tr><td colspan="8" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
     </tbody>
   </table>
-  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ».
+  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ». « Déplié » : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
     « En stock » et « En promotion » s'affichent en haut des résultats (ordinateur). Un filtre désactivé ou retiré n'est plus proposé.</p>
   <div class="form-foot"><button class="btn">Enregistrer</button></div>
 </form>
@@ -147,6 +150,10 @@ $types = WidgetConfig::TYPES;
         <input name="limit" type="number" min="1" max="100" value="8" class="flt-limit" data-filter-limit>
         <small class="muted">Nombre de valeurs visibles ; les suivantes derrière « + N ».</small>
       </label>
+      <div class="toggle-row" data-filter-open-row hidden>
+        <label class="toggle"><input type="checkbox" role="switch" name="open" value="1" checked><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text"><strong>Déplié par défaut</strong><small class="muted">Désactivé : seul le titre du filtre s'affiche, le visiteur clique pour le déplier.</small></span></label>
+      </div>
       <?php endif; ?>
     </div>
     <div class="modal-foot">
@@ -215,7 +222,7 @@ $types = WidgetConfig::TYPES;
   <summary><strong>Code à ajouter sur le site</strong></summary>
   <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème.
     Les clés se gèrent dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>.</p>
-  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=11" defer
+  <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=12" defer
   data-key="<?= e($firstKey !== '' ? $firstKey : 'pk_VOTRE_CLE') ?>"
   data-lang="fr"
   data-input="#search"

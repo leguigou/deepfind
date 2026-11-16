@@ -3,6 +3,23 @@
 (function () {
   'use strict';
   document.addEventListener('DOMContentLoaded', function () {
+    // ------------------------------------------------------------ Paramètres d'un layer : mise en page (champs propres au type)
+    var typeSel = document.querySelector('[data-layer-type]');
+    if (typeSel) {
+      var typeHelp = document.querySelector('[data-layer-type-help]');
+      var syncType = function () {
+        document.querySelectorAll('[data-layer-only]').forEach(function (n) {
+          var on = n.getAttribute('data-layer-only') === typeSel.value;
+          n.hidden = !on;
+          n.querySelectorAll('input[name=container]').forEach(function (i) { i.required = on; });
+        });
+        var o = typeSel.options[typeSel.selectedIndex];
+        if (typeHelp && o) { typeHelp.textContent = o.getAttribute('data-help') || ''; }
+      };
+      typeSel.addEventListener('change', syncType);
+      syncType();
+    }
+
     // ------------------------------------------------------------ Paramètres d'un layer : renommer, couleurs
     var nameInput = document.querySelector('[data-lp-name]');
     var renameBtn = document.querySelector('[data-lp-rename]');
@@ -71,6 +88,8 @@
         var ap = o.getAttribute('data-appearance');
         if (flabel.value === '' || flabel.value === lastAuto) { flabel.value = o.getAttribute('data-label'); lastAuto = flabel.value; }
         limitRow.hidden = ap !== 'terms';
+        var openRow = addForm.querySelector('[data-filter-open-row]');
+        if (openRow) { openRow.hidden = ap === 'toggle'; }
         limitInput.value = o.getAttribute('data-limit');
         appearanceHelp.textContent = 'Apparence : ' + (names[ap] || ap) + '.';
       });
@@ -170,8 +189,9 @@
         if (kind === 'filters') {
           payload = rows().map(function (tr) {
             var limit = tr.querySelector('[data-f="limit"]');
+            var open = tr.querySelector('[data-f="open"]');
             return { code: tr.getAttribute('data-code'), label: tr.querySelector('[data-f="label"]').value, visible: tr.querySelector('[data-f="visible"]').checked,
-              limit: limit ? parseInt(limit.value, 10) || 0 : 0 };
+              limit: limit ? parseInt(limit.value, 10) || 0 : 0, open: open ? open.checked : true };
           });
         } else {
           payload = {
