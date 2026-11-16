@@ -63,7 +63,7 @@ final class IntegrationController
             App::back('/admin/integration');
             return;
         }
-        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile']));
+        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'max_width', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile']));
         $settings['url_state'] = isset($_POST['url_state']);
         $type = isset(WidgetConfig::TYPES[$_POST['type'] ?? '']) ? (string) $_POST['type'] : $l['type'];
         if ($type === 'embedded' && trim((string) ($settings['container'] ?? '')) === '') {

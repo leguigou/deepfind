@@ -59,6 +59,11 @@ $colors = [
       <input name="container" value="<?= e($s['container']) ?>" placeholder="main#maincontent" class="code" <?= $type === 'embedded' ? 'required' : '' ?>>
       <small class="muted">Bloc de votre page dans lequel les résultats s'affichent à la place de son contenu, tant qu'une recherche est en cours.</small>
     </label>
+    <label data-layer-only="below floating embedded"<?= $type === 'fullscreen' ? ' hidden' : '' ?>>Largeur maximale de la fenêtre (pixels)
+      <input name="max_width" type="number" min="320" max="3000" step="10" value="<?= $s['max_width'] ?: '' ?>" class="lp-num" placeholder="Par défaut" data-width-input>
+      <small class="muted" data-width-help>Vide : largeur par défaut (Sous la barre : 1 440 px, Flottant : 1 200 px, Intégré : toute la largeur du bloc).
+        Si l'écran est plus étroit, la fenêtre garde une marge de 16 px de chaque côté ; sur mobile (900 px ou moins), elle prend toute la largeur.</small>
+    </label>
     <label data-layer-only="below"<?= $type === 'below' ? '' : ' hidden' ?>>Écart sous la barre de recherche (pixels)
       <input name="gap" type="number" min="0" max="80" value="<?= (int) $s['gap'] ?>" class="lp-num">
     </label>

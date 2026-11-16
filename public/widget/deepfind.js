@@ -49,7 +49,8 @@
     customCss: '',
     customCssMobile: '',
     cardTemplateDesktop: '',
-    cardTemplateMobile: ''
+    cardTemplateMobile: '',
+    maxWidth: 0
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
@@ -81,7 +82,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=13'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=14'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -741,7 +742,7 @@
     if (cfg.type === 'below' && !overlay.hidden) {
       var lr = layer.getBoundingClientRect();
       var spot = activeInput ? searchBox(activeInput).getBoundingClientRect() : null;
-      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - 1440) / 2);
+      var w = mobile.matches ? 10 : Math.max(16, (window.innerWidth - (cfg.maxWidth || 1440)) / 2);
       var left = window.innerWidth - w - 40;
       out = lr.top >= 56 && (!spot || spot.right < left - 8 || spot.bottom < lr.top - 52 || spot.top > lr.top - 6);
     }
@@ -1007,6 +1008,7 @@
   function applyDisplay() {
     overlay.className = 'df-overlay df-type-' + cfg.type;
     bar.hidden = !usesBar();
+    if (cfg.maxWidth) { overlay.style.setProperty('--df-width', cfg.maxWidth + 'px'); }
     var hex = function (c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : ''; };
     if (cfg.colors) {
       if (hex(cfg.colors.primary)) { overlay.style.setProperty('--df-accent', cfg.colors.primary); }
@@ -1118,6 +1120,7 @@
       if (ds.minChars === undefined && l.min_chars) { cfg.minChars = Math.max(1, parseInt(l.min_chars, 10) || 2); }
       cfg.logo = safeUrl(l.logo);
       cfg.colors = { primary: l.color_primary, contrast: l.color_contrast, text: l.color_text };
+      cfg.maxWidth = l.type !== 'fullscreen' && l.max_width > 0 ? Math.max(320, parseInt(l.max_width, 10)) : 0;
       cfg.customCss = typeof l.css === 'string' ? l.css : '';
       cfg.customCssMobile = typeof l.css_mobile === 'string' ? l.css_mobile : '';
       cfg.cardTemplateDesktop = typeof l.card_template === 'string' ? l.card_template : '';

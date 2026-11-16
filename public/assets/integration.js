@@ -9,7 +9,7 @@
       var typeHelp = document.querySelector('[data-layer-type-help]');
       var syncType = function () {
         document.querySelectorAll('[data-layer-only]').forEach(function (n) {
-          var on = n.getAttribute('data-layer-only') === typeSel.value;
+          var on = n.getAttribute('data-layer-only').split(' ').indexOf(typeSel.value) !== -1;
           n.hidden = !on;
           n.querySelectorAll('input[name=container]').forEach(function (i) { i.required = on; });
         });

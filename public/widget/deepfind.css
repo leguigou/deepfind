@@ -24,7 +24,7 @@ html.df-lock { overflow: hidden; }
 .df-overlay *, .df-overlay *::before, .df-overlay *::after { box-sizing: border-box; }
 .df-layer {
   position: absolute; top: var(--df-top, 0px); bottom: var(--df-margin);
-  left: max(var(--df-margin), calc((100% - var(--df-max)) / 2)); right: max(var(--df-margin), calc((100% - var(--df-max)) / 2));
+  left: max(var(--df-margin), calc((100% - var(--df-width, var(--df-max))) / 2)); right: max(var(--df-margin), calc((100% - var(--df-width, var(--df-max))) / 2));
   display: grid; grid-template-columns: 280px minmax(0, 1fr); pointer-events: auto; overflow: hidden;
   background: var(--df-bg); border-radius: 14px; box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
   animation: df-rise .18s ease-out;
@@ -200,11 +200,11 @@ html.df-lock { overflow: hidden; }
 /* Plein écran : toute la page */
 .df-type-fullscreen .df-layer { inset: 0; border-radius: 0; box-shadow: none; }
 /* Flottant : panneau centré au-dessus de la page assombrie */
-.df-type-floating .df-layer { top: 5vh; bottom: 5vh; left: max(var(--df-margin), calc((100% - 1200px) / 2)); right: max(var(--df-margin), calc((100% - 1200px) / 2)); }
+.df-type-floating .df-layer { top: 5vh; bottom: 5vh; left: max(var(--df-margin), calc((100% - var(--df-width, 1200px)) / 2)); right: max(var(--df-margin), calc((100% - var(--df-width, 1200px)) / 2)); }
 /* Intégré : dans un bloc du site, la page défile normalement */
 .df-overlay.df-type-embedded { position: relative; inset: auto; z-index: auto; pointer-events: auto; }
 .df-type-embedded .df-backdrop, .df-type-embedded .df-ring { display: none; }
-.df-type-embedded .df-layer { position: relative; inset: auto; min-height: 60vh; border-radius: var(--df-radius); box-shadow: none; border: 1px solid var(--df-border); animation: none; }
+.df-type-embedded .df-layer { max-width: var(--df-width, none); margin: 0 auto; position: relative; inset: auto; min-height: 60vh; border-radius: var(--df-radius); box-shadow: none; border: 1px solid var(--df-border); animation: none; }
 .df-type-embedded .df-main, .df-type-embedded .df-side { overflow: visible; }
 .df-type-embedded .df-side { align-self: start; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; border-right: 0; }
 .df-type-embedded .df-main { border-left: 1px solid var(--df-border); }
@@ -223,7 +223,7 @@ html.df-lock { overflow: hidden; }
 
 /* « Sous la barre » : bouton fermer sorti de la fenêtre, au-dessus de son coin droit (s'il y a la place) */
 .df-overlay > .df-close {
-  top: calc(var(--df-top, 0px) - 50px); right: max(var(--df-margin), calc((100% - var(--df-max)) / 2)); width: 40px; height: 40px;
+  top: calc(var(--df-top, 0px) - 50px); right: max(var(--df-margin), calc((100% - var(--df-width, var(--df-max))) / 2)); width: 40px; height: 40px;
   background: #fff; color: var(--df-text); font-size: 26px; pointer-events: auto; box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
   animation: df-fade .15s ease-out;
 }
