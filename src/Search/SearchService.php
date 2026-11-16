@@ -411,6 +411,8 @@ final class SearchService
             'redirect' => ($redir = \DeepFind\Rules\Redirections::forQuery($r->lang, $r->q)) ? $redir['url'] : null,
             // automatique : la recherche validée (Entrée, loupe) ouvre directement la page ; sinon, lien proposé en haut des résultats
             'redirect_auto' => $redir ? $redir['auto'] : false,
+            // vrai : la page s'ouvre dans un nouvel onglet ; sinon elle remplace la page actuelle
+            'redirect_new_tab' => $redir ? $redir['new_tab'] : false,
             'products' => $hits,
             'facets' => $facets,
             'toggles' => [

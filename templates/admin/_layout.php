@@ -3,29 +3,29 @@
 use DeepFind\Admin\Auth;
 
 $navGroups = [
-    'analyse' => ['Analyse & performance', 'bars', [
+    'analyse' => ['Analyse', 'bars', [
         'stats' => ['/admin/stats', 'Statistiques', 'chart-pie'],
         'logs' => ['/admin/logs', 'Journal des recherches', 'file-search'],
     ]],
-    'catalogue' => ['Catalogue & indexation', 'layers', [
+    'catalogue' => ['Catalogues', 'layers', [
         'sources' => ['/admin/sources', 'Flux & mapping', 'hierarchy'],
         'imports' => ['/admin/imports', 'Imports', 'download'],
         'disabled' => ['/admin/disabled', 'Produits désactivés', 'archive'],
         'bots' => ['/admin/bots', 'Robots & blocages', 'robot-face'],
     ]],
-    'optimisation' => ['Optimisation de la recherche', 'adjustments', [
+    'optimisation' => ['Optimisations', 'adjustments', [
         'relevance' => ['/admin/relevance', 'Pertinence & classement', 'layers'],
         'boost_rules' => ['/admin/boost-rules', 'Règles de boost', 'rocket'],
         'synonyms' => ['/admin/synonyms', 'Synonymes & alias', 'tag'],
         'redirects' => ['/admin/redirects', 'Redirections', 'redirect'],
     ]],
-    'merchandising' => ['Merchandising & expérience', 'storefront', [
+    'merchandising' => ['Recommandations', 'storefront', [
         'custom_results' => ['/admin/custom-results', 'Résultats personnalisés', 'bars'],
         'banners' => ['/admin/banners', 'Bannières', 'speakerphone'],
         'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'demo' => ['/admin/demo', 'Démo du widget', 'external-link'],
     ]],
-    'administration' => ['Administration & technique', 'settings', [
+    'administration' => ['Paramètres', 'settings', [
         'projects' => ['/admin/projects', 'Projets', 'folder'],
         'keys' => ['/admin/keys', 'Clés', 'key'],
         'integration' => ['/admin/integration', 'Intégration', 'code'],

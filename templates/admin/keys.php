@@ -12,10 +12,10 @@
   <tbody>
   <?php foreach ($keys as $k): ?>
     <tr>
-      <td><strong><?= e($k['name']) ?></strong><br><span class="muted"><?= fmt_dt($k['created_at']) ?></span></td>
+      <td><input name="name" form="key-<?= (int) $k['id'] ?>" value="<?= e($k['name']) ?>" required maxlength="100" aria-label="Nom de la clé" class="name-input"><br><span class="muted"><?= fmt_dt($k['created_at']) ?></span></td>
       <td><code class="select"><?= e($k['public_key']) ?></code></td>
       <td colspan="3">
-        <form method="post" action="<?= e(url('/admin/keys/update')) ?>" class="inline-form">
+        <form method="post" action="<?= e(url('/admin/keys/update')) ?>" class="inline-form" id="key-<?= (int) $k['id'] ?>">
           <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $k['id'] ?>">
           <input name="origins" value="<?= e($k['allowed_origins']) ?>" placeholder="(tous les domaines : déconseillé)">
           <input name="langs" value="<?= e($k['langs']) ?>" size="6">

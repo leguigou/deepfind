@@ -229,13 +229,15 @@ if ($base) {
     sort($sorted);
     check('API : tri prix croissant', $prices === $sorted);
     [, $d] = $get("/api/v1/search?key=$key&q=retour");
-    check('API : redirection (ancien format converti, automatique)', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours' && ($d['redirect_auto'] ?? false) === true);
+    check('API : redirection (ancien format converti, automatique)', ($d['redirect'] ?? '') === 'https://www.example.com/cgv#retours' && ($d['redirect_auto'] ?? false) === true
+        && ($d['redirect_new_tab'] ?? true) === false);
     $RD = DeepFind\Rules\Redirections::class;
-    [$rdl, $rdErr] = $RD::sanitize(['name' => 'Livraison', 'active' => true, 'auto' => false, 'url' => 'https://www.example.com/livraison',
+    [$rdl, $rdErr] = $RD::sanitize(['name' => 'Livraison', 'active' => true, 'auto' => false, 'new_tab' => true, 'url' => 'https://www.example.com/livraison',
         'terms' => [['term' => 'livraison', 'match' => 'broad']]]);
     $rdId = $RD::save('fr', $rdl, null);
     [, $d] = $get("/api/v1/search?key=$key&q=" . rawurlencode('délai de livraison') . "&limit=3");
     check('redirection : terme large, lien proposé (non automatique)', $rdErr === [] && ($d['redirect'] ?? '') === 'https://www.example.com/livraison' && ($d['redirect_auto'] ?? true) === false);
+    check('redirection : ouverture dans un nouvel onglet enregistrée et transmise', ($d['redirect_new_tab'] ?? false) === true && $RD::find($rdId, 'fr')['new_tab'] === true);
     $rdl['starts_at'] = '2099-01-01';
     $rdl['ends_at'] = '2099-12-31';
     $RD::save('fr', $rdl, $rdId);
@@ -409,6 +411,19 @@ if ($base) {
     check('boost : « au moins une » condition => oui', $BR::matches(['match_all' => false] + $rule, $doc));
     check('boost : marge en %', $BR::matches(['match_all' => true, 'conditions' => [['field' => 'margin_rate', 'op' => 'gte', 'value' => 35]]], $doc)
         && $BR::matches(['match_all' => true, 'conditions' => [['field' => 'in_stock', 'values' => ['1']]]], $doc));
+    $tc = static fn (string $field, string $match, string $text) => ['match_all' => true, 'conditions' => [['field' => $field, 'match' => $match, 'text' => $text]]];
+    check('boost : texte contient / commence par / finit par (sans majuscules)', $BR::matches($tc('brand', 'contains', 'ESS'), $doc)
+        && $BR::matches($tc('brand', 'starts', 'cre'), $doc) && $BR::matches($tc('brand', 'ends', 'SSI'), $doc) && !$BR::matches($tc('brand', 'starts', 'ssi'), $doc));
+    check('boost : texte sur un champ à plusieurs valeurs et un attribut', $BR::matches($tc('category_names', 'starts', 'plong'), $doc)
+        && $BR::matches($tc('attr.couleur', 'ends', 'une'), $doc) && $BR::matches($tc('category_names', 'contains', 'PLONGEE'), $doc)
+        && $BR::matches($tc('brand', 'starts', 'Crèss'), $doc) && !$BR::matches($tc('attr.taille', 'contains', 'x'), $doc));
+    check('boost : texte ne contient pas', $BR::matches($tc('category_names', 'not_contains', 'chaussure'), $doc)
+        && !$BR::matches($tc('category_names', 'not_contains', 'palm'), $doc) && $BR::matches($tc('attr.taille', 'not_contains', 'x'), $doc));
+    [$okText] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'ends', 'text' => ' ssi '], ['field' => 'in_stock', 'match' => 'contains', 'text' => '1']]], 'fr');
+    check('boost : condition texte enregistrée, refusée sur un champ oui/non', $okText !== null && $okText['conditions'] === [['field' => 'brand', 'match' => 'ends', 'text' => 'ssi']]);
+    [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'contains', 'text' => '  ']]], 'fr');
+    check('boost : condition texte vide refusée', $bad === null && $errs !== []);
+    check('boost : résumé d\'une condition texte', str_contains($BR::describe($tc('brand', 'not_contains', 'Cressi'), 'fr'), 'Marque ne contient pas « Cressi »'));
     [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => []], 'fr');
     check('boost : règle sans condition refusée', $bad === null && $errs !== []);
 
