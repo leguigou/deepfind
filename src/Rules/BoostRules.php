@@ -44,7 +44,7 @@ final class BoostRules
 
     public const OPS = ['gte' => '≥', 'lte' => '≤'];
 
-    /** Comparaisons de texte des champs à valeurs (hors oui/non) : sans tenir compte des majuscules. */
+    /** Comparaisons de texte des champs à valeurs (hors oui/non) : sans tenir compte des majuscules ni des accents. */
     public const TEXT_OPS = ['contains' => 'contient', 'not_contains' => 'ne contient pas', 'starts' => 'commence par', 'ends' => 'finit par'];
 
     /** Coefficients proposés pour le boost rapide d'un produit (aperçu interne). */
@@ -385,10 +385,11 @@ final class BoostRules
         }
         $lower = static fn ($s) => mb_strtolower(trim((string) (is_bool($s) ? (int) $s : $s)), 'UTF-8');
         if (isset($c['match'])) {
-            $text = $lower($c['text']);
+            // sans tenir compte des majuscules ni des accents : « plongee » trouve « Plongée »
+            $text = Text::fold((string) $c['text']);
             $found = false;
             foreach ($have as $v) {
-                $v = $lower($v);
+                $v = Text::fold((string) (is_bool($v) ? (int) $v : $v));
                 if ($v !== '' && match ($c['match']) {
                     'starts' => str_starts_with($v, $text),
                     'ends' => str_ends_with($v, $text),
