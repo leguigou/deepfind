@@ -844,3 +844,4 @@ dialog.modal.lp-editor { width: min(1100px, calc(100vw - 32px)); }
    peuvent laisser des bandes claires dans Chrome (rendu par la carte graphique), surtout en thème sombre. */
 .card .table, .card .table-scroll > .table { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+[data-filter-open-row][hidden] { display: none !important; }

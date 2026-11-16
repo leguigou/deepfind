@@ -176,7 +176,6 @@ HTML;
         return (int) $id;
     }
 
-    /** Le type (mise en page) est fixé à la création. */
     public static function saveLayer(int $id, string $name, string $type, array $settings): void
     {
         $l = self::layer($id);
@@ -185,6 +184,7 @@ HTML;
         }
         Db::update('layers', [
             'name' => Text::truncate(trim($name), 100) ?: $l['name'],
+            'type' => isset(self::TYPES[$type]) ? $type : $l['type'],
             'settings' => Text::json(self::cleanSettings($settings)),
             'updated_at' => date('Y-m-d H:i:s'),
         ], 'id = ? AND project_id = ?', [$id, Project::id()]);
@@ -239,7 +239,7 @@ HTML;
      * Filtres ajoutés, dans l'ordre choisi (nom affiché, statut, nombre de valeurs affichées).
      * Tant que rien n'est enregistré : tous les filtres disponibles. Ensuite : seulement ceux ajoutés
      * (un nouvel attribut importé se trouve dans « Ajouter un filtre ») ; ceux qui n'existent plus sont ignorés.
-     * @return list<array{code:string, label:string, default_label:string, appearance:string, visible:bool, limit:int}>
+     * @return list<array{code:string, label:string, default_label:string, appearance:string, visible:bool, limit:int, open:bool}>
      */
     public static function filters(string $lang): array
     {
@@ -257,7 +257,9 @@ HTML;
             $limit = (int) ($f['limit'] ?? 0);
             $out[$code] = ['code' => $code, 'label' => $label !== '' ? $label : $avail[$code][0], 'default_label' => $avail[$code][0],
                 'appearance' => $avail[$code][1], 'visible' => !empty($f['visible']),
-                'limit' => $limit >= 1 ? min(100, $limit) : self::defaultLimit($code)];
+                'limit' => $limit >= 1 ? min(100, $limit) : self::defaultLimit($code),
+                // bloc déplié à l'ouverture de la fenêtre (le visiteur peut le replier / déplier)
+                'open' => !array_key_exists('open', $f) || !empty($f['open'])];
         }
         return array_values($out);
     }
@@ -280,6 +282,9 @@ HTML;
             }
             $label = Text::truncate(trim((string) ($f['label'] ?? '')), 60);
             $row = ['code' => $code, 'label' => $label === $avail[$code][0] ? '' : $label, 'visible' => !empty($f['visible'])];
+            if ($avail[$code][1] !== 'toggle') {
+                $row['open'] = !array_key_exists('open', $f) || !empty($f['open']);
+            }
             if ($avail[$code][1] === 'terms') {
                 $row['limit'] = max(1, min(100, (int) ($f['limit'] ?? self::defaultLimit($code)) ?: self::defaultLimit($code)));
             }
@@ -360,7 +365,7 @@ HTML;
         return [
             'layer' => $layer ? ['type' => $layer['type']] + $layer['settings'] : null,
             'filters' => array_map(static fn ($f) => ['code' => $f['code'], 'label' => $f['label'], 'appearance' => $f['appearance'], 'visible' => $f['visible'],
-                'limit' => $f['limit']],
+                'limit' => $f['limit'], 'open' => $f['open']],
                 self::filters($lang)),
             'sorts' => self::sorts($lang),
         ];

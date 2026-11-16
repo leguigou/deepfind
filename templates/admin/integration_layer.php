@@ -33,8 +33,12 @@ $colors = [
     <h2 class="lp-title">Options du layer</h2>
     <div class="grid2">
       <label>Mise en page
-        <input value="<?= e(WidgetConfig::TYPES[$type][0]) ?>" readonly disabled>
-        <small class="muted">La mise en page choisie lors de la création ne peut pas être modifiée.</small>
+        <select name="type" data-layer-type>
+          <?php foreach (WidgetConfig::TYPES as $k => [$tlabel, $thelp]): ?>
+            <option value="<?= e($k) ?>" data-help="<?= e($thelp) ?>" <?= $type === $k ? 'selected' : '' ?>><?= e($tlabel) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <small class="muted" data-layer-type-help><?= e(WidgetConfig::TYPES[$type][1]) ?></small>
       </label>
       <label>Caractères pour afficher les résultats
         <input name="min_chars" type="number" min="1" max="10" value="<?= (int) $s['min_chars'] ?>" class="lp-num">
@@ -51,17 +55,13 @@ $colors = [
       <input name="input" value="<?= e($s['input']) ?>" placeholder="#search" class="code">
       <small class="muted">Par exemple <code>#search</code> ou <code>input[name="q"]</code>. Vide : celui indiqué dans le code du site (<code>data-input</code>).</small>
     </label>
-    <?php if ($type === 'embedded'): ?>
-      <label>Sélecteur CSS du bloc d'affichage
-        <input name="container" value="<?= e($s['container']) ?>" placeholder="main#maincontent" class="code" required>
-        <small class="muted">Bloc de votre page dans lequel les résultats s'affichent à la place de son contenu, tant qu'une recherche est en cours.</small>
-      </label>
-    <?php endif; ?>
-    <?php if ($type === 'below'): ?>
-      <label>Écart sous la barre de recherche (pixels)
-        <input name="gap" type="number" min="0" max="80" value="<?= (int) $s['gap'] ?>" class="lp-num">
-      </label>
-    <?php endif; ?>
+    <label data-layer-only="embedded"<?= $type === 'embedded' ? '' : ' hidden' ?>>Sélecteur CSS du bloc d'affichage
+      <input name="container" value="<?= e($s['container']) ?>" placeholder="main#maincontent" class="code" <?= $type === 'embedded' ? 'required' : '' ?>>
+      <small class="muted">Bloc de votre page dans lequel les résultats s'affichent à la place de son contenu, tant qu'une recherche est en cours.</small>
+    </label>
+    <label data-layer-only="below"<?= $type === 'below' ? '' : ' hidden' ?>>Écart sous la barre de recherche (pixels)
+      <input name="gap" type="number" min="0" max="80" value="<?= (int) $s['gap'] ?>" class="lp-num">
+    </label>
   </section>
 
   <section class="card lp-card">
@@ -70,7 +70,7 @@ $colors = [
     <label>Logo
       <input name="logo" type="url" value="<?= e($s['logo']) ?>" placeholder="https://www.cabesto.com/logo.png">
       <small class="muted">Adresse de l'image du logo (https). PNG ou SVG avec fond transparent recommandé.
-        <?= in_array($type, ['fullscreen', 'floating'], true) ? 'Affiché à gauche de la barre de recherche du layer.' : 'Affiché en haut des résultats.' ?></small>
+        Plein écran et Flottant : à gauche de la barre de recherche du layer ; autres mises en page : en haut des résultats.</small>
     </label>
     <div class="lp-colors">
       <?php foreach ($colors as $name => [$label, $default, $help]): ?>
