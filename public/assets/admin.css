@@ -620,7 +620,8 @@ input.cr-search { width: 100%; margin: 0 0 12px; }
 .cr-pick { cursor: pointer; margin: 0 !important; font-weight: 400 !important; }
 .cr-pick:hover { border-color: var(--accent); }
 .br-list-line { display: grid; grid-template-columns: minmax(120px, 160px) 1fr; gap: 8px; }
-.br-list-line select { margin: 0; }
+.br-list-line select, .br-text-slot .br-text { margin: 0; }
+.br-text-slot .br-text { width: 100%; }
 @media (max-width: 640px) { .br-list-line { grid-template-columns: 1fr; } .cal-grid { grid-template-columns: repeat(7, 34px); } .cr-range { min-width: 0; width: 100%; } }
 
 /* ---------- Bannières */

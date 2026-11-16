@@ -13,7 +13,7 @@
     var condsBox = form.querySelector('[data-conds]');
     var state = { id: 0, terms: [] };
 
-    var lib = window.DFConditions({ fields: fields, valuesUrl: valuesUrl, root: form });
+    var lib = window.DFConditions({ fields: fields, valuesUrl: valuesUrl, root: form, textOps: true });
     var el = lib.el;
     function addCondition(c) {
       var row = lib.conditionRow(c || {});

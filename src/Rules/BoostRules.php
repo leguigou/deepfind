@@ -44,6 +44,9 @@ final class BoostRules
 
     public const OPS = ['gte' => '≥', 'lte' => '≤'];
 
+    /** Comparaisons de texte des champs à valeurs (hors oui/non) : sans tenir compte des majuscules. */
+    public const TEXT_OPS = ['contains' => 'contient', 'not_contains' => 'ne contient pas', 'starts' => 'commence par', 'ends' => 'finit par'];
+
     /** Coefficients proposés pour le boost rapide d'un produit (aperçu interne). */
     public const QUICK = ['0' => '×0 (fin de liste)', '0.5' => '×0,5', '0.75' => '×0,75', '1' => 'Aucun', '1.25' => '×1,25', '1.5' => '×1,5', '2' => '×2', '3' => '×3', '5' => '×5'];
 
@@ -139,6 +142,16 @@ final class BoostRules
                     continue;
                 }
                 $conds[] = ['field' => $field, 'op' => ($c['op'] ?? '') === 'lte' ? 'lte' : 'gte', 'value' => (float) $v];
+            } elseif (isset($c['match'])) {
+                $text = mb_substr(trim((string) ($c['text'] ?? '')), 0, 190, 'UTF-8');
+                if (!isset(self::TEXT_OPS[$c['match']]) || isset(self::STATIC_VALUES[$field])) {
+                    continue;
+                }
+                if ($text === '') {
+                    $errors[] = 'Condition « ' . $fields[$field][0] . ' » : saisissez le texte recherché.';
+                    continue;
+                }
+                $conds[] = ['field' => $field, 'match' => (string) $c['match'], 'text' => $text];
             } else {
                 $values = array_values(array_unique(array_filter(array_map(
                     static fn ($v) => mb_substr(trim((string) $v), 0, 190, 'UTF-8'),
@@ -371,6 +384,22 @@ final class BoostRules
             $have = is_bool($raw) ? [$raw ? '1' : '0'] : (array) $raw;
         }
         $lower = static fn ($s) => mb_strtolower(trim((string) (is_bool($s) ? (int) $s : $s)), 'UTF-8');
+        if (isset($c['match'])) {
+            $text = $lower($c['text']);
+            $found = false;
+            foreach ($have as $v) {
+                $v = $lower($v);
+                if ($v !== '' && match ($c['match']) {
+                    'starts' => str_starts_with($v, $text),
+                    'ends' => str_ends_with($v, $text),
+                    default => str_contains($v, $text),
+                }) {
+                    $found = true;
+                    break;
+                }
+            }
+            return $c['match'] === 'not_contains' ? !$found : $found;
+        }
         $have = array_flip(array_map($lower, $have));
         foreach ($c['values'] as $want) {
             if (isset($have[$lower($want)])) {
@@ -406,6 +435,8 @@ final class BoostRules
             $label = $fields[$c['field']][0] ?? $c['field'];
             if (isset($c['op'])) {
                 $parts[] = $label . ' ' . self::OPS[$c['op']] . ' ' . rtrim(rtrim(number_format((float) $c['value'], 2, ',', ''), '0'), ',');
+            } elseif (isset($c['match'])) {
+                $parts[] = $label . ' ' . (self::TEXT_OPS[$c['match']] ?? $c['match']) . ' « ' . $c['text'] . ' »';
             } else {
                 $static = self::STATIC_VALUES[$c['field']] ?? [];
                 $vals = array_map(static fn ($v) => $static[$v] ?? $v, $c['values']);

@@ -409,6 +409,18 @@ if ($base) {
     check('boost : « au moins une » condition => oui', $BR::matches(['match_all' => false] + $rule, $doc));
     check('boost : marge en %', $BR::matches(['match_all' => true, 'conditions' => [['field' => 'margin_rate', 'op' => 'gte', 'value' => 35]]], $doc)
         && $BR::matches(['match_all' => true, 'conditions' => [['field' => 'in_stock', 'values' => ['1']]]], $doc));
+    $tc = static fn (string $field, string $match, string $text) => ['match_all' => true, 'conditions' => [['field' => $field, 'match' => $match, 'text' => $text]]];
+    check('boost : texte contient / commence par / finit par (sans majuscules)', $BR::matches($tc('brand', 'contains', 'ESS'), $doc)
+        && $BR::matches($tc('brand', 'starts', 'cre'), $doc) && $BR::matches($tc('brand', 'ends', 'SSI'), $doc) && !$BR::matches($tc('brand', 'starts', 'ssi'), $doc));
+    check('boost : texte sur un champ à plusieurs valeurs et un attribut', $BR::matches($tc('category_names', 'starts', 'plong'), $doc)
+        && $BR::matches($tc('attr.couleur', 'ends', 'une'), $doc) && !$BR::matches($tc('attr.taille', 'contains', 'x'), $doc));
+    check('boost : texte ne contient pas', $BR::matches($tc('category_names', 'not_contains', 'chaussure'), $doc)
+        && !$BR::matches($tc('category_names', 'not_contains', 'palm'), $doc) && $BR::matches($tc('attr.taille', 'not_contains', 'x'), $doc));
+    [$okText] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'ends', 'text' => ' ssi '], ['field' => 'in_stock', 'match' => 'contains', 'text' => '1']]], 'fr');
+    check('boost : condition texte enregistrée, refusée sur un champ oui/non', $okText !== null && $okText['conditions'] === [['field' => 'brand', 'match' => 'ends', 'text' => 'ssi']]);
+    [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'contains', 'text' => '  ']]], 'fr');
+    check('boost : condition texte vide refusée', $bad === null && $errs !== []);
+    check('boost : résumé d\'une condition texte', str_contains($BR::describe($tc('brand', 'not_contains', 'Cressi'), 'fr'), 'Marque ne contient pas « Cressi »'));
     [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => []], 'fr');
     check('boost : règle sans condition refusée', $bad === null && $errs !== []);
 

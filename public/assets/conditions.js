@@ -1,5 +1,5 @@
 /* Conditions sur les produits (règles de boost, résultats personnalisés) : liste de valeurs avec recherche, choix du champ.
- * DFConditions({fields, valuesUrl, root, listOps}) → { el, multiSelect(code, selected), conditionRow(condition) }.
+ * DFConditions({fields, valuesUrl, root, listOps, textOps}) → { el, multiSelect(code, selected), conditionRow(condition) }.
  * Aucune donnée n'est insérée en HTML brut (textContent uniquement). */
 (function () {
   'use strict';
@@ -10,6 +10,7 @@
     var valuesUrl = opts.valuesUrl;
     var root = opts.root || document;
     var listOps = !!opts.listOps;
+    var textOps = !!opts.textOps;
     var valuesCache = {};
 
   function el(tag, cls, text) {
@@ -212,6 +213,45 @@
         line.appendChild(num);
         valueBox.appendChild(line);
         row.getCondition = function () { return { field: def.code, op: op.value, value: num.value }; };
+        return;
+      }
+      if (textOps && !def.static) {
+        // « est » (valeurs cochées) ou comparaison de texte : contient, ne contient pas, commence par, finit par (règles de boost)
+        var top = el('select', 'br-op');
+        [['is', 'est'], ['contains', 'contient'], ['not_contains', 'ne contient pas'], ['starts', 'commence par'], ['ends', 'finit par']].forEach(function (p) {
+          var o = el('option', '', p[1]); o.value = p[0]; top.appendChild(o);
+        });
+        top.setAttribute('aria-label', 'Comparaison');
+        var tl = el('div', 'br-list-line');
+        var slot = el('div', 'br-text-slot');
+        tl.appendChild(top);
+        tl.appendChild(slot);
+        valueBox.appendChild(tl);
+        var tms = null;
+        var txt = null;
+        var renderSlot = function () {
+          slot.textContent = '';
+          if (top.value === 'is') {
+            if (!tms) { tms = multiSelect(def.code, init && init.values ? init.values : []); }
+            slot.appendChild(tms);
+            return;
+          }
+          if (!txt) {
+            txt = el('input', 'br-text');
+            txt.type = 'text';
+            txt.maxLength = 190;
+            txt.required = true;
+            txt.placeholder = 'Texte';
+            if (init && init.text) { txt.value = init.text; }
+          }
+          slot.appendChild(txt);
+        };
+        if (init && init.match) { top.value = init.match; }
+        top.addEventListener('change', function () { renderSlot(); if (txt && top.value !== 'is') { txt.focus(); } });
+        renderSlot();
+        row.getCondition = function () {
+          return top.value === 'is' ? { field: def.code, values: tms.getValues() } : { field: def.code, match: top.value, text: txt.value };
+        };
         return;
       }
       var ms = multiSelect(def.code, init && init.values ? init.values : []);
