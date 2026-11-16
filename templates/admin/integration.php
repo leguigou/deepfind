@@ -202,8 +202,9 @@ $types = WidgetConfig::TYPES;
 </form>
 <?php endif; ?>
 
+<?php if ($tab === 'layers'): ?>
 <details class="card ly-code"<?= $layers ? '' : ' open' ?>>
-  <summary><strong>Code à ajouter sur le site (Magento)</strong></summary>
+  <summary><strong>Code à ajouter sur le site</strong></summary>
   <p>Ajoutez ce code avant <code>&lt;/body&gt;</code>, par exemple dans <em>Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style</em> ou dans un bloc du thème.
     Les clés se gèrent dans <a href="<?= e(url('/admin/keys')) ?>">Clés</a>.</p>
   <pre class="code">&lt;script src="<?= e($base) ?>/widget/deepfind.js?v=11" defer
@@ -230,4 +231,5 @@ $types = WidgetConfig::TYPES;
     </tbody>
   </table>
 </details>
+<?php endif; ?>
 <script src="<?= e(asset('/assets/integration.js')) ?>"></script>
