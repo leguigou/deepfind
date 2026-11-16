@@ -130,7 +130,7 @@ $colors = [
     <?php
     $adv = [
         'lp-css' => ['CSS', 'Ajoutez du CSS pour personnaliser votre layer. Il s\'applique à toute la page du site : ciblez les classes <code>.df-…</code> du widget.', 'css'],
-        'lp-card-tpl' => ['Modèle de carte produit', 'Modifiez le modèle HTML de la carte produit. Vide : carte par défaut.', 'card_template'],
+        'lp-card-tpl' => ['Modèle de carte produit', 'Modifiez le modèle HTML de la carte produit (le code utilisé sur le site est affiché, ordinateur et mobile).', 'card_template'],
     ];
     foreach ($adv as $dlg => [$label, $help, $key]):
         $on = array_filter([$s[$key] !== '' ? 'ordinateur' : '', $s[$key . '_mobile'] !== '' ? 'mobile' : '']); ?>
@@ -201,17 +201,23 @@ $colors = [
           <span><?= e($lang) ?></span>
           <span class="lp-code-tools">
             <?php if ($default !== ''): ?>
-              <button type="button" class="lp-code-tool" data-editor-restore title="Remplacer par le modèle par défaut">↻ Restaurer les valeurs par défaut</button>
+              <button type="button" class="lp-code-tool" data-editor-restore title="Remettre le modèle d'origine dans l'onglet ouvert">↻ Réinitialiser (modèle d'origine)</button>
             <?php endif; ?>
             <button type="button" class="lp-code-tool" data-editor-copy title="Copier" aria-label="Copier le contenu"><?= admin_icon('copy', 'key-copy') ?><?= admin_icon('check', 'key-copied') ?></button>
           </span>
         </div>
-        <textarea name="<?= e($key) ?>" rows="16" class="lp-code" spellcheck="false" data-editor-device="desktop" aria-label="<?= e($title) ?> ordinateur"><?= e($s[$key]) ?></textarea>
+        <?php
+        // modèle de carte : le code réellement utilisé (modèle par défaut si rien n'est enregistré ; mobile = ordinateur s'il est vide)
+        $desk = $s[$key] !== '' || $default === '' ? $s[$key] : $default;
+        $mob = $s[$key . '_mobile'] !== '' || $default === '' ? $s[$key . '_mobile'] : $desk; ?>
+        <textarea name="<?= e($key) ?>" rows="16" class="lp-code" spellcheck="false" data-editor-device="desktop" aria-label="<?= e($title) ?> ordinateur"><?= e($desk) ?></textarea>
         <textarea name="<?= e($key) ?>_mobile" rows="16" class="lp-code" spellcheck="false" data-editor-device="mobile" hidden aria-label="<?= e($title) ?> mobile"
-          placeholder="Vide : la version ordinateur s'applique aussi sur mobile."><?= e($s[$key . '_mobile']) ?></textarea>
+          placeholder="Vide : la version ordinateur s'applique aussi sur mobile."><?= e($mob) ?></textarea>
         <?php if ($default !== ''): ?><template data-editor-default><?= e($default) ?></template><?php endif; ?>
       </div>
-      <p class="muted small">Mobile = écrans de 900 px de large ou moins. Mobile vide : la version ordinateur s'applique partout.</p>
+      <p class="muted small"><?= $default !== ''
+          ? 'Le code affiché est celui utilisé sur le site : modifiez-le puis enregistrez. « Réinitialiser » remet le modèle d\'origine de l\'onglet ouvert. Mobile identique à l\'ordinateur : il suit les changements de l\'ordinateur.'
+          : 'Mobile = écrans de 900 px de large ou moins. Mobile vide : la version ordinateur s\'applique partout.' ?></p>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn btn-light" data-dialog-close>Fermer</button>
@@ -227,7 +233,8 @@ $colors = [
   $editor('lp-css', 'CSS personnalisé', 'CSS', 'css', $s, '',
       '<p class="muted small">Exemple : <code>.df-card { border-radius: 0; }</code> ou <code>.df-title { text-transform: uppercase; }</code>. Pas de balise &lt;style&gt;.</p>');
   $editor('lp-card-tpl', 'Modèle de carte produit', 'HTML', 'card_template', $s, WidgetConfig::DEFAULT_CARD_TEMPLATE,
-      '<p class="muted small">HTML simple (div, span, p, strong, img…) ; pas de script ni de lien : la carte entière mène déjà au produit. Vide : carte par défaut. Variables disponibles :</p>' . $vars);
+      '<p class="muted small">HTML simple (div, span, p, strong, img…) ; pas de script ni de lien : la carte entière mène déjà au produit.
+        Un élément de classe <code>df-if-</code><em>variable</em> (ex. <code>df-if-discount</code>) n\'est affiché que si la variable n\'est pas vide. Variables disponibles :</p>' . $vars);
   ?>
 </form>
 

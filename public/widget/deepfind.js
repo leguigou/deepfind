@@ -86,7 +86,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=15'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=16'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -400,18 +400,51 @@
   // Modèle de carte (extranet › Intégration › layer) : variables remplacées par des valeurs échappées,
   // puis HTML refiltré (mêmes règles que les bannières) ; pas de lien imbriqué, la carte entière est déjà un lien.
   function esc(v) { return String(v === undefined || v === null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
-  function templateCard(a, p, href, tpl) {
+  // Carte produit par défaut = ce modèle (identique à WidgetConfig::DEFAULT_CARD_TEMPLATE, affiché et modifiable dans l'extranet).
+  // Un élément de classe df-if-<variable> est retiré quand la variable est vide ; img.df-img change d'image au survol.
+  var DEFAULT_CARD = '<div class="df-media {{media_class}}">\n'
+    + '  <img class="df-img df-if-image" src="{{image}}" alt="">\n'
+    + '  <span class="df-badge df-badge-sale df-if-discount">{{discount}}</span>\n'
+    + '  <span class="df-badge df-badge-new df-if-new">{{new}}</span>\n'
+    + '  <span class="df-badge df-badge-oos df-if-out_of_stock">{{out_of_stock}}</span>\n'
+    + '</div>\n'
+    + '<div class="df-brand df-if-brand">{{brand}}</div>\n'
+    + '<div class="df-name">{{name}}</div>\n'
+    + '<div class="df-variant df-if-variant">{{variant}}</div>\n'
+    + '<div class="df-price {{price_class}}">\n'
+    + '  <span class="df-from df-if-from">{{from}}</span>\n'
+    + '  <span class="df-final">{{price}}</span>\n'
+    + '  <span class="df-old df-if-old_price">{{old_price}}</span>\n'
+    + '</div>';
+
+  // Modèle de carte : variables remplacées par des valeurs échappées, puis HTML refiltré (mêmes règles que les bannières) ;
+  // pas de lien imbriqué, la carte entière est déjà un lien.
+  function esc(v) { return String(v === undefined || v === null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+  function cardVars(p) {
     var mv = p.matched_variant;
     var final = mv ? mv.final_price : p.final_price;
     var regular = mv ? mv.price : p.price;
-    var v = {
-      name: p.name, brand: p.brand || '', image: safeUrl(p.image), price: fmt(final),
-      old_price: regular > final + 0.005 ? fmt(regular) : '', discount: p.on_sale && p.discount_percent > 0 ? '-' + p.discount_percent + '%' : '',
-      sku: (mv && mv.sku) || p.sku || '', stock: p.in_stock ? t.inStock : t.outOfStock, 'new': p.is_new ? t.isNew : '', rating: p.rating || ''
+    var discount = p.on_sale && p.discount_percent > 0 ? '-' + p.discount_percent + '%' : '';
+    var image = safeUrl(p.image);
+    return {
+      name: p.name, brand: p.brand || '', image: image, price: fmt(final),
+      old_price: regular > final + 0.005 ? fmt(regular) : '', discount: discount,
+      sku: (mv && mv.sku) || p.sku || '', variant: mv ? mv.sku || '' : '',
+      stock: p.in_stock ? t.inStock : t.outOfStock, out_of_stock: p.in_stock ? '' : t.outOfStock,
+      'new': p.is_new && !discount ? t.isNew : '', rating: p.rating || '',
+      from: !mv && p.has_price_range ? t.from : '',
+      price_class: p.on_sale ? 'df-sale' : '', media_class: image ? '' : 'df-noimg'
     };
+  }
+  function templateCard(a, p, tpl) {
+    var v = cardVars(p);
     var html = tpl.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(v, k) ? esc(v[k]) : ''; });
     var doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
     Array.prototype.forEach.call(doc.body.childNodes, function (c) { a.appendChild(cleanNode(c)); });
+    Array.prototype.forEach.call(a.querySelectorAll('[class*="df-if-"]'), function (n) {
+      var keep = n.className.split(/\s+/).every(function (c) { return c.indexOf('df-if-') !== 0 || !!v[c.slice(6)]; });
+      if (!keep) { n.remove(); }
+    });
     Array.prototype.forEach.call(a.querySelectorAll('a'), function (n) {
       var span = el('span', n.className || null);
       while (n.firstChild) { span.appendChild(n.firstChild); }
@@ -420,52 +453,26 @@
     Array.prototype.forEach.call(a.querySelectorAll('img'), function (img) {
       if (!img.getAttribute('src')) { img.remove(); return; }
       img.loading = 'lazy';
-      img.onerror = function () { img.remove(); };
+      img.decoding = 'async';
+      img.onerror = function () { var m = img.closest('.df-media'); img.remove(); if (m) { m.classList.add('df-noimg'); } };
     });
+    // image au survol (img.df-img)
+    var main = a.querySelector('img.df-img');
+    var hover = safeUrl(p.image_hover);
+    if (main && hover) {
+      var src = main.src;
+      a.addEventListener('mouseenter', function () { main.src = hover; });
+      a.addEventListener('mouseleave', function () { main.src = src; });
+    }
   }
 
   function card(p, position) {
     var href = safeUrl(p.matched_variant && p.matched_variant.url) || safeUrl(p.url) || '#';
     var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
     a.href = href;
-    var tpl = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
-    if (tpl) {
-      a.classList.add('df-card-tpl');
-      templateCard(a, p, href, tpl);
-      onOpen(a, function () { track('product', p.id, position, p.cr); });
-      return a;
-    }
-    var media = el('div', 'df-media');
-    var src = safeUrl(p.image);
-    if (src) {
-      var img = el('img');
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.alt = '';
-      img.src = src;
-      img.onerror = function () { img.remove(); media.classList.add('df-noimg'); };
-      media.appendChild(img);
-      var hover = safeUrl(p.image_hover);
-      if (hover) {
-        a.addEventListener('mouseenter', function () { img.src = hover; });
-        a.addEventListener('mouseleave', function () { img.src = src; });
-      }
-    } else { media.classList.add('df-noimg'); }
-    if (p.on_sale && p.discount_percent > 0) { media.appendChild(el('span', 'df-badge df-badge-sale', '-' + p.discount_percent + '%')); }
-    else if (p.is_new) { media.appendChild(el('span', 'df-badge df-badge-new', t.isNew)); }
-    if (!p.in_stock) { media.appendChild(el('span', 'df-badge df-badge-oos', t.outOfStock)); }
-    a.appendChild(media);
-    if (p.brand) { a.appendChild(el('div', 'df-brand', p.brand)); }
-    a.appendChild(el('div', 'df-name', p.name));
-    if (p.matched_variant) { a.appendChild(el('div', 'df-variant', p.matched_variant.sku)); }
-    var price = el('div', 'df-price' + (p.on_sale ? ' df-sale' : ''));
-    var mv = p.matched_variant;
-    var final = mv ? mv.final_price : p.final_price;
-    var regular = mv ? mv.price : p.price;
-    if (!mv && p.has_price_range) { price.appendChild(el('span', 'df-from', t.from + ' ')); }
-    price.appendChild(el('span', 'df-final', fmt(final)));
-    if (regular > final + 0.005) { price.appendChild(el('s', 'df-old', fmt(regular))); }
-    a.appendChild(price);
+    var custom = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
+    if (custom) { a.classList.add('df-card-tpl'); }
+    templateCard(a, p, custom || DEFAULT_CARD);
     onOpen(a, function () { track('product', p.id, position, p.cr); });
     return a;
   }
