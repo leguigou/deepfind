@@ -172,6 +172,11 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.selectOption('.br-cond select.br-field', 'brand');
   await page.click('.ms-toggle');
   await page.locator('.ms-list .ms-item').first().click();
+  await page.locator('.ms-list .ms-item').nth(1).click();
+  const nChips = await page.locator('.ms-toggle .chip').count();
+  await page.click('.ms-toggle .chip .chip-x');
+  check('conditions : la croix d\'un tag retire la valeur', nChips === 2 && (await page.locator('.ms-toggle .chip').count()) === 1
+    && !(await page.locator('.ms-list .ms-item input:checked').nth(1).count()));
   await Promise.all([page.waitForNavigation(), page.click('.modal-foot button.btn:not(.btn-light)')]);
   check('règles de boost : règle enregistrée', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('×2'));
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
