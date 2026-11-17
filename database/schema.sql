@@ -322,3 +322,43 @@ CREATE TABLE IF NOT EXISTS layers (
   updated_at DATETIME NOT NULL,
   KEY idx_project (project_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mesure d'audience, sans donnée personnelle ni cookie.
+-- audience_visitors : une ligne par visiteur et par jour, identifié par une EMPREINTE DU JOUR
+-- (HMAC de l'IP et du navigateur avec un sel aléatoire propre au jour). Aucune IP n'est stockée.
+-- Ces lignes ne concernent que la journée en cours : chaque jour passé est agrégé dans audience_daily,
+-- puis ses lignes et son sel sont supprimés (schedule:run) ; l'empreinte ne peut plus être recalculée.
+CREATE TABLE IF NOT EXISTS audience_visitors (
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  vhash CHAR(32) NOT NULL,
+  device ENUM('mobile','tablet','desktop') NOT NULL,
+  pageviews INT UNSIGNED NOT NULL DEFAULT 0,
+  searches INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, day, vhash),
+  KEY idx_day (day)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Statistiques globales quotidiennes par type d'appareil (conservées : aucune donnée personnelle).
+CREATE TABLE IF NOT EXISTS audience_daily (
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  device ENUM('mobile','tablet','desktop') NOT NULL,
+  visitors INT UNSIGNED NOT NULL DEFAULT 0,
+  pageviews INT UNSIGNED NOT NULL DEFAULT 0,
+  searchers INT UNSIGNED NOT NULL DEFAULT 0,
+  searches INT UNSIGNED NOT NULL DEFAULT 0,
+  clickers INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  searchers_1 INT UNSIGNED NOT NULL DEFAULT 0,
+  searchers_2_3 INT UNSIGNED NOT NULL DEFAULT 0,
+  searchers_4p INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, day, device)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Sel aléatoire de l'empreinte du jour : supprimé dès que le jour est agrégé.
+CREATE TABLE IF NOT EXISTS audience_salts (
+  day DATE NOT NULL PRIMARY KEY,
+  salt CHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;

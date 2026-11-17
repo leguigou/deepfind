@@ -49,6 +49,14 @@ final class Settings
         'facet_values_limit' => '30',
         // Journaux
         'log_searches' => '1',
+        // Mesure d'audience (réglée dans Analyse › Audience)
+        'audience_enabled' => '1',
+        'audience_pageviews' => '1',
+        'audience_searches' => '1',
+        'audience_clicks' => '1',
+        'audience_pages' => 'all',
+        'audience_paths' => '',
+        'audience_paths_home' => '0',
         'widget_enter_submit' => '1',
         'widget_block_native' => '1',
         'log_retention_days' => '90',

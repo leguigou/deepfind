@@ -5,6 +5,7 @@ use DeepFind\Admin\Auth;
 $navGroups = [
     'analyse' => ['Analyse', 'bars', [
         'stats' => ['/admin/stats', 'Statistiques', 'chart-pie'],
+        'audience' => ['/admin/audience', 'Audience', 'users'],
         'logs' => ['/admin/logs', 'Journal des recherches', 'file-search'],
     ]],
     'catalogue' => ['Catalogues', 'layers', [

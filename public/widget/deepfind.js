@@ -57,6 +57,7 @@
     colsMobile: 2
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
+  var noAudience = ds.demo === '1'; // page Démo ou aperçu : pas de mesure d'audience (complété plus bas)
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
   var NATIVE_PANELS = '#search_autocomplete, .search-autocomplete, .amsearch-results, .amsearch-wrapper-block .amsearch-results, '
     + '.mst-searchautocomplete__autocomplete, .smile-elasticsuite-autocomplete-result';
@@ -213,6 +214,14 @@
   var timer = null;
   var activeInput = null;
   var mobile = window.matchMedia('(max-width: 900px)');
+  // Mesure d'audience anonyme : type d'appareil (m = mobile, t = tablette, d = ordinateur), d'après l'écran
+  var device = (function () {
+    try {
+      var coarse = window.matchMedia('(pointer: coarse)').matches;
+      var side = Math.min(window.screen.width, window.screen.height);
+      return coarse && side < 600 ? 'm' : (coarse && side < 1100 ? 't' : 'd');
+    } catch (e) { return ''; }
+  })();
 
   function resetFilters() { state.filters = {}; state.priceMin = ''; state.priceMax = ''; state.priceBounds = null; }
 
@@ -224,6 +233,8 @@
     p.set('offset', String(offset));
     p.set('limit', String(mobile.matches && cfg.pageSizeMobile ? cfg.pageSizeMobile : cfg.pageSize));
     p.set('sid', sid);
+    if (device) { p.set('d', device); }
+    if (noAudience) { p.set('na', '1'); }
     if (offset > 0) { p.set('posts', '0'); }
     if (tgStock.input.checked) { p.set('in_stock', '1'); }
     if (tgSale.input.checked) { p.set('on_sale', '1'); }
@@ -690,7 +701,8 @@
 
   function track(type, id, position, cr) {
     try {
-      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, q: state.q, doc_type: type, doc_id: id, position: String(position), sid: sid });
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, q: state.q, doc_type: type, doc_id: id, position: String(position), sid: sid, d: device });
+      if (noAudience) { body.set('na', '1'); }
       if (cr) { body.set('cr', String(cr)); } // produit mis en avant par un résultat personnalisé
       if (navigator.sendBeacon) { navigator.sendBeacon(cfg.api + '/click', body); }
       else { fetch(cfg.api + '/click', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }); }
@@ -1144,6 +1156,7 @@
     }
   } catch (e) { preview = ds.preview || ''; }
   if (preview && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9a-f]{24}$/.test(preview)) { preview = ''; }
+  noAudience = demo || preview !== '';
   // Logo DeepFind (loupe à cercles), dessiné en SVG sans HTML inséré
   function dfLogo() {
     var NS = 'http://www.w3.org/2000/svg';
@@ -1194,7 +1207,7 @@
   function writeCfg(c) {
     if (preview) { return; } // ne pas mélanger l'aperçu avec la configuration du site
     try {
-      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false,
+      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, audience: c.audience || false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1241,6 +1254,35 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
       .then(function (c) { writeCfg(c); applyCfg(c); return c; });
   }
+  // Page vue (mesure d'audience anonyme, une fois par page) : ni cookie ni donnée personnelle envoyés.
+  // Jamais depuis la page Démo de l'extranet ni pendant un aperçu (favori « Tester DeepFind »).
+  var visitSent = false;
+  // Pages mesurées (réglage de l'extranet) : toutes, la page d'accueil, ou les adresses qui commencent par l'un des chemins choisis
+  function audiencePage(a) {
+    var path = (location.pathname || '/').replace(/\/index\.php$/i, '').replace(/\/+$/, '').toLowerCase();
+    // accueil : « / » ou la racine d'une langue / d'une boutique Magento (« /fr », « /fr_fr »)
+    var home = path === '' || /^\/[a-z]{2}([_-][a-z]{2})?$/.test(path);
+    if (a.pages === 'home') { return home; }
+    if (a.pages === 'paths') {
+      if (a.home && home) { return true; }
+      // « commence par » : /fr/plongee couvre /fr/plongee.html et /fr/plongee/palmes.html
+      return (a.paths || []).some(function (p) {
+        p = typeof p === 'string' ? p.toLowerCase().replace(/\/+$/, '') : '';
+        return p.length > 1 && path.indexOf(p) === 0;
+      });
+    }
+    return true;
+  }
+  function sendVisit(c) {
+    if (visitSent || noAudience || !c || !c.enabled || !c.audience || !audiencePage(c.audience)) { return; }
+    visitSent = true;
+    try {
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, d: device });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/visit', body))) {
+        fetch(cfg.api + '/visit', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
+      }
+    } catch (e) { /* mesure facultative */ }
+  }
   function activate() {
     if (started) { return; }
     started = true;
@@ -1260,6 +1302,7 @@
   if (known) {
     applyCfg(known);
     if (known.enabled) { activate(); }
+    sendVisit(known);
     fetchCfg().catch(function () { /* nouvel essai à la prochaine page */ });
   } else {
     fetchCfg().then(function (c) {
@@ -1268,6 +1311,7 @@
         else if (c.preview && c.preview.layer) { previewBadge('Layer « ' + c.preview.layer + ' » — visible seulement dans ce navigateur', false); }
         else { previewBadge('Lien de test DeepFind expiré ou non valable pour ce site : recréez le favori dans l\'extranet. Affichage actuel du site.', true); }
       }
+      sendVisit(c);
       if (c.enabled) { activate(); } else { console.info('[DeepFind] projet désactivé : la recherche du site reste inchangée'); }
     }).catch(function () {
       if (preview) { previewBadge('Aperçu DeepFind impossible : API injoignable, ou ce domaine n\'est pas autorisé pour la clé choisie.', true); }
