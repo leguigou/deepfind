@@ -965,3 +965,11 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .pr-table .ly-grip { width: 28px; }
 .pr-table tr[draggable="true"] { cursor: grab; }
 @media (max-width: 640px) { .pr-url { grid-template-columns: minmax(0, 1fr) auto; } .pr-url select { grid-column: 1 / -1; } }
+
+/* Audience : période personnalisée */
+.aud-periods { flex-wrap: wrap; }
+.aud-custom { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; padding: 12px 16px; margin: -4px 0 12px; }
+.aud-custom[hidden] { display: none; }
+.aud-custom label { margin: 0; }
+.aud-custom input[type=date] { margin: 4px 0 0; width: auto; }
+.aud-range { margin: 0 0 12px; }
