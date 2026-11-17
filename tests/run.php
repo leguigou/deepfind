@@ -260,6 +260,8 @@ if ($base) {
     check('synonymes : modification refusée hors langue ou identifiant inconnu', !DeepFind\Rules\RulesRepository::updateSynonym($synId, 'en', 'alias', 'x', 'y')
         && !DeepFind\Rules\RulesRepository::updateSynonym(999999, 'fr', 'alias', 'x', 'y'));
     DeepFind\Db::exec('DELETE FROM synonyms WHERE id = ?', [$synId]);
+    check('synonymes : découpage d\'une ligne de mots (virgules, |, doublons, espaces)',
+        DeepFind\Rules\RulesRepository::splitWords(' ecoflow, EcoFlau |ecoflau,, eco  flo ') === ['ecoflow', 'EcoFlau', 'eco flo']);
     [$c] = $get("/api/v1/search?key=pk_00000000000000000000000000000000&q=palme");
     check('API : clé invalide => 401', $c === 401);
     [$c] = $get("/api/v1/search?key=$key&q=palme", ['Origin: https://evil.example']);

@@ -25,12 +25,9 @@ final class RulesController
 
     public function synonymAdd(): void
     {
-        $term = trim((string) ($_POST['term'] ?? ''));
-        $syn = trim(str_replace(',', '|', (string) ($_POST['synonyms'] ?? '')));
-        if ($term === '' || $syn === '') {
-            Auth::flash('error', 'Terme et synonymes obligatoires.');
-        } else {
-            RulesRepository::addSynonym(Auth::lang(), ($_POST['type'] ?? '') === 'alias' ? 'alias' : 'equivalent', $term, $syn);
+        $in = $this->synonymInput();
+        if ($in !== null) {
+            RulesRepository::addSynonym(Auth::lang(), ...$in);
             $this->sync(Auth::lang());
         }
         $this->backTo('/admin/synonyms');
@@ -38,18 +35,37 @@ final class RulesController
 
     public function synonymUpdate(): void
     {
-        $term = trim((string) ($_POST['term'] ?? ''));
-        $syn = trim(str_replace(',', '|', (string) ($_POST['synonyms'] ?? '')));
-        // « palmes | fins » → « palmes|fins »
-        $syn = implode('|', array_values(array_filter(array_map('trim', explode('|', $syn)), 'strlen')));
-        if ($term === '' || $syn === '') {
-            Auth::flash('error', 'Terme et synonymes obligatoires.');
-        } elseif (!RulesRepository::updateSynonym((int) ($_POST['id'] ?? 0), Auth::lang(), ($_POST['type'] ?? '') === 'alias' ? 'alias' : 'equivalent', $term, $syn)) {
-            Auth::flash('error', 'Synonyme introuvable.');
-        } else {
-            $this->sync(Auth::lang());
+        $in = $this->synonymInput();
+        if ($in !== null) {
+            if (!RulesRepository::updateSynonym((int) ($_POST['id'] ?? 0), Auth::lang(), ...$in)) {
+                Auth::flash('error', 'Synonyme introuvable.');
+            } else {
+                $this->sync(Auth::lang());
+            }
         }
         $this->backTo('/admin/synonyms');
+    }
+
+    /**
+     * Saisie d'un groupe de synonymes → [type, terme, synonymes « a|b »], ou null (message affiché).
+     * Page Synonymes : « words » (mots équivalents séparés par des virgules) + case « one_way » (sens unique :
+     * le 1er mot mène aux suivants). Statistiques : « type », « term », « synonyms » (ancien formulaire).
+     * @return ?array{0:string,1:string,2:string}
+     */
+    private function synonymInput(): ?array
+    {
+        if (isset($_POST['words'])) {
+            $words = RulesRepository::splitWords((string) $_POST['words']);
+            $type = isset($_POST['one_way']) ? 'alias' : 'equivalent';
+        } else {
+            $words = array_merge(RulesRepository::splitWords((string) ($_POST['term'] ?? '')), RulesRepository::splitWords((string) ($_POST['synonyms'] ?? '')));
+            $type = ($_POST['type'] ?? '') === 'alias' ? 'alias' : 'equivalent';
+        }
+        if (count($words) < 2) {
+            Auth::flash('error', 'Saisissez au moins deux mots, séparés par des virgules (ex. : ecoflow, ecoflau).');
+            return null;
+        }
+        return [$type, array_shift($words), implode('|', $words)];
     }
 
     public function synonymDelete(): void

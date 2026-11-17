@@ -216,7 +216,7 @@
         Array.prototype.forEach.call(b.attributes, function (a) {
           if (a.name.indexOf('data-fill-') !== 0) { return; }
           var f = dlg.querySelector('[name="' + a.name.slice(10) + '"]');
-          if (f) { f.value = a.value; }
+          if (f && f.type === 'checkbox') { f.checked = a.value === '1'; } else if (f) { f.value = a.value; }
         });
         if (typeof dlg.showModal === 'function') { dlg.showModal(); }
         var first = dlg.querySelector('.modal-body input:not([type=hidden]), .modal-body select');
