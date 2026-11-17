@@ -629,6 +629,7 @@ Le favori contient un jeton signé, lié au projet et au layer, valable **7 jour
 - Une règle a un nom, un statut, un **coefficient** (1 = neutre, 2 = double, 0,5 = moitié, 0 = en fin de liste), des **termes de recherche** facultatifs (exacte : la recherche est exactement ce terme ; large : elle contient tous ses mots) et des **conditions** (toutes, ou au moins une).
 - **Conditions** :
   - champ à valeurs (marque, catégorie, type, SKU, attributs) : **est** (valeurs cochées), **contient**, **ne contient pas**, **commence par**, **finit par**, sans tenir compte des majuscules ni des accents ;
+  - pour **contient**, **commence par** et **finit par**, plusieurs textes peuvent être saisis (Entrée entre chaque) : il suffit que l'un d'eux corresponde (OU). Avec **ne contient pas**, le produit ne doit contenir aucun d'eux ;
   - **nom du produit** : contient, ne contient pas, commence par, finit par (sans majuscules ni accents). Exemple : Marque *est* ECOFLOW **et** Nom du produit *contient* « batterie » booste les batteries sans les accessoires ;
   - champ oui/non (disponibilité, en promotion, nouveauté) : valeurs à cocher ;
   - champ chiffré (prix, remise, marge, ventes) : supérieur ou égal, inférieur ou égal.

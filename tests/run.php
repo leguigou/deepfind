@@ -423,7 +423,7 @@ if ($base) {
     check('boost : texte ne contient pas', $BR::matches($tc('category_names', 'not_contains', 'chaussure'), $doc)
         && !$BR::matches($tc('category_names', 'not_contains', 'palm'), $doc) && $BR::matches($tc('attr.taille', 'not_contains', 'x'), $doc));
     [$okText] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'ends', 'text' => ' ssi '], ['field' => 'in_stock', 'match' => 'contains', 'text' => '1']]], 'fr');
-    check('boost : condition texte enregistrée, refusée sur un champ oui/non', $okText !== null && $okText['conditions'] === [['field' => 'brand', 'match' => 'ends', 'text' => 'ssi']]);
+    check('boost : condition texte enregistrée, refusée sur un champ oui/non', $okText !== null && $okText['conditions'] === [['field' => 'brand', 'match' => 'ends', 'texts' => ['ssi']]]);
     [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'contains', 'text' => '  ']]], 'fr');
     check('boost : condition texte vide refusée', $bad === null && $errs !== []);
     check('boost : résumé d\'une condition texte', str_contains($BR::describe($tc('brand', 'not_contains', 'Cressi'), 'fr'), 'Marque ne contient pas « Cressi »'));
@@ -435,9 +435,19 @@ if ($base) {
         && $BR::matches($tc('name', 'contains', 'cable'), $cable) && $BR::matches($tc('name', 'starts', 'batterie'), $batt) && $BR::matches($tc('name', 'not_contains', 'câble'), $batt));
     [$okName] = $BR::sanitize(['name' => 'x', 'boost' => '3', 'conditions' => [['field' => 'name', 'match' => 'contains', 'text' => ' batterie ']]], 'fr');
     [$badName, $errName] = $BR::sanitize(['name' => 'x', 'boost' => '3', 'conditions' => [['field' => 'name', 'values' => ['Batterie']]]], 'fr');
-    check('boost : nom du produit enregistré en texte, refusé en liste de valeurs', $okName !== null && $okName['conditions'] === [['field' => 'name', 'match' => 'contains', 'text' => 'batterie']]
+    check('boost : nom du produit enregistré en texte, refusé en liste de valeurs', $okName !== null && $okName['conditions'] === [['field' => 'name', 'match' => 'contains', 'texts' => ['batterie']]]
         && $badName === null && $errName !== [] && in_array('name', $BR::DOC_FIELDS, true)
         && str_contains($BR::describe($tc('name', 'contains', 'batterie'), 'fr'), 'Nom du produit contient « batterie »'));
+    // Plusieurs textes dans une condition : OU (« ne contient pas » = aucun des textes)
+    $tm = static fn (string $match, array $texts) => ['match_all' => true, 'conditions' => [['field' => 'name', 'match' => $match, 'texts' => $texts]]];
+    $station = ['name' => 'Station électrique EcoFlow Delta 2'];
+    check('boost : plusieurs textes en OU', $BR::matches($tm('contains', ['batterie', 'station']), $station) && $BR::matches($tm('contains', ['batterie', 'station']), $batt)
+        && !$BR::matches($tm('contains', ['batterie', 'station']), $cable) && $BR::matches($tm('starts', ['câble', 'station']), $station));
+    check('boost : ne contient pas plusieurs textes = aucun', $BR::matches($tm('not_contains', ['câble', 'housse']), $batt) && !$BR::matches($tm('not_contains', ['housse', 'cable']), $cable));
+    [$okMulti] = $BR::sanitize(['name' => 'x', 'boost' => '3', 'conditions' => [['field' => 'name', 'match' => 'contains', 'texts' => [' batterie ', 'Station', 'BATTERIE', '']]]], 'fr');
+    check('boost : textes multiples nettoyés (doublons, vides) et résumé', $okMulti !== null && $okMulti['conditions'][0]['texts'] === ['batterie', 'Station']
+        && str_contains($BR::describe($tm('contains', ['batterie', 'station']), 'fr'), 'contient « batterie » ou « station »')
+        && str_contains($BR::describe($tm('not_contains', ['câble', 'housse']), 'fr'), 'ne contient pas « câble » ni « housse »'));
     [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => []], 'fr');
     check('boost : règle sans condition refusée', $bad === null && $errs !== []);
 
