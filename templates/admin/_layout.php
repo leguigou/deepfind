@@ -22,6 +22,7 @@ $navGroups = [
     ]],
     'merchandising' => ['Recommandations', 'storefront', [
         'custom_results' => ['/admin/custom-results', 'Résultats personnalisés', 'bars'],
+        'page_rules' => ['/admin/page-rules', 'Règles', 'world'],
         'banners' => ['/admin/banners', 'Bannières', 'speakerphone'],
         'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'demo' => ['/admin/demo', 'Démo du widget', 'external-link'],

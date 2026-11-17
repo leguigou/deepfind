@@ -33,7 +33,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/01-dashboard-sombre.png', fullPage: true });
 
   const pages = ['/admin/sources', '/admin/sources/edit?id=1', '/admin/sources/test?id=1', '/admin/imports', '/admin/imports/view?id=1',
-    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/banners', '/admin/banners/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
+    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/page-rules', '/admin/page-rules/edit', '/admin/banners', '/admin/banners/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
     '/admin/keys', '/admin/integration', '/admin/integration?tab=filters', '/admin/integration?tab=sorts', '/admin/settings'];
   for (const p of pages) {
     const resp = await page.goto(BASE + p);
@@ -363,7 +363,7 @@ fs.mkdirSync(OUT, { recursive: true });
   const sitePage = async (path) => {
     const sc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
     await sc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><title>Boutique</title></head><body>'
-      + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=22" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
+      + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=23" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
     let n = 0;
     sc.on('request', (r) => { if (r.url().endsWith('/api/v1/visit')) { n++; } });
     const sp = await sc.newPage();
@@ -381,6 +381,42 @@ fs.mkdirSync(OUT, { recursive: true });
   check('audience : pages choisies (signal seulement sur /boutique/apnee…)', await sitePage('/boutique/plongee.html') === 0 && await sitePage('/boutique/apnee/masques.html') === 1);
   await page.check('.aud-pages input[value=all]');
   await Promise.all([page.waitForNavigation(), page.click('.aud-settings button.btn')]);
+
+  // Règles selon la page : création dans l'extranet, puis effet sur un faux site (filtre pré-coché retirable)
+  await page.goto(BASE + '/admin/page-rules/edit');
+  await page.fill('[data-f=name]', 'Règle C4');
+  await page.fill('.pr-url-text', '/boutique/c4/');
+  await page.fill('[data-f=label]', 'Marque C4');
+  await page.selectOption('.br-cond select.br-field', 'brand');
+  await page.click('.br-cond .ms-toggle');
+  await page.locator('.ms-list .ms-item', { hasText: 'C4' }).first().click();
+  await page.click('[data-f=name]');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  check('règles de page : règle créée', (await page.textContent('body')).includes('Règle « Règle C4 » enregistrée'));
+  await page.goto(BASE + '/admin/page-rules');
+  check('règles de page : liste (adresse, action)', (await page.textContent('.pr-table')).includes('/boutique/c4/') && (await page.textContent('.pr-table')).includes('Filtre pré-coché'));
+  await page.goto(BASE + '/admin/preview?q=palme&page=' + encodeURIComponent('/boutique/c4/x.html'));
+  check('règles de page : aperçu interne avec « Page du site »', (await page.textContent('.flash-info')).includes('Règle C4'));
+  const sc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
+  await sc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><title>Boutique</title></head><body>'
+    + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=23" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
+  const shop = await sc.newPage();
+  await shop.goto(BASE + '/boutique/c4/palmes.html');
+  await shop.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
+  await shop.fill('input[name=q]', 'palme');
+  await shop.waitForSelector('.df-card', { timeout: 5000 });
+  await shop.waitForSelector('.df-pagefilter:not([hidden])', { timeout: 5000 });
+  const nLimited = await shop.locator('.df-card').count();
+  check('règles de page : widget limité, bandeau « Marque C4 ✕ »', (await shop.textContent('.df-pagefilter')).includes('Marque C4') && nLimited > 0);
+  await shop.click('.df-pagefilter-btn');
+  await shop.waitForSelector('.df-pagefilter-back', { timeout: 5000 });
+  await shop.waitForFunction((n) => document.querySelectorAll('.df-card').length > n, nLimited, { timeout: 5000 }).catch(() => {});
+  check('règles de page : ✕ élargit à tout le catalogue', await shop.locator('.df-card').count() > nLimited && (await shop.textContent('.df-pagefilter')).includes('tout le catalogue'));
+  await sc.close();
+  await page.goto(BASE + '/admin/page-rules');
+  await page.click('form[action$="/admin/page-rules/delete"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
+  check('règles de page : suppression', (await page.textContent('body')).includes('Règle supprimée'));
 
   check('aucune erreur JavaScript', errors.length === 0);
   if (errors.length) { console.log(errors.join('\n')); }

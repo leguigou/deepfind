@@ -362,3 +362,23 @@ CREATE TABLE IF NOT EXISTS audience_salts (
   day DATE NOT NULL PRIMARY KEY,
   salt CHAR(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Règles selon la page (Recommandations › Règles) : d'après l'adresse de la page où se trouve le visiteur,
+-- n'afficher que certains produits, les pré-sélectionner (filtre que le visiteur peut retirer) ou les exclure.
+-- Sans terme de recherche ni période ; seule la première règle active (ordre « position ») qui correspond s'applique.
+CREATE TABLE IF NOT EXISTS page_rules (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  position INT UNSIGNED NOT NULL DEFAULT 0,
+  urls TEXT NOT NULL,
+  action ENUM('only','prefilter','exclude') NOT NULL DEFAULT 'prefilter',
+  label VARCHAR(100) NOT NULL DEFAULT '',
+  match_all TINYINT(1) NOT NULL DEFAULT 1,
+  conditions TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang, position)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

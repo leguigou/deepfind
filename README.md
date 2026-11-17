@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=22" defer
+<script src="https://search.example.com/widget/deepfind.js?v=23" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=21` en `?v=22`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=22` en `?v=23`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -387,6 +387,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Synonymes & alias | Une ligne = des mots qui donnent les mêmes résultats, séparés par des virgules (ex. `ecoflow, ecoflau, ecauflo`) ; option « sens unique » (le 1er mot mène aux suivants) ; recherche et modification dans le tableau ; import CSV (`samples/synonymes.csv`) |
 | | Redirections | Envoyer certaines recherches vers une page (section 8) |
 | **Recommandations** | Résultats personnalisés | Produits affichés en premier, seuls ou exclus pour certaines recherches (section 8) |
+| | Règles | Résultats selon la **page du site** (adresse), sans mot-clé : uniquement certains produits, filtre pré-coché retirable, ou exclusion (section 8) |
 | | Bannières | Image ou code HTML en haut des résultats (section 8) |
 | | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
@@ -667,6 +668,25 @@ Pour des termes de recherche (correspondance exacte ou large), en continu ou sur
 
 « Épingler » dans l'aperçu interne crée ou complète un résultat « Recherche « … » ». L'ordre imposé ne vaut qu'en tri « pertinence ». Import CSV des anciennes règles (`samples/boosts.csv`).
 
+### Règles selon la page
+
+**Recommandations › Règles** adapte les résultats à la **page du site** où se trouve le visiteur, sans mot-clé ni période. Exemple : sur les pages dont l'adresse contient `/nautisme/`, ne proposer que la catégorie Nautisme.
+
+Une règle comprend :
+1. **Pages concernées** : une ou plusieurs adresses (chemin sans le nom de domaine, majuscules ignorées) qui **contiennent**, **commencent par**, **finissent par** ou **sont exactement** un texte ; il suffit qu'une adresse corresponde. Une adresse complète collée (`https://www.example.com/fr/nautisme.html`) est réduite à son chemin.
+2. **Action**, au choix :
+   - **Filtre pré-coché** : seuls ces produits sortent au départ, avec un bandeau « Résultats limités à **Nautisme ✕** » ; un clic sur ✕ élargit à tout le catalogue (« Revenir à Nautisme » le remet). Le texte du bandeau se règle dans la règle ;
+   - **Afficher uniquement** ces produits (filtre imposé, non retirable) ;
+   - **Exclure** ces produits.
+3. **Produits concernés** : conditions comme pour les résultats personnalisés (marque, catégorie, type, SKU, attributs : *est* / *n'est pas* ; disponibilité, promotion, nouveauté ; prix ou marge supérieur / inférieur à), toutes ou au moins une.
+
+**Fonctionnement**
+- Un interrupteur active ou désactive chaque règle. **Seule la première règle active de la liste dont une adresse correspond s'applique** : l'ordre se change par glisser-déposer (enregistré au lâcher).
+- La règle devient un filtre du moteur : nombre de résultats, pagination et filtres du widget (marques, catégories…) restent justes. Elle s'ajoute aux autres réglages (résultats personnalisés, boosts, filtres choisis par le visiteur). Les articles de blog ne sont pas concernés.
+- Rien ne change tant que le visiteur n'a rien tapé.
+- **Vérifier une règle** : **Aperçu interne**, champ « Page du site » (ex. `/fr/nautisme/kayak.html`) : la règle appliquée est indiquée au-dessus des résultats.
+- Nécessite le widget `?v=23` ou plus récent : il envoie le chemin de la page (sans paramètres) avec chaque recherche.
+
 ### Redirections
 
 Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur une période.
@@ -789,6 +809,6 @@ Il vérifie (environ 90 contrôles) la connexion, toutes les pages, les thèmes,
 - **Flux delta** : met à jour prix, stock, champs simples et suppressions. Les nouveaux produits, catégories et attributs arrivent à l'import complet ; la réactivation d'un produit désactivé auto aussi.
 - **Recherche** : pas de recherche sémantique ou IA, pas de suggestions de requêtes.
 - **Statistiques** : recherches, clics et audience (visiteurs, appareils) ; pas encore de suivi des ventes (ajouts au panier, commandes) ni d'envoi d'événements à Google Analytics.
-- **Copie entre projets** : n'inclut pas encore les layers, filtres et tris.
+- **Copie entre projets** : n'inclut pas encore les layers, filtres, tris ni les règles selon la page.
 - **Tests** : faits sous PHP 8.3 avec un **faux** Meilisearch. Il faut valider sous PHP 8.5 et le vrai Meilisearch sur le serveur de recette.
 - **Module Magento** : aucun module n'est fourni pour générer le flux. Utilisez une extension de flux du marché ou un développement interne qui produit le format décrit ci-dessus.

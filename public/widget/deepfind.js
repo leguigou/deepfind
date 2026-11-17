@@ -70,14 +70,18 @@
       isNew: 'Nouveau', close: 'Fermer', busy: 'Trop de recherches en peu de temps, patientez quelques secondes…', error: 'Recherche momentanément indisponible.',
       goTo: 'Voir la page', closeFilters: 'Fermer les filtres', clear: 'Effacer les filtres', results: 'résultats', loading: 'Chargement…',
       approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants',
-      price: 'Prix', min: 'Min.', max: 'Max.', apply: 'Valider', reset: 'Réinitialiser', search: 'Rechercher' },
+      price: 'Prix', min: 'Min.', max: 'Max.', apply: 'Valider', reset: 'Réinitialiser', search: 'Rechercher',
+      pageLimited: 'Résultats limités à', pageRemove: 'Retirer le filtre « %s » et chercher dans tout le catalogue',
+      pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
       isNew: 'New', close: 'Close', busy: 'Too many searches, please wait a few seconds…', error: 'Search temporarily unavailable.',
       goTo: 'Go to page', closeFilters: 'Close filters', clear: 'Clear filters', results: 'results', loading: 'Loading…',
       approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products',
-      price: 'Price', min: 'Min.', max: 'Max.', apply: 'Apply', reset: 'Reset', search: 'Search' }
+      price: 'Price', min: 'Min.', max: 'Max.', apply: 'Apply', reset: 'Reset', search: 'Search',
+      pageLimited: 'Results limited to', pageRemove: 'Remove the “%s” filter and search the whole catalogue',
+      pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”' }
   };
   var t = T[cfg.lang] || T.fr;
   var money;
@@ -187,6 +191,9 @@
   head.appendChild(tools);
   var notice = el('div', 'df-notice');
   notice.hidden = true;
+  // Filtre pré-coché d'une règle selon la page (extranet › Recommandations › Règles) : le visiteur peut le retirer
+  var pageBar = el('div', 'df-pagefilter');
+  pageBar.hidden = true;
   var grid = el('div', 'df-grid');
   var empty = el('div', 'df-empty');
   empty.hidden = true;
@@ -194,6 +201,7 @@
   loader.hidden = true;
   var sentinel = el('div', 'df-sentinel');
   main.appendChild(head);
+  main.appendChild(pageBar);
   main.appendChild(notice);
   var bannerBox = el('div', 'df-banner');
   bannerBox.hidden = true;
@@ -204,7 +212,7 @@
   main.appendChild(sentinel);
 
   // ------------------------------------------------------------------ État
-  var state = { q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, redirectNewTab: false, ids: {} };
+  var state = { pageOff: false, q: '', offset: 0, total: 0, hasMore: false, loading: false, reqId: 0, filters: {}, sort: 'relevance', redirect: null, redirectAuto: false, redirectNewTab: false, ids: {} };
   state.priceMin = '';
   state.priceMax = '';
   state.open = {};          // blocs de filtres dépliés / repliés par le visiteur (code => bool)
@@ -234,6 +242,9 @@
     p.set('limit', String(mobile.matches && cfg.pageSizeMobile ? cfg.pageSizeMobile : cfg.pageSize));
     p.set('sid', sid);
     if (device) { p.set('d', device); }
+    // page où se trouve le visiteur (chemin seul, sans paramètres) : règles selon la page
+    p.set('page', location.pathname || '/');
+    if (state.pageOff) { p.set('pr', '0'); }
     if (noAudience) { p.set('na', '1'); }
     if (offset > 0) { p.set('posts', '0'); }
     if (tgStock.input.checked) { p.set('in_stock', '1'); }
@@ -362,6 +373,31 @@
   bannerBox.addEventListener('click', bannerClick);
   bannerBox.addEventListener('auxclick', bannerClick);
 
+  function renderPageFilter(pf) {
+    pageBar.textContent = '';
+    pageBar.hidden = !pf;
+    if (!pf) { return; }
+    var label = String(pf.label || '');
+    var btn = el('button', 'df-pagefilter-btn');
+    btn.type = 'button';
+    if (!pf.off) {
+      pageBar.appendChild(el('span', 'df-pagefilter-text', t.pageLimited + ' '));
+      btn.appendChild(el('span', null, label));
+      btn.appendChild(el('span', 'df-pagefilter-x', '✕'));
+      btn.setAttribute('aria-label', t.pageRemove.replace('%s', label));
+      btn.title = t.pageRemove.replace('%s', label);
+    } else {
+      pageBar.appendChild(el('span', 'df-pagefilter-text', t.pageAll + ' '));
+      btn.className = 'df-pagefilter-back';
+      btn.textContent = t.pageBack.replace('%s', label);
+    }
+    btn.addEventListener('click', function () {
+      state.pageOff = !pf.off;
+      search(false);
+    });
+    pageBar.appendChild(btn);
+  }
+
   function render(data, append) {
     state.total = data.total || 0;
     state.offset = data.next_offset || 0;
@@ -371,6 +407,7 @@
     state.redirectNewTab = !!data.redirect_new_tab;
     if (!append) {
       renderBanner(data.banner || null);
+      renderPageFilter(data.page_filter || null);
       grid.textContent = '';
       state.ids = {};
       main.scrollTop = 0;

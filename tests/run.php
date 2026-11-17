@@ -822,6 +822,54 @@ if ($base) {
         && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day = CURDATE()') === 2, json_encode([$nAgg, $before, $after['total']]));
     check('audience : nouvelle agrégation sans jour passé = rien à faire', $AU::aggregate() === 0);
 
+    // ------------------------------------------------ Règles selon la page (Recommandations › Règles)
+    $PR = DeepFind\Rules\PageRules::class;
+    check('règles de page : adresse normalisée (domaine, paramètres, majuscules, encodage)',
+        $PR::normalizePath('https://www.example.com/FR/Nautisme/Kayak.html?x=1#y') === '/fr/nautisme/kayak.html'
+        && $PR::normalizePath('fr/plong%C3%A9e') === '/fr/plongée');
+    check('règles de page : comparaisons d\'adresse', $PR::urlMatches(['match' => 'contains', 'text' => '/nautisme/'], '/fr/nautisme/kayak.html')
+        && $PR::urlMatches(['match' => 'starts', 'text' => '/fr/NAUT'], '/fr/nautisme') && $PR::urlMatches(['match' => 'ends', 'text' => '.html'], '/a/b.html')
+        && $PR::urlMatches(['match' => 'equals', 'text' => '/fr/nautisme/'], '/fr/nautisme') && !$PR::urlMatches(['match' => 'equals', 'text' => '/fr/nautisme'], '/fr/nautisme/kayak')
+        && !$PR::urlMatches(['match' => 'contains', 'text' => ''], '/x'));
+    [$prBad, $prErr] = $PR::sanitize(['name' => '', 'urls' => [['match' => 'contains', 'text' => '  ']], 'conditions' => []], 'fr');
+    check('règles de page : nom, adresse et condition obligatoires', $prBad === null && count($prErr) === 3, json_encode($prErr));
+    [$prOk] = $PR::sanitize(['name' => 'C4', 'active' => true, 'action' => 'prefilter', 'label' => 'Marque C4', 'match' => 'all',
+        'urls' => [['match' => 'contains', 'text' => '/c4/'], ['match' => 'contains', 'text' => 'https://www.example.com/fr/marque-c4.html']],
+        'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['C4']]]], 'fr');
+    check('règles de page : adresse complète réduite au chemin', $prOk !== null && $prOk['urls'][1]['text'] === '/fr/marque-c4.html', json_encode($prOk));
+    DeepFind\Db::exec('DELETE FROM page_rules');
+    DeepFind\Settings::set('same_query_per_minute', '500'); // même recherche répétée : pas de refus anti-robots ici
+    $idC4 = $PR::save('fr', $prOk, null);
+    $idAll = $PR::save('fr', ['name' => 'Tout sauf C4', 'active' => true, 'action' => 'exclude', 'label' => '', 'match_all' => true,
+        'urls' => [['match' => 'starts', 'text' => '/']], 'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['C4']]]], null);
+    check('règles de page : la 1re règle de la liste qui correspond s\'applique', ($PR::match('fr', '/fr/c4/palmes.html')['id'] ?? 0) === $idC4
+        && ($PR::match('fr', '/fr/autre.html')['id'] ?? 0) === $idAll && $PR::match('fr', '') === null);
+    [, $dAll] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0");
+    [, $dPre] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&page=" . rawurlencode('/fr/c4/palmes.html'));
+    $brandsPre = array_values(array_unique(array_column($dPre['products'] ?? [], 'brand')));
+    check('règles de page : filtre pré-coché (seule la marque C4, bandeau envoyé au widget)', $brandsPre === ['C4'] && $dPre['total'] < $dAll['total']
+        && ($dPre['page_filter']['label'] ?? '') === 'Marque C4' && ($dPre['page_filter']['off'] ?? true) === false
+        && !array_key_exists('page_filter', $dAll) || $dAll['page_filter'] === null, json_encode([$brandsPre, $dPre['total'] ?? null, $dAll['total'] ?? null, $dPre['page_filter'] ?? null]));
+    $brandFacet = array_values(array_filter($dPre['facets'] ?? [], static fn ($f) => $f['code'] === 'brand'))[0]['values'] ?? [];
+    check('règles de page : filtres du widget limités aux produits de la règle', array_column($brandFacet, 'value') === ['C4'], json_encode(array_column($dPre['facets'] ?? [], 'code')) . json_encode(array_column($dAll['facets'] ?? [], 'code')));
+    [, $dOff] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&pr=0&page=" . rawurlencode('/fr/c4/palmes.html'));
+    check('règles de page : filtre pré-coché retiré par le visiteur = tout le catalogue', $dOff['total'] === $dAll['total'] && ($dOff['page_filter']['off'] ?? false) === true);
+    [, $dEx] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&page=" . rawurlencode('/fr/autre.html'));
+    check('règles de page : exclusion (aucun produit C4)', !in_array('C4', array_column($dEx['products'] ?? [], 'brand'), true) && $dEx['total'] > 0
+        && $dEx['total'] === $dAll['total'] - $dPre['total'] && ($dEx['page_filter'] ?? null) === null, json_encode([$dEx['total'] ?? null]));
+    $PR::reorder('fr', [$idAll, $idC4]);
+    $PR::setActive($idAll, 'fr', false);
+    $onlyRule = $PR::find($idC4, 'fr');
+    $onlyRule['action'] = 'only';
+    $PR::save('fr', $onlyRule, $idC4);
+    [, $dOnly] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&pr=0&page=" . rawurlencode('/fr/c4/palmes.html'));
+    check('règles de page : « uniquement » ne peut pas être retiré ; règle inactive ignorée ; ordre modifiable',
+        array_values(array_unique(array_column($dOnly['products'] ?? [], 'brand'))) === ['C4'] && ($dOnly['page_filter'] ?? null) === null
+        && $PR::match('fr', '/fr/autre.html') === null && array_column($PR::all('fr'), 'id') === [$idAll, $idC4]);
+    DeepFind\Db::exec('DELETE FROM page_rules');
+    DeepFind\Settings::set('same_query_per_minute', '15');
+    DeepFind\CacheVersion::bump();
+
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }

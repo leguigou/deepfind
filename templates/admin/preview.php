@@ -5,6 +5,7 @@
 <form method="get" class="card form inline">
   <label>Recherche <input name="q" value="<?= e($p['q'] ?? '') ?>" placeholder="palme, C4-PREDATOR…" autofocus></label>
   <label>Tri <select name="sort"><?php foreach ($sorts as $k => $l): ?><option value="<?= $k ?>" <?= ($p['sort'] ?? '') === $k ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
+  <label title="Simule la page du site où se trouve le visiteur (Recommandations › Règles)">Page du site <input name="page" value="<?= e($p['page'] ?? '') ?>" size="18" placeholder="/fr/nautisme/"></label>
   <label>Marge min. (0 à 1) <input name="margin_min" value="<?= e($p['margin_min'] ?? '') ?>" size="6" placeholder="0.3"></label>
   <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="in_stock" value="1" <?= !empty($p['in_stock']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">En stock</span></label>
   <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="on_sale" value="1" <?= !empty($p['on_sale']) ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">En promotion</span></label>
@@ -15,6 +16,11 @@
 </form>
 <?php if ($error): ?><div class="flash flash-error"><?= e($error) ?></div><?php endif; ?>
 <?php if ($result): ?>
+  <?php if (!empty($p['page'])): $pr = $result['_page_rule'] ?? null; ?>
+    <div class="flash flash-info"><?php if ($pr): ?>Page « <?= e((string) $p['page']) ?> » : règle <a href="<?= e(url('/admin/page-rules/edit', ['id' => $pr['id']])) ?>">« <?= e($pr['name']) ?> »</a>
+      (<?= e(['only' => 'uniquement ces produits', 'prefilter' => 'filtre pré-coché', 'exclude' => 'produits exclus'][$pr['action']] ?? '') ?>) appliquée.
+      <?php else: ?>Page « <?= e((string) $p['page']) ?> » : aucune règle selon la page ne s'applique.<?php endif; ?></div>
+  <?php endif; ?>
   <?php if (!empty($result['approximate'])): ?><div class="flash flash-warn">Aucun résultat exact (tous les mots) : le visiteur voit « Aucun résultat exact » puis ces produits approchants. Ajoutez un synonyme si l'un d'eux correspond vraiment.</div><?php endif; ?>
   <?php $nDis = count($result['disabled'] ?? []); $showDis = !empty($p['show_disabled']); ?>
   <p><strong><?= fmt_n($result['total']) ?></strong> produit(s) · moteur <?= (int) $result['engine_ms'] ?> ms

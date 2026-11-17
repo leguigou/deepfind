@@ -21,7 +21,11 @@ final class PreviewController
         $error = null;
         if (isset($_GET['q'])) {
             try {
-                $result = (new SearchService(MeiliClient::search()))->search(SearchRequest::fromArray($params, true), true, !empty($_GET['show_disabled']));
+                $req = SearchRequest::fromArray($params, true);
+                // « Page du site » : simule la page où se trouve le visiteur (règles selon la page)
+                $req->pageRule = \DeepFind\Rules\PageRules::match($req->lang, $req->page);
+                $result = (new SearchService(MeiliClient::search()))->search($req, true, !empty($_GET['show_disabled']));
+                $result['_page_rule'] = $req->pageRule;
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
             }
