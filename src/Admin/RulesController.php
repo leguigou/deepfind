@@ -36,6 +36,22 @@ final class RulesController
         $this->backTo('/admin/synonyms');
     }
 
+    public function synonymUpdate(): void
+    {
+        $term = trim((string) ($_POST['term'] ?? ''));
+        $syn = trim(str_replace(',', '|', (string) ($_POST['synonyms'] ?? '')));
+        // « palmes | fins » → « palmes|fins »
+        $syn = implode('|', array_values(array_filter(array_map('trim', explode('|', $syn)), 'strlen')));
+        if ($term === '' || $syn === '') {
+            Auth::flash('error', 'Terme et synonymes obligatoires.');
+        } elseif (!RulesRepository::updateSynonym((int) ($_POST['id'] ?? 0), Auth::lang(), ($_POST['type'] ?? '') === 'alias' ? 'alias' : 'equivalent', $term, $syn)) {
+            Auth::flash('error', 'Synonyme introuvable.');
+        } else {
+            $this->sync(Auth::lang());
+        }
+        $this->backTo('/admin/synonyms');
+    }
+
     public function synonymDelete(): void
     {
         Db::exec('DELETE FROM synonyms WHERE id = ? AND project_id = ?', [(int) ($_POST['id'] ?? 0), \DeepFind\Project::id()]);

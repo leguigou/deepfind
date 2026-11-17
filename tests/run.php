@@ -251,6 +251,15 @@ if ($base) {
     $RD::delete($rdId, 'fr');
     [, $d] = $get("/api/v1/search?key=$key&q=nageoire");
     check('API : synonymes', $d['total'] > 0);
+    // Modification d'un synonyme (fenêtre « Modifier » de la page Synonymes & alias)
+    DeepFind\Rules\RulesRepository::addSynonym('fr', 'equivalent', 'ecoflau', 'ecoflo');
+    $synId = (int) DeepFind\Db::value('SELECT id FROM synonyms WHERE term = ? AND project_id = ?', ['ecoflau', DeepFind\Project::id()]);
+    $synOk = DeepFind\Rules\RulesRepository::updateSynonym($synId, 'fr', 'alias', ' ecoflaw ', 'ecoflow|eco flow');
+    $synRow = DeepFind\Db::one('SELECT type, term, synonyms FROM synonyms WHERE id = ?', [$synId]);
+    check('synonymes : modification (type, terme, synonymes)', $synOk && $synRow === ['type' => 'alias', 'term' => 'ecoflaw', 'synonyms' => 'ecoflow|eco flow']);
+    check('synonymes : modification refusée hors langue ou identifiant inconnu', !DeepFind\Rules\RulesRepository::updateSynonym($synId, 'en', 'alias', 'x', 'y')
+        && !DeepFind\Rules\RulesRepository::updateSynonym(999999, 'fr', 'alias', 'x', 'y'));
+    DeepFind\Db::exec('DELETE FROM synonyms WHERE id = ?', [$synId]);
     [$c] = $get("/api/v1/search?key=pk_00000000000000000000000000000000&q=palme");
     check('API : clé invalide => 401', $c === 401);
     [$c] = $get("/api/v1/search?key=$key&q=palme", ['Origin: https://evil.example']);

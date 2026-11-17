@@ -48,6 +48,7 @@ final class App
         'POST /admin/cache/purge' => [CacheController::class, 'purge'],
         'GET /admin/synonyms' => [RulesController::class, 'synonyms'],
         'POST /admin/synonyms/add' => [RulesController::class, 'synonymAdd'],
+        'POST /admin/synonyms/update' => [RulesController::class, 'synonymUpdate'],
         'POST /admin/synonyms/delete' => [RulesController::class, 'synonymDelete'],
         'POST /admin/synonyms/import' => [RulesController::class, 'synonymImport'],
         'POST /admin/synonyms/sync' => [RulesController::class, 'synonymSync'],

@@ -171,6 +171,9 @@ h3 { font-size: 15px; margin: 0 0 10px; }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .actions form { margin: 0; }
 .synonym-sync { margin-block: 16px; gap: 8px 12px; }
+.table-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.table-search input[type=search] { flex: 1 1 260px; max-width: 420px; margin: 0; }
+tr[hidden] { display: none !important; }
 td.actions { display: table-cell; } td.actions > * { display: inline-block; margin: 2px; }
 
 /* ---------- Formulaires */
@@ -894,3 +897,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .flt-order { width: auto; margin: 0; }
 .flt-order { min-width: 130px; }
 .ms-hint { padding: 4px 10px 6px; line-height: 1.35; }
+.syn-help ul { margin: 0 0 8px; padding-left: 20px; max-width: 980px; }
+.syn-help li { margin-bottom: 6px; line-height: 1.45; }
+.syn-help p { margin: 0 0 8px; }
