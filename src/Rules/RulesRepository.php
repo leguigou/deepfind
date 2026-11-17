@@ -157,6 +157,23 @@ final class RulesRepository
         ]);
     }
 
+    /**
+     * Découpe une liste de mots saisie (« ecoflow, ecoflau | ecoflo ») : nettoyée, sans doublon
+     * (majuscules et accents ignorés), 50 mots au plus de 190 caractères.
+     * @return list<string>
+     */
+    public static function splitWords(string $raw): array
+    {
+        $out = [];
+        foreach (preg_split('/[,|]/u', $raw) ?: [] as $w) {
+            $w = Text::truncate(trim((string) preg_replace('/\s+/u', ' ', $w)), 190);
+            if ($w !== '' && !isset($out[Text::fold($w)])) {
+                $out[Text::fold($w)] = $w;
+            }
+        }
+        return array_slice(array_values($out), 0, 50);
+    }
+
     /** Modifie un synonyme du projet courant. @return bool false si introuvable */
     public static function updateSynonym(int $id, string $lang, string $type, string $term, string $synonyms): bool
     {

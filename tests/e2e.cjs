@@ -65,12 +65,14 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('[data-toggle-menu]');
   await page.click('[data-toggle-theme]');
 
-  // Action : ajout d'un synonyme
+  // Action : ajout d'un groupe de synonymes (une ligne de mots séparés par des virgules)
   await page.goto(BASE + '/admin/synonyms');
-  await page.fill('input[name=term]', 'lunette');
-  await page.fill('input[name=synonyms]', 'masque');
+  await page.fill('form[action$="/admin/synonyms/add"] input[name=words]', 'lunette, masque');
   await page.click('form[action$="/admin/synonyms/add"] button');
-  check('ajout synonyme', (await page.textContent('body')).includes('lunette'));
+  check('ajout synonyme', (await page.textContent('#synonyms-table')).includes('lunette'));
+  await page.fill('form[action$="/admin/synonyms/add"] input[name=words]', 'seulement-un-mot');
+  await page.click('form[action$="/admin/synonyms/add"] button');
+  check('synonymes : un seul mot refusé', (await page.textContent('body')).includes('au moins deux mots'));
   // Recherche dans le tableau (sans accents ni majuscules) puis modification dans la fenêtre
   const synRows = await page.locator('#synonyms-table tbody tr[data-search]').count();
   await page.fill('[data-table-search]', 'LUNETTÉ');
@@ -81,11 +83,13 @@ fs.mkdirSync(OUT, { recursive: true });
   check('synonymes : message si aucun résultat', await page.isVisible('[data-table-search-empty]'));
   await page.fill('[data-table-search]', 'lunette');
   await page.click('#synonyms-table tr[data-search]:visible button[data-dialog-open="synonym-dialog"]');
-  check('synonymes : fenêtre « Modifier » pré-remplie', (await page.inputValue('#synonym-dialog input[name=term]')) === 'lunette'
-    && (await page.inputValue('#synonym-dialog input[name=synonyms]')) === 'masque');
-  await page.fill('#synonym-dialog input[name=synonyms]', 'masque, masques');
+  check('synonymes : fenêtre « Modifier » pré-remplie', (await page.inputValue('#synonym-dialog input[name=words]')) === 'lunette, masque'
+    && !(await page.isChecked('#synonym-dialog input[name=one_way]')));
+  await page.fill('#synonym-dialog input[name=words]', 'lunette, masque, masques');
+  await page.check('#synonym-dialog input[name=one_way]', { force: true });
   await Promise.all([page.waitForNavigation(), page.click('#synonym-dialog .modal-foot button.btn:not(.btn-light)')]);
-  check('synonymes : modification enregistrée', (await page.textContent('#synonyms-table')).includes('masque, masques'));
+  const synRow = await page.textContent('#synonyms-table tr[data-search*="lunette"]');
+  check('synonymes : modification enregistrée (sens unique)', synRow.includes('masques') && synRow.includes('→') && synRow.includes('Sens unique'));
   // Action : import manuel mis en file d'attente
   await page.goto(BASE + '/admin/sources');
   await page.click('form[action$="/admin/sources/import"] button');

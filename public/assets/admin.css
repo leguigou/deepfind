@@ -906,3 +906,6 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .syn-help ul { margin: 0 0 8px; padding-left: 20px; max-width: 980px; }
 .syn-help li { margin-bottom: 6px; line-height: 1.45; }
 .syn-help p { margin: 0 0 8px; }
+.syn-words { align-items: center; }
+.syn-words .chip.syn-source { font-weight: 700; }
+.syn-arrow { color: var(--muted); font-weight: 700; }
