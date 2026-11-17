@@ -157,6 +157,19 @@ final class RulesRepository
         ]);
     }
 
+    /** Modifie un synonyme du projet courant. @return bool false si introuvable */
+    public static function updateSynonym(int $id, string $lang, string $type, string $term, string $synonyms): bool
+    {
+        $exists = Db::value('SELECT id FROM synonyms WHERE id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]);
+        if ($exists === null || $exists === false) {
+            return false;
+        }
+        Db::exec('UPDATE synonyms SET type = ?, term = ?, synonyms = ? WHERE id = ? AND project_id = ?', [
+            $type === 'alias' ? 'alias' : 'equivalent', Text::truncate(trim($term), 190), trim($synonyms), $id, \DeepFind\Project::id(),
+        ]);
+        return true;
+    }
+
     /** @return array{0:int,1:list<string>} */
     public static function importRules(string $file, string $lang, bool $replace): array
     {

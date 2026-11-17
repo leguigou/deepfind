@@ -211,13 +211,49 @@
     document.querySelectorAll('[data-dialog-open]').forEach(function (b) {
       b.addEventListener('click', function () {
         var dlg = document.getElementById(b.getAttribute('data-dialog-open'));
-        if (dlg && typeof dlg.showModal === 'function') { dlg.showModal(); }
+        if (!dlg) { return; }
+        // pré-remplissage : data-fill-<nom>="valeur" → champ name="<nom>" de la fenêtre (fenêtre « Modifier »)
+        Array.prototype.forEach.call(b.attributes, function (a) {
+          if (a.name.indexOf('data-fill-') !== 0) { return; }
+          var f = dlg.querySelector('[name="' + a.name.slice(10) + '"]');
+          if (f) { f.value = a.value; }
+        });
+        if (typeof dlg.showModal === 'function') { dlg.showModal(); }
+        var first = dlg.querySelector('.modal-body input:not([type=hidden]), .modal-body select');
+        if (first && b.hasAttribute('data-fill-id')) { first.focus(); }
       });
     });
     document.querySelectorAll('dialog.modal').forEach(function (dlg) {
       dlg.addEventListener('click', function (ev) {
         if (ev.target === dlg || ev.target.closest('[data-dialog-close]')) { dlg.close(); }
       });
+    });
+
+    // Recherche dans un tableau : data-table-search="id du tableau" filtre les lignes [data-search]
+    // (sans tenir compte des majuscules ni des accents : « plongee » trouve « Plongée »)
+    function fold(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+    document.querySelectorAll('[data-table-search]').forEach(function (input) {
+      var table = document.getElementById(input.getAttribute('data-table-search'));
+      if (!table) { return; }
+      var rows = Array.prototype.slice.call(table.querySelectorAll('tbody tr[data-search]'));
+      var keys = rows.map(function (r) { return fold(r.getAttribute('data-search')); });
+      var empty = table.querySelector('[data-table-search-empty]');
+      var count = input.parentNode.querySelector('[data-table-search-count]');
+      function apply() {
+        var words = fold(input.value).trim().split(/\s+/).filter(Boolean);
+        var n = 0;
+        rows.forEach(function (r, i) {
+          var ok = words.every(function (w) { return keys[i].indexOf(w) !== -1; });
+          r.hidden = !ok;
+          if (ok) { n++; }
+        });
+        if (empty) { empty.hidden = n > 0; }
+        var label = ' ' + ((count && count.getAttribute('data-label')) || 'ligne(s)');
+        if (count) { count.textContent = (words.length ? n + ' / ' : '') + rows.length + label; }
+      }
+      input.addEventListener('input', apply);
+      input.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && input.value) { ev.preventDefault(); input.value = ''; apply(); } });
+      if (input.value) { apply(); }
     });
 
     // Champs d'envoi de fichier (file_field) : glisser-déposer, nom et taille du fichier, retrait
