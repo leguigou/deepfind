@@ -48,8 +48,11 @@
     var box = el('div', 'ms');
     var sel = selected.slice();
     var all = [];
-    var toggle = el('button', 'ms-toggle');
-    toggle.type = 'button';
+    // div focusable (et non <button>) : chaque tag contient son propre bouton « ✕ »
+    var toggle = el('div', 'ms-toggle');
+    toggle.tabIndex = 0;
+    toggle.setAttribute('role', 'button');
+    toggle.setAttribute('aria-haspopup', 'listbox');
     var panel = el('div', 'ms-panel');
     panel.hidden = true;
     var search = el('input', 'ms-search');
@@ -82,7 +85,23 @@
     function renderToggle() {
       toggle.textContent = '';
       if (!sel.length) { toggle.appendChild(el('span', 'muted', 'Sélectionner des valeurs')); return; }
-      sel.slice(0, 8).forEach(function (v) { toggle.appendChild(el('span', 'chip', label(v))); });
+      sel.slice(0, 8).forEach(function (v) {
+        var chip = el('span', 'chip', label(v));
+        var x = el('button', 'chip-x', '✕');
+        x.type = 'button';
+        x.title = 'Retirer';
+        x.setAttribute('aria-label', 'Retirer ' + label(v));
+        x.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var i = sel.indexOf(v);
+          if (i !== -1) { sel.splice(i, 1); }
+          renderToggle();
+          renderList();
+          toggle.focus();
+        });
+        chip.appendChild(x);
+        toggle.appendChild(chip);
+      });
       if (sel.length > 8) { toggle.appendChild(el('span', 'muted', '+' + (sel.length - 8))); }
     }
     function visible() {
@@ -173,6 +192,9 @@
       if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); panel.hidden = true; toggle.focus(); }
     });
     addFree.addEventListener('click', addSearchValue);
+    toggle.addEventListener('keydown', function (ev) {
+      if (ev.target === toggle && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); toggle.click(); }
+    });
     toggle.addEventListener('click', function () {
       var open = panel.hidden;
       root.querySelectorAll('.ms-panel').forEach(function (p) { p.hidden = true; });
