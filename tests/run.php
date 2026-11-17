@@ -821,6 +821,15 @@ if ($base) {
         && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_salts WHERE day < CURDATE()') === 0
         && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day = CURDATE()') === 2, json_encode([$nAgg, $before, $after['total']]));
     check('audience : nouvelle agrégation sans jour passé = rien à faire', $AU::aggregate() === 0);
+    $AC = DeepFind\Admin\AudienceController::class;
+    $todayA = date('Y-m-d');
+    $pA = $AC::period(['from' => '2026-03-10', 'to' => '2026-03-01']);
+    $pB = $AC::period(['from' => '2000-01-01', 'to' => '2999-01-01']);
+    $pC = $AC::period(['from' => '2026-02-30', 'to' => '2026-03-01', 'days' => '90']);
+    check('audience : période personnalisée (ordre, pas après aujourd\'hui, 2 ans au plus, date invalide → bouton)',
+        $pA['custom'] && $pA['from'] === '2026-03-01' && $pA['to'] === min('2026-03-10', $todayA) && $pA['query'] === ['from' => $pA['from'], 'to' => $pA['to']]
+        && $pB['to'] === $todayA && (strtotime($pB['to']) - strtotime($pB['from'])) / 86400 <= $AC::MAX_CUSTOM_DAYS
+        && !$pC['custom'] && $pC['days'] === 90 && $pC['to'] === $todayA, json_encode([$pA, $pB, $pC]));
 
     // ------------------------------------------------ Règles selon la page (Recommandations › Règles)
     $PR = DeepFind\Rules\PageRules::class;

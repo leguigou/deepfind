@@ -515,7 +515,7 @@ Un bloc par thème, une ligne par réglage (valeur par défaut rappelée) :
 **Analyse › Audience** suit l'évolution, jour après jour, de l'usage du site et du moteur de recherche, sans aucune information personnelle :
 - **Visiteurs par jour**, **part des visiteurs qui cherchent** (les autres naviguent sans chercher), **recherches par visiteur** (1, 2 ou 3, 4 et plus), **part qui clique sur un résultat**, **pages vues par visiteur**.
 - Répartition **mobile / tablette / ordinateur** (d'après la taille de l'écran indiquée par le widget, sinon le navigateur).
-- Courbe quotidienne (journées complètes ; survol ou flèches du clavier pour le détail), tableau jour par jour, export CSV ; périodes 7 jours, 30 jours, 90 jours, 12 mois.
+- Courbe quotidienne (journées complètes ; survol ou flèches du clavier pour le détail), tableau jour par jour, export CSV ; périodes 7 jours, 30 jours, 90 jours, 12 mois, ou **Personnalisé** (dates de début et de fin, 2 ans au plus).
 
 **Comment c'est mesuré**
 - Le widget envoie un petit signal « page vue » (`POST /api/v1/visit`) sur les pages choisies. Les recherches et les clics sont comptés pendant la recherche, sans requête en plus. Pendant la frappe, « pal », « palm », « palme » comptent pour une seule recherche.

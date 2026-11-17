@@ -359,6 +359,18 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.mouse.move(chartBox.x + chartBox.width - 30, chartBox.y + 120);
   check('audience : infobulle au survol', await page.isVisible('.aud-tip') && (await page.textContent('.aud-tip')).includes('Visiteurs'));
   check('audience : adresses masquées sauf « Pages choisies »', !await page.isVisible('.aud-paths textarea'));
+  // période personnalisée : dates de la veille au jour même
+  check('audience : champs de dates masqués par défaut', !await page.isVisible('#aud-custom'));
+  await page.click('[data-custom-toggle]');
+  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const yest = new Date(Date.now() - 86400000);
+  const yYmd = ymd(yest), tYmd = ymd(new Date());
+  await page.fill('#aud-custom input[name=from]', yYmd);
+  await page.fill('#aud-custom input[name=to]', tYmd);
+  await Promise.all([page.waitForNavigation(), page.click('#aud-custom button')]);
+  check('audience : période personnalisée appliquée (dates, bouton actif, export)', page.url().includes('from=' + yYmd)
+    && (await page.textContent('.aud-range')).includes(yYmd.split('-').reverse().join('/')) && await page.isVisible('#aud-custom')
+    && (await page.getAttribute('a[href*="/admin/audience/export"]', 'href')).includes('from=' + yYmd));
   const siteKey = fs.readFileSync('tests/_tmp/key', 'utf8').trim();
   const sitePage = async (path) => {
     const sc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });

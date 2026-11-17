@@ -120,6 +120,17 @@
     box.onblur = hide;
   }
 
+  // Période personnalisée : le bouton affiche / masque les champs de dates
+  var customBtn = document.querySelector('[data-custom-toggle]');
+  var customForm = document.getElementById('aud-custom');
+  if (customBtn && customForm) {
+    customBtn.addEventListener('click', function () {
+      customForm.hidden = !customForm.hidden;
+      customBtn.setAttribute('aria-expanded', customForm.hidden ? 'false' : 'true');
+      if (!customForm.hidden) { customForm.querySelector('input[name=from]').focus(); }
+    });
+  }
+
   // Réglages : adresses à saisir seulement pour « Pages choisies »
   var paths = document.querySelector('.aud-paths');
   var radios = document.querySelectorAll('.aud-pages input[name=pages]');

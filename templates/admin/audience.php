@@ -1,5 +1,5 @@
 <?php
-/** @var int $days @var string $from @var string $to @var array $data @var bool $enabled @var array $tracks @var string $pages @var string $paths @var bool $pathsHome */
+/** @var int $days @var string $from @var string $to @var bool $custom @var array $periodQuery @var array $data @var bool $enabled @var array $tracks @var string $pages @var string $paths @var bool $pathsHome */
 use DeepFind\Admin\AudienceController;
 use DeepFind\Logging\Audience;
 
@@ -21,14 +21,22 @@ $toggle = static fn (string $name, bool $on, string $label, string $help = '') =
     . ($help !== '' ? '<small class="muted">' . e($help) . '</small>' : '') . '</span></label>';
 ?>
 <div class="aud-head">
-  <div class="inline-form">
+  <div class="inline-form aud-periods">
     Période :
     <?php foreach (AudienceController::PERIODS as $d => $l): ?>
-      <a class="btn btn-sm <?= $days === $d ? '' : 'btn-light' ?>" href="<?= e(url('/admin/audience', ['days' => $d])) ?>"><?= e($l) ?></a>
+      <a class="btn btn-sm <?= !$custom && $days === $d ? '' : 'btn-light' ?>" href="<?= e(url('/admin/audience', ['days' => $d])) ?>"><?= e($l) ?></a>
     <?php endforeach; ?>
+    <button type="button" class="btn btn-sm <?= $custom ? '' : 'btn-light' ?>" data-custom-toggle aria-expanded="<?= $custom ? 'true' : 'false' ?>" aria-controls="aud-custom">Personnalisé</button>
   </div>
-  <a class="btn btn-sm btn-light" href="<?= e(url('/admin/audience/export', ['days' => $days])) ?>">Exporter CSV</a>
+  <a class="btn btn-sm btn-light" href="<?= e(url('/admin/audience/export', $periodQuery)) ?>">Exporter CSV</a>
 </div>
+<form method="get" action="<?= e(url('/admin/audience')) ?>" class="card form aud-custom" id="aud-custom"<?= $custom ? '' : ' hidden' ?>>
+  <label>Du <input type="date" name="from" value="<?= e($from) ?>" max="<?= e(date('Y-m-d')) ?>" required></label>
+  <label>Au <input type="date" name="to" value="<?= e($to) ?>" max="<?= e(date('Y-m-d')) ?>" required></label>
+  <button class="btn btn-sm">Appliquer</button>
+  <span class="muted small">2 ans au plus.</span>
+</form>
+<p class="muted small aud-range">Du <?= e(date('d/m/Y', strtotime($from))) ?> au <?= e(date('d/m/Y', strtotime($to))) ?><?= $to === date('Y-m-d') ? ' (aujourd\'hui inclus, journée en cours)' : '' ?>.</p>
 
 <?php if (!$enabled): ?>
   <div class="flash flash-warn">La mesure d'audience est désactivée : aucune nouvelle donnée n'est collectée (réglages en bas de page).</div>
@@ -39,7 +47,7 @@ $toggle = static fn (string $name, bool $on, string $label, string $help = '') =
 
 <div class="cards aud-kpis">
   <div class="card kpi"><div class="kpi-label">Visiteurs par jour</div><div class="kpi-value"><?= $activeDays > 0 ? fmt_n($t['visitors'] / $activeDays) : '—' ?></div>
-    <div class="muted small">moyenne sur <?= fmt_n($activeDays) ?> jour(s) mesuré(s)</div></div>
+    <div class="muted small"><?= $activeDays > 0 ? 'moyenne sur ' . fmt_n($activeDays) . ' jour' . ($activeDays > 1 ? 's' : '') . ' mesuré' . ($activeDays > 1 ? 's' : '') : 'aucune donnée sur la période' ?></div></div>
   <div class="card kpi"><div class="kpi-label">Visiteurs qui cherchent</div><div class="kpi-value"><?= $pct($t['searchers'], $t['visitors']) ?></div>
     <div class="muted small">les autres naviguent sans chercher</div></div>
   <div class="card kpi"><div class="kpi-label">Recherches par visiteur</div><div class="kpi-value"><?= $ratio($t['searches'], $t['searchers']) ?></div>
@@ -118,7 +126,7 @@ $toggle = static fn (string $name, bool $on, string $label, string $help = '') =
 
 <form method="post" action="<?= e(url('/admin/audience/settings')) ?>" class="card form aud-settings">
   <?= csrf_field() ?>
-  <input type="hidden" name="days" value="<?= (int) $days ?>">
+  <?php foreach ($periodQuery as $k => $v): ?><input type="hidden" name="<?= e((string) $k) ?>" value="<?= e((string) $v) ?>"><?php endforeach; ?>
   <h3>Réglages de la mesure</h3>
   <p class="muted small">Aucun cookie, rien n'est stocké sur l'appareil du visiteur, aucune adresse IP enregistrée. Un visiteur est reconnu pendant une journée seulement,
     par une empreinte anonyme (adresse IP et navigateur, mélangés à une clé secrète changée chaque jour puis détruite). Seuls les totaux quotidiens sont conservés.</p>
