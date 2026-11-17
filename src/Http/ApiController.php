@@ -65,6 +65,7 @@ final class ApiController
             return;
         }
         $req = SearchRequest::fromArray($_GET);
+        $req->pageRule = \DeepFind\Rules\PageRules::match($req->lang, $req->page);
         $store = Store::get();
         $deny = (new BotGuard($store))->check($ip, $ua, $req->offset === 0 ? $req->qNorm : '');
         if ($deny !== null) {

@@ -78,6 +78,16 @@ final class SearchService
         foreach ($plan['exclude_filters'] as $ex) {
             $base[] = $ex;
         }
+        // Règle selon la page (Recommandations › Règles) : uniquement / pré-coché (sauf si le visiteur l'a retiré) / exclure
+        $pageFilter = null;
+        $pr = $r->pageRule;
+        if ($pr !== null && !($pr['action'] === 'prefilter' && $r->pageRuleOff)) {
+            $f = \DeepFind\Rules\PageRules::filter($pr);
+            if ($f !== null) {
+                $pageFilter = $pr['action'] === 'exclude' ? 'NOT ' . $f : $f;
+                $base[] = $pageFilter;
+            }
+        }
         if ($only) {
             // Uniquement les produits sélectionnés (un par un ou par règle), quels que soient les mots
             $base[] = [...($plan['include_items'] ? [Filter::in('all_skus', $plan['include_items'])] : []), ...$plan['include_filters']];
@@ -167,6 +177,9 @@ final class SearchService
                 }
                 if ($hides !== []) {
                     $f[] = Filter::notIn('all_skus', $hides);
+                }
+                if ($pageFilter !== null) {
+                    $f[] = $pageFilter;
                 }
                 $queries[] = ['indexUid' => $productIndex, 'q' => $mainQ, 'limit' => 0, 'filter' => $f, 'facets' => [$field]];
                 $names[] = 'facet:' . $field;
@@ -423,6 +436,9 @@ final class SearchService
             // vrai : la page s'ouvre dans un nouvel onglet ; sinon elle remplace la page actuelle
             'redirect_new_tab' => $redir ? $redir['new_tab'] : false,
             'products' => $hits,
+            // filtre pré-coché d'une règle selon la page : bandeau « libellé ✕ » dans le widget (off : retiré par le visiteur)
+            'page_filter' => $r->pageRule !== null && $r->pageRule['action'] === 'prefilter'
+                ? ['label' => $r->pageRule['label'] !== '' ? $r->pageRule['label'] : $r->pageRule['name'], 'off' => $r->pageRuleOff] : null,
             'facets' => $facets,
             'toggles' => [
                 'in_stock' => (int) ($dist['in_stock']['1'] ?? 0),

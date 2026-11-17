@@ -32,6 +32,12 @@ final class SearchRequest
     public ?float $marginMin = null;
     public string $sort = 'relevance';
     public bool $withPosts = true;
+    /** Chemin de la page où se trouve le visiteur (règles selon la page), ex. « /fr/nautisme/kayak.html ». */
+    public string $page = '';
+    /** Le visiteur a retiré le filtre pré-coché de la règle de page (bandeau « ✕ » du widget). */
+    public bool $pageRuleOff = false;
+    /** Règle selon la page qui s'applique (résolue par l'appelant avec PageRules::match), ou null. */
+    public ?array $pageRule = null;
 
     public static function fromArray(array $p, bool $internal = false): self
     {
@@ -64,6 +70,9 @@ final class SearchRequest
             $r->marginMin = (float) $p['margin_min'];
         }
         $r->withPosts = ($p['posts'] ?? '1') !== '0';
+        $r->page = \DeepFind\Rules\PageRules::normalizePath((string) ($p['page'] ?? ''));
+        $r->page = $r->page === '/' && trim((string) ($p['page'] ?? '')) === '' ? '' : $r->page;
+        $r->pageRuleOff = ($p['pr'] ?? '') === '0';
         return $r;
     }
 
@@ -84,7 +93,9 @@ final class SearchRequest
     public function cacheKey(bool $internal): string
     {
         return md5(serialize([$this->qNorm, $this->q, $this->lang, $this->offset, $this->limit, $this->brands, $this->categories,
-            $this->attrs, $this->inStock, $this->onSale, $this->priceMin, $this->priceMax, $this->marginMin, $this->sort, $this->withPosts, $internal]));
+            $this->attrs, $this->inStock, $this->onSale, $this->priceMin, $this->priceMax, $this->marginMin, $this->sort, $this->withPosts, $internal,
+            // la règle de page appliquée (pas l'adresse elle-même : toutes les pages d'une même règle partagent le cache)
+            $this->pageRule['id'] ?? 0, $this->pageRuleOff]));
     }
 
     public function filtersSummary(): string

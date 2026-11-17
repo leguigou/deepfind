@@ -185,7 +185,7 @@ final class CustomResults
     }
 
     /** @return array{0:list<array>, 1:list<string>} */
-    private static function sanitizeRules(array $rules, string $lang): array
+    public static function sanitizeRules(array $rules, string $lang): array
     {
         $fields = self::fields($lang);
         $out = [];

@@ -248,3 +248,12 @@ html.df-lock { overflow: hidden; }
   .df-preview-logo { width: 16px; height: 16px; }
   .df-preview-quit { padding: 3px 8px; font-size: 11px; }
 }
+
+/* Filtre pré-coché d'une règle selon la page : « Résultats limités à [Nautisme ✕] » */
+.df-pagefilter { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; font-size: 14px; color: var(--df-muted, #5b6170); }
+.df-pagefilter[hidden] { display: none; }
+.df-pagefilter-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 8px 4px 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--df-accent, #1069f9); background: transparent; color: var(--df-text, #1d2433); font: inherit; font-weight: 600; }
+.df-pagefilter-x { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; background: rgba(0, 0, 0, .06); }
+.df-pagefilter-btn:hover .df-pagefilter-x, .df-pagefilter-btn:focus-visible .df-pagefilter-x { background: var(--df-accent, #1069f9); color: #fff; }
+.df-pagefilter-back { border: 0; background: none; padding: 4px 0; cursor: pointer; font: inherit; font-weight: 600; color: var(--df-accent, #1069f9); text-decoration: underline; }
