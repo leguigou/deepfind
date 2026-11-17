@@ -20,8 +20,9 @@ final class BoostRules
     public const BOOST_MIN = 0.0;
     public const BOOST_MAX = 10.0;
 
-    /** Champs utilisables dans les conditions : [libellé, type] — list = valeurs à cocher, num = comparaison. */
+    /** Champs utilisables dans les conditions : [libellé, type] — list = valeurs à cocher, num = comparaison, text = comparaison de texte seule. */
     public const FIELDS = [
+        'name' => ['Nom du produit', 'text'],
         'brand' => ['Marque', 'list'],
         'category_names' => ['Catégorie', 'list'],
         'type' => ['Type de produit', 'list'],
@@ -51,7 +52,7 @@ final class BoostRules
     public const QUICK = ['0' => '×0 (fin de liste)', '0.5' => '×0,5', '0.75' => '×0,75', '1' => 'Aucun', '1.25' => '×1,25', '1.5' => '×1,5', '2' => '×2', '3' => '×3', '5' => '×5'];
 
     /** Champs du document à récupérer pour évaluer les conditions. */
-    public const DOC_FIELDS = ['brand', 'category_names', 'type', 'sku', 'all_skus', 'in_stock', 'on_sale', 'is_new', 'final_price',
+    public const DOC_FIELDS = ['name', 'brand', 'category_names', 'type', 'sku', 'all_skus', 'in_stock', 'on_sale', 'is_new', 'final_price',
         'discount_percent', 'margin_rate', 'sales_30d', 'attr'];
 
     /** @return array<string, array{0:string,1:string}> champs fixes + attributs (attr.<code>) */
@@ -142,9 +143,12 @@ final class BoostRules
                     continue;
                 }
                 $conds[] = ['field' => $field, 'op' => ($c['op'] ?? '') === 'lte' ? 'lte' : 'gte', 'value' => (float) $v];
-            } elseif (isset($c['match'])) {
+            } elseif (isset($c['match']) || $fields[$field][1] === 'text') {
                 $text = mb_substr(trim((string) ($c['text'] ?? '')), 0, 190, 'UTF-8');
-                if (!isset(self::TEXT_OPS[$c['match']]) || isset(self::STATIC_VALUES[$field])) {
+                if (!isset(self::TEXT_OPS[$c['match'] ?? '']) || isset(self::STATIC_VALUES[$field])) {
+                    if ($fields[$field][1] === 'text') {
+                        $errors[] = 'Condition « ' . $fields[$field][0] . ' » : choisissez contient, ne contient pas, commence par ou finit par.';
+                    }
                     continue;
                 }
                 if ($text === '') {

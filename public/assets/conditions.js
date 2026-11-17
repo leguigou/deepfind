@@ -266,10 +266,11 @@
         row.getCondition = function () { return { field: def.code, op: op.value, value: num.value }; };
         return;
       }
-      if (textOps && !def.static) {
-        // « est » (valeurs cochées) ou comparaison de texte : contient, ne contient pas, commence par, finit par (règles de boost)
+      if ((textOps && !def.static) || def.type === 'text') {
+        // « est » (valeurs cochées) ou comparaison de texte : contient, ne contient pas, commence par, finit par (règles de boost).
+        // Champ texte (nom du produit) : comparaison de texte uniquement, trop de valeurs pour une liste à cocher.
         var top = el('select', 'br-op');
-        [['is', 'est'], ['contains', 'contient'], ['not_contains', 'ne contient pas'], ['starts', 'commence par'], ['ends', 'finit par']].forEach(function (p) {
+        (def.type === 'text' ? [] : [['is', 'est']]).concat([['contains', 'contient'], ['not_contains', 'ne contient pas'], ['starts', 'commence par'], ['ends', 'finit par']]).forEach(function (p) {
           var o = el('option', '', p[1]); o.value = p[0]; top.appendChild(o);
         });
         top.setAttribute('aria-label', 'Comparaison');
