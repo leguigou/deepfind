@@ -742,6 +742,86 @@ if ($base) {
     [$c, $dSort] = $get("/api/v1/search?key=$key&q=tuba&sort=" . rawurlencode('price:desc')); // autre mot : limite « même recherche » de l'anti-robots
     check('tris : nouveau format accepté par l\'API', $c === 200, json_encode([$c, $dSort]));
 
+    // ------------------------------------------------ Mesure d'audience (anonyme, statistiques quotidiennes)
+    $AU = DeepFind\Logging\Audience::class;
+    check('audience : type d\'appareil (user-agent, indication du widget prioritaire)',
+        $AU::device('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148') === 'mobile'
+        && $AU::device('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)') === 'tablet'
+        && $AU::device('Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 Safari/537.36') === 'tablet'
+        && $AU::device('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36') === 'mobile'
+        && $AU::device('Mozilla/5.0 (Windows NT 10.0; Win64; x64)') === 'desktop'
+        && $AU::device('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 't') === 'tablet');
+    check('audience : pages choisies (chemins, adresses complètes, doublons, racine ignorée)',
+        $AU::paths("/fr/plongee\nhttps://www.example.com/fr/apnee.html?x=1\n  fr/plongee \n/\n\n") === ['/fr/plongee', '/fr/apnee.html']);
+    $kvA = DeepFind\Store\Store::get();
+    check('audience : « pal », « palm », « palme » = une seule recherche',
+        $AU::isNewSearch($kvA, 'sidaud0000000001', 'pal', '') && !$AU::isNewSearch($kvA, 'sidaud0000000001', 'palm', '')
+        && !$AU::isNewSearch($kvA, 'sidaud0000000001', 'palme', '') && $AU::isNewSearch($kvA, 'sidaud0000000001', 'masque', '')
+        && $AU::isNewSearch($kvA, 'sidaud0000000001', 'masque', 'brand=C4'));
+    check('audience : empreinte différente chaque jour (aucun suivi d\'un jour à l\'autre)',
+        $AU::visitorHash('203.0.113.7', 'UA', '2026-01-01') !== $AU::visitorHash('203.0.113.7', 'UA', '2026-01-02')
+        && $AU::visitorHash('203.0.113.7', 'UA', '2026-01-01') === $AU::visitorHash('203.0.113.7', 'UA', '2026-01-01')
+        && strlen($AU::visitorHash('203.0.113.7', 'UA', '2026-01-01')) === 32);
+
+    DeepFind\Db::exec('DELETE FROM audience_visitors');
+    DeepFind\Db::exec('DELETE FROM audience_daily');
+    $post = static function (string $path, array $fields, string $ua = 'Mozilla/5.0 Tests'): int {
+        $ch = curl_init(getenv('TEST_BASE_URL') . $path); // ($base est réutilisé plus haut par d'autres tests)
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_NOPROXY => '*', CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Origin: http://localhost:8080', 'User-Agent: ' . $ua], CURLOPT_POSTFIELDS => http_build_query($fields)]);
+        curl_exec($ch);
+        return (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    };
+    [, $cfA] = $get("/api/v1/config?key=$key&lang=fr");
+    check('audience : réglage envoyé au widget (toutes les pages)', ($cfA['audience']['pages'] ?? '') === 'all', json_encode($cfA['audience'] ?? null));
+    $phone = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36';
+    $codes = [$post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd']), $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd']),
+        $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'm'], $phone)];
+    $get("/api/v1/search?key=$key&q=tub&sid=sidaud0000000002&d=d");
+    $get("/api/v1/search?key=$key&q=tuba&sid=sidaud0000000002&d=d");       // frappe : même recherche
+    $get("/api/v1/search?key=$key&q=bouee&sid=sidaud0000000002&d=d");      // nouvelle recherche
+    $get("/api/v1/search?key=$key&q=tuba&sid=sidaud0000000002&d=d&offset=20"); // défilement : pas une recherche
+    $get("/api/v1/search?key=$key&q=lampe&sid=sidaud0000000003&na=1");      // page Démo / aperçu : non compté
+    $post('/api/v1/click', ['key' => $key, 'lang' => 'fr', 'q' => 'bouee', 'doc_type' => 'product', 'doc_id' => 'x', 'position' => 1, 'sid' => 'sidaud0000000002', 'd' => 'd']);
+    usleep(400000);
+    $sumA = $AU::summary(date('Y-m-d'), date('Y-m-d'));
+    $tA = $sumA['total'];
+    check('audience : pages vues, visiteurs, appareils', $codes === [204, 204, 204] && $tA['visitors'] === 2 && $tA['pageviews'] === 3
+        && $sumA['devices']['mobile']['visitors'] === 1 && $sumA['devices']['desktop']['visitors'] === 1, json_encode([$codes, $tA]));
+    check('audience : recherches et clics par visiteur', $tA['searchers'] === 1 && $tA['searches'] === 2 && $tA['clickers'] === 1 && $tA['clicks'] === 1
+        && $tA['searchers_2_3'] === 1, json_encode($tA));
+    check('audience : aucune IP ni user-agent stocké', !str_contains(json_encode(DeepFind\Db::all('SELECT * FROM audience_visitors')), '127.0.0.1')
+        && !str_contains(json_encode(DeepFind\Db::all('SELECT * FROM audience_visitors')), 'Mozilla'));
+
+    // interrupteurs par type : pages vues coupées → plus de signal accepté, ni annoncé au widget
+    DeepFind\Settings::set('audience_pageviews', '0');
+    $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd'], 'Mozilla/5.0 Autre navigateur');
+    [, $cfB] = $get("/api/v1/config?key=$key&lang=fr");
+    usleep(300000);
+    check('audience : pages vues désactivées', ($cfB['audience'] ?? null) === false && $AU::summary(date('Y-m-d'), date('Y-m-d'))['total']['visitors'] === 2);
+    DeepFind\Settings::set('audience_pageviews', '1');
+    DeepFind\Settings::set('audience_pages', 'paths');
+    DeepFind\Settings::set('audience_paths', "/fr/plongee");
+    [, $cfC] = $get("/api/v1/config?key=$key&lang=fr");
+    check('audience : pages choisies envoyées au widget', ($cfC['audience']['pages'] ?? '') === 'paths' && ($cfC['audience']['paths'] ?? []) === ['/fr/plongee'], json_encode($cfC['audience'] ?? null));
+    DeepFind\Settings::set('audience_pages', 'all');
+    DeepFind\Settings::set('audience_paths', '');
+
+    // agrégation : la veille passe en totaux quotidiens ; empreintes et sel de la veille supprimés
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+    $AU::record('pageview', '198.51.100.1', 'Mozilla/5.0 (iPhone) Mobile', '', $yesterday);
+    $AU::record('search', '198.51.100.1', 'Mozilla/5.0 (iPhone) Mobile', '', $yesterday);
+    $AU::record('pageview', '198.51.100.2', 'Mozilla/5.0 (Windows NT 10.0)', '', $yesterday);
+    $before = $AU::summary($yesterday, $yesterday)['total'];
+    $nAgg = $AU::aggregate();
+    $after = $AU::summary($yesterday, date('Y-m-d'));
+    check('audience : agrégation quotidienne puis suppression des empreintes et du sel', $nAgg === 1 && $before['visitors'] === 2
+        && $after['days'][$yesterday]['visitors'] === 2 && $after['days'][$yesterday]['searchers'] === 1 && $after['devices']['mobile']['visitors'] === 2
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day < CURDATE()') === 0
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_salts WHERE day < CURDATE()') === 0
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day = CURDATE()') === 2, json_encode([$nAgg, $before, $after['total']]));
+    check('audience : nouvelle agrégation sans jour passé = rien à faire', $AU::aggregate() === 0);
+
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }

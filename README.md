@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=21" defer
+<script src="https://search.example.com/widget/deepfind.js?v=22" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -228,6 +228,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 - **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », Amasty, Mirasvit, Smile ElasticSuite…) : bloquée par défaut, pour que deux fenêtres ne s'ouvrent pas en même temps. Le réglage « Bloquer l'autocomplétion d'origine » (Paramètres › Paramètres › Widget sur le site) la réactive. Sur le script, `data-native="keep"` (laisser) ou `data-native="block"` (bloquer) est prioritaire sur ce réglage. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"`.
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres (marques, catégories, attributs, prix avec curseur, en stock, en promotion), blocs de filtres repliables, tris, articles de blog, redirections, bannières, touche Échap, version mobile avec bouton « Filtres ».
 - **Clics** : chaque ouverture d'un produit, d'un article ou d'une bannière depuis la fenêtre (clic, Ctrl/Cmd + clic, clic molette) est mesurée (`sendBeacon`), sans cookie, avec un identifiant aléatoire créé à chaque chargement de page. Les clics des 30 derniers jours entrent dans le score métier.
+- **Mesure d'audience** : sur les pages choisies dans **Analyse › Audience**, le widget envoie un signal « page vue » anonyme (`/api/v1/visit`), sans cookie ni donnée personnelle (section 6, « Audience »).
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
 
 **Attributs du script**
@@ -246,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=20` en `?v=21`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=21` en `?v=22`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -374,7 +375,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | Rubrique | Page | À quoi ça sert |
 |---|---|---|
 | | Tableau de bord | État du moteur, recherches et taux sans résultat sur 24 h, nombre de produits (et de produits désactivés auto), derniers imports, alertes de configuration |
-| **Analyse** | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
+| **Analyse** | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV (voir « Audience » ci-dessous) |
+| | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | | Journal des recherches | Détail filtrable et exportable |
 | **Catalogues** | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
 | | Imports | Historique (durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
@@ -506,6 +508,25 @@ Un bloc par thème, une ligne par réglage (valeur par défaut rappelée) :
 - **Recherche** : articles de blog affichés, produits max. par page, cache des réponses, valeurs max. par filtre.
 - **Widget sur le site** : comportement de la touche Entrée, blocage de l'autocomplétion d'origine du site.
 - **Journaux & import** : journalisation des recherches, conservation des journaux, seuil de sécurité des imports complets.
+
+### Audience
+
+**Analyse › Audience** suit l'évolution, jour après jour, de l'usage du site et du moteur de recherche, sans aucune information personnelle :
+- **Visiteurs par jour**, **part des visiteurs qui cherchent** (les autres naviguent sans chercher), **recherches par visiteur** (1, 2 ou 3, 4 et plus), **part qui clique sur un résultat**, **pages vues par visiteur**.
+- Répartition **mobile / tablette / ordinateur** (d'après la taille de l'écran indiquée par le widget, sinon le navigateur).
+- Courbe quotidienne (journées complètes ; survol ou flèches du clavier pour le détail), tableau jour par jour, export CSV ; périodes 7 jours, 30 jours, 90 jours, 12 mois.
+
+**Comment c'est mesuré**
+- Le widget envoie un petit signal « page vue » (`POST /api/v1/visit`) sur les pages choisies. Les recherches et les clics sont comptés pendant la recherche, sans requête en plus. Pendant la frappe, « pal », « palm », « palme » comptent pour une seule recherche.
+- Un visiteur est reconnu **pendant une journée seulement**, par une empreinte calculée sur le serveur (adresse IP et navigateur, mélangés à une clé secrète **changée chaque jour**). Rien n'est stocké sur l'appareil du visiteur (ni cookie, ni stockage local), l'adresse IP n'est jamais enregistrée.
+- Chaque nuit (planificateur `schedule:run`), la journée écoulée est transformée en **totaux** ; les empreintes et la clé du jour sont alors **supprimées** : il devient impossible de suivre quelqu'un d'un jour à l'autre. Seuls les totaux quotidiens sont conservés.
+- Rien n'est envoyé depuis la page **Démo du widget** ni pendant un aperçu (favori « Tester DeepFind »).
+
+**Réglages** (en bas de la page Audience), pour limiter la sollicitation du serveur si besoin :
+- interrupteur général, puis un interrupteur par mesure : **pages vues** (la seule qui ajoute des requêtes : une par page mesurée), **recherches**, **clics** ;
+- **pages qui envoient le signal** : toutes, la page d'accueil uniquement (`/` ou la racine d'une langue, ex. `/fr`), ou des **pages choisies** : adresses qui commencent par l'un des chemins indiqués (`/fr/plongee` couvre `/fr/plongee.html` et `/fr/plongee/palmes.html`), avec ou sans la page d'accueil.
+- Moins de pages mesurées = moins de requêtes, mais les visiteurs qui ne passent pas par ces pages ne sont comptés que s'ils cherchent : la part de visiteurs qui cherchent est alors surestimée (la page le signale).
+- Nécessite le widget `?v=22` ou plus récent et la tâche planifiée `schedule:run`.
 
 ### Cache
 
@@ -680,7 +701,8 @@ Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTM
 - **Contenu enregistré** : chaque recherche « finale » (pas chaque lettre tapée : « pa », « pal », « palm » sont marquées comme intermédiaires), avec les filtres, le nombre de résultats, le temps de réponse, le user-agent et les clics.
 - **Adresse IP** : jamais stockée en clair. On conserve une **empreinte** (HMAC avec `APP_SECRET`) pour compter et bloquer, et une **IP tronquée** (`203.0.113.x`) pour l'affichage. Aucun cookie.
 - **Conservation** : 90 jours par défaut (Paramètres), purge automatique chaque nuit (`logs:purge`).
-- **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site. Ce README ne constitue pas un avis juridique.
+- **Mesure d'audience** (Analyse › Audience) : aucun cookie ni stockage sur l'appareil, aucune IP enregistrée ; empreinte valable une journée (clé secrète du jour détruite à la fin de la journée), puis seuls des totaux quotidiens sont gardés. Désactivable entièrement ou par type de mesure.
+- **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site, et l'absence de consentement pour la mesure d'audience (méthode conçue pour entrer dans l'exemption de la CNIL pour la mesure d'audience, à confirmer). Ce README ne constitue pas un avis juridique.
 
 ## 11. Commandes
 
@@ -695,7 +717,7 @@ php bin/console help
 | `install` | Crée ou met à jour les tables (sans risque si relancée) et les sources par défaut |
 | `admin:token` | Génère `ADMIN_TOKEN` et `APP_SECRET` |
 | `key:create --name=… --origins=example.com --langs=fr` | Crée une clé publique |
-| `schedule:run [--work]` | **À lancer chaque minute par cron** : déclenche les imports planifiés dans l'extranet (`--work` : les exécute aussi, sans Supervisor) |
+| `schedule:run [--work]` | **À lancer chaque minute par cron** : déclenche les imports planifiés dans l'extranet (`--work` : les exécute aussi, sans Supervisor) et transforme la mesure d'audience des jours passés en totaux quotidiens |
 | `import:run --all` ou `--source=CODE`, `--type=full\|delta` | Import immédiat en ligne de commande |
 | `queue:work [--once]` | Traite les imports demandés depuis l'extranet |
 | `scores:refresh [--lang=fr]` | Recalcule les scores métier (poids, boosts, clics) sans relire les flux |
@@ -766,7 +788,7 @@ Il vérifie (environ 90 contrôles) la connexion, toutes les pages, les thèmes,
 - **Accès à l'extranet** : un jeton unique, sans comptes utilisateurs ni journal des actions d'administration.
 - **Flux delta** : met à jour prix, stock, champs simples et suppressions. Les nouveaux produits, catégories et attributs arrivent à l'import complet ; la réactivation d'un produit désactivé auto aussi.
 - **Recherche** : pas de recherche sémantique ou IA, pas de suggestions de requêtes.
-- **Statistiques** : recherches et clics uniquement ; pas encore de suivi des ventes (ajouts au panier, commandes) ni d'envoi d'événements à Google Analytics.
+- **Statistiques** : recherches, clics et audience (visiteurs, appareils) ; pas encore de suivi des ventes (ajouts au panier, commandes) ni d'envoi d'événements à Google Analytics.
 - **Copie entre projets** : n'inclut pas encore les layers, filtres et tris.
 - **Tests** : faits sous PHP 8.3 avec un **faux** Meilisearch. Il faut valider sous PHP 8.5 et le vrai Meilisearch sur le serveur de recette.
 - **Module Magento** : aucun module n'est fourni pour générer le flux. Utilisez une extension de flux du marché ou un développement interne qui produit le format décrit ci-dessus.

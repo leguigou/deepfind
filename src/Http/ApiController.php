@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DeepFind\Http;
 
+use DeepFind\Logging\Audience;
 use DeepFind\Logging\SearchLogger;
 use DeepFind\Meili\MeiliClient;
 use DeepFind\Meili\MeiliException;
@@ -20,6 +21,7 @@ use DeepFind\Text;
  * API publique appelée par le widget :
  *   GET  /api/v1/search?key=pk_…&q=palme&lang=fr&offset=0&limit=20&brand[]=C4&in_stock=1&on_sale=1&sort=price_asc&sid=…
  *   POST /api/v1/click   (key, q, lang, doc_type, doc_id, position, sid)
+ *   POST /api/v1/visit   (key, lang, d = m|t|d)   page vue, pour la mesure d'audience anonyme
  *   GET  /api/v1/config?key=pk_…&lang=fr   (le widget ne prend la main que si « enabled » est vrai)
  *   GET  /api/v1/health
  */
@@ -31,6 +33,7 @@ final class ApiController
             match (true) {
                 $path === '/api/v1/search' && in_array($method, ['GET', 'HEAD'], true) => $this->search(),
                 $path === '/api/v1/click' && $method === 'POST' => $this->click(),
+                $path === '/api/v1/visit' && $method === 'POST' => $this->visit(),
                 $path === '/api/v1/config' && in_array($method, ['GET', 'HEAD'], true) => $this->config(),
                 $path === '/api/v1/health' => $this->health(),
                 $method === 'OPTIONS' => $this->preflight(),
@@ -90,6 +93,9 @@ final class ApiController
 
         // Journalisation après l'envoi de la réponse (pas d'impact sur le temps perçu avec PHP-FPM).
         Response::finish();
+        if ($req->offset === 0 && ($_GET['na'] ?? '') !== '1' && Audience::tracks('searches') && Audience::isNewSearch($store, self::sid($_GET['sid'] ?? ''), $req->qNorm, $req->filtersSummary())) {
+            Audience::record('search', $ip, $ua, (string) ($_GET['d'] ?? ''));
+        }
         if ($req->offset === 0) {
             (new SearchLogger($store))->log([
                 'api_key_id' => (int) $key['id'], 'lang' => $req->lang, 'query' => $req->q, 'query_norm' => $req->qNorm,
@@ -123,6 +129,9 @@ final class ApiController
         }
         Response::noContent($cors);
         Response::finish();
+        if (($p['na'] ?? '') !== '1' && Audience::tracks('clicks')) {
+            Audience::record('click', $ip, (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), (string) ($p['d'] ?? ''));
+        }
         (new SearchLogger($store))->click([
             'lang' => $lang,
             'query_norm' => Text::normalize((string) ($p['q'] ?? '')),
@@ -133,6 +142,32 @@ final class ApiController
             'sid' => self::sid($p['sid'] ?? ''),
             'custom_result_id' => max(0, (int) ($p['cr'] ?? 0)),
         ]);
+    }
+
+    /** Page vue (mesure d'audience anonyme) : réponse immédiate, comptage après l'envoi. */
+    private function visit(): void
+    {
+        $p = $_POST;
+        $lang = (string) ($p['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($p['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        if (!\DeepFind\Project::isActive() || !Audience::tracks('pageviews')) {
+            Response::noContent($cors);
+            return;
+        }
+        $ip = ClientIp::resolve($_SERVER);
+        $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        // robots, IP bloquées, rafales : non comptés (compteurs séparés de ceux des recherches)
+        if ((new BotGuard(Store::get()))->check($ip, $ua, '', 'visit') !== null) {
+            Response::noContent($cors);
+            return;
+        }
+        Response::noContent($cors);
+        Response::finish();
+        Audience::record('pageview', $ip, $ua, (string) ($p['d'] ?? ''));
     }
 
     /**
@@ -152,6 +187,8 @@ final class ApiController
             'enter_submit' => Settings::int('widget_enter_submit') === 1,
             // neutraliser l'autocomplétion d'origine du site (data-native="keep" / "block" sur le script reste prioritaire)
             'block_native' => Settings::int('widget_block_native') === 1,
+            // mesure d'audience : pages qui signalent une page vue (sans cookie, sans donnée personnelle), ou false
+            'audience' => Audience::widgetConfig(),
         ] + \DeepFind\Widget\WidgetConfig::forWidget($lang, $preview = substr((string) ($_GET['preview'] ?? ''), 0, 80)),
             200, $cors + ['Cache-Control' => $preview !== '' ? 'no-store' : 'private, max-age=60']);
     }

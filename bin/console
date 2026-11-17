@@ -130,6 +130,15 @@ try {
             foreach (DeepFind\Import\Scheduler::tick() as $q) {
                 $out('[' . date('H:i') . "] planifié : $q");
             }
+            // Mesure d'audience : jours passés agrégés, empreintes et sels du jour supprimés
+            try {
+                $n = DeepFind\Logging\Audience::aggregate();
+                if ($n > 0) {
+                    $out('[' . date('H:i') . "] audience : $n jour(s) agrégé(s)");
+                }
+            } catch (Throwable $e) {
+                $out('audience : ' . $e->getMessage());
+            }
             if (isset($opts['work'])) {
                 // Sans Supervisor : traite aussi la file d'attente dans la foulée.
                 workQueue(true, 3600, 5, $out);

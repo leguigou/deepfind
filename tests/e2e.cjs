@@ -33,7 +33,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/01-dashboard-sombre.png', fullPage: true });
 
   const pages = ['/admin/sources', '/admin/sources/edit?id=1', '/admin/sources/test?id=1', '/admin/imports', '/admin/imports/view?id=1',
-    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/banners', '/admin/banners/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/logs', '/admin/bots',
+    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/banners', '/admin/banners/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
     '/admin/keys', '/admin/integration', '/admin/integration?tab=filters', '/admin/integration?tab=sorts', '/admin/settings'];
   for (const p of pages) {
     const resp = await page.goto(BASE + p);
@@ -310,6 +310,8 @@ fs.mkdirSync(OUT, { recursive: true });
   await seeAll.waitFor({ timeout: 5000 });
   for (const width of [390, 320]) {
     await mp.setViewportSize({ width, height: 844 });
+    // mesurer une fois l'animation d'ouverture terminée (sinon hauteurs à 43,999 px pendant la transition)
+    await mp.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
     const aligned = await mp.locator('.df-tools').evaluate((tools) => {
       const [filters, sort, link] = ['.df-filters-btn', '.df-sort', '.df-see-all']
         .map((selector) => tools.querySelector(selector).getBoundingClientRect());
@@ -347,6 +349,38 @@ fs.mkdirSync(OUT, { recursive: true });
   await filters.tap();
   await mp.locator('.df-side-backdrop').tap({ position: { x: 380, y: 100 } });
   check('widget mobile : un appui à côté du volet revient aux résultats', !await side.isVisible() && await filters.isVisible());
+
+  // Mesure d'audience : page Audience, puis faux site (même domaine) qui charge le widget ; signal « page vue » selon les pages choisies
+  await page.goto(BASE + '/admin/audience');
+  // données de test : une seule journée complète (la veille) → un point par série au lieu d'une courbe
+  check('audience : courbe quotidienne et indicateurs', await page.locator('[data-audience-chart] svg .aud-line, [data-audience-chart] svg .aud-dot:not(.aud-hover)').count() === 2
+    && (await page.textContent('.cards')).includes('Visiteurs qui cherchent'));
+  const chartBox = await page.locator('[data-audience-chart]').boundingBox();
+  await page.mouse.move(chartBox.x + chartBox.width - 30, chartBox.y + 120);
+  check('audience : infobulle au survol', await page.isVisible('.aud-tip') && (await page.textContent('.aud-tip')).includes('Visiteurs'));
+  check('audience : adresses masquées sauf « Pages choisies »', !await page.isVisible('.aud-paths textarea'));
+  const siteKey = fs.readFileSync('tests/_tmp/key', 'utf8').trim();
+  const sitePage = async (path) => {
+    const sc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
+    await sc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><title>Boutique</title></head><body>'
+      + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=22" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
+    let n = 0;
+    sc.on('request', (r) => { if (r.url().endsWith('/api/v1/visit')) { n++; } });
+    const sp = await sc.newPage();
+    await sp.goto(BASE + path);
+    await sp.waitForTimeout(1500);
+    await sc.close();
+    return n;
+  };
+  check('audience : signal « page vue » envoyé par le widget (toutes les pages)', await sitePage('/boutique/plongee/palmes.html') === 1);
+  await page.check('.aud-pages input[value=paths]');
+  await page.fill('.aud-paths textarea', '/boutique/apnee');
+  await Promise.all([page.waitForNavigation(), page.click('.aud-settings button.btn')]);
+  check('audience : réglages enregistrés', (await page.textContent('body')).includes('Réglages de la mesure d\'audience enregistrés')
+    && await page.isVisible('.aud-paths textarea'));
+  check('audience : pages choisies (signal seulement sur /boutique/apnee…)', await sitePage('/boutique/plongee.html') === 0 && await sitePage('/boutique/apnee/masques.html') === 1);
+  await page.check('.aud-pages input[value=all]');
+  await Promise.all([page.waitForNavigation(), page.click('.aud-settings button.btn')]);
 
   check('aucune erreur JavaScript', errors.length === 0);
   if (errors.length) { console.log(errors.join('\n')); }
