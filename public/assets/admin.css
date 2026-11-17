@@ -631,6 +631,10 @@ input.cr-search { width: 100%; margin: 0 0 12px; }
 .br-list-line { display: grid; grid-template-columns: minmax(120px, 160px) 1fr; gap: 8px; }
 .br-list-line select, .br-text-slot .br-text { margin: 0; }
 .br-text-slot .br-text { width: 100%; }
+/* textes multiples (OU) des conditions : tags + champ de saisie dans la même zone */
+.tag-input { cursor: text; }
+.tag-input:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.br-text-slot .tag-input .br-text { flex: 1 1 140px; width: auto; min-width: 140px; margin: 0; padding: 4px 2px; border: 0; background: transparent; box-shadow: none; outline: none; }
 @media (max-width: 640px) { .br-list-line { grid-template-columns: 1fr; } .cal-grid { grid-template-columns: repeat(7, 34px); } .cr-range { min-width: 0; width: 100%; } }
 
 /* ---------- Bannières */

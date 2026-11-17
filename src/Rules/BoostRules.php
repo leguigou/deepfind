@@ -144,18 +144,19 @@ final class BoostRules
                 }
                 $conds[] = ['field' => $field, 'op' => ($c['op'] ?? '') === 'lte' ? 'lte' : 'gte', 'value' => (float) $v];
             } elseif (isset($c['match']) || $fields[$field][1] === 'text') {
-                $text = mb_substr(trim((string) ($c['text'] ?? '')), 0, 190, 'UTF-8');
+                // plusieurs textes possibles (OU) ; « text » seul = ancien format, toujours accepté
+                $texts = self::texts($c);
                 if (!isset(self::TEXT_OPS[$c['match'] ?? '']) || isset(self::STATIC_VALUES[$field])) {
                     if ($fields[$field][1] === 'text') {
                         $errors[] = 'Condition « ' . $fields[$field][0] . ' » : choisissez contient, ne contient pas, commence par ou finit par.';
                     }
                     continue;
                 }
-                if ($text === '') {
+                if ($texts === []) {
                     $errors[] = 'Condition « ' . $fields[$field][0] . ' » : saisissez le texte recherché.';
                     continue;
                 }
-                $conds[] = ['field' => $field, 'match' => (string) $c['match'], 'text' => $text];
+                $conds[] = ['field' => $field, 'match' => (string) $c['match'], 'texts' => $texts];
             } else {
                 $values = array_values(array_unique(array_filter(array_map(
                     static fn ($v) => mb_substr(trim((string) $v), 0, 190, 'UTF-8'),
@@ -390,17 +391,19 @@ final class BoostRules
         $lower = static fn ($s) => mb_strtolower(trim((string) (is_bool($s) ? (int) $s : $s)), 'UTF-8');
         if (isset($c['match'])) {
             // sans tenir compte des majuscules ni des accents : « plongee » trouve « Plongée »
-            $text = Text::fold((string) $c['text']);
+            // plusieurs textes : il suffit d'un (OU) ; « ne contient pas » = ne contient aucun des textes
             $found = false;
-            foreach ($have as $v) {
-                $v = Text::fold((string) (is_bool($v) ? (int) $v : $v));
-                if ($v !== '' && match ($c['match']) {
-                    'starts' => str_starts_with($v, $text),
-                    'ends' => str_ends_with($v, $text),
-                    default => str_contains($v, $text),
-                }) {
-                    $found = true;
-                    break;
+            foreach (array_map([Text::class, 'fold'], self::texts($c)) as $text) {
+                foreach ($have as $v) {
+                    $v = Text::fold((string) (is_bool($v) ? (int) $v : $v));
+                    if ($v !== '' && match ($c['match']) {
+                        'starts' => str_starts_with($v, $text),
+                        'ends' => str_ends_with($v, $text),
+                        default => str_contains($v, $text),
+                    }) {
+                        $found = true;
+                        break 2;
+                    }
                 }
             }
             return $c['match'] === 'not_contains' ? !$found : $found;
@@ -431,6 +434,24 @@ final class BoostRules
         return [$f, $applied];
     }
 
+    /**
+     * Textes d'une condition de texte, nettoyés et sans doublon (20 au plus).
+     * Accepte « texts » (liste) et l'ancien « text » (un seul texte).
+     * @return list<string>
+     */
+    public static function texts(array $c): array
+    {
+        $raw = isset($c['texts']) ? (array) $c['texts'] : [$c['text'] ?? ''];
+        $out = [];
+        foreach (array_slice($raw, 0, 20) as $t) {
+            $t = mb_substr(trim((string) $t), 0, 190, 'UTF-8');
+            if ($t !== '' && !isset($out[Text::fold($t)])) {
+                $out[Text::fold($t)] = $t;
+            }
+        }
+        return array_values($out);
+    }
+
     /** Résumé lisible d'une règle : « Catégorie : Plongée, Glisse ET Prix (€) ≥ 50 ». */
     public static function describe(array $rule, string $lang): string
     {
@@ -441,7 +462,8 @@ final class BoostRules
             if (isset($c['op'])) {
                 $parts[] = $label . ' ' . self::OPS[$c['op']] . ' ' . rtrim(rtrim(number_format((float) $c['value'], 2, ',', ''), '0'), ',');
             } elseif (isset($c['match'])) {
-                $parts[] = $label . ' ' . (self::TEXT_OPS[$c['match']] ?? $c['match']) . ' « ' . $c['text'] . ' »';
+                $quoted = array_map(static fn ($t) => '« ' . $t . ' »', self::texts($c));
+                $parts[] = $label . ' ' . (self::TEXT_OPS[$c['match']] ?? $c['match']) . ' ' . implode($c['match'] === 'not_contains' ? ' ni ' : ' ou ', $quoted);
             } else {
                 $static = self::STATIC_VALUES[$c['field']] ?? [];
                 $vals = array_map(static fn ($v) => $static[$v] ?? $v, $c['values']);

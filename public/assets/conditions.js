@@ -208,6 +208,51 @@
   }
 
 
+  // Plusieurs textes sous forme de tags (OU) : Entrée, virgule ou sortie du champ ajoute le texte ; ✕ ou Retour arrière le retire
+  function tagInput(initial) {
+    var box = el('div', 'ms-toggle tag-input');
+    var tags = [];
+    var input = el('input', 'br-text');
+    input.type = 'text';
+    input.maxLength = 190;
+    input.setAttribute('aria-label', 'Texte (Entrée pour en ajouter un autre)');
+    function fold(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+    function render() {
+      box.querySelectorAll('.chip').forEach(function (c) { c.remove(); });
+      tags.forEach(function (t, i) {
+        var chip = el('span', 'chip', t);
+        var x = el('button', 'chip-x', '✕');
+        x.type = 'button';
+        x.title = 'Retirer';
+        x.setAttribute('aria-label', 'Retirer ' + t);
+        x.addEventListener('click', function (ev) { ev.stopPropagation(); tags.splice(i, 1); render(); input.focus(); });
+        chip.appendChild(x);
+        box.insertBefore(chip, input);
+      });
+      input.placeholder = tags.length ? 'Ajouter (OU)…' : 'Texte, puis Entrée';
+    }
+    function add(raw) {
+      String(raw).split(',').forEach(function (part) {
+        var t = part.trim();
+        if (t && !tags.some(function (x) { return fold(x) === fold(t); })) { tags.push(t); }
+      });
+      input.value = '';
+      render();
+    }
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ',') { ev.preventDefault(); add(input.value); }
+      if (ev.key === 'Backspace' && input.value === '' && tags.length) { tags.pop(); render(); }
+    });
+    input.addEventListener('blur', function () { if (input.value.trim()) { add(input.value); } });
+    box.addEventListener('click', function (ev) { if (ev.target === box) { input.focus(); } });
+    box.appendChild(input);
+    initial.forEach(function (t) { add(t); });
+    render();
+    box.getValues = function () { if (input.value.trim()) { add(input.value); } return tags.slice(); };
+    box.focusInput = function () { input.focus(); };
+    return box;
+  }
+
   function conditionRow(c) {
     c = c || {};
     var row = el('div', 'br-cond');
@@ -288,21 +333,14 @@
             slot.appendChild(tms);
             return;
           }
-          if (!txt) {
-            txt = el('input', 'br-text');
-            txt.type = 'text';
-            txt.maxLength = 190;
-            txt.required = true;
-            txt.placeholder = 'Texte';
-            if (init && init.text) { txt.value = init.text; }
-          }
+          if (!txt) { txt = tagInput(init ? (init.texts || (init.text ? [init.text] : [])) : []); }
           slot.appendChild(txt);
         };
         if (init && init.match) { top.value = init.match; }
-        top.addEventListener('change', function () { renderSlot(); if (txt && top.value !== 'is') { txt.focus(); } });
+        top.addEventListener('change', function () { renderSlot(); if (txt && top.value !== 'is') { txt.focusInput(); } });
         renderSlot();
         row.getCondition = function () {
-          return top.value === 'is' ? { field: def.code, values: tms.getValues() } : { field: def.code, match: top.value, text: txt.value };
+          return top.value === 'is' ? { field: def.code, values: tms.getValues() } : { field: def.code, match: top.value, texts: txt.getValues() };
         };
         return;
       }
