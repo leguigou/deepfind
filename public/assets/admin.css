@@ -184,6 +184,8 @@ input[type=checkbox], input[type=radio] { width: auto; display: inline; margin: 
 input[type=file] { padding: 6px; }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
 select option { background: var(--surface-solid); color: var(--text); }
+/* titres de groupe des listes (« Produit », « Attributs ») : lisibles dans les deux thèmes */
+select optgroup { background: var(--surface-solid); color: var(--muted); font-style: normal; font-weight: 700; }
 textarea.code { min-height: 80px; line-height: 1.45; }
 .form small { display: block; font-weight: 400; margin-top: 3px; }
 .form.inline, .inline-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }

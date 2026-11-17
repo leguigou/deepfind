@@ -427,6 +427,17 @@ if ($base) {
     [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => [['field' => 'brand', 'match' => 'contains', 'text' => '  ']]], 'fr');
     check('boost : condition texte vide refusée', $bad === null && $errs !== []);
     check('boost : résumé d\'une condition texte', str_contains($BR::describe($tc('brand', 'not_contains', 'Cressi'), 'fr'), 'Marque ne contient pas « Cressi »'));
+    // Nom du produit : comparaison de texte uniquement (ex. batteries d'une marque sans ses accessoires)
+    $batt = ['name' => 'Batterie nomade EcoFlow River 2', 'brand' => 'ECOFLOW'];
+    $cable = ['name' => 'Câble de recharge voiture EcoFlow', 'brand' => 'ECOFLOW'];
+    $nameRule = ['match_all' => true, 'conditions' => [['field' => 'brand', 'values' => ['EcoFlow']], ['field' => 'name', 'match' => 'contains', 'text' => 'batterie']]];
+    check('boost : nom du produit contient (marque + nom)', $BR::matches($nameRule, $batt) && !$BR::matches($nameRule, $cable)
+        && $BR::matches($tc('name', 'contains', 'cable'), $cable) && $BR::matches($tc('name', 'starts', 'batterie'), $batt) && $BR::matches($tc('name', 'not_contains', 'câble'), $batt));
+    [$okName] = $BR::sanitize(['name' => 'x', 'boost' => '3', 'conditions' => [['field' => 'name', 'match' => 'contains', 'text' => ' batterie ']]], 'fr');
+    [$badName, $errName] = $BR::sanitize(['name' => 'x', 'boost' => '3', 'conditions' => [['field' => 'name', 'values' => ['Batterie']]]], 'fr');
+    check('boost : nom du produit enregistré en texte, refusé en liste de valeurs', $okName !== null && $okName['conditions'] === [['field' => 'name', 'match' => 'contains', 'text' => 'batterie']]
+        && $badName === null && $errName !== [] && in_array('name', $BR::DOC_FIELDS, true)
+        && str_contains($BR::describe($tc('name', 'contains', 'batterie'), 'fr'), 'Nom du produit contient « batterie »'));
     [$bad, $errs] = $BR::sanitize(['name' => 'x', 'boost' => '1.5', 'conditions' => []], 'fr');
     check('boost : règle sans condition refusée', $bad === null && $errs !== []);
 
