@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS sources (
   url TEXT NOT NULL,
   delta_url TEXT NULL,
   auth_header TEXT NULL,
+  -- protection par mot de passe du serveur (.htaccess / .htpasswd) : utilisateur, mot de passe CHIFFRÉ (clé dérivée de APP_SECRET)
+  auth_user VARCHAR(190) NULL,
+  auth_password TEXT NULL,
   mapping MEDIUMTEXT NOT NULL,
   active TINYINT(1) NOT NULL DEFAULT 1,
   cron_full VARCHAR(100) NULL,

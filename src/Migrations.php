@@ -26,6 +26,8 @@ final class Migrations
             'cron_delta' => 'VARCHAR(100) NULL AFTER cron_full',
             'scheduled_full_at' => 'DATETIME NULL AFTER cron_delta',
             'scheduled_delta_at' => 'DATETIME NULL AFTER scheduled_full_at',
+            'auth_user' => 'VARCHAR(190) NULL AFTER auth_header',
+            'auth_password' => 'TEXT NULL AFTER auth_user',
         ],
         'search_logs' => [
             'project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',

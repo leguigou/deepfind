@@ -831,6 +831,49 @@ if ($base) {
         && $pB['to'] === $todayA && (strtotime($pB['to']) - strtotime($pB['from'])) / 86400 <= $AC::MAX_CUSTOM_DAYS
         && !$pC['custom'] && $pC['days'] === 90 && $pC['to'] === $todayA, json_encode([$pA, $pB, $pC]));
 
+    // ------------------------------------------------ Flux protégé par mot de passe (.htaccess) et test de connexion
+    $SE = DeepFind\Security\Secrets::class;
+    $encA = $SE::encrypt('s3cret');
+    check('flux : mot de passe chiffré (illisible sans APP_SECRET, valeur abîmée refusée)', $SE::decrypt($encA) === 's3cret' && $encA !== $SE::encrypt('s3cret')
+        && !str_contains($encA, 's3cret') && $SE::decrypt($encA, 'autre-secret') === null && $SE::decrypt('v1:' . base64_encode('abîmé')) === null && $SE::decrypt(null) === null);
+    $feedSrv = proc_open(['php', '-S', '127.0.0.1:7797', __DIR__ . '/fake-feed.php'], [0 => ['pipe', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $feedPipes);
+    usleep(400000);
+    $FF = DeepFind\Import\FeedFetcher::class;
+    $fb = 'http://127.0.0.1:7797';
+    $rOpen = $FF::check([], "$fb/open/feed.xml");
+    check('flux : test de connexion, fichier libre (HTTP 200, XML, taille)', $rOpen['ok'] && $rOpen['status'] === 200 && !$rOpen['protected']
+        && in_array('Contenu : XML.', $rOpen['details'], true) && (bool) preg_grep('/^Taille : /', $rOpen['details']), json_encode($rOpen));
+    $rNoPw = $FF::check([], "$fb/protected/feed.xml");
+    check('flux : protégé sans identifiants → 401 expliqué', !$rNoPw['ok'] && $rNoPw['status'] === 401 && $rNoPw['protected'] && str_contains($rNoPw['message'], 'renseignez'), json_encode($rNoPw));
+    $rBad = $FF::check(['auth_user' => 'flux', 'auth_password_plain' => 'faux'], "$fb/protected/feed.xml");
+    check('flux : mauvais mot de passe → refusé', !$rBad['ok'] && $rBad['status'] === 401 && str_contains($rBad['message'], 'refusé'), json_encode($rBad));
+    $rGood = $FF::check(['auth_user' => 'flux', 'auth_password' => $encA], "$fb/protected/feed.xml");
+    check('flux : bons identifiants (mot de passe chiffré en base) → 200, protection acceptée', $rGood['ok'] && $rGood['status'] === 200
+        && str_contains($rGood['message'], 'protection par mot de passe acceptée') && (bool) preg_grep('/^Taille : /', $rGood['details']), json_encode($rGood));
+    $rUseless = $FF::check(['auth_user' => 'flux', 'auth_password_plain' => 'x'], "$fb/open/feed.xml");
+    check('flux : identifiants sur un flux non protégé signalés', $rUseless['ok'] && str_contains($rUseless['message'], 'pas demandé de mot de passe'), json_encode($rUseless));
+    $rHtml = $FF::check([], "$fb/open/page.html");
+    $rGz = $FF::check([], "$fb/open/feed.xml.gz");
+    $r404 = $FF::check([], "$fb/absent.xml");
+    $rRedir = $FF::check([], "$fb/redirect");
+    $rDown = $FF::check([], 'http://127.0.0.1:7796/feed.xml');
+    $rLocal = $FF::check([], 'samples/products_fr.xml');
+    check('flux : page HTML, .gz, 404, redirection, serveur injoignable, fichier local',
+        !$rHtml['ok'] && (bool) preg_grep('/page HTML/', $rHtml['details']) && $rGz['ok'] && (bool) preg_grep('/compressé/', $rGz['details'])
+        && $r404['status'] === 404 && str_contains($r404['message'], 'introuvable') && $rRedir['ok'] && (bool) preg_grep('/Redirigé vers/', $rRedir['details'])
+        && !$rDown['ok'] && $rDown['status'] === 0 && str_contains($rDown['message'], 'injoignable') && $rLocal['ok'],
+        json_encode([$rHtml['ok'], $rGz['details'], $r404['message'], $rRedir['details'], $rDown['message'], $rLocal['message']]));
+    $dl = $FF::fetch(['code' => 'test_auth', 'url' => "$fb/protected/feed.xml", 'auth_user' => 'flux', 'auth_password' => $encA], 'full');
+    check('flux : import d\'un flux protégé (téléchargement avec identifiants)', is_file($dl) && str_contains((string) file_get_contents($dl), '<products>'));
+    try {
+        $FF::fetch(['code' => 'test_auth', 'url' => "$fb/protected/feed.xml"], 'full');
+        check('flux : import sans identifiants refusé et expliqué', false);
+    } catch (RuntimeException $e) {
+        check('flux : import sans identifiants refusé et expliqué', str_contains($e->getMessage(), 'HTTP 401') && str_contains($e->getMessage(), 'mot de passe'), $e->getMessage());
+    }
+    @unlink($dl);
+    proc_terminate($feedSrv);
+
     // ------------------------------------------------ Règles selon la page (Recommandations › Règles)
     $PR = DeepFind\Rules\PageRules::class;
     check('règles de page : adresse normalisée (domaine, paramètres, majuscules, encodage)',

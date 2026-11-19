@@ -430,6 +430,31 @@ fs.mkdirSync(OUT, { recursive: true });
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('règles de page : suppression', (await page.textContent('body')).includes('Règle supprimée'));
 
+  // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
+  const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });
+  await new Promise((r) => setTimeout(r, 500));
+  await page.goto(BASE + '/admin/sources/edit?kind=products');
+  await page.fill('input[name=code]', 'flux_protege');
+  await page.fill('input[name=url]', 'http://127.0.0.1:7797/protected/feed.xml');
+  await page.click('[data-src-check]');
+  await page.waitForSelector('.src-result');
+  check('flux : test sans identifiants → protégé (401)', (await page.textContent('.src-check-results')).includes('protégé par mot de passe'));
+  await page.fill('input[name=auth_user]', 'flux');
+  await page.fill('input[name=auth_password]', 's3cret');
+  await page.click('[data-src-check]');
+  await page.waitForFunction(() => document.querySelector('.src-result.is-ok'));
+  check('flux : test avec identifiants → connexion réussie (HTTP 200)', (await page.textContent('.src-check-results')).includes('HTTP 200'));
+  await Promise.all([page.waitForNavigation(), page.click('.actions button.btn:not(.btn-light)')]);
+  const srcHtml = await page.content();
+  check('flux : source enregistrée, mot de passe jamais réaffiché', srcHtml.includes('Source enregistrée') && !srcHtml.includes('s3cret')
+    && (await page.getAttribute('input[name=auth_password]', 'placeholder')).includes('enregistré'));
+  await page.click('[data-src-check]');
+  await page.waitForSelector('.src-result');
+  check('flux : nouveau test avec le mot de passe enregistré', (await page.textContent('.src-check-results')).includes('protection par mot de passe acceptée'));
+  await page.click('form[action$="/admin/sources/delete"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
+  feedSrv.kill();
+
   check('aucune erreur JavaScript', errors.length === 0);
   if (errors.length) { console.log(errors.join('\n')); }
   await browser.close();

@@ -54,7 +54,7 @@ final class ConfigTransfer
             'redirects' => $strip(Db::all('SELECT * FROM redirections WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'boost_rules' => $strip(Db::all('SELECT * FROM boost_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'sources' => $strip(
-                Db::all('SELECT code, kind, lang, url, delta_url, auth_header, mapping, active, cron_full, cron_delta FROM sources WHERE project_id = ? ORDER BY id', [$pid]),
+                Db::all('SELECT code, kind, lang, url, delta_url, auth_header, auth_user, auth_password, mapping, active, cron_full, cron_delta FROM sources WHERE project_id = ? ORDER BY id', [$pid]),
                 []
             ),
         ];
@@ -148,7 +148,9 @@ final class ConfigTransfer
                     $existing = Db::one('SELECT id FROM sources WHERE project_id = ? AND code = ?', [$to, $s['code']]);
                     $fields = ['kind' => $s['kind'], 'lang' => $s['lang'], 'mapping' => $s['mapping'], 'cron_full' => $s['cron_full'], 'cron_delta' => $s['cron_delta'], 'updated_at' => $now];
                     if ($includeUrls) {
-                        $fields += ['url' => $s['url'], 'delta_url' => $s['delta_url'], 'auth_header' => $s['auth_header']];
+                        // accès au flux (en-têtes, utilisateur, mot de passe chiffré) : copiés avec les adresses
+                        $fields += ['url' => $s['url'], 'delta_url' => $s['delta_url'], 'auth_header' => $s['auth_header'],
+                            'auth_user' => $s['auth_user'] ?? null, 'auth_password' => $s['auth_password'] ?? null];
                     }
                     if ($restore) {
                         $fields['active'] = (int) $s['active'];
@@ -160,7 +162,8 @@ final class ConfigTransfer
                         // Nouveau flux : créé inactif (pas d'import planifié tant qu'il n'est pas activé)
                         Db::insert('sources', $fields + [
                             'project_id' => $to, 'code' => $s['code'], 'url' => $s['url'], 'delta_url' => $s['delta_url'],
-                            'auth_header' => $s['auth_header'], 'active' => $restore ? (int) $s['active'] : 0, 'created_at' => $now,
+                            'auth_header' => $s['auth_header'], 'auth_user' => $s['auth_user'] ?? null, 'auth_password' => $s['auth_password'] ?? null,
+                            'active' => $restore ? (int) $s['active'] : 0, 'created_at' => $now,
                         ]);
                         $created++;
                     }

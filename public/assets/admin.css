@@ -973,3 +973,22 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .aud-custom label { margin: 0; }
 .aud-custom input[type=date] { margin: 4px 0 0; width: auto; }
 .aud-range { margin: 0 0 12px; }
+
+/* ---------- Source : accès au flux et test de connexion */
+.src-access { margin: 6px 0 14px; }
+.src-access legend { font-weight: 600; padding: 0 6px; }
+.src-access label.check { margin-top: 6px; }
+.src-headers { margin: 10px 0 4px; }
+.src-headers summary { cursor: pointer; color: var(--muted); }
+.src-check { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.src-check-results { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.src-check-results:empty { display: none; }
+.src-result { border-radius: 10px; padding: 10px 12px; border: 1px solid var(--border); }
+.src-result.is-ok { background: var(--ok-bg); border-color: transparent; }
+.src-result.is-ko { background: var(--ko-bg); border-color: transparent; }
+.src-result-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
+.src-result-icon { font-weight: 700; }
+.is-ok .src-result-icon { color: var(--ok); } .is-ko .src-result-icon { color: var(--ko); }
+.src-result-url { word-break: break-all; margin: 2px 0 0 18px; }
+.src-result-details { margin: 6px 0 0; padding-left: 36px; }
+.src-result-details li.ko { color: var(--ko); }
