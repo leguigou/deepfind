@@ -59,7 +59,7 @@ function select_paths(string $name, array $options, string $selected, string $em
     foreach ($byGroup as $group => $opts) {
         $html .= '<optgroup label="' . e($group) . '">';
         foreach ($opts as $o) {
-            $label = $o['value'] . ($o['coverage'] >= 0 && $o['coverage'] < 100 ? ' (' . $o['coverage'] . ' %)' : '');
+            $label = $o['value'] . (!empty($o['empty']) ? ' (toujours vide)' : ($o['coverage'] >= 0 && $o['coverage'] < 100 ? ' (' . $o['coverage'] . ' %)' : ''));
             $interp = '';
             if ($interpretBool && $o['sample'] !== '') {
                 // Montre comment chaque valeur d'exemple sera comprise (ex. in_stock → oui, out_of_stock → non)

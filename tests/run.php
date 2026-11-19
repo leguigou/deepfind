@@ -167,6 +167,32 @@ check('cron : dimanche = 0 ou 7', Cron::matches('0 9 * * 7', new DateTimeImmutab
 $nx = Cron::nextRuns('15 3 * * *', 2, new DateTimeImmutable('2026-11-12 13:20'));
 check('cron : prochaines exécutions', count($nx) === 2 && $nx[0]->format('Y-m-d H:i') === '2026-11-13 03:15');
 
+// Mapping visuel : TOUTES les balises du flux (au-delà des 300 premiers produits, balises vides ou absentes quand vides)
+$bigFeed = sys_get_temp_dir() . '/df_inspect_' . getmypid() . '.xml';
+$x = "<?xml version=\"1.0\"?>\n<products xmlns:g=\"http://base.google.com/ns/1.0\">\n";
+for ($i = 1; $i <= 400; $i++) {
+    $x .= "<product><sku>S$i</sku><name>Produit $i</name><ean></ean><g:color/>"
+        . ($i === 350 ? '<promo_label>Soldes</promo_label><extra><code lang="fr">X1</code></extra>' : '')
+        . ($i > 380 ? '<rare_flag>oui</rare_flag>' : '')
+        . "</product>\n";
+}
+file_put_contents($bigFeed, $x . "</products>\n");
+$FI = DeepFind\Import\FeedInspector::class;
+$bigIns = $FI::inspect($bigFeed, 'product', 300);
+$bigOpts = array_column($FI::options($bigIns), null, 'value');
+check('mapping visuel : balises au-delà des 300 premiers produits, avec exemple et présence réelle',
+    $bigIns['scanned'] === 300 && $bigIns['total'] === 400 && !$bigIns['partial']
+    && isset($bigOpts['promo_label'], $bigOpts['rare_flag'], $bigOpts['extra/code'], $bigOpts['extra/code/@lang'])
+    && $bigOpts['promo_label']['sample'] === 'Soldes' && $bigOpts['promo_label']['coverage'] === 1 && $bigOpts['rare_flag']['coverage'] === 5
+    && $bigOpts['sku']['coverage'] === 100 && !isset($bigOpts['@xmlns:g']), json_encode(array_keys($bigOpts)));
+check('mapping visuel : balises toujours vides listées, jamais pré-sélectionnées', isset($bigOpts['ean'], $bigOpts['g:color'])
+    && $bigOpts['ean']['empty'] === true && $FI::suggest(['ean'], array_values($bigOpts)) === '' && $FI::suggest(['sku'], array_values($bigOpts)) === 'sku'
+    && (require_once __DIR__ . '/../src/Admin/helpers.php') !== false && str_contains(select_paths('x', array_values($bigOpts), ''), 'ean (toujours vide)'));
+$t0 = microtime(true);
+$again = $FI::inspect($bigFeed, 'product', 300);
+check('mapping visuel : analyse mise en cache tant que le fichier ne change pas', $again === $bigIns);
+@unlink($bigFeed);
+
 // Flux type Google Shopping : parent avec la liste de ses SKU enfants (<skus_enfants>), sans ligne propre pour les enfants
 $PB = DeepFind\Import\ProductBuilder::class;
 check('SKU enfants : liste découpée (virgule, point-virgule, |), majuscules, doublons', $PB::childSkus(['su-1, SU-2;su-3|SU-1', ' ']) === ['SU-1', 'SU-2', 'SU-3']);
