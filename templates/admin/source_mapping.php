@@ -34,7 +34,8 @@ $tableHead = '<thead><tr><th>Champ DeepFind</th><th></th><th>Champ détecté dan
 <?php if ($insp): ?>
 <form method="get" action="<?= e(url('/admin/sources/mapping')) ?>" class="card form inline map-analyse">
   <input type="hidden" name="id" value="<?= $id ?>">
-  <div class="muted span-all">Flux analysé : <strong><?= e($feedFile) ?></strong> · <?= fmt_n($insp['scanned']) ?> élément(s) examiné(s) · <?= fmt_n(count($insp['paths'])) ?> champ(s) détecté(s)</div>
+  <div class="muted span-all">Flux analysé : <strong><?= e($feedFile) ?></strong> · <?= fmt_n($insp['total'] ?? $insp['scanned']) ?> élément(s) parcouru(s) (exemples tirés des <?= fmt_n($insp['scanned']) ?> premiers) · <?= fmt_n(count($insp['paths'])) ?> champ(s) détecté(s), y compris les balises vides ou rares
+    <?php if (!empty($insp['partial'])): ?><br><span class="ko">Fichier très volumineux : parcours arrêté au bout de <?= (int) \DeepFind\Import\FeedInspector::FULL_SCAN_SECONDS ?> s, certaines balises rares peuvent manquer.</span><?php endif; ?></div>
   <label>Élément qui représente <?= $isProducts ? 'un produit' : 'un article' ?>
     <?php $cands = []; foreach (array_slice($insp['candidates'], 0, 15, true) as $n => $c) { $cands[$n] = '<' . $n . '> × ' . fmt_n($c); } ?>
     <?= select_simple('item', $cands, $insp['item'], '', 'data-autosubmit') ?>

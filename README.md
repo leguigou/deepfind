@@ -324,7 +324,7 @@ Champs : `id`, `title`, `url`, `published_at` (obligatoires), plus `image`, `exc
 
 ![Mapping visuel](docs/screenshots/13-mapping-visuel.png)
 
-**Catalogues › Flux & mapping › Mapping** : DeepFind télécharge le flux (ou réutilise le téléchargement de moins d'une heure) et analyse ses 300 premiers éléments.
+**Catalogues › Flux & mapping › Mapping** : DeepFind télécharge le flux (ou réutilise le téléchargement de moins d'une heure), détaille ses 300 premiers éléments (exemples de valeurs, groupes répétés) puis parcourt **tout le fichier** pour lister **toutes les balises**, même celles qui n'apparaissent que plus loin, ou qui sont absentes quand elles sont vides. Le taux de présence est calculé sur tout le flux ; une balise toujours vide est signalée « (toujours vide) » et n'est jamais pré-sélectionnée. Parcours limité à 60 secondes (environ 1,5 s pour 40 Mo), résultat gardé en cache tant que le fichier ne change pas.
 
 **Ce qui est détecté :**
 - L'élément qui représente un produit (`<product>`, `<item>`…), modifiable.
