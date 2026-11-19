@@ -356,6 +356,8 @@ final class Importer
                         $toDelete[$id] = true;
                     } else {
                         $doc['variants'] = array_values(array_filter($doc['variants'], static fn ($v) => mb_strtoupper($v['sku'], 'UTF-8') !== $c['sku']));
+                        // SKU d'un enfant listé dans le parent (skus_enfants) : n'est plus cherchable
+                        $doc['child_skus'] = array_values(array_diff((array) ($doc['child_skus'] ?? []), [$c['sku']]));
                         $touched[$id] = true;
                     }
                 } elseif ($isParent) {
@@ -403,6 +405,8 @@ final class Importer
                 $doc[$raw[$k]] = $v;
             } elseif ($k === 'created_at') {
                 $doc['created_ts'] = $v;
+            } elseif ($k === 'child_skus') {
+                $doc['child_skus'] = \DeepFind\Import\ProductBuilder::childSkus($v);
             } elseif (in_array($k, ['name', 'brand', 'url', 'image', 'image_hover', 'short_description', 'description', 'ean', 'margin_rate', 'sales_30d', 'rating', 'reviews_count', 'search_keywords', 'manual_boost'], true)) {
                 $doc[$k] = $v;
             }
