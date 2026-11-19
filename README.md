@@ -201,7 +201,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 ### 3.7 Premier import
 
 1. Connectez-vous à `https://search.example.com/admin` (votre `APP_URL` suivi de `/admin`) avec le jeton `ADMIN_TOKEN`.
-2. **Catalogues › Flux & mapping** : remplacez l'URL d'exemple de `produits_fr` par l'URL de votre flux Magento, puis faites de même pour `blog_fr`.
+2. **Catalogues › Flux & mapping** : remplacez l'URL d'exemple de `produits_fr` par l'URL de votre flux Magento, puis faites de même pour `blog_fr`. Si le flux est protégé par mot de passe (.htaccess), renseignez l'utilisateur et le mot de passe dans **Accès au flux**, puis cliquez sur **Tester la connexion**.
 3. **Mapping** (mapping visuel) : DeepFind analyse le flux. Pour chaque champ (obligatoires en premier), choisissez à droite le champ du flux correspondant, puis enregistrez. Voir la section 5.
 4. **Tester** : vérifiez que le mapping produit le bon document, sans rien indexer.
 5. **Planification des imports** (dans la fiche du flux) : choisissez par exemple « Chaque nuit à 3 h 15 » pour l'import complet et « Toutes les 15 min de 6 h à 23 h » pour le delta.
@@ -362,7 +362,13 @@ Le résultat est enregistré dans le mapping JSON de la source, qui reste modifi
 - **Transformations** : `trim`, `lowercase`, `uppercase`, `ucfirst`, `strip_html`, `to_float`, `to_int`, `to_bool` (accepte 1/0, oui/non, « En stock »…), `divide:N`, `multiply:N`, `default:X`, `split:SEP`, `prefix:X`, `suffix:X`, `replace:A|B`, `truncate:N`, `date_iso`.
 - **Attributs simples** d'un flux à plat : `"extra_attributes": {"couleur": {"path": "color", "label": "Couleur", "filterable": true}}`.
 
-> 🔒 Le flux produits contient la marge : protégez son URL côté Magento (jeton dans l'URL ou en-tête, filtrage IP, HTTPS). L'extranet permet d'envoyer des en-têtes d'authentification lors du téléchargement.
+> 🔒 Le flux produits contient la marge : protégez son URL côté Magento (mot de passe .htaccess / .htpasswd, jeton, filtrage IP, HTTPS).
+
+**Accès au flux** (fiche de la source, Catalogues › Flux & mapping) :
+- **Utilisateur et mot de passe** d'un flux protégé par le serveur web (.htaccess / .htpasswd, authentification Basic ou Digest). Le mot de passe est **chiffré** dans la base (clé dérivée de `APP_SECRET`), n'est jamais réaffiché (laisser le champ vide le conserve, une case permet de le supprimer) et n'est envoyé qu'au serveur du flux, jamais à un autre site en cas de redirection. Si `APP_SECRET` change, ressaisissez-le.
+- **En-têtes HTTP supplémentaires** (jeton…), un par ligne.
+- **Tester la connexion** : vérifie le flux complet et le flux delta avec les valeurs saisies, sans enregistrer ni télécharger tout le fichier (premiers Ko seulement). Résultat : code HTTP (200 = fichier trouvé ; 401 = protégé, ou identifiants refusés ; 403 = accès refusé ; 404 = adresse introuvable ; serveur injoignable), protection détectée ou non, taille, date de modification, redirection, et nature du contenu (XML, fichier .gz, ou page HTML par erreur). Fonctionne aussi pour un flux sans protection et pour un chemin local.
+- Le téléchargement JSON de la configuration (Projets) ne contient ni mot de passe ni en-têtes d'accès ; la copie entre projets les reprend avec les adresses des flux.
 
 ## 6. Utiliser l'extranet
 
@@ -798,6 +804,7 @@ Il vérifie (environ 90 contrôles) la connexion, toutes les pages, les thèmes,
 | Un réglage d'affichage n'apparaît pas sur le site | Délai de 5 minutes au plus ; vérifiez aussi le numéro `?v=` du script (section 4) |
 | Import « Bloqué » | Le flux contient beaucoup moins de produits vendables qu'avant (seuil en Paramètres). Vérifiez le flux, ou augmentez temporairement le seuil |
 | Import « En attente » qui ne démarre pas | Le worker Supervisor ne tourne pas (`supervisorctl status`), ou la ligne cron `schedule:run --work` est absente |
+| Import en échec « HTTP 401 » | Flux protégé par mot de passe : renseignez ou corrigez l'utilisateur et le mot de passe (fiche de la source, **Tester la connexion**) |
 | Produits rejetés | Imports › détail : motifs (SKU manquant, prix nul, enfant sans parent…), puis **Tester** le mapping |
 | Un produit a disparu des résultats | Aperçu interne avec « Désactivés » : « désactivé manu » (bouton Activer) ou « désactivé auto » (absent du dernier flux complet) |
 | Tous les visiteurs bloqués ensemble | Un proxy ou CDN est devant Apache : renseignez `TRUSTED_PROXIES` |

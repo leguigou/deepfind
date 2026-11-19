@@ -223,6 +223,12 @@ final class ProjectsController
     {
         header('Content-Type: application/json; charset=utf-8');
         header('Content-Disposition: attachment; filename="deepfind-config-' . Project::current()['code'] . '-' . date('Ymd-His') . '.json"');
-        echo json_encode(ConfigTransfer::export(Project::id()), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $data = ConfigTransfer::export(Project::id());
+        // fichier destiné à sortir du serveur : jamais de secret d'accès aux flux (mot de passe, en-têtes de jeton)
+        foreach ($data['sources'] ?? [] as $i => $s) {
+            $data['sources'][$i]['auth_password'] = null;
+            $data['sources'][$i]['auth_header'] = null;
+        }
+        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

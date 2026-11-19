@@ -33,7 +33,7 @@ final class SourcesController
             $kind = ($_GET['kind'] ?? 'products') === 'posts' ? 'posts' : 'products';
             $source = [
                 'id' => 0, 'code' => '', 'kind' => $kind, 'lang' => Auth::lang(), 'url' => '', 'delta_url' => '',
-                'auth_header' => '', 'active' => 1, 'cron_full' => '15 3 * * *', 'cron_delta' => null,
+                'auth_header' => '', 'auth_user' => '', 'auth_password' => null, 'active' => 1, 'cron_full' => '15 3 * * *', 'cron_delta' => null,
                 'mapping' => json_encode($kind === 'posts' ? Mapper::defaultPosts() : Mapper::defaultProducts(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ];
         } else {
@@ -42,9 +42,15 @@ final class SourcesController
                 $source['mapping'] = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
         }
+        // le mot de passe (chiffré) n'est jamais renvoyé au navigateur : on indique seulement s'il existe
+        $hasPassword = (string) ($source['auth_password'] ?? '') !== '';
+        $passwordReadable = !$hasPassword || \DeepFind\Security\Secrets::decrypt($source['auth_password']) !== null;
+        unset($source['auth_password']);
         View::render('source_edit', [
             'active' => 'sources',
             'source' => $source,
+            'hasPassword' => $hasPassword,
+            'passwordReadable' => $passwordReadable,
             'fields' => $source['kind'] === 'posts' ? Mapper::POST_FIELDS : Mapper::PRODUCT_FIELDS,
             'variantFields' => Mapper::VARIANT_FIELDS,
         ], $id ? 'Modifier la source' : 'Nouvelle source');
@@ -92,10 +98,18 @@ final class SourcesController
             'url' => trim((string) $_POST['url']),
             'delta_url' => trim((string) ($_POST['delta_url'] ?? '')) ?: null,
             'auth_header' => trim((string) ($_POST['auth_header'] ?? '')) ?: null,
+            'auth_user' => mb_substr(trim((string) ($_POST['auth_user'] ?? '')), 0, 190, 'UTF-8') ?: null,
             'mapping' => Text::json($mapping),
             'active' => isset($_POST['active']) ? 1 : 0,
             'updated_at' => date('Y-m-d H:i:s'),
         ] + $cron;
+        // mot de passe : chiffré s'il est saisi ; champ vide = mot de passe enregistré conservé ; « Supprimer » ou plus d'utilisateur = effacé
+        $newPassword = (string) ($_POST['auth_password'] ?? '');
+        if ($newPassword !== '') {
+            $data['auth_password'] = \DeepFind\Security\Secrets::encrypt($newPassword);
+        } elseif (isset($_POST['auth_password_clear']) || $data['auth_user'] === null) {
+            $data['auth_password'] = null;
+        }
         try {
             if ($id > 0) {
                 Db::update('sources', $data, 'id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]);
@@ -109,6 +123,35 @@ final class SourcesController
         }
         Auth::flash('ok', 'Source enregistrée.');
         App::back(isset($_POST['to_mapping']) ? '/admin/sources/mapping' : '/admin/sources/edit', ['id' => $id]);
+    }
+
+    /**
+     * Bouton « Tester la connexion » : adresses et accès tels que saisis dans le formulaire (sans enregistrer).
+     * Mot de passe laissé vide : celui déjà enregistré pour cette source est utilisé.
+     */
+    public function check(): void
+    {
+        $id = (int) ($_POST['id'] ?? 0);
+        $stored = $id > 0 ? Db::one('SELECT auth_password FROM sources WHERE id = ? AND project_id = ?', [$id, \DeepFind\Project::id()]) : null;
+        $source = [
+            'auth_header' => (string) ($_POST['auth_header'] ?? ''),
+            'auth_user' => trim((string) ($_POST['auth_user'] ?? '')),
+        ];
+        $typed = (string) ($_POST['auth_password'] ?? '');
+        if ($typed !== '' || isset($_POST['auth_password_clear'])) {
+            $source['auth_password_plain'] = $typed;
+        } else {
+            $source['auth_password'] = $stored['auth_password'] ?? null;
+        }
+        $out = [];
+        foreach (['url' => 'Flux complet', 'delta_url' => 'Flux delta'] as $field => $label) {
+            $url = trim((string) ($_POST[$field] ?? ''));
+            if ($field === 'delta_url' && $url === '') {
+                continue;
+            }
+            $out[] = ['label' => $label, 'url' => $url] + FeedFetcher::check($source, $url);
+        }
+        \DeepFind\Http\Response::json(['results' => $out]);
     }
 
     public function delete(): void

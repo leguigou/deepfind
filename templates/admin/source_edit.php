@@ -15,9 +15,34 @@
   <label>Flux delta (stock / prix / suppressions), facultatif
     <input name="delta_url" value="<?= e($source['delta_url']) ?>" placeholder="https://www.example.com/media/feeds/search_fr_delta.xml"></label>
   <?php endif; ?>
-  <label>En-têtes HTTP d'authentification (un par ligne), facultatif
-    <textarea name="auth_header" rows="2" placeholder="Authorization: Bearer xxxxx"><?= e($source['auth_header']) ?></textarea>
-    <small class="muted">Le flux contient des données confidentielles (marge) : protégez son URL côté Magento (jeton, filtrage IP).</small></label>
+  <fieldset class="card src-access" data-src-access data-check-url="<?= e(url('/admin/sources/check')) ?>">
+    <legend>Accès au flux</legend>
+    <p class="muted small">Le flux contient des données confidentielles (marge) : protégez-le côté serveur (mot de passe .htaccess, jeton, filtrage d'adresse IP).</p>
+    <div class="grid2">
+      <label>Utilisateur (protection .htaccess / .htpasswd)
+        <input name="auth_user" value="<?= e((string) ($source['auth_user'] ?? '')) ?>" autocomplete="off" placeholder="(flux non protégé)"></label>
+      <div>
+        <label>Mot de passe
+          <input type="password" name="auth_password" value="" autocomplete="new-password"
+            placeholder="<?= $hasPassword ? '•••••••• enregistré (laisser vide pour le conserver)' : '' ?>"></label>
+        <?php if ($hasPassword && !$passwordReadable): ?><small class="ko">Mot de passe enregistré illisible (APP_SECRET a changé) : saisissez-le de nouveau.</small><?php endif; ?>
+        <?php if ($hasPassword): ?>
+          <label class="check small"><input type="checkbox" name="auth_password_clear" value="1"><span>Supprimer le mot de passe enregistré</span></label>
+        <?php endif; ?>
+      </div>
+    </div>
+    <small class="muted">Le mot de passe est chiffré dans la base et n'est jamais réaffiché. Il n'est envoyé qu'au serveur du flux (jamais à un autre site en cas de redirection).</small>
+    <details class="src-headers"<?= trim((string) $source['auth_header']) !== '' ? ' open' : '' ?>>
+      <summary>En-têtes HTTP supplémentaires (jeton…), facultatif</summary>
+      <label>Un par ligne
+        <textarea name="auth_header" rows="2" placeholder="Authorization: Bearer xxxxx"><?= e($source['auth_header']) ?></textarea></label>
+    </details>
+    <div class="src-check">
+      <button type="button" class="btn btn-light" data-src-check>Tester la connexion</button>
+      <span class="muted small">Vérifie l'accès au flux complet<?= $source['kind'] === 'products' ? ' et au flux delta' : '' ?> avec les valeurs saisies, sans enregistrer ni télécharger tout le fichier.</span>
+    </div>
+    <div class="src-check-results" data-src-check-results aria-live="polite"></div>
+  </fieldset>
   <label class="toggle toggle-sm"><input type="checkbox" role="switch" name="active" <?= $source['active'] ? 'checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Source active (les imports planifiés ne tournent que si la source est active)</span></label>
 
   <fieldset class="card">
@@ -91,3 +116,4 @@
     <code>extra_attributes</code> : <code>{"couleur": {"path": "color", "label": "Couleur", "filterable": true}}</code>.</p>
   <?php endif; ?>
 </details>
+<script src="<?= e(asset('/assets/source-edit.js')) ?>"></script>

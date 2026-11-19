@@ -17,6 +17,7 @@ final class App
         'GET /admin/sources/edit' => [SourcesController::class, 'edit'],
         'POST /admin/sources/save' => [SourcesController::class, 'save'],
         'POST /admin/sources/delete' => [SourcesController::class, 'delete'],
+        'POST /admin/sources/check' => [SourcesController::class, 'check'],
         'POST /admin/sources/import' => [SourcesController::class, 'import'],
         'GET /admin/sources/test' => [SourcesController::class, 'test'],
         'POST /admin/sources/test' => [SourcesController::class, 'test'],
