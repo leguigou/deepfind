@@ -162,6 +162,8 @@ final class ProductBuilder
             'category_terms' => array_values(array_unique($catTerms)),
             'category_ids' => array_values(array_unique($catIds)),
             'search_keywords' => (string) ($f['search_keywords'] ?? ''),
+            // SKU des enfants listés dans le parent (« SU-1,SU-2 ») : gardés dans le document (recalcul des scores sans relire le flux)
+            'child_skus' => self::childSkus($f['child_skus'] ?? []),
             'raw_price' => round((float) ($f['price'] ?? 0), 2),
             'raw_final_price' => round((float) ($f['final_price'] ?? 0), 2),
             'raw_in_stock' => (int) ($f['in_stock'] ?? 1),
@@ -188,6 +190,21 @@ final class ProductBuilder
     }
 
     /** @param array<string,mixed> $doc */
+    /** « SU-1,SU-2 ; SU-3 » (une ou plusieurs valeurs) → ['SU-1', 'SU-2', 'SU-3'], en majuscules, 500 au plus. @return list<string> */
+    public static function childSkus(mixed $raw): array
+    {
+        $out = [];
+        foreach ((array) $raw as $list) {
+            foreach (preg_split('/[,;|]/', (string) $list) ?: [] as $c) {
+                $c = mb_strtoupper(trim($c), 'UTF-8');
+                if ($c !== '' && mb_strlen($c, 'UTF-8') <= 100) {
+                    $out[$c] = true;
+                }
+            }
+        }
+        return array_slice(array_keys($out), 0, 500);
+    }
+
     public function computeDerived(array $doc): array
     {
         $vars = $doc['variants'] ?? [];
@@ -250,6 +267,13 @@ final class ProductBuilder
             if ($v['ean'] !== '') {
                 $eans[] = $v['ean'];
             }
+        }
+        // SKU des enfants listés dans le parent (sans ligne ni détail propres) : cherchables, le parent s'affiche
+        $childSkus = self::childSkus($doc['child_skus'] ?? []);
+        $skus = [...$skus, ...$childSkus];
+        // prix du parent présenté « dès » : les enfants peuvent avoir d'autres prix (non fournis par le flux)
+        if ($childSkus !== [] && $doc['variants'] === []) {
+            $doc['has_price_range'] = 1;
         }
         $doc['all_skus'] = array_values(array_unique($skus));
         $doc['all_eans'] = array_values(array_unique($eans));

@@ -167,6 +167,33 @@ check('cron : dimanche = 0 ou 7', Cron::matches('0 9 * * 7', new DateTimeImmutab
 $nx = Cron::nextRuns('15 3 * * *', 2, new DateTimeImmutable('2026-11-12 13:20'));
 check('cron : prochaines exécutions', count($nx) === 2 && $nx[0]->format('Y-m-d H:i') === '2026-11-13 03:15');
 
+// Flux type Google Shopping : parent avec la liste de ses SKU enfants (<skus_enfants>), sans ligne propre pour les enfants
+$PB = DeepFind\Import\ProductBuilder::class;
+check('SKU enfants : liste découpée (virgule, point-virgule, |), majuscules, doublons', $PB::childSkus(['su-1, SU-2;su-3|SU-1', ' ']) === ['SU-1', 'SU-2', 'SU-3']);
+$gIns = DeepFind\Import\FeedInspector::inspect(__DIR__ . '/fixtures/google_parent_fr.xml');
+$gOpts = DeepFind\Import\FeedInspector::options($gIns);
+$gCat = DeepFind\Import\FieldCatalog::groups('products');
+$gSug = static fn (string $f) => DeepFind\Import\FeedInspector::suggest(($gCat['required'][$f] ?? $gCat['secondary'][$f])['synonyms'], $gOpts);
+check('SKU enfants : mapping visuel (g:id, skus_enfants, vente_web, prix g:)', $gIns['item'] === 'item' && $gSug('sku') === 'g:id' && $gSug('child_skus') === 'skus_enfants'
+    && $gSug('enabled') === 'vente_web' && $gSug('price') === 'g:price' && $gSug('final_price') === 'g:sale_price' && $gSug('in_stock') === 'g:availability',
+    json_encode(['sku' => $gSug('sku'), 'child' => $gSug('child_skus'), 'enabled' => $gSug('enabled')]));
+$gMap = new DeepFind\Import\Mapper(['item_element' => 'item', 'fields' => ['sku' => ['path' => 'g:id'], 'name' => ['path' => 'title'], 'url' => ['path' => 'link'],
+    'price' => ['path' => 'g:price'], 'final_price' => ['path' => 'g:sale_price'], 'in_stock' => ['path' => 'g:availability'], 'enabled' => ['path' => 'vente_web'],
+    'child_skus' => ['path' => 'skus_enfants', 'multiple' => true]], 'categories' => ['path' => 'category', 'name_path' => '.', 'separator' => '>']], 'products');
+$gDocs = [];
+foreach (DeepFind\Import\XmlItemReader::items(__DIR__ . '/fixtures/google_parent_fr.xml', ['item']) as [, $el]) {
+    $mp = $gMap->mapProduct($el);
+    $gDocs[] = (new DeepFind\Import\ProductBuilder(null, time()))->build($mp, []);
+}
+[$gP, $gS] = $gDocs;
+check('SKU enfants : chercher un SKU enfant trouve le parent, prix « dès », promo, stock, catégories', is_array($gP) && $gP['sku'] === 'PCPL-16'
+    && in_array('SU-0002637', $gP['all_skus'], true) && count($gP['all_skus']) === 6 && $gP['has_price_range'] === 1
+    && $gP['final_price'] === 349.99 && $gP['price'] === 499.9 && $gP['discount_percent'] === 30 && $gP['in_stock'] === 1
+    && in_array('Combinaisons de plongée homme', $gP['category_names'], true)
+    && is_array($gS) && $gS['all_skus'] === ['PMT-22'] && $gS['has_price_range'] === 0 && $gS['in_stock'] === 0, json_encode([$gP['all_skus'] ?? $gP, $gS['all_skus'] ?? $gS]));
+$gRe = (new DeepFind\Import\ProductBuilder(null, time()))->computeDerived($gP);
+check('SKU enfants : conservés au recalcul des scores (sans relire le flux)', $gRe['all_skus'] === $gP['all_skus'] && $gRe['has_price_range'] === 1);
+
 // Mapping visuel : détection des champs du flux
 use DeepFind\Import\FeedInspector;
 use DeepFind\Admin\MappingController;

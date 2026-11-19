@@ -12,7 +12,7 @@ final class FieldCatalog
 {
     /** @var array<string, array{label:string, help:string, synonyms:list<string>}> */
     private const PRODUCT = [
-        'sku' => ['label' => 'SKU (référence)', 'help' => 'Référence unique du produit parent ou simple', 'synonyms' => ['sku', 'reference', 'ref', 'mpn', 'product_sku', 'code']],
+        'sku' => ['label' => 'SKU (référence)', 'help' => 'Référence unique du produit parent ou simple', 'synonyms' => ['sku', 'reference', 'ref', 'mpn', 'product_sku', 'code', 'id']],
         'name' => ['label' => 'Nom du produit', 'help' => 'Recherche (poids fort) et affichage', 'synonyms' => ['name', 'title', 'nom', 'product_name', 'libelle']],
         'url' => ['label' => 'URL de la fiche produit', 'help' => 'Adresse complète en http(s)://', 'synonyms' => ['url', 'link', 'product_url', 'url_key', 'url_path']],
         'price' => ['label' => 'Prix normal', 'help' => 'Prix de référence (barré en cas de promotion)', 'synonyms' => ['price', 'regular_price', 'prix', 'base_price']],
@@ -25,6 +25,8 @@ final class FieldCatalog
         'salable_qty' => ['label' => 'Quantité vendable', 'help' => 'Quantité vendable MSI', 'synonyms' => ['salable_qty', 'qty', 'quantity', 'stock_qty', 'stock', 'quantite']],
         'type' => ['label' => 'Type de produit', 'help' => 'simple, configurable, bundle…', 'synonyms' => ['type', 'type_id', 'product_type']],
         'ean' => ['label' => 'EAN / GTIN', 'help' => 'Recherche exacte par code-barres', 'synonyms' => ['ean', 'gtin', 'ean13', 'barcode', 'upc']],
+        'child_skus' => ['label' => 'SKU des enfants (liste)', 'help' => 'Liste des SKU enfants dans le parent (ex. « SU-1,SU-2 », séparés par virgule, point-virgule ou |) : chercher un de ces SKU affiche le parent, avec son prix « dès »',
+            'synonyms' => ['skus_enfants', 'sku_enfants', 'child_skus', 'children_skus', 'skus_children', 'associated_skus', 'variant_skus', 'skus_variantes']],
         'image_hover' => ['label' => 'Image au survol', 'help' => 'Deuxième image', 'synonyms' => ['image_hover', 'additional_image_link', 'additional_image', 'image_2', 'image2']],
         'short_description' => ['label' => 'Description courte', 'help' => 'Recherche (poids faible)', 'synonyms' => ['short_description', 'resume', 'summary', 'accroche']],
         'description' => ['label' => 'Description', 'help' => 'Recherche (poids très faible), HTML retiré', 'synonyms' => ['description', 'long_description', 'desc']],
@@ -35,7 +37,7 @@ final class FieldCatalog
         'reviews_count' => ['label' => 'Nombre d\'avis', 'help' => 'Affichage', 'synonyms' => ['reviews_count', 'nb_avis', 'review_count', 'reviews']],
         'search_keywords' => ['label' => 'Mots-clés de recherche', 'help' => 'Mots supplémentaires recherchables', 'synonyms' => ['search_keywords', 'meta_keyword', 'keywords', 'mots_cles', 'tags']],
         'manual_boost' => ['label' => 'Boost manuel (-10 à +10)', 'help' => 'Mise en avant éditoriale permanente', 'synonyms' => ['manual_boost', 'boost', 'priority', 'priorite']],
-        'enabled' => ['label' => 'Activé (oui/non)', 'help' => '0 / non = produit ignoré', 'synonyms' => ['enabled', 'status', 'active', 'is_active', 'actif']],
+        'enabled' => ['label' => 'Activé (oui/non)', 'help' => '0 / non = produit ignoré', 'synonyms' => ['enabled', 'status', 'active', 'is_active', 'actif', 'vente_web', 'visible_web', 'web']],
     ];
 
     private const VARIANT = [
@@ -101,6 +103,6 @@ final class FieldCatalog
     /** Champs qui acceptent plusieurs valeurs (listes). */
     public static function isList(string $kind, string $field): bool
     {
-        return $kind === 'posts' && in_array($field, ['categories', 'tags', 'related_skus'], true);
+        return ($kind === 'posts' && in_array($field, ['categories', 'tags', 'related_skus'], true)) || ($kind === 'products' && $field === 'child_skus');
     }
 }

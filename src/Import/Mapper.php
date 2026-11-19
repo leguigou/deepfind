@@ -28,6 +28,8 @@ final class Mapper
         'price' => 'float', 'final_price' => 'float', 'in_stock' => 'bool', 'salable_qty' => 'int',
         'margin_rate' => 'float', 'sales_30d' => 'int', 'created_at' => 'date', 'rating' => 'float',
         'reviews_count' => 'int', 'search_keywords' => 'text', 'manual_boost' => 'int',
+        // SKU des enfants listés dans le parent (« SU-1,SU-2,SU-3 ») : recherchables, affichent le parent
+        'child_skus' => 'list',
     ];
 
     public const VARIANT_FIELDS = [

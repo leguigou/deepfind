@@ -278,6 +278,7 @@ Deux options pour les flux :
 | `url`, `image`, `image_hover` | URL http(s) | url ✅ | affichage (utilisez l'image *cache* redimensionnée de Magento) |
 | `short_description`, `description` | texte/HTML | | recherche (poids faible), le HTML est retiré |
 | `ean` | texte | | recherche exacte |
+| `child_skus` | liste | | SKU des enfants listés dans le parent (`SU-1,SU-2`, séparés par virgule, point-virgule ou `\|`) : chercher l'un d'eux affiche le parent (voir ci-dessous) |
 | `price` | décimal | ✅ (ou final_price) | prix barré si promo |
 | `final_price` | décimal | conseillé | prix affiché (exportez le **prix final** Magento, règles de prix catalogue incluses) |
 | `in_stock`, `salable_qty` | oui/non, entier | conseillé | exportez la **quantité vendable MSI**. Pour `in_stock`, sont reconnus comme « en stock » : 1, un nombre > 0, oui/yes/true, « En stock », `in_stock`, `available`, `preorder`, `backorder` (Google Shopping) et `https://schema.org/InStock`. Tout le reste = rupture |
@@ -297,6 +298,8 @@ Deux options pour les flux :
 
 - **`"variant_mode": "nested"`** (recommandé) : les enfants sont dans `<variants>` sous le parent.
 - **`"variant_mode": "flat"`** : chaque produit est sur sa propre ligne et les enfants ont un `parent_id`. Le regroupement se fait pendant l'import, dans une table de travail MySQL. L'ordre des lignes n'a pas d'importance. Mettez `"parent_match": "sku"` si `parent_id` contient le SKU du parent.
+
+- **Liste des enfants dans le parent** (flux de type Google Shopping, ex. `<skus_enfants>SU-1,SU-2</skus_enfants>`, sans ligne propre pour chaque enfant) : mappez ce champ sur **SKU des enfants** (proposé automatiquement). Chercher un de ces SKU affiche le parent ; son prix est présenté « dès » (le flux ne donne ni prix ni stock par enfant). Restez en mode imbriqué.
 
 **Résultat dans tous les cas :**
 - Un seul document par parent.
