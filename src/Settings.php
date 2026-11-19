@@ -59,13 +59,14 @@ final class Settings
         'audience_paths_home' => '0',
         'widget_enter_submit' => '1',
         'widget_block_native' => '1',
+        'widget_hover_image' => '1',
         'log_retention_days' => '90',
         // Import
         'max_drop_percent' => '20',
     ];
 
     /** Paramètres marche/arrêt (affichés sous forme d'interrupteur) */
-    public const BOOLEANS = ['block_bad_user_agents', 'out_of_stock_last', 'log_searches', 'attribute_first', 'scores_nightly', 'widget_enter_submit', 'widget_block_native'];
+    public const BOOLEANS = ['block_bad_user_agents', 'out_of_stock_last', 'log_searches', 'attribute_first', 'scores_nightly', 'widget_enter_submit', 'widget_block_native', 'widget_hover_image'];
 
     public const LABELS = [
         'rate_per_minute' => 'Requêtes max. par IP et par minute',
@@ -102,6 +103,7 @@ final class Settings
         'facet_values_limit' => 'Valeurs max. par filtre',
         'log_searches' => 'Journaliser les recherches',
         'widget_enter_submit' => 'Touche Entrée : ouvrir la page de résultats du site (sinon, seule la fenêtre de recherche DeepFind reste affichée)',
+        'widget_hover_image' => 'Changer d\'image au survol d\'un produit (affiche sa deuxième photo quand la souris passe dessus)',
         'widget_block_native' => 'Bloquer l\'autocomplétion d\'origine du site au clic et à la saisie dans le champ de recherche (évite que deux fenêtres s\'ouvrent)',
         'log_retention_days' => 'Conservation des journaux (jours)',
         'max_drop_percent' => 'Import bloqué si le catalogue baisse de plus de N %',

@@ -188,6 +188,8 @@ final class ApiController
             'enter_submit' => Settings::int('widget_enter_submit') === 1,
             // neutraliser l'autocomplétion d'origine du site (data-native="keep" / "block" sur le script reste prioritaire)
             'block_native' => Settings::int('widget_block_native') === 1,
+            // deuxième photo du produit au survol de sa carte
+            'hover_image' => Settings::int('widget_hover_image') === 1,
             // mesure d'audience : pages qui signalent une page vue (sans cookie, sans donnée personnelle), ou false
             'audience' => Audience::widgetConfig(),
         ] + \DeepFind\Widget\WidgetConfig::forWidget($lang, $preview = substr((string) ($_GET['preview'] ?? ''), 0, 80)),
