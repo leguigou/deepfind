@@ -127,8 +127,8 @@ fs.mkdirSync(OUT, { recursive: true });
 
   // Paramètres : interrupteurs marche/arrêt
   await page.goto(BASE + '/admin/settings');
-  // anti-robots, touche Entrée, autocomplétion d'origine, journaux
-  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 4);
+  // anti-robots, touche Entrée, autocomplétion d'origine, photo au survol, journaux
+  check('paramètres : interrupteurs', (await page.$$('.toggle input[role=switch]')).length === 5);
   await page.click('label.toggle:has(input[name=block_bad_user_agents])');
   await page.click('form.st .st-foot button.btn');
   check('interrupteur : désactivé et enregistré', (await page.isChecked('input[name=block_bad_user_agents][type=checkbox]')) === false);
@@ -375,7 +375,7 @@ fs.mkdirSync(OUT, { recursive: true });
   const sitePage = async (path) => {
     const sc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
     await sc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><title>Boutique</title></head><body>'
-      + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=23" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
+      + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=24" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
     let n = 0;
     sc.on('request', (r) => { if (r.url().endsWith('/api/v1/visit')) { n++; } });
     const sp = await sc.newPage();
@@ -411,7 +411,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('règles de page : aperçu interne avec « Page du site »', (await page.textContent('.flash-info')).includes('Règle C4'));
   const sc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
   await sc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><title>Boutique</title></head><body>'
-    + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=23" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
+    + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=24" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
   const shop = await sc.newPage();
   await shop.goto(BASE + '/boutique/c4/palmes.html');
   await shop.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
@@ -454,6 +454,40 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('form[action$="/admin/sources/delete"] button');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   feedSrv.kill();
+
+  // Photo au survol d'un produit : activée par défaut, désactivable dans Paramètres › Widget sur le site
+  const hoverTest = async () => {
+    const hc = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
+    await hc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta charset="utf-8"><title>Boutique</title></head><body>'
+      + '<input name="q"><script src="' + BASE + '/widget/deepfind.js?v=24" data-key="' + siteKey + '" data-lang="fr"></script></body></html>' }));
+    // deuxième photo injectée dans la réponse (les produits de test n'en ont pas)
+    await hc.route('**/api/v1/search?*', async (route) => {
+      const resp = await route.fetch();
+      const json = await resp.json();
+      (json.products || []).forEach((p) => { p.image_hover = BASE + '/assets/demo/blog.svg'; });
+      await route.fulfill({ response: resp, json });
+    });
+    const hp = await hc.newPage();
+    await hp.goto(BASE + '/boutique/plongee.html');
+    await hp.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
+    await hp.fill('input[name=q]', 'palme');
+    await hp.waitForSelector('.df-card img.df-img');
+    const before = await hp.getAttribute('.df-card >> nth=0 >> img.df-img', 'src');
+    await hp.hover('.df-card >> nth=0');
+    await hp.waitForTimeout(200);
+    const during = await hp.evaluate(() => document.querySelector('.df-card img.df-img').src);
+    await hc.close();
+    return [before, during];
+  };
+  const [hb1, hd1] = await hoverTest();
+  check('widget : deuxième photo au survol (réglage activé)', hd1.endsWith('/assets/demo/blog.svg') && !String(hb1).endsWith('blog.svg'));
+  await page.goto(BASE + '/admin/settings');
+  await page.uncheck('input[type=checkbox][name=widget_hover_image]', { force: true });
+  await Promise.all([page.waitForNavigation(), page.click('.st-foot button')]);
+  const [, hd0] = await hoverTest();
+  check('widget : photo fixe au survol (réglage désactivé)', !hd0.endsWith('/assets/demo/blog.svg'));
+  await page.check('input[type=checkbox][name=widget_hover_image]', { force: true });
+  await Promise.all([page.waitForNavigation(), page.click('.st-foot button')]);
 
   check('aucune erreur JavaScript', errors.length === 0);
   if (errors.length) { console.log(errors.join('\n')); }

@@ -54,7 +54,8 @@
     maxWidthUnit: '%',
     pageSizeMobile: 0,
     colsDesktop: 0,
-    colsMobile: 2
+    colsMobile: 2,
+    hoverImage: true
   };
   var enterSubmit = cfg.enter !== null ? cfg.enter : true;
   var noAudience = ds.demo === '1'; // page Démo ou aperçu : pas de mesure d'audience (complété plus bas)
@@ -507,7 +508,7 @@
     // image au survol (img.df-img)
     var main = a.querySelector('img.df-img');
     var hover = safeUrl(p.image_hover);
-    if (main && hover) {
+    if (main && hover && cfg.hoverImage) {
       var src = main.src;
       a.addEventListener('mouseenter', function () { main.src = hover; });
       a.addEventListener('mouseleave', function () { main.src = src; });
@@ -1244,7 +1245,7 @@
   function writeCfg(c) {
     if (preview) { return; } // ne pas mélanger l'aperçu avec la configuration du site
     try {
-      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, audience: c.audience || false,
+      window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, hover_image: c.hover_image !== false, audience: c.audience || false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1252,6 +1253,8 @@
   function applyCfg(c) {
     if (!c) { return; }
     if (cfg.enter === null && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
+    // photo au survol : réglage de l'extranet (Paramètres › Widget sur le site), appliqué aux cartes affichées ensuite
+    if (c.hover_image !== undefined) { cfg.hoverImage = c.hover_image !== false; }
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
     if (ds.native !== 'keep' && ds.native !== 'block' && c.block_native !== undefined) { cfg.blockNative = c.block_native !== false; }

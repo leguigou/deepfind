@@ -975,6 +975,13 @@ if ($base) {
     DeepFind\Settings::set('same_query_per_minute', '15');
     DeepFind\CacheVersion::bump();
 
+    // Photo au survol d'un produit (Paramètres › Widget sur le site)
+    [, $cfH1] = $get("/api/v1/config?key=$key&lang=fr");
+    DeepFind\Settings::set('widget_hover_image', '0');
+    [, $cfH0] = $get("/api/v1/config?key=$key&lang=fr");
+    DeepFind\Settings::set('widget_hover_image', '1');
+    check('widget : photo au survol activée par défaut, désactivable', ($cfH1['hover_image'] ?? null) === true && ($cfH0['hover_image'] ?? null) === false);
+
     [$c, $d] = $get('/api/v1/health');
     check('API : santé', $c === 200 && $d['status'] === 'ok');
 }
