@@ -116,9 +116,54 @@ final class PageRules
     }
 
     /** Filtre du moteur pour les produits de la règle (avant inversion pour « exclure »), ou null. */
-    public static function filter(array $rule): ?string
+    public static function filter(array $rule, ?string $lang = null): ?string
     {
-        return CustomResults::ruleFilter(['match_all' => $rule['match_all'], 'conditions' => $rule['conditions']]);
+        $conds = [];
+        foreach ($rule['conditions'] as $c) {
+            $conds[] = isset(CustomResults::CONTAINS_OPS[$c['op'] ?? '']) ? self::expandContains($c, $lang ?? 'fr') : $c;
+        }
+        return CustomResults::ruleFilter(['match_all' => $rule['match_all'], 'conditions' => $conds]);
+    }
+
+    /** Valeur introuvable : « est » ne garde aucun produit, « n'est pas » les garde tous. */
+    private const NO_VALUE = '__aucune_valeur__';
+
+    /**
+     * « Catégorie contient alimentation » → « Catégorie est Alimentation, Alimentation chien… » : valeurs du catalogue
+     * (recherche dans les valeurs du champ par le moteur, 100 au plus par texte) qui contiennent l'un des textes,
+     * sans tenir compte des majuscules ni des accents. Mis en cache, recalculé après chaque import.
+     */
+    public static function expandContains(array $c, string $lang): array
+    {
+        $field = (string) $c['field'];
+        $facet = $field === 'sku' ? 'all_skus' : (str_starts_with($field, 'attr.') ? 'attr.' . \DeepFind\Import\Mapper::code(substr($field, 5)) : $field);
+        $texts = array_values(array_filter(array_map(static fn ($t) => Text::fold((string) $t), (array) ($c['values'] ?? [])), 'strlen'));
+        $store = Store::get();
+        $key = 'prcontains:' . \DeepFind\Project::id() . ':' . $lang . ':' . \DeepFind\CacheVersion::get() . ':' . md5($facet . '|' . implode('|', $texts));
+        $values = $store->get($key);
+        if (!is_array($values)) {
+            $values = [];
+            try {
+                $meili = \DeepFind\Meili\MeiliClient::search();
+                $uid = \DeepFind\Config::productIndex($lang);
+                foreach ($texts as $t) {
+                    // recherche par le texte (mots et débuts de mots) + valeurs les plus fréquentes (texte au milieu d'un mot)
+                    foreach ([$t, ''] as $q) {
+                        foreach ($meili->facetSearch($uid, $facet, $q) as $h) {
+                            if (str_contains(Text::fold($h['value']), $t)) {
+                                $values[$h['value']] = true;
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                error_log('[deepfind] règle de page « contient » : ' . $e->getMessage());
+            }
+            $values = array_keys($values);
+            $store->set($key, $values, 3600);
+        }
+        $values = $values === [] ? [self::NO_VALUE] : array_map('strval', $values);
+        return ['field' => $field, 'op' => ($c['op'] ?? '') === 'not_contains' ? 'not_in' : 'in', 'values' => $values];
     }
 
     /**
@@ -148,7 +193,7 @@ final class PageRules
         }
         $action = isset(self::ACTIONS[$in['action'] ?? '']) ? (string) $in['action'] : 'prefilter';
         [$rules, $condErrors] = CustomResults::sanitizeRules([['match' => ($in['match'] ?? 'all') === 'any' ? 'any' : 'all',
-            'conditions' => (array) ($in['conditions'] ?? [])]], $lang);
+            'conditions' => (array) ($in['conditions'] ?? [])]], $lang, true);
         $errors = [...$errors, ...$condErrors];
         if (($rules[0]['conditions'] ?? []) === [] && $condErrors === []) {
             $errors[] = 'Ajoutez au moins une condition sur les produits (ex. Catégorie est « Nautisme »).';

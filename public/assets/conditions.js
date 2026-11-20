@@ -10,6 +10,8 @@
     var valuesUrl = opts.valuesUrl;
     var root = opts.root || document;
     var listOps = !!opts.listOps;
+    // « contient » / « ne contient pas » en plus de « est » / « n'est pas » (règles selon la page)
+    var listContains = !!opts.listContains;
     var textOps = !!opts.textOps;
     var valuesCache = {};
 
@@ -348,13 +350,29 @@
       if (listOps) {
         // « est » / « n'est pas » (règles d'inclusion et d'exclusion des résultats personnalisés)
         var lop = el('select', 'br-op');
-        [['in', 'est'], ['not_in', 'n\'est pas']].forEach(function (p) { var o = el('option', '', p[1]); o.value = p[0]; lop.appendChild(o); });
-        if (init && init.op === 'not_in') { lop.value = 'not_in'; }
+        lop.setAttribute('aria-label', 'Comparaison');
+        var listChoices = [['in', 'est'], ['not_in', 'n\'est pas']];
+        if (listContains && !def.static) { listChoices.push(['contains', 'contient'], ['not_contains', 'ne contient pas']); }
+        listChoices.forEach(function (p) { var o = el('option', '', p[1]); o.value = p[0]; lop.appendChild(o); });
+        var isText = function (v) { return v === 'contains' || v === 'not_contains'; };
+        if (init && init.op && listChoices.some(function (p) { return p[0] === init.op; })) { lop.value = init.op; }
         var l2 = el('div', 'br-list-line');
+        var slot2 = el('div', 'br-text-slot');
         l2.appendChild(lop);
-        l2.appendChild(ms);
+        l2.appendChild(slot2);
         valueBox.appendChild(l2);
-        row.getCondition = function () { return { field: def.code, op: lop.value, values: ms.getValues() }; };
+        // valeurs cochées (est / n'est pas) ou textes en tags (contient / ne contient pas : OU entre les textes)
+        var tags = null;
+        var renderSlot2 = function () {
+          slot2.textContent = '';
+          if (!isText(lop.value)) { slot2.appendChild(ms); return; }
+          if (!tags) { tags = tagInput(init && isText(init.op) ? (init.values || []) : []); }
+          slot2.appendChild(tags);
+        };
+        var wasText = isText(lop.value);
+        lop.addEventListener('change', function () { renderSlot2(); if (isText(lop.value) && !wasText) { tags.focusInput(); } wasText = isText(lop.value); });
+        renderSlot2();
+        row.getCondition = function () { return { field: def.code, op: lop.value, values: isText(lop.value) ? tags.getValues() : ms.getValues() }; };
         return;
       }
       valueBox.appendChild(ms);

@@ -429,6 +429,22 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('form[action$="/admin/page-rules/delete"] button');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('règles de page : suppression', (await page.textContent('body')).includes('Règle supprimée'));
+  // « contient » : textes en tags, enregistrés puis réaffichés
+  await page.goto(BASE + '/admin/page-rules/edit');
+  await page.fill('[data-f=name]', 'Règle contient');
+  await page.fill('.pr-url-text', '/alimentation');
+  await page.selectOption('.br-cond select.br-field', 'brand');
+  const lopOptions = await page.locator('.br-cond select.br-op option').evaluateAll((o) => o.map((x) => x.value));
+  await page.selectOption('.br-cond select.br-op', 'contains');
+  await page.fill('.br-cond .tag-input input.br-text', 'ress');
+  await page.press('.br-cond .tag-input input.br-text', 'Enter');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  check('règles de page : « contient » proposé, enregistré et réaffiché', lopOptions.join(',') === 'in,not_in,contains,not_contains'
+    && (await page.textContent('body')).includes('enregistrée') && await page.inputValue('.br-cond select.br-op') === 'contains'
+    && (await page.textContent('.br-cond .tag-input')).includes('ress'));
+  page.once('dialog', () => {});
+  await page.click('form[action$="/admin/page-rules/delete"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });

@@ -971,6 +971,28 @@ if ($base) {
     check('règles de page : « uniquement » ne peut pas être retiré ; règle inactive ignorée ; ordre modifiable',
         array_values(array_unique(array_column($dOnly['products'] ?? [], 'brand'))) === ['C4'] && ($dOnly['page_filter'] ?? null) === null
         && $PR::match('fr', '/fr/autre.html') === null && array_column($PR::all('fr'), 'id') === [$idAll, $idC4]);
+    // « contient » / « ne contient pas » : valeurs du catalogue qui contiennent le texte (même au milieu d'un mot, sans accents)
+    [$prC] = $PR::sanitize(['name' => 'Cressi', 'active' => true, 'action' => 'only', 'match' => 'all', 'urls' => [['match' => 'contains', 'text' => '/contient/']],
+        'conditions' => [['field' => 'brand', 'op' => 'contains', 'values' => ['RÉSS']]]], 'fr');
+    [$crC] = $CR::sanitizeRules([['match' => 'all', 'conditions' => [['field' => 'brand', 'op' => 'contains', 'values' => ['ress']], ['field' => 'in_stock', 'op' => 'contains', 'values' => ['1']]]]], 'fr', true);
+    check('règles de page : « contient » enregistré (champ oui/non : « est »), refusé hors règles de page',
+        $prC !== null && $prC['conditions'] === [['field' => 'brand', 'op' => 'contains', 'values' => ['RÉSS']]]
+        && $crC[0]['conditions'][1]['op'] === 'in' && $CR::sanitizeRules([['match' => 'all', 'conditions' => [['field' => 'brand', 'op' => 'contains', 'values' => ['x']]]]], 'fr')[0][0]['conditions'][0]['op'] === 'in');
+    $idCont = $PR::save('fr', $prC, null);
+    $PR::reorder('fr', [$idCont]);
+    [, $dCont] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&page=" . rawurlencode('/fr/contient/x.html'));
+    $brandsCont = array_values(array_unique(array_column($dCont['products'] ?? [], 'brand')));
+    $notRule = $PR::find($idCont, 'fr');
+    $notRule['conditions'][0]['op'] = 'not_contains';
+    $PR::save('fr', $notRule, $idCont);
+    [, $dNot] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&page=" . rawurlencode('/fr/contient/x.html'));
+    $noneRule = $PR::find($idCont, 'fr');
+    $noneRule['conditions'][0] = ['field' => 'brand', 'op' => 'contains', 'values' => ['zzzz']];
+    $PR::save('fr', $noneRule, $idCont);
+    [, $dNone] = $get("/api/v1/search?key=$key&q=palme&limit=48&posts=0&page=" . rawurlencode('/fr/contient/x.html'));
+    check('règles de page : contient / ne contient pas / aucun texte trouvé', $brandsCont === ['CRESSI'] && ($dNot['total'] ?? 0) > 0
+        && !in_array('CRESSI', array_column($dNot['products'] ?? [], 'brand'), true) && ($dNone['total'] ?? -1) === 0,
+        json_encode([$brandsCont, $dNot['total'] ?? null, $dNone['total'] ?? null]));
     DeepFind\Db::exec('DELETE FROM page_rules');
     DeepFind\Settings::set('same_query_per_minute', '15');
     DeepFind\CacheVersion::bump();
