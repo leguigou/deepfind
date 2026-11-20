@@ -38,6 +38,8 @@ final class CustomResults
     ];
 
     public const LIST_OPS = ['in' => 'est', 'not_in' => 'n\'est pas'];
+    /** Comparaisons de texte (règles selon la page) : traduites en « est / n'est pas » les valeurs du catalogue qui contiennent le texte. */
+    public const CONTAINS_OPS = ['contains' => 'contient', 'not_contains' => 'ne contient pas'];
     public const NUM_OPS = ['gte' => '≥', 'lte' => '≤'];
 
     /** @return array<string, array{0:string,1:string}> champs fixes + attributs filtrables (attr.<code>) */
@@ -185,7 +187,7 @@ final class CustomResults
     }
 
     /** @return array{0:list<array>, 1:list<string>} */
-    public static function sanitizeRules(array $rules, string $lang): array
+    public static function sanitizeRules(array $rules, string $lang, bool $allowContains = false): array
     {
         $fields = self::fields($lang);
         $out = [];
@@ -214,7 +216,10 @@ final class CustomResults
                     $errors[] = 'Règle « ' . $fields[$field][0] . ' » : choisissez au moins une valeur.';
                     continue;
                 }
-                $conds[] = ['field' => $field, 'op' => ($c['op'] ?? '') === 'not_in' ? 'not_in' : 'in', 'values' => $values];
+                $op = (string) ($c['op'] ?? 'in');
+                // contient / ne contient pas : champs à valeurs (pas oui/non) ; textes conservés tels que saisis
+                $op = isset(self::CONTAINS_OPS[$op]) && $allowContains && !isset(BoostRules::STATIC_VALUES[$field]) ? $op : ($op === 'not_in' ? 'not_in' : 'in');
+                $conds[] = ['field' => $field, 'op' => $op, 'values' => $values];
             }
             if ($conds !== []) {
                 $out[] = ['match_all' => ($rule['match'] ?? 'all') !== 'any', 'conditions' => $conds];

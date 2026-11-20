@@ -82,7 +82,7 @@ final class SearchService
         $pageFilter = null;
         $pr = $r->pageRule;
         if ($pr !== null && !($pr['action'] === 'prefilter' && $r->pageRuleOff)) {
-            $f = \DeepFind\Rules\PageRules::filter($pr);
+            $f = \DeepFind\Rules\PageRules::filter($pr, $r->lang);
             if ($f !== null) {
                 $pageFilter = $pr['action'] === 'exclude' ? 'NOT ' . $f : $f;
                 $base[] = $pageFilter;

@@ -687,7 +687,8 @@ Une règle comprend :
    - **Filtre pré-coché** : seuls ces produits sortent au départ, avec un bandeau « Résultats limités à **Nautisme ✕** » ; un clic sur ✕ élargit à tout le catalogue (« Revenir à Nautisme » le remet). Le texte du bandeau se règle dans la règle ;
    - **Afficher uniquement** ces produits (filtre imposé, non retirable) ;
    - **Exclure** ces produits.
-3. **Produits concernés** : conditions comme pour les résultats personnalisés (marque, catégorie, type, SKU, attributs : *est* / *n'est pas* ; disponibilité, promotion, nouveauté ; prix ou marge supérieur / inférieur à), toutes ou au moins une.
+3. **Produits concernés** : conditions comme pour les résultats personnalisés (marque, catégorie, type, SKU, attributs : *est* / *n'est pas* / *contient* / *ne contient pas* ; disponibilité, promotion, nouveauté ; prix ou marge supérieur / inférieur à), toutes ou au moins une.
+   - **contient** (plusieurs textes possibles, il suffit d'un) : toutes les valeurs du catalogue qui contiennent le texte, sans majuscules ni accents. Ex. Catégorie *contient* « alimentation » couvre « Alimentation », « Alimentation chien »… **ne contient pas** : aucune de ces valeurs. DeepFind recherche ces valeurs dans le catalogue (jusqu'à 100 par texte, les plus fréquentes en premier) et les recalcule après chaque import. Si aucune valeur ne contient le texte, *contient* n'affiche aucun produit.
 
 **Fonctionnement**
 - Un interrupteur active ou désactive chaque règle. **Seule la première règle active de la liste dont une adresse correspond s'applique** : l'ordre se change par glisser-déposer (enregistré au lâcher).

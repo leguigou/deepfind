@@ -100,7 +100,7 @@
     var root = form.querySelector('[data-rule-root]');
     var conds = form.querySelector('[data-conds]');
     form.querySelector('input[name=pr_match][value=' + (rule.match_all === false ? 'any' : 'all') + ']').checked = true;
-    var lib = window.DFConditions({ fields: fields, valuesUrl: form.getAttribute('data-values-url'), root: root, listOps: true });
+    var lib = window.DFConditions({ fields: fields, valuesUrl: form.getAttribute('data-values-url'), root: root, listOps: true, listContains: true });
     function addCond(c) {
       var row = lib.conditionRow(c || {});
       conds.appendChild(row);
@@ -127,7 +127,10 @@
       conds.querySelectorAll('.br-cond').forEach(function (r) {
         var c = r.getCondition && r.getCondition();
         if (!c) { return; }
-        if (c.values && !c.values.length) { problem = 'Choisissez au moins une valeur pour « ' + (byCode[c.field] || {}).label + ' ».'; return; }
+        if (c.values && !c.values.length) {
+          problem = (c.op === 'contains' || c.op === 'not_contains' ? 'Saisissez au moins un texte pour « ' : 'Choisissez au moins une valeur pour « ') + (byCode[c.field] || {}).label + ' ».';
+          return;
+        }
         if (c.value !== undefined && (c.value === '' || isNaN(Number(c.value)))) { problem = 'Valeur numérique attendue pour « ' + (byCode[c.field] || {}).label + ' ».'; return; }
         if (c.value !== undefined) { c.value = Number(c.value); }
         list.push(c);
