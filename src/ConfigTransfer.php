@@ -31,6 +31,7 @@ final class ConfigTransfer
         'rules' => 'Produits désactivés',
         'custom_results' => 'Résultats personnalisés',
         'banners' => 'Bannières',
+        'popins' => 'Popins',
         'redirects' => 'Redirections',
         'boost_rules' => 'Règles de boost (conditions et termes)',
         'sources' => 'Flux : mapping et planification des imports',
@@ -51,6 +52,7 @@ final class ConfigTransfer
             'rules' => $strip(Db::all('SELECT * FROM query_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'custom_results' => $strip(Db::all('SELECT * FROM custom_results WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'banners' => $strip(Db::all('SELECT * FROM banners WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
+            'popins' => $strip(Db::all('SELECT * FROM popins WHERE project_id = ? ORDER BY position, id', [$pid]), ['id', 'project_id']),
             'redirects' => $strip(Db::all('SELECT * FROM redirections WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'boost_rules' => $strip(Db::all('SELECT * FROM boost_rules WHERE project_id = ? ORDER BY id', [$pid]), ['id', 'project_id']),
             'sources' => $strip(
@@ -126,7 +128,7 @@ final class ConfigTransfer
                     $msgs[] = self::SECTIONS[$sec] . ' : copié';
                 }
             }
-            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirections', 'boost_rules' => 'boost_rules', 'custom_results' => 'custom_results', 'banners' => 'banners'] as $sec => $table) {
+            foreach (['synonyms' => 'synonyms', 'rules' => 'query_rules', 'redirects' => 'redirections', 'boost_rules' => 'boost_rules', 'custom_results' => 'custom_results', 'banners' => 'banners', 'popins' => 'popins'] as $sec => $table) {
                 if (!in_array($sec, $sections, true)) {
                     continue;
                 }

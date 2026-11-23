@@ -26,57 +26,8 @@
     f('mode').addEventListener('change', showMode);
     showMode();
 
-    // ---------------------------------------------------------------- Images : zone cliquable, glisser-déposer, téléversement, aperçu
-    var maxKb = parseInt(form.getAttribute('data-max-kb') || '500', 10);
-    var TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    form.querySelectorAll('[data-slot]').forEach(function (slot) {
-      var key = slot.getAttribute('data-slot');
-      var input = f('image_' + key);
-      var file = slot.querySelector('[data-file]');
-      var drop = slot.querySelector('[data-drop]');
-      var img = slot.querySelector('[data-preview]');
-      var parts = { empty: slot.querySelector('[data-empty]'), busy: slot.querySelector('[data-busy]'), filled: slot.querySelector('[data-filled]') };
-      var meta = slot.querySelector('[data-meta]');
-      var err = slot.querySelector('[data-error]');
-      var lastSize = 0;
-      function view(name) { Object.keys(parts).forEach(function (k) { parts[k].hidden = k !== name; }); drop.classList.toggle('is-filled', name === 'filled'); }
-      function error(msg) { err.textContent = msg || ''; err.hidden = !msg; }
-      function refresh() {
-        var u = input.value.trim();
-        if (/^https?:\/\//i.test(u)) { meta.textContent = 'Chargement de l\'aperçu…'; img.src = u; view('filled'); } else { img.removeAttribute('src'); view('empty'); }
-      }
-      img.addEventListener('load', function () {
-        meta.textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' px' + (lastSize ? ' · ' + Math.round(lastSize / 1024) + ' Ko' : '');
-      });
-      img.addEventListener('error', function () { if (input.value.trim()) { meta.textContent = 'Image introuvable à cette adresse'; } });
-      function upload(f0) {
-        if (!f0) { return; }
-        if (TYPES.indexOf(f0.type) === -1) { error('Format non accepté (' + f0.name + ') : JPG, PNG, GIF ou WebP.'); return; }
-        if (f0.size > maxKb * 1024) { error('Image trop lourde : ' + Math.ceil(f0.size / 1024) + ' Ko pour ' + maxKb + ' Ko maximum. Compressez-la (ex. squoosh.app) puis réessayez.'); return; }
-        error('');
-        view('busy');
-        var data = new FormData();
-        data.append('_csrf', form.getAttribute('data-csrf'));
-        data.append('image', f0);
-        fetch(form.getAttribute('data-upload-url'), { method: 'POST', body: data, credentials: 'same-origin', headers: { Accept: 'application/json' } })
-          .then(function (r) { return r.json().catch(function () { return { error: 'réponse illisible du serveur' }; }); })
-          .then(function (d) {
-            if (d.url) { lastSize = f0.size; input.value = d.url; refresh(); } else { refresh(); error('Image non téléversée : ' + (d.error || 'erreur inconnue')); }
-          })
-          .catch(function () { refresh(); error('Téléversement impossible : vérifiez la connexion.'); });
-      }
-      function pick() { file.click(); }
-      drop.addEventListener('click', function (ev) { if (!ev.target.closest('button') && parts.filled.hidden && parts.busy.hidden) { pick(); } });
-      drop.addEventListener('keydown', function (ev) { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target === drop) { ev.preventDefault(); pick(); } });
-      slot.querySelector('[data-replace]').addEventListener('click', pick);
-      slot.querySelector('[data-remove]').addEventListener('click', function () { input.value = ''; lastSize = 0; error(''); refresh(); drop.focus(); });
-      file.addEventListener('change', function () { upload(file.files[0]); file.value = ''; });
-      input.addEventListener('input', function () { lastSize = 0; error(''); refresh(); });
-      ['dragenter', 'dragover'].forEach(function (t) { drop.addEventListener(t, function (ev) { ev.preventDefault(); drop.classList.add('is-over'); }); });
-      ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function (ev) { ev.preventDefault(); if (t === 'drop' || !drop.contains(ev.relatedTarget)) { drop.classList.remove('is-over'); } }); });
-      drop.addEventListener('drop', function (ev) { upload(ev.dataTransfer && ev.dataTransfer.files[0]); });
-      refresh();
-    });
+    // Images ordinateur / mobile (editor-tools.js)
+    window.DFImageSlots(form);
 
     form.querySelector('[data-copy]').addEventListener('click', function () {
       var t = f('html');

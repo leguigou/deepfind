@@ -992,3 +992,20 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .src-result-url { word-break: break-all; margin: 2px 0 0 18px; }
 .src-result-details { margin: 6px 0 0; padding-left: 36px; }
 .src-result-details li.ko { color: var(--ko); }
+
+/* ---------- Popins (Recommandations › Popins) */
+.pp-pages { margin: 4px 0 10px 28px; }
+.pp-pages[hidden] { display: none !important; }
+.pp-excl-help { margin: 12px 0 0; }
+.pp-grid { margin-top: 8px; }
+.pp-grid label small, .pp-remember small { display: block; margin-top: 4px; }
+.pp-remember { margin-top: 10px; max-width: 720px; }
+.pp-inline { display: inline-flex; align-items: center; gap: 8px; }
+.pp-inline input { width: 90px; margin: 0; }
+.pp-table .ly-grip { width: 28px; }
+.pp-table tr[draggable="true"] { cursor: grab; }
+.pp-table .bn-cell a { margin-left: 2px; }
+@media (max-width: 640px) { .pp-pages { margin-left: 0; } }
+.pp-table .bn-thumb { width: 64px; height: 40px; }
+.pp-except { display: block; margin-top: 2px; }
+.pp-table .bn-cell { min-width: 200px; }

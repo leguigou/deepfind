@@ -997,6 +997,66 @@ if ($base) {
     DeepFind\Settings::set('same_query_per_minute', '15');
     DeepFind\CacheVersion::bump();
 
+    // ------------------------------------------------ Popins (Recommandations › Popins)
+    $PP = DeepFind\Rules\Popins::class;
+    DeepFind\Db::exec('DELETE FROM popins');
+    DeepFind\Db::exec('DELETE FROM popin_stats');
+    [$ppBad, $ppErr] = $PP::sanitize(['name' => ' ', 'pages' => 'custom', 'urls' => [['match' => 'contains', 'text' => ' ']], 'mode' => 'visual', 'image_desktop' => '']);
+    check('popins : nom, pages et image obligatoires', $ppBad === null && count($ppErr) === 3, json_encode($ppErr));
+    [$ppA] = $PP::sanitize(['name' => 'Soldes', 'active' => true, 'pages' => 'custom', 'home' => true,
+        'urls' => [['match' => 'contains', 'text' => 'https://www.example.com/fr/nautisme/?x=1'], ['match' => 'bizarre', 'text' => '/kayak']],
+        'exclude_urls' => [['match' => 'contains', 'text' => '/checkout'], ['match' => 'contains', 'text' => '']],
+        'device' => 'tablette', 'delay_seconds' => '9999', 'repeat_mode' => 'page', 'remember_days' => '-3', 'placement' => 'bottom_left', 'max_width' => '50',
+        'mode' => 'visual', 'image_desktop' => 'https://cdn.example.com/a.jpg', 'link_url' => 'https://www.example.com/soldes', 'new_window' => true]);
+    check('popins : valeurs nettoyées (adresse réduite au chemin, bornes, choix inconnus)', $ppA !== null && $ppA['urls'] === [['match' => 'contains', 'text' => '/fr/nautisme/'], ['match' => 'contains', 'text' => '/kayak']]
+        && $ppA['exclude_urls'] === [['match' => 'contains', 'text' => '/checkout']] && $ppA['device'] === 'all' && $ppA['delay_seconds'] === 600
+        && $ppA['remember_days'] === 0 && $ppA['max_width'] === 280 && $ppA['placement'] === 'bottom_left' && $ppA['repeat_mode'] === 'page' && $ppA['home'] === true, json_encode($ppA));
+    [$ppCode] = $PP::sanitize(['name' => 'HTML', 'active' => true, 'pages' => 'all', 'home' => true, 'urls' => [['match' => 'contains', 'text' => '/x']], 'mode' => 'code',
+        'html' => '<a href="https://www.example.com" onclick="x()">Offre</a><script>alert(1)</script>']);
+    check('popins : HTML nettoyé ; « toutes les pages » ignore accueil et adresses', $ppCode !== null && !str_contains($ppCode['html'], 'script') && !str_contains($ppCode['html'], 'onclick')
+        && str_contains($ppCode['html'], 'Offre') && $ppCode['home'] === false && $ppCode['urls'] === [], json_encode($ppCode));
+    $idPA = $PP::save('fr', $ppA, null);
+    $idPC = $PP::save('fr', $ppCode, null);
+    [$ppOld] = $PP::sanitize(['name' => 'Passée', 'active' => true, 'duration' => 'period', 'starts_at' => '2020-01-01', 'ends_at' => '2020-01-31',
+        'mode' => 'visual', 'image_desktop' => 'https://cdn.example.com/b.jpg']);
+    $idPO = $PP::save('fr', $ppOld, null);
+    [$ppOff] = $PP::sanitize(['name' => 'Inactive', 'active' => false, 'mode' => 'visual', 'image_desktop' => 'https://cdn.example.com/c.jpg']);
+    $idPI = $PP::save('fr', $ppOff, null);
+    DeepFind\Db::insert('popins', ['project_id' => 999, 'lang' => 'fr', 'name' => 'Autre projet', 'urls' => '[]', 'exclude_urls' => '[]', 'html' => '',
+        'image_desktop' => 'https://cdn.example.com/d.jpg', 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+    DeepFind\CacheVersion::bump();
+    [, $cfP] = $get("/api/v1/config?key=$key&lang=fr");
+    $wp = $cfP['popins'] ?? [];
+    check('popins : envoyées au widget (en cours, actives, du projet, dans l\'ordre), sans champ interne',
+        array_column($wp, 'id') === [$idPA, $idPC] && ($wp[0]['exclude'][0]['text'] ?? '') === '/checkout' && ($wp[0]['link'] ?? '') === 'https://www.example.com/soldes'
+        && ($wp[0]['mobile'] ?? '') === 'https://cdn.example.com/a.jpg' && !isset($wp[0]['name']) && !isset($wp[0]['starts_at']) && ($wp[1]['mode'] ?? '') === 'code'
+        && !str_contains(json_encode($wp), 'Soldes'), json_encode($wp));
+    $ppEvents = [[$idPA, 'v'], [$idPA, 'v'], [$idPA, 'c'], [$idPA, 'x'], [$idPC, 'v'], [$idPO, 'v'], [$idPI, 'v'], [424242, 'v'], [$idPA, 'z']];
+    $ppCodes = [];
+    foreach ($ppEvents as [$pid0, $ev0]) {
+        $ppCodes[] = $post('/api/v1/popin', ['key' => $key, 'lang' => 'fr', 'id' => $pid0, 'e' => $ev0]);
+    }
+    $ppCodes[] = $post('/api/v1/popin', ['key' => $key, 'lang' => 'fr', 'id' => $idPA, 'e' => 'v', 'na' => '1']); // aperçu : non compté
+    $ppCodes[] = $post('/api/v1/popin', ['key' => $key, 'lang' => 'fr', 'id' => $idPA, 'e' => 'v'], ''); // navigateur vide : robot
+    usleep(400000);
+    $ppSt = $PP::stats([$idPA, $idPC, $idPO, $idPI], 30);
+    check('popins : affichages, clics, fermetures et CTR comptés (aperçu, robots, popins hors ligne et inconnues ignorés)',
+        array_unique($ppCodes) === [204] && $ppSt[$idPA] === ['views' => 2, 'clicks' => 1, 'closes' => 1, 'ctr' => 50.0] && $ppSt[$idPC]['views'] === 1
+        && $ppSt[$idPO]['views'] === 0 && $ppSt[$idPI]['views'] === 0 && (int) DeepFind\Db::value('SELECT COUNT(*) FROM popin_stats') === 2,
+        json_encode([$ppCodes, $ppSt]));
+    $PP::reorder('fr', [$idPC]);
+    $revBefore = $PP::find($idPA, 'fr')['rev'];
+    $PP::save('fr', ['reset_memory' => true] + $ppA, $idPA);
+    $PP::save('fr', $ppA, $idPA);
+    check('popins : ordre modifiable ; « reproposer aux visiteurs » change la version mémorisée',
+        array_column($PP::forWidget('fr'), 'id') === [$idPC, $idPA] && $PP::find($idPA, 'fr')['rev'] === $revBefore + 1);
+    $PP::delete($idPA, 'fr');
+    check('popins : suppression (statistiques comprises)', $PP::find($idPA, 'fr') === null
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM popin_stats WHERE popin_id = ?', [$idPA]) === 0);
+    DeepFind\Db::exec('DELETE FROM popins');
+    DeepFind\Db::exec('DELETE FROM popin_stats');
+    DeepFind\CacheVersion::bump();
+
     // Photo au survol d'un produit (Paramètres › Widget sur le site)
     [, $cfH1] = $get("/api/v1/config?key=$key&lang=fr");
     DeepFind\Settings::set('widget_hover_image', '0');

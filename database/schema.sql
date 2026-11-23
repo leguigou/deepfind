@@ -385,3 +385,50 @@ CREATE TABLE IF NOT EXISTS page_rules (
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang, position)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Popins (Recommandations › Popins) : fenêtre affichée par le widget sur les pages du site choisies (toutes, l'accueil,
+-- ou d'après l'adresse, comme les règles selon la page), en continu ou sur une période, après un délai.
+-- La première popin active de la liste (ordre « position ») qui correspond à la page et n'a pas été fermée s'affiche.
+-- rev : incrémenté pour la réafficher aux visiteurs qui l'avaient fermée (mémorisation dans leur navigateur).
+CREATE TABLE IF NOT EXISTS popins (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  position INT UNSIGNED NOT NULL DEFAULT 0,
+  starts_at DATE NULL,
+  ends_at DATE NULL,
+  pages ENUM('all','custom') NOT NULL DEFAULT 'all',
+  home TINYINT(1) NOT NULL DEFAULT 0,
+  urls TEXT NOT NULL,
+  exclude_urls TEXT NOT NULL,
+  device ENUM('all','desktop','mobile') NOT NULL DEFAULT 'all',
+  delay_seconds SMALLINT UNSIGNED NOT NULL DEFAULT 3,
+  repeat_mode ENUM('visit','page') NOT NULL DEFAULT 'visit',
+  remember_days SMALLINT UNSIGNED NOT NULL DEFAULT 7,
+  placement ENUM('center','bottom_right','bottom_left') NOT NULL DEFAULT 'center',
+  max_width SMALLINT UNSIGNED NOT NULL DEFAULT 600,
+  mode ENUM('visual','code') NOT NULL DEFAULT 'visual',
+  image_desktop VARCHAR(500) NOT NULL DEFAULT '',
+  image_mobile VARCHAR(500) NOT NULL DEFAULT '',
+  alt VARCHAR(190) NOT NULL DEFAULT '',
+  link_url VARCHAR(500) NOT NULL DEFAULT '',
+  new_window TINYINT(1) NOT NULL DEFAULT 0,
+  html MEDIUMTEXT NOT NULL,
+  rev INT UNSIGNED NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang, position)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Statistiques des popins, agrégées par jour (aucune donnée personnelle) : affichages, clics, fermetures.
+CREATE TABLE IF NOT EXISTS popin_stats (
+  project_id INT UNSIGNED NOT NULL,
+  popin_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  views INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  closes INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, popin_id, day)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
