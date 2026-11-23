@@ -23,6 +23,9 @@ use DeepFind\Text;
  *   POST /api/v1/click   (key, q, lang, doc_type, doc_id, position, sid)
  *   POST /api/v1/visit   (key, lang, d = m|t|d)   page vue, pour la mesure d'audience anonyme
  *   POST /api/v1/popin   (key, lang, id, e = v|c|x)   popin affichée, cliquée ou fermée (compteurs du jour, sans donnée personnelle)
+ *   GET  /api/v1/carousels?key&lang&page=/chemin[&sku=…][&h=id1,id2]   carrousels de la page et leurs produits
+ *        (h : historique du visiteur, envoyé seulement avec son consentement ; jamais enregistré)
+ *   POST /api/v1/carousel (key, lang, id, e = v|p|c, p[] = produits)   carrousel vu à l'écran / autres produits vus / produit cliqué
  *   GET  /api/v1/config?key=pk_…&lang=fr   (le widget ne prend la main que si « enabled » est vrai)
  *   GET  /api/v1/health
  */
@@ -36,6 +39,8 @@ final class ApiController
                 $path === '/api/v1/click' && $method === 'POST' => $this->click(),
                 $path === '/api/v1/visit' && $method === 'POST' => $this->visit(),
                 $path === '/api/v1/popin' && $method === 'POST' => $this->popin(),
+                $path === '/api/v1/carousels' && in_array($method, ['GET', 'HEAD'], true) => $this->carousels(),
+                $path === '/api/v1/carousel' && $method === 'POST' => $this->carouselEvent(),
                 $path === '/api/v1/config' && in_array($method, ['GET', 'HEAD'], true) => $this->config(),
                 $path === '/api/v1/health' => $this->health(),
                 $method === 'OPTIONS' => $this->preflight(),
@@ -199,6 +204,56 @@ final class ApiController
         \DeepFind\Rules\Popins::record($lang, $id, $event);
     }
 
+    /** Carrousels de la page (produits compris). Réponse non mise en cache par le navigateur si elle dépend de l'historique. */
+    private function carousels(): void
+    {
+        $lang = (string) ($_GET['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($_GET['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        if (!\DeepFind\Project::isActive()) {
+            Response::json(['carousels' => [], 'page_product' => null], 200, $cors);
+            return;
+        }
+        $deny = (new BotGuard(Store::get()))->check(ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), '', 'carousel');
+        if ($deny !== null) {
+            Response::json(['error' => $deny['reason']], $deny['status'], ['Retry-After' => (string) $deny['retry_after']] + $cors);
+            return;
+        }
+        $history = isset($_GET['h']) ? array_filter(explode(',', substr((string) $_GET['h'], 0, 1500)), 'strlen') : null;
+        $data = \DeepFind\Rules\Carousels::forPage($lang, [
+            'page' => substr((string) ($_GET['page'] ?? '/'), 0, 500), 'sku' => substr((string) ($_GET['sku'] ?? ''), 0, 64), 'history' => $history,
+        ]);
+        Response::json($data, 200, $cors + ['Cache-Control' => $history !== null ? 'private, no-store' : 'private, max-age=60']);
+    }
+
+    /** Événement d'un carrousel (vu à l'écran, clic sur un produit) : réponse immédiate, comptage après l'envoi. */
+    private function carouselEvent(): void
+    {
+        $p = $_POST;
+        $lang = (string) ($p['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($p['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        $id = (int) ($p['id'] ?? 0);
+        $event = (string) ($p['e'] ?? '');
+        if (!\DeepFind\Project::isActive() || ($p['na'] ?? '') === '1' || $id <= 0 || !in_array($event, ['v', 'p', 'c'], true)) {
+            Response::noContent($cors);
+            return;
+        }
+        if ((new BotGuard(Store::get()))->check(ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), '', 'carousel') !== null) {
+            Response::noContent($cors);
+            return;
+        }
+        Response::noContent($cors);
+        Response::finish();
+        \DeepFind\Rules\Carousels::record($lang, $id, $event, array_values((array) ($p['p'] ?? [])));
+    }
+
     /**
      * Configuration du widget, demandée avant toute prise en main de la page : projet actif ou non, comportement de la touche Entrée.
      * Courte mise en cache navigateur : la désactivation d'un projet est prise en compte en une minute au plus.
@@ -222,6 +277,9 @@ final class ApiController
             'audience' => Audience::widgetConfig(),
             // popins en cours : le widget choisit celle de la page (adresse, appareil, fermeture mémorisée)
             'popins' => \DeepFind\Project::isActive() ? \DeepFind\Rules\Popins::forWidget($lang) : [],
+            // carrousels : le widget demande ceux de la page seulement s'il en existe ; historique du visiteur (off | consent | always)
+            'carousels' => \DeepFind\Project::isActive() && \DeepFind\Rules\Carousels::active($lang) !== [],
+            'personal' => \DeepFind\Rules\Carousels::personalMode(),
         ] + \DeepFind\Widget\WidgetConfig::forWidget($lang, $preview = substr((string) ($_GET['preview'] ?? ''), 0, 80)),
             200, $cors + ['Cache-Control' => $preview !== '' ? 'no-store' : 'private, max-age=60']);
     }

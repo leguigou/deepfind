@@ -152,6 +152,8 @@ final class ProductBuilder
             'name' => $name,
             'brand' => trim((string) ($f['brand'] ?? '')),
             'url' => (string) $f['url'],
+            // chemin de la page produit (minuscules, sans domaine ni paramètres) : retrouver le produit d'une page (carrousels)
+            'url_path' => \DeepFind\Rules\PageRules::normalizePath((string) $f['url']),
             'image' => (string) ($f['image'] ?? ''),
             'image_hover' => (string) ($f['image_hover'] ?? ''),
             'short_description' => Text::truncate((string) ($f['short_description'] ?? ''), 500),

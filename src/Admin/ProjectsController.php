@@ -132,7 +132,7 @@ final class ProjectsController
             }
         });
         Db::exec('DELETE r FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ?', [$id]);
-        foreach (['sources', 'synonyms', 'query_rules', 'redirects', 'product_boosts', 'boost_rules', 'custom_results', 'banners', 'page_rules', 'popins', 'popin_stats', 'search_logs', 'click_logs', 'api_keys', 'project_settings', 'config_snapshots', 'layers'] as $t) {
+        foreach (['sources', 'synonyms', 'query_rules', 'redirects', 'product_boosts', 'boost_rules', 'custom_results', 'banners', 'page_rules', 'popins', 'popin_stats', 'carousels', 'carousel_stats', 'carousel_product_stats', 'search_logs', 'click_logs', 'api_keys', 'project_settings', 'config_snapshots', 'layers'] as $t) {
             Db::exec("DELETE FROM `$t` WHERE project_id = ?", [$id]);
         }
         Db::exec('DELETE FROM settings WHERE name IN (?, ?)', ['data_version_' . $id, 'scores_scheduled_at_' . $id]);

@@ -91,6 +91,7 @@ final class SearchLogger
             } while ($deleted === 10000);
             $out[$t] = $n;
         }
+        $out['carousel_product_stats'] = \DeepFind\Rules\Carousels::purge();
         $out['ip_blocks_expired'] = Db::exec('DELETE FROM ip_blocks WHERE blocked_until IS NOT NULL AND blocked_until < NOW() - INTERVAL 7 DAY');
         return $out;
     }

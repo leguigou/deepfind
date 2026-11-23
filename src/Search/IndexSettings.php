@@ -23,7 +23,7 @@ final class IndexSettings
     }
 
     /** Champs triables des produits : tris internes + champs des options de tri du widget (WidgetConfig::SORT_FIELDS). */
-    public const SORTABLE = ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d',
+    public const SORTABLE = ['sort_price', 'final_price', 'created_ts', 'in_stock', 'margin_rate', 'biz_score', 'sales_30d', 'clicks_30d',
         'name', 'discount_percent', 'brand', 'rating', 'price', 'reviews_count', 'sku', 'type', 'on_sale', 'is_new'];
 
     /** @param list<string> $filterableAttrCodes */
@@ -31,7 +31,7 @@ final class IndexSettings
     {
         $filterable = [
             'id', 'sku', 'all_skus', 'all_eans', 'brand', 'category_names', 'category_ids', 'in_stock', 'on_sale',
-            'final_price', 'margin_rate', 'type', 'is_new', 'available',
+            'final_price', 'margin_rate', 'type', 'is_new', 'available', 'url_path',
         ];
         foreach ($filterableAttrCodes as $code) {
             $filterable[] = 'attr.' . $code;

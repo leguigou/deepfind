@@ -25,6 +25,7 @@ $navGroups = [
         'page_rules' => ['/admin/page-rules', 'Règles', 'world'],
         'banners' => ['/admin/banners', 'Bannières', 'speakerphone'],
         'popins' => ['/admin/popins', 'Popins', 'app-window'],
+        'carousels' => ['/admin/carousels', 'Carrousels', 'carousel'],
         'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'demo' => ['/admin/demo', 'Démo du widget', 'external-link'],
     ]],

@@ -33,7 +33,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/01-dashboard-sombre.png', fullPage: true });
 
   const pages = ['/admin/sources', '/admin/sources/edit?id=1', '/admin/sources/test?id=1', '/admin/imports', '/admin/imports/view?id=1',
-    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/page-rules', '/admin/page-rules/edit', '/admin/banners', '/admin/banners/edit', '/admin/popins', '/admin/popins/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
+    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/page-rules', '/admin/page-rules/edit', '/admin/banners', '/admin/banners/edit', '/admin/popins', '/admin/popins/edit', '/admin/carousels', '/admin/carousels/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
     '/admin/keys', '/admin/integration', '/admin/integration?tab=filters', '/admin/integration?tab=sorts', '/admin/settings'];
   for (const p of pages) {
     const resp = await page.goto(BASE + p);
@@ -578,6 +578,118 @@ fs.mkdirSync(OUT, { recursive: true });
   await pc3.close();
   await page.click('form[action$="/admin/popins/delete"] button');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
+
+  // Carrousels de produits : création (produit épinglé, tri), aperçu, affichage sur un faux site (emplacement, défilement, glisser,
+  // vues et clics), mobile, historique personnalisé avec consentement
+  await page.goto(BASE + '/admin/carousels/edit');
+  await page.fill('[data-f=name]', 'Carrousel e2e');
+  await page.fill('[data-f=selector]', '#reco');
+  await page.selectOption('[data-f=insert_mode]', 'after');
+  await page.fill('[data-f=title]', 'Nos coups de cœur');
+  await page.fill('[data-f=more_url]', '/boutique/promos.html');
+  await page.fill('[data-item-search]', 'predator');
+  await page.waitForSelector('.ca-result');
+  await page.click('.ca-result >> nth=0');
+  await page.selectOption('[data-f=sort_by]', 'sales');
+  await page.fill('[data-f=max_items]', '8');
+  await page.click('[data-preview-run]');
+  await page.waitForSelector('.ca-pcard');
+  const pinnedSku = await page.getAttribute('.ca-item', 'data-sku');
+  const pvCount = await page.locator('.ca-pcard').count();
+  check('carrousels : aperçu des produits (épinglé en tête, nombre)', pvCount === 8 && (await page.textContent('.ca-pcard >> nth=0')).includes(pinnedSku));
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  check('carrousels : carrousel créé et réaffiché', (await page.textContent('body')).includes('Carrousel « Carrousel e2e » enregistré')
+    && await page.inputValue('[data-f=selector]') === '#reco' && await page.locator('.ca-item').count() === 1);
+  await page.screenshot({ path: OUT + '/carrousel-fiche.png', fullPage: true });
+  const shopCar = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Boutique</title>'
+    + '<style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;max-width:1200px;margin:auto}</style></head><body>'
+    + '<input name="q"><h1>Boutique</h1><div id="reco"><p>Bloc du thème</p></div><div id="reco2"></div><p>Suite de la page</p>'
+    + '<script src="' + BASE + '/widget/deepfind.js?v=28" data-key="' + siteKey + '" data-lang="fr"></script></body></html>';
+  const carCtx = async (opts) => {
+    const cc = await browser.newContext(Object.assign({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36', viewport: { width: 1280, height: 900 } }, opts || {}));
+    await cc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: shopCar }));
+    await cc.route(/www\.example\.com/, (r) => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Produit</title><h1>Fiche produit</h1>' }));
+    const cp = await cc.newPage();
+    cp.on('pageerror', (e) => errors.push('JS carrousel : ' + e.message));
+    return [cc, cp];
+  };
+  const [cc1, cp1] = await carCtx();
+  await cp1.goto(BASE + '/boutique/plongee.html');
+  await cp1.waitForSelector('.df-carousel .df-card', { timeout: 5000 });
+  const placed = await cp1.evaluate(() => { const r = document.getElementById('reco'); return r.nextElementSibling && r.nextElementSibling.classList.contains('df-carousel'); });
+  const nCards = await cp1.locator('.df-carousel .df-card').count();
+  check('carrousels : inséré après le bloc #reco, titre, lien, produits (épinglé en tête)', placed && nCards === 8
+    && (await cp1.textContent('.df-car-title')) === 'Nos coups de cœur' && (await cp1.getAttribute('.df-car-more', 'href')) === '/boutique/promos.html'
+    && (await cp1.textContent('.df-carousel .df-card >> nth=0')).length > 0);
+  await cp1.waitForTimeout(400);
+  await cp1.screenshot({ path: OUT + '/carrousel-site.png' });
+  const left0 = await cp1.evaluate(() => document.querySelector('.df-car-track').scrollLeft);
+  const prevHidden = await cp1.evaluate(() => document.querySelector('.df-car-prev').disabled);
+  await cp1.click('.df-car-next');
+  await cp1.waitForTimeout(700);
+  const left1 = await cp1.evaluate(() => document.querySelector('.df-car-track').scrollLeft);
+  const tb = await cp1.locator('.df-car-track').boundingBox();
+  // au bout du bandeau après « suivant » : glisser vers la droite ramène en arrière
+  await cp1.mouse.move(tb.x + tb.width * 0.3, tb.y + tb.height / 2);
+  await cp1.mouse.down();
+  await cp1.mouse.move(tb.x + tb.width * 0.6, tb.y + tb.height / 2, { steps: 8 });
+  await cp1.mouse.up();
+  await cp1.waitForTimeout(500);
+  const left2 = await cp1.evaluate(() => document.querySelector('.df-car-track').scrollLeft);
+  check('carrousels : flèche suivante, glisser à la souris sans ouvrir de produit', prevHidden && left1 > left0 && left2 < left1 - 100 && cp1.url().includes('/boutique/plongee.html'));
+  await Promise.all([cp1.waitForNavigation(), cp1.click('.df-carousel .df-card >> nth=0')]);
+  check('carrousels : clic sur un produit → sa page', cp1.url().includes('www.example.com'));
+  await cc1.close();
+  const [cc2, cp2] = await carCtx(Object.assign({}, require('playwright').devices['iPhone 13']));
+  await cp2.goto(BASE + '/boutique/plongee.html');
+  await cp2.waitForSelector('.df-carousel .df-card', { timeout: 5000 });
+  await cp2.waitForTimeout(400);
+  const mob = await cp2.evaluate(() => {
+    const t = document.querySelector('.df-car-track').getBoundingClientRect();
+    const c0 = document.querySelector('.df-carousel .df-card').getBoundingClientRect();
+    return { track: t.width, card: c0.width, btn: getComputedStyle(document.querySelector('.df-car-next')).display };
+  });
+  await cp2.screenshot({ path: OUT + '/carrousel-mobile.png' });
+  check('carrousels : mobile (2 produits et un bout du suivant, sans flèches)', mob.btn === 'none' && mob.card * 2 < mob.track && mob.card * 2.5 > mob.track);
+  await cc2.close();
+  await page.waitForTimeout(500);
+  await page.goto(BASE + '/admin/carousels');
+  const caNums = await page.locator('.ca-table tbody tr:first-child td.num').evaluateAll((tds) => tds.map((td) => td.textContent.trim()));
+  check('carrousels : statistiques (2 vues, 1 clic)', caNums[1] === '2' && caNums[2] === '1');
+  await page.screenshot({ path: OUT + '/carrousel-liste.png', fullPage: true });
+  // personnalisé « vus récemment » : rien sans consentement (sélection automatique), historique après consentement
+  await page.goto(BASE + '/admin/carousels/edit');
+  await page.fill('[data-f=name]', 'Vus récemment e2e');
+  await page.fill('[data-f=selector]', '#reco2');
+  await page.fill('[data-f=title]', 'Vus récemment');
+  await page.check('input[name=ca_source][value=personal]');
+  await page.check('input[name=ca_personal][value=recent]');
+  await page.fill('[data-f=max_items]', '4');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  const [cc3, cp3] = await carCtx();
+  await cp3.goto(BASE + '/boutique/plongee.html');
+  await cp3.waitForSelector('#reco2 .df-carousel .df-card', { timeout: 5000 });
+  const noHist = await cp3.evaluate(() => Object.keys(localStorage).filter((k) => k.indexOf('df-hist:') === 0).length);
+  const firstCar = await cp3.evaluate(() => Array.prototype.map.call(document.querySelectorAll('.df-carousel-' + document.querySelector('[data-df-carousel]').getAttribute('data-df-carousel') + ' .df-card'), (a) => a.href));
+  await cp3.evaluate(() => window.DeepFind.consent(true));
+  const picked = firstCar[3];
+  await Promise.all([cp3.waitForNavigation(), cp3.click('.df-carousel >> nth=0 >> .df-card >> nth=3')]);
+  await cp3.goto(BASE + '/boutique/plongee.html');
+  await cp3.waitForSelector('#reco2 .df-carousel .df-card', { timeout: 5000 });
+  const recent = await cp3.evaluate(() => document.querySelector('#reco2 .df-carousel .df-card').href);
+  const hist = await cp3.evaluate(() => Object.keys(localStorage).filter((k) => k.indexOf('df-hist:') === 0).map((k) => JSON.parse(localStorage.getItem(k)).length));
+  await cp3.evaluate(() => window.DeepFind.consent(false));
+  const cleared = await cp3.evaluate(() => Object.keys(localStorage).filter((k) => k.indexOf('df-hist:') === 0 || k === 'df-consent').length);
+  check('carrousels : personnalisé (sans consentement : aucun historique ; avec : produit cliqué en tête ; retrait : historique effacé)',
+    noHist === 0 && recent === picked && hist[0] === 1 && cleared === 0);
+  await cp3.screenshot({ path: OUT + '/carrousel-perso.png', fullPage: true });
+  await cc3.close();
+  for (let k = 0; k < 2; k++) {
+    await page.goto(BASE + '/admin/carousels');
+    await page.click('form[action$="/admin/carousels/delete"] button');
+    await Promise.all([page.waitForNavigation(), confirmModal()]);
+  }
+  check('carrousels : suppression', (await page.textContent('body')).includes('Carrousel supprimé') && await page.locator('.ca-table tbody tr[data-row]').count() === 0);
 
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });

@@ -60,6 +60,8 @@ final class Settings
         'widget_enter_submit' => '1',
         'widget_block_native' => '1',
         'widget_hover_image' => '1',
+        // carrousels personnalisés : off | consent (après consentement du visiteur, transmis par le site) | always
+        'carousel_personal' => 'consent',
         'log_retention_days' => '90',
         // Import
         'max_drop_percent' => '20',
@@ -105,6 +107,7 @@ final class Settings
         'widget_enter_submit' => 'Touche Entrée : ouvrir la page de résultats du site (sinon, seule la fenêtre de recherche DeepFind reste affichée)',
         'widget_hover_image' => 'Changer d\'image au survol d\'un produit (affiche sa deuxième photo quand la souris passe dessus)',
         'widget_block_native' => 'Bloquer l\'autocomplétion d\'origine du site au clic et à la saisie dans le champ de recherche (évite que deux fenêtres s\'ouvrent)',
+        'carousel_personal' => 'Carrousels personnalisés (historique du visiteur)',
         'log_retention_days' => 'Conservation des journaux (jours)',
         'max_drop_percent' => 'Import bloqué si le catalogue baisse de plus de N %',
     ];

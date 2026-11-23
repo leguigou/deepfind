@@ -19,7 +19,7 @@ use DeepFind\Store\Store;
  */
 final class SearchService
 {
-    private const PUBLIC_FIELDS = ['id', 'sku', 'name', 'brand', 'url', 'image', 'image_hover', 'price', 'final_price',
+    public const PUBLIC_FIELDS = ['id', 'sku', 'name', 'brand', 'url', 'image', 'image_hover', 'price', 'final_price',
         'has_price_range', 'on_sale', 'discount_percent', 'in_stock', 'rating', 'reviews_count', 'is_new'];
     private const INTERNAL_FIELDS = ['margin_rate', 'biz_score', 'salable_qty', 'sales_30d', 'manual_boost', 'boost_total', 'clicks_30d', 'type', 'category_names', 'available', 'absent_since'];
     private const POST_FIELDS = ['id', 'title', 'url', 'image', 'excerpt', 'published_ts'];
@@ -449,6 +449,18 @@ final class SearchService
             'posts_total' => (int) ($res['posts']['estimatedTotalHits'] ?? 0),
             'engine_ms' => (int) ($main['processingTimeMs'] ?? 0),
         ] + ($internal ? ['disabled' => array_map(fn ($h) => $this->product($h, true), $res['disabled']['hits'] ?? [])] : []);
+    }
+
+    /** Produit tel que le reçoit le site (liste blanche, oui/non en booléens) : aussi utilisé par les carrousels. */
+    public static function publicProduct(array $h): array
+    {
+        $p = array_intersect_key($h, array_flip(self::PUBLIC_FIELDS));
+        foreach (['in_stock', 'on_sale', 'has_price_range', 'is_new'] as $b) {
+            if (isset($p[$b])) {
+                $p[$b] = (bool) $p[$b];
+            }
+        }
+        return $p;
     }
 
     private function product(array $h, bool $internal): array
