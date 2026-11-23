@@ -73,7 +73,7 @@
       approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants',
       price: 'Prix', min: 'Min.', max: 'Max.', apply: 'Valider', reset: 'Réinitialiser', search: 'Rechercher',
       pageLimited: 'Résultats limités à', pageRemove: 'Retirer le filtre « %s » et chercher dans tout le catalogue',
-      pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »' },
+      pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »', popin: 'Message' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
@@ -82,7 +82,7 @@
       approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products',
       price: 'Price', min: 'Min.', max: 'Max.', apply: 'Apply', reset: 'Reset', search: 'Search',
       pageLimited: 'Results limited to', pageRemove: 'Remove the “%s” filter and search the whole catalogue',
-      pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”' }
+      pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”', popin: 'Message' }
   };
   var t = T[cfg.lang] || T.fr;
   var money;
@@ -92,7 +92,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=21'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=22'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -333,38 +333,41 @@
     Array.prototype.forEach.call(src.childNodes, function (c) { n.appendChild(cleanNode(c)); });
     return n;
   }
-  function renderBanner(b) {
-    bannerBox.textContent = '';
-    bannerBox.hidden = !b;
-    if (!b) { return; }
+  // Contenu d'une bannière ou d'une popin dans box : HTML nettoyé (mode code) ou image ordinateur / mobile + lien. false si rien à afficher.
+  function fillMedia(box, b, prefix) {
     if (b.mode === 'code') {
       var doc = new DOMParser().parseFromString('<body>' + String(b.html || '') + '</body>', 'text/html');
-      Array.prototype.forEach.call(doc.body.childNodes, function (c) { bannerBox.appendChild(cleanNode(c)); });
-    } else {
-      var desktop = safeUrl(b.desktop);
-      if (!desktop) { bannerBox.hidden = true; return; }
-      var pic = el('picture');
-      var mobile = safeUrl(b.mobile);
-      if (mobile && mobile !== desktop) {
-        var srcEl = el('source');
-        srcEl.media = '(max-width: 900px)';
-        srcEl.srcset = mobile;
-        pic.appendChild(srcEl);
-      }
-      var img = el('img', 'df-banner-img');
-      img.src = desktop;
-      img.alt = b.alt || '';
-      pic.appendChild(img);
-      var link = safeUrl(b.link);
-      var wrap = link ? el('a', 'df-banner-link') : el('div');
-      if (link) {
-        wrap.href = link;
-        if (b.new_window) { wrap.target = '_blank'; wrap.rel = 'noopener'; }
-      }
-      wrap.appendChild(pic);
-      bannerBox.appendChild(wrap);
+      Array.prototype.forEach.call(doc.body.childNodes, function (c) { box.appendChild(cleanNode(c)); });
+      return box.childNodes.length > 0;
     }
-    bannerBox.__dfBanner = b.id;
+    var desktop = safeUrl(b.desktop);
+    if (!desktop) { return false; }
+    var pic = el('picture');
+    var small = safeUrl(b.mobile);
+    if (small && small !== desktop) {
+      var srcEl = el('source');
+      srcEl.media = '(max-width: 900px)';
+      srcEl.srcset = small;
+      pic.appendChild(srcEl);
+    }
+    var img = el('img', prefix + '-img');
+    img.src = desktop;
+    img.alt = b.alt || '';
+    pic.appendChild(img);
+    var link = safeUrl(b.link);
+    var wrap = link ? el('a', prefix + '-link') : el('div');
+    if (link) {
+      wrap.href = link;
+      if (b.new_window) { wrap.target = '_blank'; wrap.rel = 'noopener'; }
+    }
+    wrap.appendChild(pic);
+    box.appendChild(wrap);
+    return true;
+  }
+  function renderBanner(b) {
+    bannerBox.textContent = '';
+    bannerBox.hidden = !b || !fillMedia(bannerBox, b, 'df-banner');
+    bannerBox.__dfBanner = b ? b.id : null;
   }
   // Clic sur un lien de la bannière (y compris clic molette) : mesuré comme les clics produits
   function bannerClick(ev) {
@@ -1167,6 +1170,150 @@
       });
     }
     restoreUrlState();
+    pageReady = true;
+    schedulePopins();
+  }
+
+  // ------------------------------------------------------------------ Popins (extranet › Recommandations › Popins)
+  /*
+   * La liste des popins en cours arrive avec /config ; la popin de la page est choisie ici (aucune requête de plus par page vue) :
+   * pages (toutes, accueil, adresses ; adresses exclues), appareil, puis la première de la liste qui n'a été ni fermée ni déjà vue.
+   * Mémorisation dans le navigateur du visiteur, sans cookie ni identifiant : fermeture ou clic pendant N jours (localStorage),
+   * « déjà vue » et « fermée » pendant la visite (sessionStorage). Une seule popin par page.
+   * Aperçu (favori « Tester DeepFind ») : rien n'est mémorisé ni compté, la popin revient à chaque page.
+   */
+  var popinList = [];
+  var popinTimer = null;
+  var popinDone = false; // une popin déjà affichée sur cette page
+  var pageReady = false;
+  var POPIN_KEY = 'df-popin:' + cfg.key + ':' + cfg.lang + ':';
+  // Chemin de la page comme côté serveur (règles selon la page) : décodé, en minuscules
+  function currentPath() {
+    var path = location.pathname || '/';
+    try { path = decodeURIComponent(path); } catch (e) { /* encodage invalide : chemin brut */ }
+    return path.toLowerCase();
+  }
+  // Accueil : « / » ou la racine d'une langue / d'une boutique Magento (« /fr », « /fr_fr »)
+  function isHomePath(path) {
+    path = path.replace(/\/index\.php$/i, '').replace(/\/+$/, '');
+    return path === '' || /^\/[a-z]{2}([_-][a-z]{2})?$/.test(path);
+  }
+  function urlMatch(u, path) {
+    var txt = u && typeof u.text === 'string' ? u.text.trim().toLowerCase() : '';
+    if (!txt) { return false; }
+    if (u.match === 'starts') { return path.indexOf(txt) === 0; }
+    if (u.match === 'ends') { return path.length >= txt.length && path.slice(-txt.length) === txt; }
+    // « /fr/nautisme » et « /fr/nautisme/ » désignent la même page
+    if (u.match === 'equals') { return path.replace(/\/+$/, '') === txt.replace(/\/+$/, ''); }
+    return path.indexOf(txt) !== -1;
+  }
+  function popinForPage(p, path) {
+    if ((p.device === 'desktop' && mobile.matches) || (p.device === 'mobile' && !mobile.matches)) { return false; }
+    if ((p.exclude || []).some(function (u) { return urlMatch(u, path); })) { return false; }
+    if (p.pages !== 'custom') { return true; }
+    return (!!p.home && isHomePath(path)) || (p.urls || []).some(function (u) { return urlMatch(u, path); });
+  }
+  function popinMem(p) { return POPIN_KEY + p.id + ':' + (parseInt(p.rev, 10) || 1); }
+  function popinHidden(p) {
+    if (preview) { return false; }
+    var k = popinMem(p);
+    try {
+      var until = parseInt(window.localStorage.getItem(k) || '0', 10);
+      if (until > Date.now()) { return true; }
+      if (until) { window.localStorage.removeItem(k); } // mémorisation expirée
+      if (window.sessionStorage.getItem(k + ':x')) { return true; }
+      if (p.repeat !== 'page' && window.sessionStorage.getItem(k + ':v')) { return true; }
+    } catch (e) { /* stockage indisponible : la popin s'affiche normalement */ }
+    return false;
+  }
+  function popinRemember(p, flag) {
+    if (preview) { return; }
+    var k = popinMem(p);
+    try {
+      window.sessionStorage.setItem(k + ':' + flag, '1');
+      var days = parseInt(p.remember_days, 10) || 0;
+      if (flag === 'x' && days > 0) { window.localStorage.setItem(k, String(Date.now() + days * 86400000)); }
+    } catch (e) { /* stockage indisponible */ }
+  }
+  function popinEvent(p, e) {
+    if (noAudience) { return; } // page Démo ou aperçu : non compté
+    try {
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, id: String(p.id), e: e });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/popin', body))) {
+        fetch(cfg.api + '/popin', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
+      }
+    } catch (e2) { /* mesure facultative */ }
+  }
+  function pickPopin() {
+    var path = currentPath();
+    for (var i = 0; i < popinList.length; i++) {
+      var p = popinList[i];
+      if (p && p.id && popinForPage(p, path) && !popinHidden(p)) { return p; }
+    }
+    return null;
+  }
+  function showPopin(p) {
+    var placement = { center: 1, bottom_right: 1, bottom_left: 1 }[p.placement] ? p.placement : 'center';
+    var modal = placement === 'center';
+    var root = el('div', 'df-popin df-popin-' + placement);
+    var box = el('div', 'df-popin-box');
+    box.setAttribute('role', 'dialog');
+    if (modal) { box.setAttribute('aria-modal', 'true'); }
+    box.setAttribute('aria-label', p.alt || t.popin);
+    box.style.setProperty('--df-popin-w', Math.min(1200, Math.max(280, parseInt(p.max_width, 10) || 600)) + 'px');
+    var content = el('div', 'df-popin-content');
+    if (!fillMedia(content, p, 'df-popin')) { return false; }
+    var closeX = el('button', 'df-popin-close', '✕');
+    closeX.type = 'button';
+    closeX.setAttribute('aria-label', t.close);
+    box.appendChild(closeX);
+    box.appendChild(content);
+    var backdrop = modal ? el('div', 'df-popin-backdrop') : null;
+    if (backdrop) { root.appendChild(backdrop); }
+    root.appendChild(box);
+    var before = document.activeElement;
+    var closed = false;
+    function onKey(ev) { if (ev.key === 'Escape') { finish('x'); } }
+    // e = x (fermeture) ou c (clic) : mémorisée dans les deux cas pour ne pas réapparaître.
+    // Clic sur un lien : compté tout de suite (la page peut changer aussitôt), retiré juste après
+    // (un lien retiré du document pendant son clic n'ouvrirait plus sa page).
+    function finish(e) {
+      if (closed) { return; }
+      closed = true;
+      popinRemember(p, 'x');
+      popinEvent(p, e);
+      document.removeEventListener('keydown', onKey, true);
+      if (e === 'c') { setTimeout(function () { root.remove(); }, 0); return; }
+      root.remove();
+      if (modal && before && before.focus && document.contains(before)) { try { before.focus({ preventScroll: true }); } catch (e3) { /* ignoré */ } }
+    }
+    closeX.addEventListener('click', function () { finish('x'); });
+    if (backdrop) { backdrop.addEventListener('click', function () { finish('x'); }); }
+    var linkClick = function (ev) {
+      if ((ev.type === 'auxclick' && ev.button !== 1) || !ev.target.closest || !ev.target.closest('a')) { return; }
+      finish('c');
+    };
+    box.addEventListener('click', linkClick);
+    box.addEventListener('auxclick', linkClick);
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(root);
+    popinRemember(p, 'v');
+    popinEvent(p, 'v');
+    if (modal) { try { closeX.focus({ preventScroll: true }); } catch (e4) { closeX.focus(); } }
+    return true;
+  }
+  function firePopin() {
+    popinTimer = null;
+    if (popinDone) { return; }
+    // fenêtre de recherche ouverte : la popin attend qu'elle se referme
+    if (!overlay.hidden) { popinTimer = setTimeout(firePopin, 2000); return; }
+    var p = pickPopin(); // liste éventuellement rafraîchie pendant le délai
+    if (p && showPopin(p)) { popinDone = true; }
+  }
+  function schedulePopins() {
+    if (!pageReady || demo || popinDone || popinTimer !== null || !document.body) { return; }
+    var p = pickPopin();
+    if (p) { popinTimer = setTimeout(firePopin, Math.min(600, Math.max(0, parseInt(p.delay, 10) || 0)) * 1000); }
   }
 
   // ------------------------------------------------------------------ Démarrage
@@ -1246,7 +1393,7 @@
     if (preview) { return; } // ne pas mélanger l'aperçu avec la configuration du site
     try {
       window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, hover_image: c.hover_image !== false, audience: c.audience || false,
-        layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, t: Date.now() }));
+        layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [], t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
   var TYPES = { below: 1, fullscreen: 1, floating: 1, embedded: 1 };
@@ -1255,6 +1402,8 @@
     if (cfg.enter === null && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
     // photo au survol : réglage de l'extranet (Paramètres › Widget sur le site), appliqué aux cartes affichées ensuite
     if (c.hover_image !== undefined) { cfg.hoverImage = c.hover_image !== false; }
+    // popins : la liste la plus récente sert au moment de l'affichage (après le délai)
+    if (Array.isArray(c.popins)) { popinList = c.popins; schedulePopins(); }
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
     if (ds.native !== 'keep' && ds.native !== 'block' && c.block_native !== undefined) { cfg.blockNative = c.block_native !== false; }
@@ -1300,8 +1449,7 @@
   // Pages mesurées (réglage de l'extranet) : toutes, la page d'accueil, ou les adresses qui commencent par l'un des chemins choisis
   function audiencePage(a) {
     var path = (location.pathname || '/').replace(/\/index\.php$/i, '').replace(/\/+$/, '').toLowerCase();
-    // accueil : « / » ou la racine d'une langue / d'une boutique Magento (« /fr », « /fr_fr »)
-    var home = path === '' || /^\/[a-z]{2}([_-][a-z]{2})?$/.test(path);
+    var home = isHomePath(path);
     if (a.pages === 'home') { return home; }
     if (a.pages === 'paths') {
       if (a.home && home) { return true; }

@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=24" defer
+<script src="https://search.example.com/widget/deepfind.js?v=25" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=23` en `?v=24`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=24` en `?v=25`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -398,6 +398,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | **Recommandations** | Résultats personnalisés | Produits affichés en premier, seuls ou exclus pour certaines recherches (section 8) |
 | | Règles | Résultats selon la **page du site** (adresse), sans mot-clé : uniquement certains produits, filtre pré-coché retirable, ou exclusion (section 8) |
 | | Bannières | Image ou code HTML en haut des résultats (section 8) |
+| | Popins | Fenêtre affichée sur les pages du site choisies (accueil, adresses), avec période, délai, fréquence et statistiques (section 8) |
 | | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
@@ -708,6 +709,26 @@ Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur un
 
 Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTML (scripts, événements et liens `javascript:` retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi des **affichages**, **clics** et **CTR**. Les images sont stockées dans `public/uploads/banners/` (à sauvegarder, et accessible en écriture par PHP).
 
+### Popins
+
+**Recommandations › Popins** ouvre une fenêtre (« popin ») sur les **pages du site**, même sans recherche : opération commerciale, nouveauté, information de livraison… Le widget, déjà présent sur toutes les pages, l'affiche : rien à ajouter sur le site.
+
+Une popin comprend :
+- **Statut** et **Durée** : en continu ou sur une période (dates de début et de fin incluses).
+- **Pages concernées** : **toutes les pages**, ou seulement **la page d'accueil** (« / » ou la racine d'une langue, ex. `/fr`) et/ou des **adresses**, avec les mêmes comparaisons que les règles selon la page (*contient*, *commence par*, *finit par*, *est exactement*). Ex. contient `/nautisme/` pour une catégorie et ses produits.
+  **Pages exclues** (facultatif) : jamais de popin sur ces pages, même si elles correspondent. Conseillé : contient `/checkout` (panier, paiement), contient `/customer/` (compte client).
+- **Affichage** : appareils (tous, ordinateur ou mobile, d'après la largeur de l'écran : mobile jusqu'à 900 px), position (au centre avec fond assombri, en bas à droite ou à gauche), **délai avant l'affichage** en secondes à partir de l'ouverture de la page (0 à 600), largeur maximale. Si la fenêtre de recherche est ouverte au bout du délai, la popin attend qu'elle se referme.
+- **Fréquence** : **une seule fois par visite** (même si le visiteur ne la ferme pas), ou **à chaque page concernée** tant qu'il ne l'a pas fermée. Une fois **fermée ou cliquée**, elle ne lui est plus proposée pendant **N jours** (0 = jusqu'à la fin de sa visite). Après un changement de contenu, cochez « reproposer aux visiteurs qui l'ont déjà fermée ».
+- **Contenu** : comme les bannières, image ordinateur + image mobile (facultative) + texte alternatif + lien, ou code HTML (nettoyé à l'enregistrement puis par le widget). Images stockées dans `public/uploads/banners/`.
+
+**Fonctionnement**
+- **Une seule popin par page** : la première de la liste (ordre par glisser-déposer) qui correspond à la page, à l'appareil et que le visiteur n'a pas déjà fermée (ou déjà vue pendant sa visite).
+- **Statistiques** (7, 30 ou 90 jours, dans la liste et la fiche) : **affichages**, **clics** sur un lien de la popin, **CTR** (clics / affichages) et **fermetures** (croix, touche Échap, clic sur le fond). Ce sont des totaux par jour, sans donnée personnelle, comptés même si le journal des recherches est désactivé. Les robots et IP bloquées ne sont pas comptés.
+- **Délai de prise en compte** : la liste des popins arrive avec la configuration du widget, gardée quelques minutes par les navigateurs. Une création, une modification ou une désactivation est visible sur le site d'ici **6 minutes** au plus.
+- **Mémorisation** : dans le navigateur du visiteur (`localStorage` pour les N jours, `sessionStorage` pour la visite), sans cookie ni identifiant, et rien n'est envoyé au serveur. Un autre navigateur, une navigation privée ou un effacement des données du site la font réapparaître.
+- **Tester** : le favori « Tester DeepFind » (Paramètres › Intégration) affiche les popins à chaque page, sans les compter ni mémoriser leur fermeture. La page Démo de l'extranet n'affiche pas de popin.
+- Projet désactivé : aucune popin. Nécessite le widget `?v=25` ou plus récent.
+
 **Ordre de classement :** le nombre de mots trouvés passe en premier ; les résultats personnalisés passent avant le reste. Vérifiez l'effet de vos réglages dans l'**aperçu interne**.
 
 ## 9. Anti-robots
@@ -731,8 +752,9 @@ Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTM
 - **Contenu enregistré** : chaque recherche « finale » (pas chaque lettre tapée : « pa », « pal », « palm » sont marquées comme intermédiaires), avec les filtres, le nombre de résultats, le temps de réponse, le user-agent et les clics.
 - **Adresse IP** : jamais stockée en clair. On conserve une **empreinte** (HMAC avec `APP_SECRET`) pour compter et bloquer, et une **IP tronquée** (`203.0.113.x`) pour l'affichage. Aucun cookie.
 - **Conservation** : 90 jours par défaut (Paramètres), purge automatique chaque nuit (`logs:purge`).
+- **Popins** : statistiques en totaux quotidiens, sans donnée personnelle. Le choix « ne plus afficher pendant N jours » est gardé dans le navigateur du visiteur (`localStorage` / `sessionStorage`), sans identifiant, et n'est jamais envoyé au serveur.
 - **Mesure d'audience** (Analyse › Audience) : aucun cookie ni stockage sur l'appareil, aucune IP enregistrée ; empreinte valable une journée (clé secrète du jour détruite à la fin de la journée), puis seuls des totaux quotidiens sont gardés. Désactivable entièrement ou par type de mesure.
-- **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site, et l'absence de consentement pour la mesure d'audience (méthode conçue pour entrer dans l'exemption de la CNIL pour la mesure d'audience, à confirmer). Ce README ne constitue pas un avis juridique.
+- **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site, et l'absence de consentement pour la mesure d'audience (méthode conçue pour entrer dans l'exemption de la CNIL pour la mesure d'audience, à confirmer) et pour la mémorisation de la fermeture des popins (choix exprimé par le visiteur, à confirmer également). Ce README ne constitue pas un avis juridique.
 
 ## 11. Commandes
 
@@ -820,6 +842,6 @@ Il vérifie (environ 90 contrôles) la connexion, toutes les pages, les thèmes,
 - **Flux delta** : met à jour prix, stock, champs simples et suppressions. Les nouveaux produits, catégories et attributs arrivent à l'import complet ; la réactivation d'un produit désactivé auto aussi.
 - **Recherche** : pas de recherche sémantique ou IA, pas de suggestions de requêtes.
 - **Statistiques** : recherches, clics et audience (visiteurs, appareils) ; pas encore de suivi des ventes (ajouts au panier, commandes) ni d'envoi d'événements à Google Analytics.
-- **Copie entre projets** : n'inclut pas encore les layers, filtres, tris ni les règles selon la page.
+- **Copie entre projets** : n'inclut pas encore les layers, filtres, tris ni les règles selon la page. Les popins sont copiées, sans leurs statistiques.
 - **Tests** : faits sous PHP 8.3 avec un **faux** Meilisearch. Il faut valider sous PHP 8.5 et le vrai Meilisearch sur le serveur de recette.
 - **Module Magento** : aucun module n'est fourni pour générer le flux. Utilisez une extension de flux du marché ou un développement interne qui produit le format décrit ci-dessus.

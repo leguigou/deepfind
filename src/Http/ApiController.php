@@ -22,6 +22,7 @@ use DeepFind\Text;
  *   GET  /api/v1/search?key=pk_…&q=palme&lang=fr&offset=0&limit=20&brand[]=C4&in_stock=1&on_sale=1&sort=price_asc&sid=…
  *   POST /api/v1/click   (key, q, lang, doc_type, doc_id, position, sid)
  *   POST /api/v1/visit   (key, lang, d = m|t|d)   page vue, pour la mesure d'audience anonyme
+ *   POST /api/v1/popin   (key, lang, id, e = v|c|x)   popin affichée, cliquée ou fermée (compteurs du jour, sans donnée personnelle)
  *   GET  /api/v1/config?key=pk_…&lang=fr   (le widget ne prend la main que si « enabled » est vrai)
  *   GET  /api/v1/health
  */
@@ -34,6 +35,7 @@ final class ApiController
                 $path === '/api/v1/search' && in_array($method, ['GET', 'HEAD'], true) => $this->search(),
                 $path === '/api/v1/click' && $method === 'POST' => $this->click(),
                 $path === '/api/v1/visit' && $method === 'POST' => $this->visit(),
+                $path === '/api/v1/popin' && $method === 'POST' => $this->popin(),
                 $path === '/api/v1/config' && in_array($method, ['GET', 'HEAD'], true) => $this->config(),
                 $path === '/api/v1/health' => $this->health(),
                 $method === 'OPTIONS' => $this->preflight(),
@@ -171,6 +173,32 @@ final class ApiController
         Audience::record('pageview', $ip, $ua, (string) ($p['d'] ?? ''));
     }
 
+    /** Événement d'une popin (affichage, clic, fermeture) : réponse immédiate, comptage après l'envoi. */
+    private function popin(): void
+    {
+        $p = $_POST;
+        $lang = (string) ($p['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($p['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        $id = (int) ($p['id'] ?? 0);
+        $event = (string) ($p['e'] ?? '');
+        if (!\DeepFind\Project::isActive() || ($p['na'] ?? '') === '1' || $id <= 0 || !isset(\DeepFind\Rules\Popins::EVENTS[$event])) {
+            Response::noContent($cors);
+            return;
+        }
+        // robots, IP bloquées, rafales : non comptés (compteurs anti-robots séparés)
+        if ((new BotGuard(Store::get()))->check(ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), '', 'popin') !== null) {
+            Response::noContent($cors);
+            return;
+        }
+        Response::noContent($cors);
+        Response::finish();
+        \DeepFind\Rules\Popins::record($lang, $id, $event);
+    }
+
     /**
      * Configuration du widget, demandée avant toute prise en main de la page : projet actif ou non, comportement de la touche Entrée.
      * Courte mise en cache navigateur : la désactivation d'un projet est prise en compte en une minute au plus.
@@ -192,6 +220,8 @@ final class ApiController
             'hover_image' => Settings::int('widget_hover_image') === 1,
             // mesure d'audience : pages qui signalent une page vue (sans cookie, sans donnée personnelle), ou false
             'audience' => Audience::widgetConfig(),
+            // popins en cours : le widget choisit celle de la page (adresse, appareil, fermeture mémorisée)
+            'popins' => \DeepFind\Project::isActive() ? \DeepFind\Rules\Popins::forWidget($lang) : [],
         ] + \DeepFind\Widget\WidgetConfig::forWidget($lang, $preview = substr((string) ($_GET['preview'] ?? ''), 0, 80)),
             200, $cors + ['Cache-Control' => $preview !== '' ? 'no-store' : 'private, max-age=60']);
     }

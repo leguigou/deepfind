@@ -33,7 +33,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/01-dashboard-sombre.png', fullPage: true });
 
   const pages = ['/admin/sources', '/admin/sources/edit?id=1', '/admin/sources/test?id=1', '/admin/imports', '/admin/imports/view?id=1',
-    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/page-rules', '/admin/page-rules/edit', '/admin/banners', '/admin/banners/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
+    '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/page-rules', '/admin/page-rules/edit', '/admin/banners', '/admin/banners/edit', '/admin/popins', '/admin/popins/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
     '/admin/keys', '/admin/integration', '/admin/integration?tab=filters', '/admin/integration?tab=sorts', '/admin/settings'];
   for (const p of pages) {
     const resp = await page.goto(BASE + p);
@@ -445,6 +445,87 @@ fs.mkdirSync(OUT, { recursive: true });
   page.once('dialog', () => {});
   await page.click('form[action$="/admin/page-rules/delete"] button');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
+
+  // Popins : création dans l'extranet, affichage sur un faux site (pages choisies, fermeture mémorisée, statistiques)
+  await page.goto(BASE + '/admin/popins/edit');
+  await page.fill('[data-f=name]', 'Popin e2e');
+  await page.check('input[name=pp_pages][value=custom]');
+  await page.fill('[data-urls=urls] .pr-url-text', '/boutique/promo/');
+  await page.click('[data-add-url=exclude_urls]');
+  await page.fill('[data-urls=exclude_urls] .pr-url-text', '/boutique/promo/panier');
+  await page.fill('[data-f=delay_seconds]', '0');
+  await page.fill('[data-f=remember_days]', '2');
+  await page.fill('[data-f=image_desktop]', BASE + '/assets/demo/palme.svg');
+  await page.fill('[data-f=alt]', 'Soldes sur les palmes');
+  await page.fill('[data-f=link_url]', BASE + '/boutique/soldes.html');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  check('popins : popin créée', (await page.textContent('body')).includes('Popin « Popin e2e » enregistrée'));
+  check('popins : fiche réaffichée (pages, exclusion, délai)', await page.inputValue('[data-urls=urls] .pr-url-text') === '/boutique/promo/'
+    && await page.inputValue('[data-urls=exclude_urls] .pr-url-text') === '/boutique/promo/panier' && await page.inputValue('[data-f=delay_seconds]') === '0');
+  await page.screenshot({ path: OUT + '/popin-fiche.png', fullPage: true });
+  await page.goto(BASE + '/admin/popins');
+  check('popins : liste (pages, exclusion)', (await page.textContent('.pp-table')).includes('/boutique/promo/') && (await page.textContent('.pp-table')).includes('sauf /boutique/promo/panier'));
+  const shopHtml = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Boutique</title></head><body>'
+    + '<input name="q"><h1>Boutique</h1><script src="' + BASE + '/widget/deepfind.js?v=25" data-key="' + siteKey + '" data-lang="fr"></script></body></html>';
+  const popinCtx = async () => {
+    const c = await browser.newContext({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' });
+    await c.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: shopHtml }));
+    const pg = await c.newPage();
+    pg.on('pageerror', (e) => errors.push('JS boutique : ' + e.message));
+    return [c, pg];
+  };
+  const [pc1, pp1] = await popinCtx();
+  await pp1.goto(BASE + '/boutique/plongee.html');
+  await pp1.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
+  await pp1.waitForTimeout(800);
+  const nOther = await pp1.locator('.df-popin').count();
+  await pp1.goto(BASE + '/boutique/promo/panier.html');
+  await pp1.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
+  await pp1.waitForTimeout(800);
+  const nExcluded = await pp1.locator('.df-popin').count();
+  check('popins : absente des autres pages et des pages exclues', nOther === 0 && nExcluded === 0);
+  await pp1.goto(BASE + '/boutique/promo/palmes.html');
+  await pp1.waitForSelector('.df-popin .df-popin-box', { timeout: 5000 });
+  check('popins : affichée sur la page choisie (image, texte alternatif, lien, fenêtre accessible)',
+    (await pp1.getAttribute('.df-popin-img', 'src')).endsWith('/assets/demo/palme.svg') && await pp1.getAttribute('.df-popin-img', 'alt') === 'Soldes sur les palmes'
+    && (await pp1.getAttribute('.df-popin-link', 'href')).endsWith('/boutique/soldes.html') && await pp1.getAttribute('.df-popin-box', 'role') === 'dialog'
+    && await pp1.evaluate(() => document.activeElement && document.activeElement.classList.contains('df-popin-close')));
+  await pp1.screenshot({ path: OUT + '/popin-site.png' });
+  await pp1.click('.df-popin-close');
+  check('popins : fermeture', await pp1.locator('.df-popin').count() === 0);
+  await pp1.reload();
+  await pp1.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
+  await pp1.waitForTimeout(800);
+  const remembered = await pp1.evaluate(() => Object.keys(localStorage).filter((k) => k.indexOf('df-popin:') === 0).map((k) => Number(localStorage.getItem(k))));
+  check('popins : fermeture mémorisée 2 jours (pas de réaffichage)', await pp1.locator('.df-popin').count() === 0 && remembered.length === 1
+    && remembered[0] > Date.now() + 1.9 * 86400000 && remembered[0] < Date.now() + 2.1 * 86400000);
+  await pc1.close();
+  // autre visiteur : clic sur le lien de la popin (compté), touche Échap sur mobile
+  const [pc2, pp2] = await popinCtx();
+  await pp2.goto(BASE + '/boutique/promo/masques.html');
+  await pp2.waitForSelector('.df-popin .df-popin-link', { timeout: 5000 });
+  await Promise.all([pp2.waitForNavigation(), pp2.click('.df-popin-link')]);
+  check('popins : clic sur le lien → page de destination', pp2.url().endsWith('/boutique/soldes.html'));
+  await pc2.close();
+  const pmc = await browser.newContext({ ...require('playwright').devices['iPhone 13'] });
+  await pmc.route(/\/boutique\//, (r) => r.fulfill({ contentType: 'text/html', body: shopHtml }));
+  const pmp = await pmc.newPage();
+  await pmp.goto(BASE + '/boutique/promo/tubas.html');
+  await pmp.waitForSelector('.df-popin .df-popin-box', { timeout: 5000 });
+  const pmBox = await pmp.locator('.df-popin-box').boundingBox();
+  await pmp.screenshot({ path: OUT + '/popin-mobile.png' });
+  await pmp.keyboard.press('Escape');
+  check('popins : mobile (largeur de l\'écran) et fermeture par Échap', pmBox && pmBox.width <= 390 - 31 && await pmp.locator('.df-popin').count() === 0);
+  await pmc.close();
+  await page.waitForTimeout(500);
+  await page.goto(BASE + '/admin/popins');
+  const ppNums = await page.locator('.pp-table tbody tr:first-child td.num').evaluateAll((tds) => tds.map((td) => td.textContent.trim()));
+  // N°, affichages, clics, CTR, fermetures
+  check('popins : statistiques (3 affichages, 1 clic, 2 fermetures)', ppNums[1] === '3' && ppNums[2] === '1' && ppNums[4] === '2');
+  await page.screenshot({ path: OUT + '/popin-liste.png', fullPage: true });
+  await page.click('form[action$="/admin/popins/delete"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
+  check('popins : suppression', (await page.textContent('body')).includes('Popin supprimée'));
 
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });

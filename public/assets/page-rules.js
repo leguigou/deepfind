@@ -1,6 +1,6 @@
 /*
  * Recommandations › Règles (selon la page) :
- *  - liste : ordre d'application par glisser-déposer (enregistré au lâcher) ;
+ *  - liste : ordre d'application par glisser-déposer (enregistré au lâcher) ; sert aussi à la liste des popins ;
  *  - fiche : adresses de page, action, texte du bandeau, conditions produits (conditions.js, mode est / n'est pas).
  */
 (function () {

@@ -177,17 +177,7 @@ final class PageRules
         if ($name === '') {
             $errors[] = 'Le nom de la règle est obligatoire.';
         }
-        $urls = [];
-        foreach (array_slice((array) ($in['urls'] ?? []), 0, 30) as $u) {
-            $text = mb_substr(trim((string) ($u['text'] ?? '')), 0, 300, 'UTF-8');
-            if (preg_match('~^https?://~i', $text)) {
-                $text = (string) (parse_url($text, PHP_URL_PATH) ?? '');
-            }
-            $match = isset(self::URL_OPS[$u['match'] ?? '']) ? (string) $u['match'] : 'contains';
-            if ($text !== '' && !in_array(['match' => $match, 'text' => $text], $urls, true)) {
-                $urls[] = ['match' => $match, 'text' => $text];
-            }
-        }
+        $urls = self::sanitizeUrls((array) ($in['urls'] ?? []));
         if ($urls === []) {
             $errors[] = 'Indiquez au moins une adresse de page (ex. contient « /nautisme/ »).';
         }
@@ -206,6 +196,28 @@ final class PageRules
             'label' => mb_substr(trim((string) ($in['label'] ?? '')), 0, 100, 'UTF-8'),
             'match_all' => $rules[0]['match_all'], 'conditions' => $rules[0]['conditions'],
         ], []];
+    }
+
+    /**
+     * Adresses de page saisies : 30 au plus, adresse complète réduite au chemin, doublons et lignes vides retirés
+     * (aussi utilisé par les popins).
+     * @return list<array{match:string, text:string}>
+     */
+    public static function sanitizeUrls(array $in): array
+    {
+        $urls = [];
+        foreach (array_slice($in, 0, 30) as $u) {
+            $u = (array) $u;
+            $text = mb_substr(trim((string) ($u['text'] ?? '')), 0, 300, 'UTF-8');
+            if (preg_match('~^https?://~i', $text)) {
+                $text = (string) (parse_url($text, PHP_URL_PATH) ?? '');
+            }
+            $match = isset(self::URL_OPS[$u['match'] ?? '']) ? (string) $u['match'] : 'contains';
+            if ($text !== '' && !in_array(['match' => $match, 'text' => $text], $urls, true)) {
+                $urls[] = ['match' => $match, 'text' => $text];
+            }
+        }
+        return $urls;
     }
 
     /** @return int identifiant */
