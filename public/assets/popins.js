@@ -29,53 +29,9 @@
     f('new_window').checked = !!p.new_window;
     f('html').value = p.html || '';
 
-    // ---------------------------------------------------------------- Pages : toutes / au choix, adresses et pages exclues
-    var custom = form.querySelector('[data-pages-custom]');
-    function syncPages() { custom.hidden = form.querySelector('input[name=pp_pages]:checked').value !== 'custom'; }
-    form.querySelector('input[name=pp_pages][value=' + (p.pages === 'custom' ? 'custom' : 'all') + ']').checked = true;
-    form.querySelectorAll('input[name=pp_pages]').forEach(function (r) { r.addEventListener('change', syncPages); });
-    syncPages();
-
-    function addUrl(box, u, keepOne) {
-      u = u || { match: 'contains', text: '' };
-      var row = el('div', 'pr-url');
-      var op = el('select', 'pr-url-op');
-      op.setAttribute('aria-label', 'Comparaison de l\'adresse');
-      Object.keys(urlOps).forEach(function (k) { var o = el('option', '', urlOps[k]); o.value = k; op.appendChild(o); });
-      op.value = urlOps[u.match] ? u.match : 'contains';
-      var txt = el('input', 'pr-url-text');
-      txt.type = 'text';
-      txt.maxLength = 300;
-      txt.placeholder = box.getAttribute('data-urls') === 'exclude_urls' ? '/checkout' : '/nautisme/';
-      txt.value = u.text || '';
-      txt.setAttribute('aria-label', box.getAttribute('data-urls') === 'exclude_urls' ? 'Adresse de la page exclue' : 'Adresse de la page');
-      var rm = el('button', 'icon-btn', '✕');
-      rm.type = 'button';
-      rm.setAttribute('aria-label', 'Retirer cette adresse');
-      rm.addEventListener('click', function () { row.remove(); if (keepOne && !box.children.length) { addUrl(box, null, keepOne); } });
-      row.appendChild(op);
-      row.appendChild(txt);
-      row.appendChild(rm);
-      box.appendChild(row);
-      return txt;
-    }
-    var boxes = {};
-    form.querySelectorAll('[data-urls]').forEach(function (box) {
-      var key = box.getAttribute('data-urls');
-      var keepOne = key === 'urls'; // pages choisies : toujours une ligne à remplir ; pages exclues : liste vide possible
-      boxes[key] = box;
-      var list = p[key] && p[key].length ? p[key] : (keepOne ? [null] : []);
-      list.forEach(function (u) { addUrl(box, u, keepOne); });
-      form.querySelector('[data-add-url="' + key + '"]').addEventListener('click', function () { addUrl(box, null, keepOne).focus(); });
-    });
-    function urlsOf(key) {
-      var out = [];
-      boxes[key].querySelectorAll('.pr-url').forEach(function (r) {
-        var text = r.querySelector('.pr-url-text').value.trim();
-        if (text) { out.push({ match: r.querySelector('.pr-url-op').value, text: text }); }
-      });
-      return out;
-    }
+    // ---------------------------------------------------------------- Pages : toutes / au choix, adresses et pages exclues (editor-tools.js)
+    var pagesUi = window.DFPages(form, p, urlOps);
+    var urlsOf = pagesUi.urls;
 
     form.querySelector('input[name=pp_repeat][value=' + (p.repeat_mode === 'page' ? 'page' : 'visit') + ']').checked = true;
 
@@ -100,7 +56,7 @@
     // ---------------------------------------------------------------- Enregistrement
     form.addEventListener('submit', function (ev) {
       var period = editor.period();
-      var pages = form.querySelector('input[name=pp_pages]:checked').value;
+      var pages = pagesUi.mode();
       var urls = urlsOf('urls');
       var problem = '';
       if (period.on && (!period.start || !period.end)) { problem = 'Choisissez la date de début et la date de fin de la période.'; }

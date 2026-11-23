@@ -52,10 +52,15 @@ src/Rules/Banners.php          bannières (banners) : par termes ou par défaut,
 src/Rules/Popins.php           popins (popins) : pages (toutes / accueil / adresses PageRules::URL_OPS, adresses exclues), période, appareil,
                                délai, fréquence ; liste envoyée avec /api/v1/config (Popins::forWidget), choix de la page DANS le widget ;
                                fermeture mémorisée dans le navigateur (clé df-popin:<clé>:<langue>:<id>:<rev>) ; suivi popin_stats (POST /api/v1/popin)
+src/Rules/Carousels.php        carrousels (carousels) : pages (comme les popins), emplacement (sélecteur CSS + position), produits épinglés
+                               puis source auto (conditions PageRules::filter + tri) / manual / similar (produit de la page par url_path ou SKU) /
+                               personal (historique envoyé par le widget, jamais stocké ; réglage carousel_personal off|consent|always) ;
+                               apprentissage = reclassement par CTR lissé (carousel_product_stats) ; GET /api/v1/carousels, POST /api/v1/carousel
 src/Rules/Redirections.php     redirections (redirections) : termes, période, automatique ou lien proposé ; ancienne table redirects convertie
 src/Security/HtmlSanitizer.php HTML des bannières : balises / attributs autorisés, pas de script ni javascript: (le widget refiltre aussi)
 public/assets/editor-tools.js  termes + période (calendrier) des pages d'édition ; gabarit templates/admin/_terms_period.php ;
                                DFImageSlots : images téléversées des bannières et popins (gabarit templates/admin/_media_fields.php)
+                               DFPages : pages concernées / exclues (gabarit templates/admin/_pages_fields.php) des popins et carrousels
                                DFWysiwyg : éditeur visuel (contenteditable + execCommand) du contenu HTML, relié au champ html ;
                                refiltre le HTML chargé ou collé (mêmes balises que HtmlSanitizer, qui reste la référence)
 src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
@@ -63,7 +68,7 @@ src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode 
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
 src/Http/ApiController.php     /api/v1/config (projet actif ? + layer actif, filtres, tris, popins), /api/v1/search, /api/v1/click,
-                               /api/v1/visit, /api/v1/popin, /api/v1/health
+                               /api/v1/visit, /api/v1/popin, /api/v1/carousels, /api/v1/carousel, /api/v1/health
 src/Widget/WidgetConfig.php    page Intégration : layers (table layers, un seul actif : below | fullscreen | floating | embedded),
                                filtres (ordre, nom, visibilité : widget_filters_<lang>) et tris (widget_sorts_<lang>) envoyés au widget
 src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
@@ -91,7 +96,7 @@ tests/                         run.sh (unitaires + intégration), run.php, fake-
 7. **Les valeurs de filtre Meilisearch** passent toujours par `Search\Filter` ; les codes d'attributs, par `Mapper::code()`.
 8. **Les secrets** (`.env`, clés Meilisearch, jeton d'administration) ne vont ni dans le dépôt, ni dans les journaux, ni dans les réponses.
 
-10. **Projets : toute requête sur sources, synonyms, query_rules, redirects, product_boosts, search_logs, click_logs, api_keys, popins, popin_stats
+10. **Projets : toute requête sur sources, synonyms, query_rules, redirects, product_boosts, search_logs, click_logs, api_keys, popins, popin_stats, carousels, carousel_stats, carousel_product_stats
     filtre ou renseigne `project_id = Project::id()`** (les import_runs passent par leur source). Les paramètres propres à un projet
     sont dans `project_settings` (via `Settings`), les communs (anti-robots, `Migrations::GLOBAL_SETTINGS`) dans `settings`.
     Toute clé de cache dépendant des données inclut `Project::id()`. Les tests d'intégration vérifient l'isolation entre projets.

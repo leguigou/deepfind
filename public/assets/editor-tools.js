@@ -2,7 +2,8 @@
  * DFEditor(root, {terms, starts_at, ends_at}) → { terms: [...], period(): {on, start, end} }.
  * root contient les blocs du gabarit _terms_period.php (le bloc des termes est facultatif). Données affichées avec textContent uniquement.
  * DFImageSlots(form) : zones d'image [data-slot] (téléversement, glisser-déposer, aperçu) des bannières et des popins.
- * DFWysiwyg(form) : éditeur visuel du contenu HTML [data-wy], relié au champ [data-f="html"] (onglets éditeur / code). */
+ * DFWysiwyg(form) : éditeur visuel du contenu HTML [data-wy], relié au champ [data-f="html"] (onglets éditeur / code).
+ * DFPages(form, data, urlOps) : pages concernées (toutes / au choix) et adresses (gabarit _pages_fields.php) des popins et carrousels. */
 (function () {
   'use strict';
   window.DFEditor = function (root, init) {
@@ -510,6 +511,64 @@
       // hauteur minimale de la popin (0 : celle de l'éditeur par défaut)
       setMinHeight: function (px) { area.style.minHeight = px > 0 ? px + 'px' : ''; },
       reload: load
+    };
+  };
+
+  // ---------------------------------------------------------------- Pages concernées et pages exclues (popins, carrousels)
+  window.DFPages = function (form, data, urlOps) {
+    function el(tag, cls, text) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (text !== undefined) { n.textContent = text; } return n; }
+    var custom = form.querySelector('[data-pages-custom]');
+    var radios = form.querySelectorAll('input[name=pp_pages]');
+    function mode() { var r = form.querySelector('input[name=pp_pages]:checked'); return r ? r.value : 'all'; }
+    function syncPages() { custom.hidden = mode() !== 'custom'; }
+    form.querySelector('input[name=pp_pages][value=' + (data.pages === 'custom' ? 'custom' : 'all') + ']').checked = true;
+    radios.forEach(function (r) { r.addEventListener('change', syncPages); });
+    syncPages();
+    var home = form.querySelector('[data-f="home"]');
+    if (home) { home.checked = !!data.home; }
+    function addUrl(box, u, keepOne) {
+      u = u || { match: 'contains', text: '' };
+      var excl = box.getAttribute('data-urls') === 'exclude_urls';
+      var row = el('div', 'pr-url');
+      var op = el('select', 'pr-url-op');
+      op.setAttribute('aria-label', 'Comparaison de l\'adresse');
+      Object.keys(urlOps).forEach(function (k) { var o = el('option', '', urlOps[k]); o.value = k; op.appendChild(o); });
+      op.value = urlOps[u.match] ? u.match : 'contains';
+      var txt = el('input', 'pr-url-text');
+      txt.type = 'text';
+      txt.maxLength = 300;
+      txt.placeholder = excl ? '/checkout' : '/nautisme/';
+      txt.value = u.text || '';
+      txt.setAttribute('aria-label', excl ? 'Adresse de la page exclue' : 'Adresse de la page');
+      var rm = el('button', 'icon-btn', '✕');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', 'Retirer cette adresse');
+      rm.addEventListener('click', function () { row.remove(); if (keepOne && !box.children.length) { addUrl(box, null, keepOne); } });
+      row.appendChild(op);
+      row.appendChild(txt);
+      row.appendChild(rm);
+      box.appendChild(row);
+      return txt;
+    }
+    var boxes = {};
+    form.querySelectorAll('[data-urls]').forEach(function (box) {
+      var key = box.getAttribute('data-urls');
+      var keepOne = key === 'urls'; // pages choisies : toujours une ligne à remplir ; pages exclues : liste vide possible
+      boxes[key] = box;
+      var list = data[key] && data[key].length ? data[key] : (keepOne ? [null] : []);
+      list.forEach(function (u) { addUrl(box, u, keepOne); });
+      form.querySelector('[data-add-url="' + key + '"]').addEventListener('click', function () { addUrl(box, null, keepOne).focus(); });
+    });
+    return {
+      mode: mode,
+      urls: function (key) {
+        var out = [];
+        boxes[key].querySelectorAll('.pr-url').forEach(function (r) {
+          var text = r.querySelector('.pr-url-text').value.trim();
+          if (text) { out.push({ match: r.querySelector('.pr-url-op').value, text: text }); }
+        });
+        return out;
+      }
     };
   };
 })();

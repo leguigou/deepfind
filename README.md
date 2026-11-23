@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=27" defer
+<script src="https://search.example.com/widget/deepfind.js?v=28" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=26` en `?v=27`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=27` en `?v=28`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -399,6 +399,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Règles | Résultats selon la **page du site** (adresse), sans mot-clé : uniquement certains produits, filtre pré-coché retirable, ou exclusion (section 8) |
 | | Bannières | Image ou code HTML en haut des résultats (section 8) |
 | | Popins | Fenêtre affichée sur les pages du site choisies (accueil, adresses), avec période, délai, fréquence et statistiques (section 8) |
+| | Carrousels | Bandeaux de produits qui défilent, insérés dans un bloc des pages choisies : produits manuels, automatiques, similaires ou personnalisés, apprentissage par les clics (section 8) |
 | | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
@@ -740,6 +741,37 @@ Une popin comprend :
 - **Tester** : le favori « Tester DeepFind » (Paramètres › Intégration) affiche les popins à chaque page, sans les compter ni mémoriser leur fermeture. La page Démo de l'extranet n'affiche pas de popin.
 - Projet désactivé : aucune popin. Nécessite le widget `?v=25` ou plus récent (`?v=27` pour la hauteur minimale et la croix à l'extérieur).
 
+### Carrousels de produits
+
+**Recommandations › Carrousels** insère un bandeau de produits qui défile dans une page du site (accueil, catégorie, fiche produit…). Le widget, déjà présent sur toutes les pages, s'en charge.
+
+Un carrousel comprend :
+1. **Statut**, **durée** (en continu ou période) et **pages concernées** : comme les popins (toutes, accueil et/ou adresses, pages exclues).
+2. **Emplacement** : le **sélecteur CSS** du bloc de la page — identifiant (`#accueil-selection`) ou classe (`.category-products`) — et la position : dans le bloc (au début, à la fin), juste avant, juste après, ou à la place de son contenu ; appareils (tous, ordinateur, mobile). Le plus fiable : faire ajouter dans le thème un bloc vide dédié, ex. `<div id="deepfind-carrousel"></div>`. Si le bloc n'existe pas sur une page, rien n'y est affiché (le widget l'attend 10 secondes).
+3. **Titre** et lien **« Voir tout »** (facultatifs).
+4. **Produits** :
+   - **Produits épinglés en tête** : recherchés par nom, SKU ou marque, rangés par glisser-déposer ;
+   - **Source** : *Sélection manuelle* (uniquement les produits épinglés), *Automatique* (conditions comme les règles selon la page : marque, catégorie, type, prix, promotion, nouveauté… + tri), *Produits similaires* (sur une fiche produit : même catégorie la plus précise et/ou même marque que le produit de la page), *Personnalisé* (« Vus récemment » ou « Vous aimerez aussi », d'après l'historique du visiteur) ;
+   - **Tri** : score métier (ventes, clics, stock, marge, nouveauté), meilleures ventes 30 j, plus cliqués dans la recherche 30 j, nouveautés, plus grosses remises, mieux notés, prix ;
+   - **Apprentissage** (facultatif) : les produits sont reclassés selon leur **taux de clic dans ce carrousel** (30 jours, taux lissé : un produit encore peu montré garde le taux moyen et sa chance, un produit souvent montré et peu cliqué descend) ;
+   - nombre de produits (2 à 48), en stock uniquement.
+   Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
+5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
+
+Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. L'**aperçu des produits** de la fiche montre la sélection pour une page, un SKU de produit et un historique de test, sans enregistrer.
+
+**Statistiques** (liste et fiche, 7 / 30 / 90 jours) : **vues** (carrousel visible au moins à moitié à l'écran), **clics** sur un produit, **CTR** ; dans la fiche, les produits les plus vus avec leurs clics et CTR. Totaux par jour, sans donnée personnelle ; l'aperçu (favori « Tester DeepFind ») et la page Démo ne comptent pas. Les statistiques par produit sont purgées avec les journaux (`logs:purge`, au moins 30 jours).
+
+**Produit de la page (similaires)** : reconnu par l'adresse de la page (champ `url_path`, indexé depuis l'URL du flux). Le site peut l'indiquer directement : `<meta name="deepfind:sku" content="SKU-DU-PRODUIT">` (ou un attribut `data-df-sku`). **Après la mise à jour, lancez un import complet** pour indexer l'adresse des produits et le tri par clics.
+
+**Personnalisé et RGPD** : l'historique (20 derniers produits consultés ou cliqués, 30 jours) est gardé **dans le navigateur du visiteur** (`localStorage`), sans identifiant ; il est envoyé avec la demande de la page uniquement pour choisir les produits et n'est jamais enregistré par DeepFind. Réglage du projet, en bas de la liste des carrousels :
+- **Après consentement** (par défaut) : rien n'est gardé tant que le site n'a pas appelé `DeepFind.consent(true)` (bandeau cookies, finalité « personnalisation ») ; `DeepFind.consent(false)` efface l'historique. Avant le chargement du widget : `window.deepfindConsent = true` ;
+- **Toujours** : seulement si votre analyse RGPD le permet ;
+- **Jamais** : les carrousels personnalisés affichent leur sélection automatique.
+À faire valider par votre DPO.
+
+Délai de prise en compte : quelques minutes (configuration du widget gardée en cache par les navigateurs, produits mis en cache 5 minutes). Nécessite le widget `?v=28`.
+
 **Ordre de classement :** le nombre de mots trouvés passe en premier ; les résultats personnalisés passent avant le reste. Vérifiez l'effet de vos réglages dans l'**aperçu interne**.
 
 ## 9. Anti-robots
@@ -763,6 +795,7 @@ Une popin comprend :
 - **Contenu enregistré** : chaque recherche « finale » (pas chaque lettre tapée : « pa », « pal », « palm » sont marquées comme intermédiaires), avec les filtres, le nombre de résultats, le temps de réponse, le user-agent et les clics.
 - **Adresse IP** : jamais stockée en clair. On conserve une **empreinte** (HMAC avec `APP_SECRET`) pour compter et bloquer, et une **IP tronquée** (`203.0.113.x`) pour l'affichage. Aucun cookie.
 - **Conservation** : 90 jours par défaut (Paramètres), purge automatique chaque nuit (`logs:purge`).
+- **Carrousels** : statistiques en totaux quotidiens (par carrousel et par produit), sans donnée personnelle. L'historique des carrousels personnalisés reste dans le navigateur du visiteur, seulement avec son consentement (réglable), et n'est jamais enregistré par DeepFind (voir section 8).
 - **Popins** : statistiques en totaux quotidiens, sans donnée personnelle. Le choix « ne plus afficher pendant N jours » est gardé dans le navigateur du visiteur (`localStorage` / `sessionStorage`), sans identifiant, et n'est jamais envoyé au serveur.
 - **Mesure d'audience** (Analyse › Audience) : aucun cookie ni stockage sur l'appareil, aucune IP enregistrée ; empreinte valable une journée (clé secrète du jour détruite à la fin de la journée), puis seuls des totaux quotidiens sont gardés. Désactivable entièrement ou par type de mesure.
 - **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site, et l'absence de consentement pour la mesure d'audience (méthode conçue pour entrer dans l'exemption de la CNIL pour la mesure d'audience, à confirmer) et pour la mémorisation de la fermeture des popins (choix exprimé par le visiteur, à confirmer également). Ce README ne constitue pas un avis juridique.
@@ -853,6 +886,6 @@ Il vérifie (environ 90 contrôles) la connexion, toutes les pages, les thèmes,
 - **Flux delta** : met à jour prix, stock, champs simples et suppressions. Les nouveaux produits, catégories et attributs arrivent à l'import complet ; la réactivation d'un produit désactivé auto aussi.
 - **Recherche** : pas de recherche sémantique ou IA, pas de suggestions de requêtes.
 - **Statistiques** : recherches, clics et audience (visiteurs, appareils) ; pas encore de suivi des ventes (ajouts au panier, commandes) ni d'envoi d'événements à Google Analytics.
-- **Copie entre projets** : n'inclut pas encore les layers, filtres, tris ni les règles selon la page. Les popins sont copiées, sans leurs statistiques.
+- **Copie entre projets** : n'inclut pas encore les layers, filtres, tris ni les règles selon la page. Les popins et les carrousels sont copiés, sans leurs statistiques.
 - **Tests** : faits sous PHP 8.3 avec un **faux** Meilisearch. Il faut valider sous PHP 8.5 et le vrai Meilisearch sur le serveur de recette.
 - **Module Magento** : aucun module n'est fourni pour générer le flux. Utilisez une extension de flux du marché ou un développement interne qui produit le format décrit ci-dessus.

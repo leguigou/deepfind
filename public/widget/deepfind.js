@@ -73,7 +73,8 @@
       approx: 'Aucun résultat exact pour « %s ». Produits approchants :', approxTitle: 'Produits approchants',
       price: 'Prix', min: 'Min.', max: 'Max.', apply: 'Valider', reset: 'Réinitialiser', search: 'Rechercher',
       pageLimited: 'Résultats limités à', pageRemove: 'Retirer le filtre « %s » et chercher dans tout le catalogue',
-      pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »', popin: 'Message' },
+      pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »', popin: 'Message',
+      carousel: 'Sélection de produits', prev: 'Produits précédents', next: 'Produits suivants', seeMore: 'Voir tout' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
@@ -82,7 +83,8 @@
       approx: 'No exact match for “%s”. Similar products:', approxTitle: 'Similar products',
       price: 'Price', min: 'Min.', max: 'Max.', apply: 'Apply', reset: 'Reset', search: 'Search',
       pageLimited: 'Results limited to', pageRemove: 'Remove the “%s” filter and search the whole catalogue',
-      pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”', popin: 'Message' }
+      pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”', popin: 'Message',
+      carousel: 'Product selection', prev: 'Previous products', next: 'Next products', seeMore: 'See all' }
   };
   var t = T[cfg.lang] || T.fr;
   var money;
@@ -92,7 +94,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=24'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=25'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -741,6 +743,7 @@
   }
 
   function track(type, id, position, cr) {
+    if (type === 'product') { historyAdd(id); }
     try {
       var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, q: state.q, doc_type: type, doc_id: id, position: String(position), sid: sid, d: device });
       if (noAudience) { body.set('na', '1'); }
@@ -1172,6 +1175,7 @@
     restoreUrlState();
     pageReady = true;
     schedulePopins();
+    startCarousels();
   }
 
   // ------------------------------------------------------------------ Popins (extranet › Recommandations › Popins)
@@ -1322,6 +1326,237 @@
     if (p) { popinTimer = setTimeout(firePopin, Math.min(600, Math.max(0, parseInt(p.delay, 10) || 0)) * 1000); }
   }
 
+  // ------------------------------------------------------------------ Carrousels de produits (extranet › Recommandations › Carrousels)
+  /*
+   * Si le projet a des carrousels actifs, le widget demande ceux de la page (/carousels : chemin de la page, SKU du produit
+   * si le site l'indique, historique du visiteur s'il a consenti) et les insère à l'emplacement choisi (sélecteur CSS + position).
+   * Cartes produit identiques à celles de la recherche (modèle et couleurs du layer actif) ; défilement au doigt, à la souris
+   * (glisser), par les flèches, ou automatique. Mesure : carrousel vu à l'écran, produits vus, clics (sans identifiant).
+   * Historique (« vus récemment », « vous aimerez aussi ») : dans le navigateur du visiteur seulement (localStorage), uniquement
+   * si le réglage du projet l'autorise : « always », ou « consent » après DeepFind.consent(true) appelé par le bandeau cookies du site.
+   */
+  var carouselsWanted = false;
+  var carouselsLoaded = false;
+  var personalMode = 'consent';
+  var CONSENT_KEY = 'df-consent';
+  var HISTORY_KEY = 'df-hist:' + cfg.key + ':' + cfg.lang;
+  function consentOk() {
+    if (personalMode === 'always') { return true; }
+    if (personalMode !== 'consent') { return false; }
+    try { return window.localStorage.getItem(CONSENT_KEY) === '1'; } catch (e) { return false; }
+  }
+  function historyGet() {
+    try {
+      var list = JSON.parse(window.localStorage.getItem(HISTORY_KEY) || '[]');
+      var limit = Date.now() - 30 * 86400000; // 30 jours
+      return Array.isArray(list) ? list.filter(function (h) { return h && typeof h.id === 'string' && h.t > limit; }) : [];
+    } catch (e) { return []; }
+  }
+  function historyAdd(id) {
+    if (!id || !consentOk() || preview) { return; }
+    id = String(id);
+    if (!/^[A-Za-z0-9_.:-]{1,64}$/.test(id)) { return; }
+    try {
+      var list = historyGet().filter(function (h) { return h.id !== id; });
+      list.unshift({ id: id, t: Date.now() });
+      window.localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 20)));
+    } catch (e) { /* stockage indisponible */ }
+  }
+  // Consentement donné ou retiré par le site (bandeau cookies) : DeepFind.consent(true | false)
+  function setConsent(on) {
+    try {
+      if (on) { window.localStorage.setItem(CONSENT_KEY, '1'); }
+      else {
+        window.localStorage.removeItem(CONSENT_KEY);
+        Object.keys(window.localStorage).forEach(function (k) { if (k.indexOf('df-hist:') === 0) { window.localStorage.removeItem(k); } });
+      }
+    } catch (e) { /* stockage indisponible */ }
+  }
+  // SKU du produit de la page, si le site l'indique (<meta name="deepfind:sku" content="…"> ou data-df-sku) : sinon, l'adresse suffit
+  function pageSku() {
+    var m = document.querySelector('meta[name="deepfind:sku"]');
+    var d = document.querySelector('[data-df-sku]');
+    var v = (m && m.getAttribute('content')) || (d && d.getAttribute('data-df-sku')) || '';
+    return String(v).trim().slice(0, 64);
+  }
+  function carouselEvent(c, e, ids) {
+    if (noAudience || !ids.length) { return; }
+    try {
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, id: String(c.id), e: e });
+      ids.forEach(function (id) { body.append('p[]', String(id)); });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/carousel', body))) {
+        fetch(cfg.api + '/carousel', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
+      }
+    } catch (e2) { /* mesure facultative */ }
+  }
+  function startCarousels() {
+    if (!carouselsWanted || carouselsLoaded || !pageReady || demo) { return; }
+    carouselsLoaded = true;
+    var p = new URLSearchParams({ key: cfg.key, lang: cfg.lang, page: location.pathname || '/' });
+    var sku = pageSku();
+    if (sku) { p.set('sku', sku); }
+    // historique envoyé seulement avec le consentement (vide : sert à reconnaître le produit de la page pour l'historique)
+    if (consentOk() && !preview) { p.set('h', historyGet().map(function (h) { return h.id; }).join(',')); }
+    fetch(cfg.api + '/carousels?' + p.toString(), { credentials: 'omit', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+      .then(function (d) {
+        if (d.page_product) { historyAdd(d.page_product); }
+        (d.carousels || []).forEach(placeCarousel);
+      })
+      .catch(function () { /* carrousels facultatifs */ });
+  }
+  // Emplacement : le bloc peut apparaître après le chargement (thèmes qui construisent la page en JavaScript) : attente 10 s au plus
+  function placeCarousel(c) {
+    if ((c.device === 'desktop' && mobile.matches) || (c.device === 'mobile' && !mobile.matches) || !c.products || !c.products.length) { return; }
+    var find = function () { try { return document.querySelector(c.selector); } catch (e) { return null; } };
+    var put = function (target) {
+      if (document.querySelector('.df-carousel[data-df-carousel="' + c.id + '"]')) { return; }
+      var box = renderCarousel(c);
+      var mode = c.insert;
+      if (mode === 'before') { target.parentNode.insertBefore(box, target); }
+      else if (mode === 'after') { target.parentNode.insertBefore(box, target.nextSibling); }
+      else if (mode === 'prepend') { target.insertBefore(box, target.firstChild); }
+      else if (mode === 'replace') { target.textContent = ''; target.appendChild(box); }
+      else { target.appendChild(box); }
+      box.__dfStart();
+    };
+    var target = find();
+    if (target) { put(target); return; }
+    if (!window.MutationObserver) { return; }
+    var obs = new MutationObserver(function () { var t0 = find(); if (t0) { obs.disconnect(); put(t0); } });
+    obs.observe(document.body, { childList: true, subtree: true });
+    setTimeout(function () { obs.disconnect(); }, 10000);
+  }
+  function renderCarousel(c) {
+    var box = el('section', 'df-carousel df-carousel-' + c.id);
+    box.setAttribute('data-df-carousel', String(c.id));
+    box.setAttribute('aria-label', c.title || t.carousel);
+    box.style.setProperty('--df-per-d', String(Math.min(8, Math.max(1, parseInt(c.per_view_desktop, 10) || 4))));
+    box.style.setProperty('--df-per-m', String(Math.min(4, Math.max(1, parseInt(c.per_view_mobile, 10) || 2))));
+    // couleurs du layer actif (comme la fenêtre de recherche)
+    var hex = function (v) { return typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : ''; };
+    if (cfg.colors) {
+      if (hex(cfg.colors.primary)) { box.style.setProperty('--df-accent', cfg.colors.primary); }
+      if (hex(cfg.colors.contrast)) { box.style.setProperty('--df-on-accent', cfg.colors.contrast); }
+      if (hex(cfg.colors.text)) { box.style.setProperty('--df-text', cfg.colors.text); }
+    }
+    if (c.css && !document.querySelector('style[data-deepfind="carousel-' + c.id + '"]')) {
+      var st = document.createElement('style');
+      st.setAttribute('data-deepfind', 'carousel-' + c.id);
+      st.textContent = String(c.css); // texte CSS (aucun HTML interprété)
+      document.head.appendChild(st);
+    }
+    var more = safeUrl(c.more_url) || (/^\/(?!\/)/.test(c.more_url || '') ? c.more_url : '');
+    if (c.title || more) {
+      var head = el('div', 'df-car-head');
+      if (c.title) { head.appendChild(el('h2', 'df-car-title', c.title)); }
+      if (more) { var a = el('a', 'df-car-more', c.more_label || t.seeMore); a.href = more; head.appendChild(a); }
+      box.appendChild(head);
+    }
+    var viewport = el('div', 'df-car-viewport');
+    var track = el('div', 'df-car-track');
+    track.setAttribute('role', 'list');
+    var prev = el('button', 'df-car-btn df-car-prev', '‹');
+    var next = el('button', 'df-car-btn df-car-next', '›');
+    [[prev, t.prev], [next, t.next]].forEach(function (b) { b[0].type = 'button'; b[0].setAttribute('aria-label', b[1]); });
+    var cards = [];
+    c.products.forEach(function (p, i) {
+      var href = safeUrl(p.url) || '#';
+      var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
+      a.href = href;
+      a.setAttribute('role', 'listitem');
+      var custom = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
+      if (custom) { a.classList.add('df-card-tpl'); }
+      templateCard(a, p, custom || DEFAULT_CARD);
+      a.__dfId = String(p.id);
+      onOpen(a, function () {
+        if (a.__dfDragged) { return; }
+        historyAdd(p.id);
+        carouselEvent(c, 'c', [p.id]);
+      });
+      cards.push(a);
+      track.appendChild(a);
+    });
+    viewport.appendChild(prev);
+    viewport.appendChild(track);
+    viewport.appendChild(next);
+    box.appendChild(viewport);
+
+    // ---- flèches
+    var page = function (dir) { track.scrollBy({ left: dir * track.clientWidth * 0.9, behavior: 'smooth' }); };
+    prev.addEventListener('click', function () { page(-1); });
+    next.addEventListener('click', function () { page(1); });
+    var atEnd = function () { return track.scrollLeft + track.clientWidth >= track.scrollWidth - 4; };
+    var sync = function () { prev.disabled = track.scrollLeft <= 4; next.disabled = atEnd(); };
+
+    // ---- glisser à la souris (au doigt : défilement natif) ; un glissement n'ouvre pas le produit
+    var drag = null;
+    track.addEventListener('pointerdown', function (ev) {
+      if (ev.pointerType !== 'mouse' || ev.button !== 0) { return; }
+      drag = { x: ev.clientX, left: track.scrollLeft, moved: false };
+    });
+    window.addEventListener('pointermove', function (ev) {
+      if (!drag) { return; }
+      var dx = ev.clientX - drag.x;
+      if (!drag.moved && Math.abs(dx) > 5) { drag.moved = true; track.classList.add('df-dragging'); }
+      if (drag.moved) { track.scrollLeft = drag.left - dx; ev.preventDefault(); }
+    });
+    window.addEventListener('pointerup', function () {
+      if (!drag) { return; }
+      var moved = drag.moved;
+      drag = null;
+      track.classList.remove('df-dragging');
+      if (moved) {
+        cards.forEach(function (a) { a.__dfDragged = true; });
+        setTimeout(function () { cards.forEach(function (a) { a.__dfDragged = false; }); }, 50);
+      }
+    });
+    track.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('a') && ev.target.closest('a').__dfDragged) { ev.preventDefault(); } }, true);
+    track.addEventListener('dragstart', function (ev) { ev.preventDefault(); }); // images et liens : pas de glisser-déposer du navigateur
+
+    // ---- produits vus : visibles dans le bandeau au moment où il est à l'écran, puis au fil du défilement
+    var seen = {};
+    var visibleIds = function () {
+      var r = track.getBoundingClientRect();
+      return cards.filter(function (a) {
+        var b = a.getBoundingClientRect();
+        return b.right > r.left + b.width * 0.5 && b.left < r.right - b.width * 0.5;
+      }).map(function (a) { return a.__dfId; }).filter(function (id) { if (seen[id]) { return false; } seen[id] = true; return true; });
+    };
+    var onScreen = false;
+    var scrollTimer = null;
+    track.addEventListener('scroll', function () {
+      sync();
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () { if (onScreen) { carouselEvent(c, 'p', visibleIds()); } }, 600);
+    }, { passive: true });
+
+    // ---- défilement automatique (pas si le visiteur préfère moins d'animations ; en pause au survol, au toucher, hors écran)
+    var auto = Math.max(0, parseInt(c.autoplay, 10) || 0);
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var paused = false;
+    ['mouseenter', 'focusin', 'touchstart'].forEach(function (e) { box.addEventListener(e, function () { paused = true; }, { passive: true }); });
+    ['mouseleave', 'focusout'].forEach(function (e) { box.addEventListener(e, function () { paused = false; }); });
+    box.__dfStart = function () {
+      sync();
+      if ('IntersectionObserver' in window) {
+        var counted = false;
+        new IntersectionObserver(function (entries) {
+          onScreen = entries[0].isIntersecting;
+          if (onScreen && !counted) { counted = true; carouselEvent(c, 'v', visibleIds()); }
+        }, { threshold: 0.5 }).observe(box);
+      } else { onScreen = true; carouselEvent(c, 'v', visibleIds()); }
+      if (auto && !reduced && cards.length > 1) {
+        setInterval(function () {
+          if (paused || !onScreen || document.hidden) { return; }
+          if (atEnd()) { track.scrollTo({ left: 0, behavior: 'smooth' }); } else { page(1); }
+        }, auto * 1000);
+      }
+      window.addEventListener('resize', sync);
+    };
+    return box;
+  }
+
   // ------------------------------------------------------------------ Démarrage
   /*
    * Le widget ne prend la main (fenêtre de recherche, neutralisation de l'autocomplétion d'origine) que si l'API confirme
@@ -1348,6 +1583,8 @@
   } catch (e) { preview = ds.preview || ''; }
   if (preview && !/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9a-f]{24}$/.test(preview)) { preview = ''; }
   noAudience = demo || preview !== '';
+  // consentement déclaré par le site avant le chargement du widget : window.deepfindConsent = true | false
+  if (window.deepfindConsent === true || window.deepfindConsent === false) { setConsent(window.deepfindConsent); }
   // Logo DeepFind (loupe à cercles), dessiné en SVG sans HTML inséré
   function dfLogo() {
     var NS = 'http://www.w3.org/2000/svg';
@@ -1399,7 +1636,8 @@
     if (preview) { return; } // ne pas mélanger l'aperçu avec la configuration du site
     try {
       window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, hover_image: c.hover_image !== false, audience: c.audience || false,
-        layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [], t: Date.now() }));
+        layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [],
+        carousels: c.carousels === true, personal: typeof c.personal === 'string' ? c.personal : 'consent', t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
   var TYPES = { below: 1, fullscreen: 1, floating: 1, embedded: 1 };
@@ -1410,6 +1648,9 @@
     if (c.hover_image !== undefined) { cfg.hoverImage = c.hover_image !== false; }
     // popins : la liste la plus récente sert au moment de l'affichage (après le délai)
     if (Array.isArray(c.popins)) { popinList = c.popins; schedulePopins(); }
+    // carrousels : demandés une fois par page, dès que la configuration indique qu'il en existe
+    if (typeof c.personal === 'string') { personalMode = c.personal; }
+    if (c.carousels === true) { carouselsWanted = true; startCarousels(); }
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
     if (ds.native !== 'keep' && ds.native !== 'block' && c.block_native !== undefined) { cfg.blockNative = c.block_native !== false; }
@@ -1489,7 +1730,9 @@
     preview: preview,
     isActive: function () { return started; },
     open: function (q) { if (!started) { return; } if (q) { state.q = q; resetFilters(); } open(); search(false); },
-    close: close
+    close: close,
+    // consentement du visiteur aux carrousels personnalisés (à appeler par le bandeau cookies du site) ; false efface l'historique
+    consent: function (on) { setConsent(!!on); }
   };
 
   var known = readCfg();

@@ -433,3 +433,67 @@ CREATE TABLE IF NOT EXISTS popin_stats (
   closes INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (project_id, popin_id, day)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Carrousels de produits (Recommandations › Carrousels) : bandeau de produits inséré par le widget dans une page du site
+-- (sélecteur CSS + position), sur les pages choisies comme les popins. Produits : sélection manuelle (ordre imposé),
+-- automatiques (conditions + tri), similaires au produit de la page, ou personnalisés (historique gardé dans le navigateur
+-- du visiteur, avec son consentement) ; « apprentissage » : classement selon le taux de clic dans le carrousel.
+CREATE TABLE IF NOT EXISTS carousels (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  position INT UNSIGNED NOT NULL DEFAULT 0,
+  starts_at DATE NULL,
+  ends_at DATE NULL,
+  pages ENUM('all','custom') NOT NULL DEFAULT 'all',
+  home TINYINT(1) NOT NULL DEFAULT 0,
+  urls TEXT NOT NULL,
+  exclude_urls TEXT NOT NULL,
+  device ENUM('all','desktop','mobile') NOT NULL DEFAULT 'all',
+  selector VARCHAR(300) NOT NULL DEFAULT '',
+  insert_mode ENUM('append','prepend','before','after','replace') NOT NULL DEFAULT 'append',
+  title VARCHAR(190) NOT NULL DEFAULT '',
+  more_url VARCHAR(500) NOT NULL DEFAULT '',
+  more_label VARCHAR(60) NOT NULL DEFAULT '',
+  source ENUM('manual','auto','similar','personal') NOT NULL DEFAULT 'auto',
+  items TEXT NOT NULL,
+  match_all TINYINT(1) NOT NULL DEFAULT 1,
+  conditions TEXT NOT NULL,
+  sort_by VARCHAR(20) NOT NULL DEFAULT 'biz',
+  similar_by ENUM('category','brand','category_brand') NOT NULL DEFAULT 'category',
+  personal_mode ENUM('recent','recommended') NOT NULL DEFAULT 'recommended',
+  learning TINYINT(1) NOT NULL DEFAULT 0,
+  in_stock_only TINYINT(1) NOT NULL DEFAULT 1,
+  max_items SMALLINT UNSIGNED NOT NULL DEFAULT 12,
+  per_view_desktop TINYINT UNSIGNED NOT NULL DEFAULT 4,
+  per_view_mobile TINYINT UNSIGNED NOT NULL DEFAULT 2,
+  autoplay SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  custom_css MEDIUMTEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang, position)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Statistiques des carrousels, agrégées par jour (aucune donnée personnelle) : carrousel vu à l'écran, clics.
+CREATE TABLE IF NOT EXISTS carousel_stats (
+  project_id INT UNSIGNED NOT NULL,
+  carousel_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  views INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, carousel_id, day)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Par produit et par jour : affichages (produit visible dans le carrousel) et clics ; sert à l'apprentissage.
+CREATE TABLE IF NOT EXISTS carousel_product_stats (
+  project_id INT UNSIGNED NOT NULL,
+  carousel_id INT UNSIGNED NOT NULL,
+  product_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  day DATE NOT NULL,
+  views INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, carousel_id, product_id, day),
+  KEY idx_day (day)
+) ENGINE=InnoDB;

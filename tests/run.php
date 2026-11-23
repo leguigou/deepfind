@@ -1066,6 +1066,107 @@ if ($base) {
     DeepFind\Db::exec('DELETE FROM popin_stats');
     DeepFind\CacheVersion::bump();
 
+    // ------------------------------------------------ Carrousels de produits (Recommandations › Carrousels)
+    $CA = DeepFind\Rules\Carousels::class;
+    foreach (['carousels', 'carousel_stats', 'carousel_product_stats'] as $t0) {
+        DeepFind\Db::exec("DELETE FROM `$t0`");
+    }
+    DeepFind\Settings::set('carousel_personal', 'consent');
+    [$caBad, $caErr] = $CA::sanitize(['name' => '', 'selector' => '', 'source' => 'manual', 'items' => []], 'fr');
+    check('carrousels : nom, emplacement et produits (sélection manuelle) obligatoires', $caBad === null && count($caErr) === 3, json_encode($caErr));
+    check('carrousels : sélecteur CSS contrôlé, CSS personnalisé nettoyé',
+        $CA::selector('#home .bloc > div') === '#home .bloc > div' && $CA::selector('div{x}') === null && $CA::selector('a</style>') === null
+        && $CA::css("@import url(x.css);\n.df-carousel{color:red}</style><script>") === ".df-carousel{color:red}script");
+    $caDocs = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'in_stock = 1', 200, 0,
+        ['id', 'sku', 'brand', 'url', 'url_path', 'category_names', 'category_paths', 'biz_score', 'in_stock']);
+    $caRef = array_values(array_filter($caDocs, static fn ($d) => in_array('Palmes réglables', $d['category_names'] ?? [], true)))[0] ?? null;
+    check('carrousels : chemin de la page produit indexé (url_path)', $caRef !== null && ($caRef['url_path'] ?? '') === DeepFind\Rules\PageRules::normalizePath($caRef['url']),
+        json_encode($caRef));
+    $caMk = static fn (array $x) => array_merge(['active' => true, 'selector' => '#reco', 'insert_mode' => 'after', 'title' => 'Nos palmes', 'max_items' => 4, 'in_stock_only' => true, 'sort_by' => 'biz'], $x);
+    [$caAuto] = $CA::sanitize($caMk(['name' => 'Auto C4', 'source' => 'auto', 'pages' => 'custom', 'home' => true,
+        'urls' => [['match' => 'contains', 'text' => '/plongee/']], 'exclude_urls' => [['match' => 'contains', 'text' => '/checkout']],
+        'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['C4']]]]), 'fr');
+    $idCaAuto = $CA::save('fr', $caAuto, null);
+    $caA = $CA::products('fr', $CA::find($idCaAuto, 'fr'));
+    $bizA = array_map(static fn ($p) => array_values(array_filter($caDocs, static fn ($d) => $d['id'] === $p['id']))[0]['biz_score'] ?? -1, $caA);
+    $sortedBiz = $bizA;
+    rsort($sortedBiz);
+    check('carrousels : automatique (conditions, en stock, nombre, tri score métier, sans marge)', count($caA) > 0 && count($caA) <= 4
+        && array_unique(array_column($caA, 'brand')) === ['C4'] && !in_array(false, array_column($caA, 'in_stock'), true) && $bizA === $sortedBiz
+        && !str_contains(json_encode($caA), 'margin') && !str_contains(json_encode($caA), 'biz_score'), json_encode([$caA, $bizA]));
+    check('carrousels : pages (accueil, adresse, exclusion)', $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/') && $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/plongee/x.html')
+        && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/chasse.html') && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/plongee/checkout/'));
+    $caSkus = array_slice(array_column(array_values(array_filter($caDocs, static fn ($d) => ($d['brand'] ?? '') !== 'C4')), 'sku'), 0, 2);
+    [$caMan] = $CA::sanitize($caMk(['name' => 'Manuel', 'source' => 'manual', 'items' => [$caSkus[1], $caSkus[0], 'INCONNU-1']]), 'fr');
+    $caM = $CA::products('fr', $caMan + ['id' => 0], null, null, false);
+    [$caPin] = $CA::sanitize($caMk(['name' => 'Épinglés + auto', 'source' => 'auto', 'items' => [$caSkus[0]],
+        'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['C4']]]]), 'fr');
+    $caP = $CA::products('fr', $caPin + ['id' => 0], null, null, false);
+    check('carrousels : sélection manuelle dans l\'ordre (produit inconnu ignoré) ; épinglés en tête puis automatique',
+        array_column($caM, 'sku') === [$caSkus[1], $caSkus[0]] && ($caP[0]['sku'] ?? '') === $caSkus[0] && count($caP) === 4
+        && array_unique(array_column(array_slice($caP, 1), 'brand')) === ['C4'], json_encode([array_column($caM, 'sku'), array_column($caP, 'sku')]));
+    [$caSim] = $CA::sanitize($caMk(['name' => 'Similaires', 'source' => 'similar', 'similar_by' => 'category', 'max_items' => 8]), 'fr');
+    $idCaSim = $CA::save('fr', $caSim, null);
+    $fp = $CA::forPage('fr', ['page' => $caRef['url_path'], 'history' => null]);
+    $simC = array_values(array_filter($fp['carousels'], static fn ($c) => $c['id'] === $idCaSim))[0] ?? null;
+    $simCats = array_map(static fn ($p) => array_values(array_filter($caDocs, static fn ($d) => $d['id'] === $p['id']))[0]['category_names'] ?? [], $simC['products'] ?? []);
+    check('carrousels : similaires (même catégorie précise, sans le produit de la page)', $fp['page_product'] === $caRef['id'] && $simC !== null
+        && count($simC['products']) > 0 && !in_array($caRef['id'], array_column($simC['products'], 'id'), true)
+        && array_filter($simCats, static fn ($cats) => !in_array('Palmes réglables', $cats, true)) === [] && ($simC['selector'] ?? '') === '#reco'
+        && !isset($simC['name']), json_encode([$fp['page_product'], $simC]));
+    $fpHome = $CA::forPage('fr', ['page' => '/', 'history' => null]);
+    $simHome = array_values(array_filter($fpHome['carousels'], static fn ($c) => $c['id'] === $idCaSim))[0] ?? null;
+    check('carrousels : similaires sans produit dans la page → sélection automatique', $fpHome['page_product'] === null && $simHome !== null && count($simHome['products']) === 8);
+    [$caPer] = $CA::sanitize($caMk(['name' => 'Vus récemment', 'source' => 'personal', 'personal_mode' => 'recent', 'max_items' => 6]), 'fr');
+    $idCaPer = $CA::save('fr', $caPer, null);
+    $hist = array_slice(array_column($caDocs, 'id'), 3, 3);
+    $perC = static fn ($fp) => array_values(array_filter($fp['carousels'], static fn ($c) => $c['id'] === $idCaPer))[0]['products'] ?? [];
+    $withHist = $perC($CA::forPage('fr', ['page' => '/', 'history' => [...$hist, 'bad id!']]));
+    DeepFind\Settings::set('carousel_personal', 'off');
+    $off = $perC($CA::forPage('fr', ['page' => '/', 'history' => $hist]));
+    DeepFind\Settings::set('carousel_personal', 'consent');
+    [$caRec] = $CA::sanitize($caMk(['name' => 'Pour vous', 'source' => 'personal', 'personal_mode' => 'recommended', 'max_items' => 6]), 'fr');
+    $recP = $CA::products('fr', $caRec + ['id' => 0], null, [$caRef['id']], false);
+    check('carrousels : personnalisé (vus récemment dans l\'ordre ; « jamais » = sélection automatique ; vous aimerez aussi sans les produits vus)',
+        array_column($withHist, 'id') === $hist && array_column($off, 'id') !== $hist && count($off) === 6
+        && count($recP) > 0 && !in_array($caRef['id'], array_column($recP, 'id'), true), json_encode([array_column($withHist, 'id'), $hist, array_column($recP, 'id')]));
+    // API : configuration, carrousels de la page, événements, apprentissage
+    DeepFind\CacheVersion::bump();
+    [, $cfC] = $get("/api/v1/config?key=$key&lang=fr");
+    [$cC, $dC] = $get("/api/v1/carousels?key=$key&lang=fr&page=" . rawurlencode('/fr/plongee/palmes.html'));
+    $apiAuto = array_values(array_filter($dC['carousels'] ?? [], static fn ($c) => $c['id'] === $idCaAuto))[0] ?? null;
+    check('carrousels : API (configuration, carrousels de la page, produits publics uniquement)', ($cfC['carousels'] ?? null) === true && ($cfC['personal'] ?? '') === 'consent'
+        && $cC === 200 && $apiAuto !== null && count($apiAuto['products']) > 0 && !str_contains(json_encode($dC), 'margin') && array_key_exists('page_product', $dC) && $dC['page_product'] === null,
+        json_encode([$cfC['carousels'] ?? null, $cC, $dC]));
+    $learnIds = array_column($CA::products('fr', $CA::find($idCaAuto, 'fr')), 'id');
+    $lastId = end($learnIds);
+    $evCodes = [];
+    for ($i = 0; $i < 3; $i++) {
+        $evCodes[] = $post('/api/v1/carousel', ['key' => $key, 'lang' => 'fr', 'id' => $idCaAuto, 'e' => 'v', 'p' => $learnIds]);
+    }
+    for ($i = 0; $i < 3; $i++) {
+        $evCodes[] = $post('/api/v1/carousel', ['key' => $key, 'lang' => 'fr', 'id' => $idCaAuto, 'e' => 'c', 'p' => [$lastId]]);
+    }
+    $evCodes[] = $post('/api/v1/carousel', ['key' => $key, 'lang' => 'fr', 'id' => 99999, 'e' => 'v', 'p' => $learnIds]);
+    $evCodes[] = $post('/api/v1/carousel', ['key' => $key, 'lang' => 'fr', 'id' => $idCaAuto, 'e' => 'v', 'p' => $learnIds, 'na' => '1']);
+    usleep(400000);
+    $caSt = $CA::stats([$idCaAuto], 30)[$idCaAuto];
+    $ps = $CA::productStats($idCaAuto, [$lastId, $learnIds[0]], 30);
+    $learnRow = $CA::find($idCaAuto, 'fr');
+    $learnRow['learning'] = true;
+    $learned = array_column($CA::products('fr', $learnRow, null, null, false), 'id');
+    check('carrousels : vues et clics comptés (par carrousel et par produit), carrousel inconnu et aperçu ignorés',
+        array_unique($evCodes) === [204] && $caSt === ['views' => 3, 'clicks' => 3, 'ctr' => 100.0] && ($ps[$lastId] ?? null) === ['views' => 3, 'clicks' => 3]
+        && ($ps[$learnIds[0]]['clicks'] ?? -1) === 0, json_encode([$evCodes, $caSt, $ps]));
+    check('carrousels : apprentissage (le produit le plus cliqué remonte en tête)', count($learnIds) > 1 && ($learned[0] ?? '') === $lastId, json_encode([$learnIds, $learned]));
+    $CA::delete($idCaAuto, 'fr');
+    check('carrousels : suppression (statistiques comprises)', $CA::find($idCaAuto, 'fr') === null
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM carousel_product_stats WHERE carousel_id = ?', [$idCaAuto]) === 0);
+    foreach (['carousels', 'carousel_stats', 'carousel_product_stats'] as $t0) {
+        DeepFind\Db::exec("DELETE FROM `$t0`");
+    }
+    DeepFind\CacheVersion::bump();
+
     // Photo au survol d'un produit (Paramètres › Widget sur le site)
     [, $cfH1] = $get("/api/v1/config?key=$key&lang=fr");
     DeepFind\Settings::set('widget_hover_image', '0');
