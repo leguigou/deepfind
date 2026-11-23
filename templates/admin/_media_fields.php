@@ -1,12 +1,12 @@
 <?php
-/** Contenu d'une bannière ou d'une popin : mode visuel (images ordinateur / mobile, texte alternatif, lien) ou code HTML.
- *  Géré par editor-tools.js (DFImageSlots) et la page appelante. Variables : $mediaSizes [clé => [libellé, taille conseillée]], $maxKb. */
+/** Contenu d'une bannière ou d'une popin : images ordinateur / mobile (texte alternatif, lien) ou contenu HTML,
+ *  rédigé dans l'éditeur visuel ou en code. Géré par editor-tools.js (DFImageSlots, DFWysiwyg) et la page appelante. Variables : $mediaSizes [clé => [libellé, taille conseillée]], $maxKb. */
 ?>
       <div class="bn-panel">
         <label class="bn-mode">Mode
           <select data-f="mode">
-            <option value="visual">Configuration visuelle</option>
-            <option value="code">Configuration par code</option>
+            <option value="visual">Image (ordinateur et mobile)</option>
+            <option value="code">Contenu HTML (éditeur visuel ou code)</option>
           </select>
         </label>
 
@@ -51,8 +51,15 @@
         </div>
 
         <div data-mode-panel="code" hidden>
-          <div class="bn-code-head"><span>HTML</span><button type="button" class="icon-btn" data-copy aria-label="Copier le code">⧉</button></div>
-          <textarea data-f="html" class="bn-code-area" rows="10" spellcheck="false" placeholder="&lt;a href=&quot;https://www.example.com/…&quot;&gt;&lt;img src=&quot;https://…&quot; alt=&quot;…&quot;&gt;&lt;/a&gt;"></textarea>
-          <small class="muted">Balises autorisées : liens, images (picture / source), textes et blocs. Les scripts, iframes, formulaires, événements (onclick…) et liens javascript: sont retirés à l'enregistrement.</small>
+          <div class="wy-tabs" role="tablist" aria-label="Façon de rédiger le contenu">
+            <button type="button" role="tab" class="wy-tab" data-wy-tab="visual" aria-selected="true">Éditeur visuel</button>
+            <button type="button" role="tab" class="wy-tab" data-wy-tab="code" aria-selected="false">Code HTML</button>
+          </div>
+          <div data-wy-panel="visual" class="wy" data-wy></div>
+          <div data-wy-panel="code" hidden>
+            <div class="bn-code-head"><span>HTML</span><button type="button" class="icon-btn" data-copy aria-label="Copier le code">⧉</button></div>
+            <textarea data-f="html" class="bn-code-area" rows="10" spellcheck="false" placeholder="&lt;a href=&quot;https://www.example.com/…&quot;&gt;&lt;img src=&quot;https://…&quot; alt=&quot;…&quot;&gt;&lt;/a&gt;"></textarea>
+          </div>
+          <small class="muted">L'éditeur visuel et le code HTML modifient le même contenu. Balises autorisées : liens, images, titres, paragraphes, listes, textes et blocs, avec leur mise en forme (couleur, alignement…). Les scripts, iframes, formulaires, événements (onclick…) et liens javascript: sont retirés à l'enregistrement.</small>
         </div>
       </div>

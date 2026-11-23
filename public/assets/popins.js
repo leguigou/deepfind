@@ -85,6 +85,11 @@
     f('mode').addEventListener('change', showMode);
     showMode();
     window.DFImageSlots(form);
+    // contenu HTML : éditeur visuel, aperçu à la largeur maximale de la popin
+    var wy = window.DFWysiwyg(form);
+    var syncWidth = function () { if (wy) { wy.setWidth(parseInt(f('max_width').value, 10) || 0); } };
+    f('max_width').addEventListener('input', syncWidth);
+    syncWidth();
     form.querySelector('[data-copy]').addEventListener('click', function () {
       var t = f('html');
       if (navigator.clipboard) { navigator.clipboard.writeText(t.value); } else { t.select(); document.execCommand('copy'); }

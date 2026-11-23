@@ -28,6 +28,7 @@
 
     // Images ordinateur / mobile (editor-tools.js)
     window.DFImageSlots(form);
+    window.DFWysiwyg(form); // contenu HTML : éditeur visuel
 
     form.querySelector('[data-copy]').addEventListener('click', function () {
       var t = f('html');

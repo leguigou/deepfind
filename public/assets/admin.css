@@ -1009,3 +1009,37 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .pp-table .bn-thumb { width: 64px; height: 40px; }
 .pp-except { display: block; margin-top: 2px; }
 .pp-table .bn-cell { min-width: 200px; }
+
+/* ---------- Éditeur visuel du contenu HTML (bannières, popins) : aperçu proche du site (fond blanc dans les deux thèmes) */
+.wy-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.wy-tab { padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.wy-tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wy { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.wy-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.wy-btn { display: inline-grid; place-items: center; min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.wy-btn:hover, .wy-color:hover { background: var(--surface); border-color: var(--border); }
+.wy-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.wy-btn:focus-visible, .wy-color:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.wy-b { font-weight: 800; } .wy-i { font-style: italic; font-family: Georgia, serif; } .wy-u { text-decoration: underline; }
+.wy-block { width: auto; margin: 0; padding: 6px 8px; height: 34px; }
+.wy-sep { width: 1px; height: 22px; margin: 0 4px; background: var(--border); }
+.wy-color { position: relative; display: inline-grid; place-items: center; width: 34px; height: 34px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+.wy-color-a { font-weight: 800; line-height: 1; padding-bottom: 1px; border-bottom: 4px solid; }
+.wy-color input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; cursor: pointer; }
+.wy-pop { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; padding: 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.wy-pop[hidden], .wy-pop [hidden] { display: none !important; }
+.wy-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 220px; margin: 0; }
+.wy-field input { margin: 0; }
+.wy-check { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+.wy-pop-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.wy-msg { font-size: 13px; }
+.wy-area { position: relative; box-sizing: border-box; min-height: 220px; max-height: 560px; overflow: auto; margin: 0 auto; padding: 28px 26px 26px; background: #fff; color: #1d2433;
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; outline: none; overflow-wrap: anywhere; }
+.wy-area:focus { box-shadow: inset 0 0 0 2px var(--accent); }
+.wy-area.is-empty::before { content: attr(data-placeholder); color: #8a90a0; pointer-events: none; position: absolute; }
+.wy-area h2 { margin: 0 0 .5em; font-size: 1.6em; line-height: 1.2; color: inherit; }
+.wy-area h3 { margin: 0 0 .5em; font-size: 1.25em; line-height: 1.25; color: inherit; }
+.wy-area p, .wy-area ul, .wy-area ol { margin: 0 0 .8em; }
+.wy-area ul, .wy-area ol { padding-left: 1.4em; }
+.wy-area img { max-width: 100%; height: auto; }
+.wy-area a { color: #1069f9; }
