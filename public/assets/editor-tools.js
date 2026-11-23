@@ -507,6 +507,8 @@
     return {
       // largeur de l'aperçu (popins : largeur maximale choisie)
       setWidth: function (px) { area.style.maxWidth = px > 0 ? px + 'px' : ''; },
+      // hauteur minimale de la popin (0 : celle de l'éditeur par défaut)
+      setMinHeight: function (px) { area.style.minHeight = px > 0 ? px + 'px' : ''; },
       reload: load
     };
   };

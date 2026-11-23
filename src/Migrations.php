@@ -18,6 +18,7 @@ final class Migrations
         'query_rules' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirects' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirections' => ['new_tab' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER auto'],
+        'popins' => ['min_height' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER max_width'],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id', 'custom_result_id' => 'INT UNSIGNED NULL AFTER sid'],
         'sources' => [

@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=26" defer
+<script src="https://search.example.com/widget/deepfind.js?v=27" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=25` en `?v=26`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=26` en `?v=27`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -728,7 +728,7 @@ Une popin comprend :
 - **Statut** et **Durée** : en continu ou sur une période (dates de début et de fin incluses).
 - **Pages concernées** : **toutes les pages**, ou seulement **la page d'accueil** (« / » ou la racine d'une langue, ex. `/fr`) et/ou des **adresses**, avec les mêmes comparaisons que les règles selon la page (*contient*, *commence par*, *finit par*, *est exactement*). Ex. contient `/nautisme/` pour une catégorie et ses produits.
   **Pages exclues** (facultatif) : jamais de popin sur ces pages, même si elles correspondent. Conseillé : contient `/checkout` (panier, paiement), contient `/customer/` (compte client).
-- **Affichage** : appareils (tous, ordinateur ou mobile, d'après la largeur de l'écran : mobile jusqu'à 900 px), position (au centre avec fond assombri, en bas à droite ou à gauche), **délai avant l'affichage** en secondes à partir de l'ouverture de la page (0 à 600), largeur maximale. Si la fenêtre de recherche est ouverte au bout du délai, la popin attend qu'elle se referme.
+- **Affichage** : appareils (tous, ordinateur ou mobile, d'après la largeur de l'écran : mobile jusqu'à 900 px), position (au centre avec fond assombri, en bas à droite ou à gauche), **délai avant l'affichage** en secondes à partir de l'ouverture de la page (0 à 600), largeur maximale, **hauteur minimale** (0 = selon le contenu ; le contenu est alors centré verticalement ; jamais plus haute que l'écran). La croix de fermeture est placée au-dessus de la popin, à l'extérieur, à droite. Si la fenêtre de recherche est ouverte au bout du délai, la popin attend qu'elle se referme.
 - **Fréquence** : **une seule fois par visite** (même si le visiteur ne la ferme pas), ou **à chaque page concernée** tant qu'il ne l'a pas fermée. Une fois **fermée ou cliquée**, elle ne lui est plus proposée pendant **N jours** (0 = jusqu'à la fin de sa visite). Après un changement de contenu, cochez « reproposer aux visiteurs qui l'ont déjà fermée ».
 - **Contenu** : comme les bannières, **image** ordinateur + image mobile (facultative) + texte alternatif + lien, ou **contenu HTML** rédigé dans l'**éditeur visuel** ou en code (voir « Contenu HTML : éditeur visuel » ci-dessous). Images stockées dans `public/uploads/banners/`.
 
@@ -738,7 +738,7 @@ Une popin comprend :
 - **Délai de prise en compte** : la liste des popins arrive avec la configuration du widget, gardée quelques minutes par les navigateurs. Une création, une modification ou une désactivation est visible sur le site d'ici **6 minutes** au plus.
 - **Mémorisation** : dans le navigateur du visiteur (`localStorage` pour les N jours, `sessionStorage` pour la visite), sans cookie ni identifiant, et rien n'est envoyé au serveur. Un autre navigateur, une navigation privée ou un effacement des données du site la font réapparaître.
 - **Tester** : le favori « Tester DeepFind » (Paramètres › Intégration) affiche les popins à chaque page, sans les compter ni mémoriser leur fermeture. La page Démo de l'extranet n'affiche pas de popin.
-- Projet désactivé : aucune popin. Nécessite le widget `?v=25` ou plus récent.
+- Projet désactivé : aucune popin. Nécessite le widget `?v=25` ou plus récent (`?v=27` pour la hauteur minimale et la croix à l'extérieur).
 
 **Ordre de classement :** le nombre de mots trouvés passe en premier ; les résultats personnalisés passent avant le reste. Vérifiez l'effet de vos réglages dans l'**aperçu interne**.
 

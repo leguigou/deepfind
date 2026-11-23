@@ -92,7 +92,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=23'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=24'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1256,22 +1256,27 @@
     var placement = { center: 1, bottom_right: 1, bottom_left: 1 }[p.placement] ? p.placement : 'center';
     var modal = placement === 'center';
     var root = el('div', 'df-popin df-popin-' + placement);
+    // cadre (fenêtre, croix de fermeture au-dessus, à l'extérieur) + boîte qui défile si le contenu est plus haut que l'écran
+    var frame = el('div', 'df-popin-frame');
+    frame.setAttribute('role', 'dialog');
+    if (modal) { frame.setAttribute('aria-modal', 'true'); }
+    frame.setAttribute('aria-label', p.alt || t.popin);
+    frame.style.setProperty('--df-popin-w', Math.min(1200, Math.max(280, parseInt(p.max_width, 10) || 600)) + 'px');
     var box = el('div', 'df-popin-box');
-    box.setAttribute('role', 'dialog');
-    if (modal) { box.setAttribute('aria-modal', 'true'); }
-    box.setAttribute('aria-label', p.alt || t.popin);
-    box.style.setProperty('--df-popin-w', Math.min(1200, Math.max(280, parseInt(p.max_width, 10) || 600)) + 'px');
+    var minH = Math.min(1200, Math.max(0, parseInt(p.min_height, 10) || 0));
+    if (minH) { box.style.setProperty('--df-popin-h', minH + 'px'); box.classList.add('df-popin-minh'); }
     var content = el('div', 'df-popin-content');
     if (!fillMedia(content, p, 'df-popin')) { return false; }
     if (p.mode === 'code') { content.classList.add('df-popin-html'); } // texte : marges intérieures
     var closeX = el('button', 'df-popin-close', '✕');
     closeX.type = 'button';
     closeX.setAttribute('aria-label', t.close);
-    box.appendChild(closeX);
     box.appendChild(content);
+    frame.appendChild(closeX);
+    frame.appendChild(box);
     var backdrop = modal ? el('div', 'df-popin-backdrop') : null;
     if (backdrop) { root.appendChild(backdrop); }
-    root.appendChild(box);
+    root.appendChild(frame);
     var before = document.activeElement;
     var closed = false;
     function onKey(ev) { if (ev.key === 'Escape') { finish('x'); } }

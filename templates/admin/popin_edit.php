@@ -59,6 +59,9 @@ use DeepFind\Rules\Popins;
         <label>Largeur maximale (pixels)
           <input data-f="max_width" type="number" min="280" max="1200" step="10" inputmode="numeric">
           <small class="muted">Sur mobile, la popin prend au plus la largeur de l'écran.</small></label>
+        <label>Hauteur minimale (pixels)
+          <input data-f="min_height" type="number" min="0" max="1200" step="10" inputmode="numeric">
+          <small class="muted">0 = selon le contenu. Utile pour un contenu HTML court. Jamais plus haute que l'écran.</small></label>
       </div>
     </div>
 

@@ -51,7 +51,7 @@ final class Popins
         return [
             'id' => 0, 'name' => '', 'active' => true, 'position' => 0, 'starts_at' => null, 'ends_at' => null,
             'pages' => 'all', 'home' => false, 'urls' => [], 'exclude_urls' => [], 'device' => 'all', 'delay_seconds' => 3,
-            'repeat_mode' => 'visit', 'remember_days' => 7, 'placement' => 'center', 'max_width' => 600,
+            'repeat_mode' => 'visit', 'remember_days' => 7, 'placement' => 'center', 'max_width' => 600, 'min_height' => 0,
             'mode' => 'visual', 'image_desktop' => '', 'image_mobile' => '', 'alt' => '', 'link_url' => '', 'new_window' => false, 'html' => '', 'rev' => 1,
         ];
     }
@@ -67,6 +67,7 @@ final class Popins
             'device' => $pick(self::DEVICES, $r['device'], 'all'), 'delay_seconds' => (int) $r['delay_seconds'],
             'repeat_mode' => $pick(self::REPEATS, $r['repeat_mode'], 'visit'), 'remember_days' => (int) $r['remember_days'],
             'placement' => $pick(self::PLACEMENTS, $r['placement'], 'center'), 'max_width' => (int) $r['max_width'],
+            'min_height' => (int) ($r['min_height'] ?? 0),
             'mode' => $r['mode'] === 'code' ? 'code' : 'visual', 'image_desktop' => (string) $r['image_desktop'], 'image_mobile' => (string) $r['image_mobile'],
             'alt' => (string) $r['alt'], 'link_url' => (string) $r['link_url'], 'new_window' => (int) $r['new_window'] === 1, 'html' => (string) $r['html'],
             'rev' => (int) $r['rev'],
@@ -102,7 +103,7 @@ final class Popins
         $out = [
             'id' => $p['id'], 'rev' => $p['rev'], 'pages' => $p['pages'], 'home' => $p['home'], 'urls' => $p['urls'], 'exclude' => $p['exclude_urls'],
             'device' => $p['device'], 'delay' => $p['delay_seconds'], 'repeat' => $p['repeat_mode'], 'remember_days' => $p['remember_days'],
-            'placement' => $p['placement'], 'max_width' => $p['max_width'], 'mode' => $p['mode'],
+            'placement' => $p['placement'], 'max_width' => $p['max_width'], 'min_height' => $p['min_height'], 'mode' => $p['mode'],
         ];
         return $out + ($p['mode'] === 'code'
             ? ['html' => $p['html']]
@@ -169,6 +170,7 @@ final class Popins
             'device' => $pick(self::DEVICES, 'device', 'all'), 'delay_seconds' => $int('delay_seconds', 0, 600, 3),
             'repeat_mode' => $pick(self::REPEATS, 'repeat_mode', 'visit'), 'remember_days' => $int('remember_days', 0, 365, 7),
             'placement' => $pick(self::PLACEMENTS, 'placement', 'center'), 'max_width' => $int('max_width', 280, 1200, 600),
+            'min_height' => $int('min_height', 0, 1200, 0),
             'mode' => $mode, 'image_desktop' => $mode === 'visual' ? $desktop : '', 'image_mobile' => $mode === 'visual' ? $mobile : '',
             'alt' => mb_substr(trim((string) ($in['alt'] ?? '')), 0, 190, 'UTF-8'), 'link_url' => $mode === 'visual' ? $link : '',
             'new_window' => !empty($in['new_window']), 'html' => $html, 'reset_memory' => !empty($in['reset_memory']),
@@ -188,7 +190,7 @@ final class Popins
             'name' => $p['name'], 'active' => $p['active'] ? 1 : 0, 'starts_at' => $p['starts_at'], 'ends_at' => $p['ends_at'],
             'pages' => $p['pages'], 'home' => $p['home'] ? 1 : 0, 'urls' => Text::json($p['urls']), 'exclude_urls' => Text::json($p['exclude_urls']),
             'device' => $p['device'], 'delay_seconds' => $p['delay_seconds'], 'repeat_mode' => $p['repeat_mode'], 'remember_days' => $p['remember_days'],
-            'placement' => $p['placement'], 'max_width' => $p['max_width'], 'mode' => $p['mode'], 'image_desktop' => $p['image_desktop'],
+            'placement' => $p['placement'], 'max_width' => $p['max_width'], 'min_height' => $p['min_height'], 'mode' => $p['mode'], 'image_desktop' => $p['image_desktop'],
             'image_mobile' => $p['image_mobile'], 'alt' => $p['alt'], 'link_url' => $p['link_url'], 'new_window' => $p['new_window'] ? 1 : 0,
             'html' => $p['html'], 'updated_at' => date('Y-m-d H:i:s'),
         ];
