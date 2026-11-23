@@ -488,8 +488,13 @@ fs.mkdirSync(OUT, { recursive: true });
   await pp1.waitForSelector('.df-popin .df-popin-box', { timeout: 5000 });
   check('popins : affichée sur la page choisie (image, texte alternatif, lien, fenêtre accessible)',
     (await pp1.getAttribute('.df-popin-img', 'src')).endsWith('/assets/demo/palme.svg') && await pp1.getAttribute('.df-popin-img', 'alt') === 'Soldes sur les palmes'
-    && (await pp1.getAttribute('.df-popin-link', 'href')).endsWith('/boutique/soldes.html') && await pp1.getAttribute('.df-popin-box', 'role') === 'dialog'
+    && (await pp1.getAttribute('.df-popin-link', 'href')).endsWith('/boutique/soldes.html') && await pp1.getAttribute('.df-popin-frame', 'role') === 'dialog'
     && await pp1.evaluate(() => document.activeElement && document.activeElement.classList.contains('df-popin-close')));
+  await pp1.waitForTimeout(400); // fin de l'animation d'ouverture
+  const xBox = await pp1.locator('.df-popin-close').boundingBox();
+  const pBox = await pp1.locator('.df-popin-box').boundingBox();
+  check('popins : croix de fermeture à l\'extérieur, au-dessus de la popin', xBox.y + xBox.height <= pBox.y && Math.abs((xBox.x + xBox.width) - (pBox.x + pBox.width)) < 2);
+  await pp1.waitForTimeout(300);
   await pp1.screenshot({ path: OUT + '/popin-site.png' });
   await pp1.click('.df-popin-close');
   check('popins : fermeture', await pp1.locator('.df-popin').count() === 0);
@@ -532,6 +537,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('[data-f=name]', 'Popin éditeur');
   await page.selectOption('[data-f=mode]', 'code');
   await page.fill('[data-f=delay_seconds]', '0');
+  await page.fill('[data-f=min_height]', '360');
   await page.click('.wy-area');
   await page.keyboard.type('Livraison offerte');
   await page.selectOption('.wy-block', 'h2');
@@ -563,6 +569,10 @@ fs.mkdirSync(OUT, { recursive: true });
   check('éditeur visuel : contenu affiché sur le site (titre, bouton)', (await pp3.textContent('.df-popin-html h2')) === 'Livraison offerte'
     && (await pp3.getAttribute('.df-popin-html a', 'href')).endsWith('/boutique/soldes.html')
     && await pp3.evaluate(() => getComputedStyle(document.querySelector('.df-popin-html a.df-btn')).textDecorationLine) === 'none');
+  await pp3.waitForTimeout(400); // fin de l'animation d'ouverture
+  const hBox = await pp3.locator('.df-popin-box').boundingBox();
+  check('popins : hauteur minimale respectée (360 px), contenu centré', Math.round(hBox.height) >= 360
+    && await pp3.evaluate(() => { const b = document.querySelector('.df-popin-box').getBoundingClientRect(); const c = document.querySelector('.df-popin-html').getBoundingClientRect(); return c.top - b.top > 20 && Math.abs((c.top - b.top) - (b.bottom - c.bottom)) < 3; }));
   await pp3.waitForTimeout(400);
   await pp3.screenshot({ path: OUT + '/popin-html-site.png' });
   await pc3.close();

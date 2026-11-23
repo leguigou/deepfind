@@ -409,6 +409,7 @@ CREATE TABLE IF NOT EXISTS popins (
   remember_days SMALLINT UNSIGNED NOT NULL DEFAULT 7,
   placement ENUM('center','bottom_right','bottom_left') NOT NULL DEFAULT 'center',
   max_width SMALLINT UNSIGNED NOT NULL DEFAULT 600,
+  min_height SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   mode ENUM('visual','code') NOT NULL DEFAULT 'visual',
   image_desktop VARCHAR(500) NOT NULL DEFAULT '',
   image_mobile VARCHAR(500) NOT NULL DEFAULT '',

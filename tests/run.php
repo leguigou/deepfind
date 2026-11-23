@@ -1010,9 +1010,11 @@ if ($base) {
         'mode' => 'visual', 'image_desktop' => 'https://cdn.example.com/a.jpg', 'link_url' => 'https://www.example.com/soldes', 'new_window' => true]);
     check('popins : valeurs nettoyées (adresse réduite au chemin, bornes, choix inconnus)', $ppA !== null && $ppA['urls'] === [['match' => 'contains', 'text' => '/fr/nautisme/'], ['match' => 'contains', 'text' => '/kayak']]
         && $ppA['exclude_urls'] === [['match' => 'contains', 'text' => '/checkout']] && $ppA['device'] === 'all' && $ppA['delay_seconds'] === 600
-        && $ppA['remember_days'] === 0 && $ppA['max_width'] === 280 && $ppA['placement'] === 'bottom_left' && $ppA['repeat_mode'] === 'page' && $ppA['home'] === true, json_encode($ppA));
+        && $ppA['remember_days'] === 0 && $ppA['max_width'] === 280 && $ppA['min_height'] === 0 && $ppA['placement'] === 'bottom_left' && $ppA['repeat_mode'] === 'page' && $ppA['home'] === true, json_encode($ppA));
     [$ppCode] = $PP::sanitize(['name' => 'HTML', 'active' => true, 'pages' => 'all', 'home' => true, 'urls' => [['match' => 'contains', 'text' => '/x']], 'mode' => 'code',
         'html' => '<a href="https://www.example.com" onclick="x()">Offre</a><script>alert(1)</script>']);
+    check('popins : hauteur minimale bornée (0 à 1200 px)', $PP::sanitize(['name' => 'H', 'mode' => 'code', 'html' => '<p>x</p>', 'min_height' => '5000'])[0]['min_height'] === 1200
+        && $PP::sanitize(['name' => 'H', 'mode' => 'code', 'html' => '<p>x</p>', 'min_height' => '250'])[0]['min_height'] === 250);
     check('popins : HTML nettoyé ; « toutes les pages » ignore accueil et adresses', $ppCode !== null && !str_contains($ppCode['html'], 'script') && !str_contains($ppCode['html'], 'onclick')
         && str_contains($ppCode['html'], 'Offre') && $ppCode['home'] === false && $ppCode['urls'] === [], json_encode($ppCode));
     $wyIn = '<h2 style="text-align: center;">Titre</h2><p><span style="color: rgb(228, 0, 58);">rouge</span> <b>gras</b></p>'

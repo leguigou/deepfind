@@ -258,31 +258,38 @@ html.df-lock { overflow: hidden; }
 .df-pagefilter-btn:hover .df-pagefilter-x, .df-pagefilter-btn:focus-visible .df-pagefilter-x { background: var(--df-accent, #1069f9); color: #fff; }
 .df-pagefilter-back { border: 0; background: none; padding: 4px 0; cursor: pointer; font: inherit; font-weight: 600; color: var(--df-accent, #1069f9); text-decoration: underline; }
 
-/* Popins (extranet › Recommandations › Popins) : au centre avec fond assombri, ou dans un coin de l'écran */
+/* Popins (extranet › Recommandations › Popins) : au centre avec fond assombri, ou dans un coin de l'écran.
+   Cadre = boîte + croix de fermeture au-dessus, à l'extérieur de la boîte (espace réservé en haut du cadre). */
 .df-popin { position: fixed; z-index: 2147483000; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none;
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .df-popin-bottom_right, .df-popin-bottom_left { inset: auto 16px 16px auto; padding: 0; display: block; }
 .df-popin-bottom_left { inset: auto auto 16px 16px; }
 .df-popin-backdrop { position: absolute; inset: 0; background: rgba(15, 20, 30, .55); pointer-events: auto; animation: df-popin-fade .2s ease-out; }
-.df-popin-box { position: relative; box-sizing: border-box; width: min(var(--df-popin-w, 600px), calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
-  background: #fff; color: #1d2433; border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); pointer-events: auto; animation: df-popin-in .25s ease-out; }
+.df-popin-frame { position: relative; box-sizing: border-box; width: min(var(--df-popin-w, 600px), calc(100vw - 32px)); padding-top: 46px; pointer-events: auto;
+  animation: df-popin-in .25s ease-out; }
+.df-popin-box { position: relative; box-sizing: border-box; width: 100%; max-height: calc(100vh - 32px - 46px); overflow: auto;
+  background: #fff; color: #1d2433; border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); }
+/* hauteur minimale choisie dans l'extranet, jamais plus haute que l'écran ; contenu centré verticalement */
+.df-popin-box.df-popin-minh { display: flex; flex-direction: column; justify-content: center; min-height: min(var(--df-popin-h, 0px), calc(100vh - 32px - 46px)); }
+.df-popin-minh > .df-popin-content { width: 100%; }
 .df-popin-content img { display: block; max-width: 100%; height: auto; }
 .df-popin-img { width: 100%; }
 .df-popin a { color: inherit; }
-.df-popin-close { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%;
-  background: rgba(255, 255, 255, .94); color: #1d2433; font: 600 16px/1 system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
-.df-popin-close:hover { background: #fff; transform: scale(1.06); }
+.df-popin-close { position: absolute; top: 0; right: 0; z-index: 1; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
+  background: #fff; color: #1d2433; font: 600 16px/1 system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, .35); }
+.df-popin-close:hover { transform: scale(1.06); }
 .df-popin-close:focus-visible { outline: 3px solid var(--df-accent, #1069f9); outline-offset: 2px; }
 @media (max-width: 900px) {
   .df-popin-bottom_right, .df-popin-bottom_left { inset: auto 10px 10px 10px; }
-  .df-popin-bottom_right .df-popin-box, .df-popin-bottom_left .df-popin-box { width: 100%; }
-  .df-popin-box { max-height: calc(100vh - 20px); }
+  .df-popin-bottom_right .df-popin-frame, .df-popin-bottom_left .df-popin-frame { width: 100%; }
+  .df-popin-box { max-height: calc(100vh - 20px - 46px); }
+  .df-popin-box.df-popin-minh { min-height: min(var(--df-popin-h, 0px), calc(100vh - 20px - 46px)); }
 }
 @keyframes df-popin-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 @keyframes df-popin-fade { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .df-popin-box, .df-popin-backdrop { animation: none; } .df-popin-close:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .df-popin-frame, .df-popin-backdrop { animation: none; } .df-popin-close:hover { transform: none; } }
 /* Popin au contenu HTML (éditeur visuel de l'extranet) : marges intérieures et textes lisibles */
-.df-popin-html { padding: 44px 26px 26px; overflow-wrap: anywhere; }
+.df-popin-html { padding: 26px; overflow-wrap: anywhere; }
 .df-popin-html > :first-child { margin-top: 0; }
 .df-popin-html > :last-child { margin-bottom: 0; }
 .df-popin-html h2 { margin: 0 0 .5em; font-size: 1.6em; line-height: 1.2; }
@@ -290,6 +297,6 @@ html.df-lock { overflow: hidden; }
 .df-popin-html p, .df-popin-html ul, .df-popin-html ol { margin: 0 0 .8em; }
 .df-popin-html ul, .df-popin-html ol { padding-left: 1.4em; }
 .df-popin-html img { max-width: 100%; height: auto; }
-@media (max-width: 900px) { .df-popin-html { padding: 44px 18px 20px; } }
+@media (max-width: 900px) { .df-popin-html { padding: 20px 18px; } }
 /* Bouton inséré par l'éditeur visuel (bannières, popins) : jamais souligné */
 .df-popin a.df-btn, .df-banner a.df-btn { text-decoration: none; }

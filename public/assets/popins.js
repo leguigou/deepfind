@@ -19,6 +19,7 @@
     f('placement').value = p.placement || 'center';
     f('delay_seconds').value = p.delay_seconds !== undefined ? p.delay_seconds : 3;
     f('max_width').value = p.max_width || 600;
+    f('min_height').value = p.min_height || 0;
     f('remember_days').value = p.remember_days !== undefined ? p.remember_days : 7;
     f('mode').value = p.mode === 'code' ? 'code' : 'visual';
     f('image_desktop').value = p.image_desktop || '';
@@ -87,8 +88,9 @@
     window.DFImageSlots(form);
     // contenu HTML : éditeur visuel, aperçu à la largeur maximale de la popin
     var wy = window.DFWysiwyg(form);
-    var syncWidth = function () { if (wy) { wy.setWidth(parseInt(f('max_width').value, 10) || 0); } };
+    var syncWidth = function () { if (wy) { wy.setWidth(parseInt(f('max_width').value, 10) || 0); wy.setMinHeight(parseInt(f('min_height').value, 10) || 0); } };
     f('max_width').addEventListener('input', syncWidth);
+    f('min_height').addEventListener('input', syncWidth);
     syncWidth();
     form.querySelector('[data-copy]').addEventListener('click', function () {
       var t = f('html');
@@ -111,7 +113,7 @@
         id: p.id || 0, name: f('name').value, active: f('active').checked,
         duration: period.on ? 'period' : 'always', starts_at: period.start, ends_at: period.end,
         pages: pages, home: f('home').checked, urls: urls, exclude_urls: urlsOf('exclude_urls'),
-        device: f('device').value, placement: f('placement').value, delay_seconds: f('delay_seconds').value, max_width: f('max_width').value,
+        device: f('device').value, placement: f('placement').value, delay_seconds: f('delay_seconds').value, max_width: f('max_width').value, min_height: f('min_height').value,
         repeat_mode: form.querySelector('input[name=pp_repeat]:checked').value, remember_days: f('remember_days').value,
         reset_memory: !!(reset && reset.checked),
         mode: f('mode').value, image_desktop: f('image_desktop').value, image_mobile: f('image_mobile').value,
