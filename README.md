@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=25" defer
+<script src="https://search.example.com/widget/deepfind.js?v=26" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=24` en `?v=25`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=25` en `?v=26`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -707,7 +707,18 @@ Nom, statut, URL de destination, termes (exacts ou larges), en continu ou sur un
 
 ### Bannières
 
-Image ordinateur + image mobile + lien (téléversement ou adresse), ou code HTML (scripts, événements et liens `javascript:` retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi des **affichages**, **clics** et **CTR**. Les images sont stockées dans `public/uploads/banners/` (à sauvegarder, et accessible en écriture par PHP).
+Image ordinateur + image mobile + lien (téléversement ou adresse), ou contenu HTML (éditeur visuel ou code ; scripts, événements et liens `javascript:` retirés), en haut des résultats pour des termes de recherche ou **par défaut**, en continu ou sur une période. Suivi des **affichages**, **clics** et **CTR**. Les images sont stockées dans `public/uploads/banners/` (à sauvegarder, et accessible en écriture par PHP).
+
+### Contenu HTML : éditeur visuel
+
+Pour une bannière ou une popin, le mode **Contenu HTML** remplace l'image par un contenu rédigé comme dans un traitement de texte (onglet **Éditeur visuel**) :
+- paragraphe, **titre**, sous-titre ; gras, italique, souligné ; **couleur du texte** ; alignement à gauche, au centre, à droite ; listes à puces ou numérotées ;
+- **lien** (sur le texte sélectionné, ou nouveau lien ; option « nouvel onglet » ; adresse vide = retirer le lien) ;
+- **bouton** : lien mis en avant, centré, de la couleur choisie pour le texte ;
+- **image** : adresse ou téléversement (mêmes formats et poids maximal que les images des bannières) ;
+- « Effacer » retire la mise en forme ; annuler / rétablir.
+
+L'onglet **Code HTML** montre et modifie le même contenu (pour les cas que l'éditeur ne couvre pas). Un texte collé depuis Word ou une page web garde sa structure (titres, listes, gras, liens) mais pas sa mise en forme d'origine. L'aperçu de l'éditeur a la largeur maximale de la popin ; le rendu final dépend aussi des styles du site. Le contenu est nettoyé à l'enregistrement, puis par le widget : seules les balises et attributs autorisés sont gardés. Nécessite le widget `?v=26` pour la mise en page des popins au contenu HTML.
 
 ### Popins
 
@@ -719,7 +730,7 @@ Une popin comprend :
   **Pages exclues** (facultatif) : jamais de popin sur ces pages, même si elles correspondent. Conseillé : contient `/checkout` (panier, paiement), contient `/customer/` (compte client).
 - **Affichage** : appareils (tous, ordinateur ou mobile, d'après la largeur de l'écran : mobile jusqu'à 900 px), position (au centre avec fond assombri, en bas à droite ou à gauche), **délai avant l'affichage** en secondes à partir de l'ouverture de la page (0 à 600), largeur maximale. Si la fenêtre de recherche est ouverte au bout du délai, la popin attend qu'elle se referme.
 - **Fréquence** : **une seule fois par visite** (même si le visiteur ne la ferme pas), ou **à chaque page concernée** tant qu'il ne l'a pas fermée. Une fois **fermée ou cliquée**, elle ne lui est plus proposée pendant **N jours** (0 = jusqu'à la fin de sa visite). Après un changement de contenu, cochez « reproposer aux visiteurs qui l'ont déjà fermée ».
-- **Contenu** : comme les bannières, image ordinateur + image mobile (facultative) + texte alternatif + lien, ou code HTML (nettoyé à l'enregistrement puis par le widget). Images stockées dans `public/uploads/banners/`.
+- **Contenu** : comme les bannières, **image** ordinateur + image mobile (facultative) + texte alternatif + lien, ou **contenu HTML** rédigé dans l'**éditeur visuel** ou en code (voir « Contenu HTML : éditeur visuel » ci-dessous). Images stockées dans `public/uploads/banners/`.
 
 **Fonctionnement**
 - **Une seule popin par page** : la première de la liste (ordre par glisser-déposer) qui correspond à la page, à l'appareil et que le visiteur n'a pas déjà fermée (ou déjà vue pendant sa visite).

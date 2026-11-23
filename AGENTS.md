@@ -56,6 +56,8 @@ src/Rules/Redirections.php     redirections (redirections) : termes, période, a
 src/Security/HtmlSanitizer.php HTML des bannières : balises / attributs autorisés, pas de script ni javascript: (le widget refiltre aussi)
 public/assets/editor-tools.js  termes + période (calendrier) des pages d'édition ; gabarit templates/admin/_terms_period.php ;
                                DFImageSlots : images téléversées des bannières et popins (gabarit templates/admin/_media_fields.php)
+                               DFWysiwyg : éditeur visuel (contenteditable + execCommand) du contenu HTML, relié au champ html ;
+                               refiltre le HTML chargé ou collé (mêmes balises que HtmlSanitizer, qui reste la référence)
 src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)

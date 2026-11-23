@@ -527,6 +527,48 @@ fs.mkdirSync(OUT, { recursive: true });
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('popins : suppression', (await page.textContent('body')).includes('Popin supprimée'));
 
+  // Popin au contenu HTML rédigé dans l'éditeur visuel (titre, texte, bouton), puis vérifié en code et sur le site
+  await page.goto(BASE + '/admin/popins/edit');
+  await page.fill('[data-f=name]', 'Popin éditeur');
+  await page.selectOption('[data-f=mode]', 'code');
+  await page.fill('[data-f=delay_seconds]', '0');
+  await page.click('.wy-area');
+  await page.keyboard.type('Livraison offerte');
+  await page.selectOption('.wy-block', 'h2');
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Dès 50 € d\'achat, ');
+  await page.click('.wy-btn[aria-label="Gras"]');
+  await page.keyboard.type('partout en France');
+  await page.keyboard.press('Enter');
+  await page.click('.wy-btn[aria-label="Bouton (lien mis en avant)"]');
+  await page.fill('.wy-pop input[type=url]', BASE + '/boutique/soldes.html');
+  await page.fill('.wy-pop input[type=text]', 'J\'en profite');
+  await page.click('.wy-pop .btn:not(.btn-light)');
+  const wyHtml = await page.inputValue('[data-f=html]');
+  check('éditeur visuel : titre, gras et bouton écrits dans le HTML', /<h2>Livraison offerte<\/h2>/.test(wyHtml) && /<b>partout en France<\/b>|<strong>partout en France<\/strong>/.test(wyHtml)
+    && wyHtml.includes('/boutique/soldes.html') && wyHtml.includes('J\'en profite') && !/<p><br><\/p>$/.test(wyHtml));
+  await page.screenshot({ path: OUT + '/editeur-visuel.png', fullPage: false, clip: { x: 0, y: Math.max(0, (await page.locator('.wy').boundingBox()).y - 140), width: 1440, height: 700 } });
+  await page.click('[data-wy-tab=code]');
+  await page.fill('[data-f=html]', wyHtml + '<p>Ajout en code</p><script>alert(1)</script>');
+  await page.click('[data-wy-tab=visual]');
+  check('éditeur visuel : modification du code reprise, script ignoré', (await page.textContent('.wy-area')).includes('Ajout en code') && await page.locator('.wy-area script').count() === 0);
+  await page.click('.wy-area h2');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  check('éditeur visuel : popin enregistrée, contenu réaffiché', (await page.textContent('body')).includes('Popin « Popin éditeur » enregistrée')
+    && (await page.textContent('.wy-area')).includes('Livraison offerte') && !(await page.inputValue('[data-f=html]')).includes('script'));
+  const [pc3, pp3] = await popinCtx();
+  await pp3.goto(BASE + '/boutique/plongee.html');
+  await pp3.waitForSelector('.df-popin .df-popin-html h2', { timeout: 5000 });
+  check('éditeur visuel : contenu affiché sur le site (titre, bouton)', (await pp3.textContent('.df-popin-html h2')) === 'Livraison offerte'
+    && (await pp3.getAttribute('.df-popin-html a', 'href')).endsWith('/boutique/soldes.html')
+    && await pp3.evaluate(() => getComputedStyle(document.querySelector('.df-popin-html a.df-btn')).textDecorationLine) === 'none');
+  await pp3.waitForTimeout(400);
+  await pp3.screenshot({ path: OUT + '/popin-html-site.png' });
+  await pc3.close();
+  await page.click('form[action$="/admin/popins/delete"] button');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
+
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });
   await new Promise((r) => setTimeout(r, 500));

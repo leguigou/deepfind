@@ -281,3 +281,15 @@ html.df-lock { overflow: hidden; }
 @keyframes df-popin-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }
 @keyframes df-popin-fade { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .df-popin-box, .df-popin-backdrop { animation: none; } .df-popin-close:hover { transform: none; } }
+/* Popin au contenu HTML (éditeur visuel de l'extranet) : marges intérieures et textes lisibles */
+.df-popin-html { padding: 44px 26px 26px; overflow-wrap: anywhere; }
+.df-popin-html > :first-child { margin-top: 0; }
+.df-popin-html > :last-child { margin-bottom: 0; }
+.df-popin-html h2 { margin: 0 0 .5em; font-size: 1.6em; line-height: 1.2; }
+.df-popin-html h3 { margin: 0 0 .5em; font-size: 1.25em; line-height: 1.25; }
+.df-popin-html p, .df-popin-html ul, .df-popin-html ol { margin: 0 0 .8em; }
+.df-popin-html ul, .df-popin-html ol { padding-left: 1.4em; }
+.df-popin-html img { max-width: 100%; height: auto; }
+@media (max-width: 900px) { .df-popin-html { padding: 44px 18px 20px; } }
+/* Bouton inséré par l'éditeur visuel (bannières, popins) : jamais souligné */
+.df-popin a.df-btn, .df-banner a.df-btn { text-decoration: none; }

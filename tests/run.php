@@ -1015,6 +1015,13 @@ if ($base) {
         'html' => '<a href="https://www.example.com" onclick="x()">Offre</a><script>alert(1)</script>']);
     check('popins : HTML nettoyé ; « toutes les pages » ignore accueil et adresses', $ppCode !== null && !str_contains($ppCode['html'], 'script') && !str_contains($ppCode['html'], 'onclick')
         && str_contains($ppCode['html'], 'Offre') && $ppCode['home'] === false && $ppCode['urls'] === [], json_encode($ppCode));
+    $wyIn = '<h2 style="text-align: center;">Titre</h2><p><span style="color: rgb(228, 0, 58);">rouge</span> <b>gras</b></p>'
+        . '<p style="text-align: center;"><a href="https://www.example.com" target="_blank" style="display: inline-block; padding: 12px 22px; background: #e4003a;">Bouton</a></p>'
+        . '<p style="background: url(javascript:x)">x</p>';
+    $wyOut = DeepFind\Security\HtmlSanitizer::clean($wyIn);
+    check('éditeur visuel : mise en forme gardée (alignement, couleur, bouton), style dangereux retiré',
+        str_contains($wyOut, '<h2 style="text-align: center;">') && str_contains($wyOut, 'color: rgb(228, 0, 58)') && str_contains($wyOut, 'rel="noopener"')
+        && str_contains($wyOut, 'background: #e4003a') && !str_contains($wyOut, 'url('), $wyOut);
     $idPA = $PP::save('fr', $ppA, null);
     $idPC = $PP::save('fr', $ppCode, null);
     [$ppOld] = $PP::sanitize(['name' => 'Passée', 'active' => true, 'duration' => 'period', 'starts_at' => '2020-01-01', 'ends_at' => '2020-01-31',
