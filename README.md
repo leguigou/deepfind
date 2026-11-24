@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=29" defer
+<script src="https://search.example.com/widget/deepfind.js?v=30" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=28` en `?v=29`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=29` en `?v=30`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -594,7 +594,8 @@ Un **layer** est une façon d'afficher la fenêtre de recherche. Un seul est act
 
 **Modèle de carte produit** :
 - HTML simple (div, span, p, strong, img…). Les scripts, événements (`onclick`…) et liens `javascript:` sont retirés à l'enregistrement, puis de nouveau par le widget. Pas de lien : la carte entière mène déjà au produit.
-- Variables (valeurs échappées) : `{{name}}`, `{{brand}}`, `{{image}}`, `{{price}}`, `{{old_price}}`, `{{discount}}`, `{{from}}`, `{{sku}}`, `{{variant}}`, `{{stock}}`, `{{out_of_stock}}`, `{{new}}`, `{{rating}}`, `{{price_class}}`, `{{media_class}}`.
+- Le lien vers la page produit, `<a class="df-card" href="{{url}}">`, est posé automatiquement autour du modèle (toute la carte est cliquable) : l'éditeur le rappelle en haut et en bas du code, en lecture seule.
+- Variables (valeurs échappées) : `{{name}}`, `{{brand}}`, `{{image}}`, `{{url}}` (adresse de la page produit, ou de la déclinaison trouvée), `{{price}}`, `{{old_price}}`, `{{discount}}`, `{{from}}`, `{{sku}}`, `{{variant}}`, `{{stock}}`, `{{out_of_stock}}`, `{{new}}`, `{{rating}}`, `{{price_class}}`, `{{media_class}}`.
 - Un élément de classe **`df-if-`*variable*** (ex. `df-if-discount`) n'est affiché que si la variable n'est pas vide. Une image de classe `df-img` change au survol si le produit a une seconde image (désactivable : Paramètres › Widget sur le site).
 - Un modèle identique à l'origine n'est pas enregistré : le layer suit alors le modèle d'origine.
 
@@ -723,7 +724,7 @@ L'onglet **Code HTML** montre et modifie le même contenu (pour les cas que l'é
 
 ### Aperçu direct (popins, carrousels)
 
-Dans la fiche d'une popin ou d'un carrousel, **« Aperçu ordinateur / mobile »** ouvre une fenêtre où le **vrai widget** dessine le contenu sur une page fictive, avec les réglages en cours (même non enregistrés) : bascule **Ordinateur** (1280 × 800) / **Mobile** (390 × 844), affichage réduit pour tenir à l'écran, bouton « Rejouer » après une modification. La popin s'ouvre sans délai ; le carrousel utilise les produits de la page indiquée dans « Aperçu des produits » ; modèle de carte et couleurs du layer actif. Rien n'est compté ni mémorisé. Seule cette page d'aperçu peut s'afficher dans un cadre, et uniquement à l'intérieur de l'extranet.
+Dans la fiche d'une popin ou d'un carrousel, **« Aperçu ordinateur / mobile »** ouvre une fenêtre où le **vrai widget** dessine le contenu sur une page fictive, avec les réglages en cours (même non enregistrés) : bascule **Ordinateur** (1280 × 800) / **Mobile** (390 × 844), affichage réduit pour tenir à l'écran, bouton « Rejouer » après une modification. La popin s'ouvre sans délai ; le carrousel utilise les produits de la page indiquée dans « Liste des produits sélectionnés » ; modèle de carte et couleurs du layer actif. Rien n'est compté ni mémorisé. Seule cette page d'aperçu peut s'afficher dans un cadre, et uniquement à l'intérieur de l'extranet.
 
 ### Popins
 
@@ -762,7 +763,7 @@ Un carrousel comprend :
    Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
 5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
 
-Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. L'**aperçu des produits** de la fiche montre la sélection pour une page, un SKU de produit et un historique de test, sans enregistrer.
+Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. La **liste des produits sélectionnés (contrôle)** de la fiche montre quels produits sortent et dans quel ordre (position, SKU) pour une page, un SKU de produit et un historique de test, sans enregistrer ; ce n'est pas le rendu du site, visible avec « Voir le rendu réel (ordinateur / mobile) ».
 
 **Statistiques** (liste et fiche, 7 / 30 / 90 jours) : **vues** (carrousel visible au moins à moitié à l'écran), **clics** sur un produit, **CTR** ; dans la fiche, les produits les plus vus avec leurs clics et CTR. Totaux par jour, sans donnée personnelle ; l'aperçu (favori « Tester DeepFind ») et la page Démo ne comptent pas. Les statistiques par produit sont purgées avec les journaux (`logs:purge`, au moins 30 jours).
 

@@ -140,9 +140,11 @@ use DeepFind\Rules\Popins;
             <button type="button" class="btn btn-sm btn-light" data-tpl-reset title="Remettre le modèle de la fenêtre de recherche dans l'onglet ouvert">↻ Revenir au modèle par défaut</button>
           </span>
         </div>
+        <div class="tpl-wrap" aria-hidden="true"><code>&lt;a class="df-card" href="{{url}}"&gt;</code><span>ajouté automatiquement : toute la carte mène à la page produit</span></div>
         <textarea data-f="card_template" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="desktop" aria-label="Modèle de carte produit, ordinateur"></textarea>
         <textarea data-f="card_template_mobile" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="mobile" hidden aria-label="Modèle de carte produit, mobile"
           placeholder="Vide : le modèle ordinateur s'applique aussi sur mobile."></textarea>
+        <div class="tpl-wrap tpl-wrap-end" aria-hidden="true"><code>&lt;/a&gt;</code></div>
         <small class="muted">Par défaut : le modèle de la fenêtre de recherche (Paramètres › Intégration, layer actif). Modifiez-le pour ce carrousel seulement,
           puis vérifiez avec « Aperçu ordinateur / mobile ». HTML simple (div, span, p, strong, img…), sans script ni lien (la carte entière mène au produit) ;
           un élément de classe <code>df-if-</code><em>variable</em> n'est affiché que si la variable n'est pas vide.</small>
@@ -158,8 +160,13 @@ use DeepFind\Rules\Popins;
   </div>
 
   <div class="card ca-preview">
-    <strong>Aperçu des produits</strong>
-    <p class="muted small">Produits que le carrousel afficherait avec les réglages ci-dessus (même non enregistrés), pour une page du site.</p>
+    <div class="ca-preview-head">
+      <strong>Liste des produits sélectionnés (contrôle)</strong>
+      <button type="button" class="btn btn-sm btn-light" data-live-preview-alt><?= admin_icon('eye') ?> Voir le rendu réel (ordinateur / mobile)</button>
+    </div>
+    <p class="muted small">Vérifiez <strong>quels produits</strong> sortent et <strong>dans quel ordre</strong> (numéro = position, SKU pour les identifier), avec les réglages ci-dessus
+      même non enregistrés. Ce n'est pas le rendu du site : pour voir les cartes telles que le visiteur les verra (modèle de carte, couleurs, format ordinateur ou mobile),
+      utilisez « Voir le rendu réel ». La page, le SKU et l'historique saisis ici servent aussi à ce rendu.</p>
     <div class="ca-preview-form">
       <label>Page du site <input data-preview-page value="/" placeholder="/fr/palmes/c4-predator.html"></label>
       <label>SKU du produit de la page <small class="muted">(facultatif)</small> <input data-preview-sku placeholder="C4-PREDATOR"></label>

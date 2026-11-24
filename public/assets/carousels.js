@@ -219,13 +219,17 @@
           .then(function (res) { return res.json(); })
           .then(function (d) {
             if (!d.carousel) { return { error: d.note || 'Aperçu impossible.' }; }
-            if (!d.carousel.products.length) { return { error: 'Aucun produit pour cette page : vérifiez les conditions (ou la page choisie dans « Aperçu des produits »).' }; }
+            if (!d.carousel.products.length) { return { error: 'Aucun produit pour cette page : vérifiez les conditions (ou la page choisie dans « Liste des produits sélectionnés »).' }; }
             return { item: d.carousel, note: d.note };
           });
       }
     });
 
-    // ---------------------------------------------------------------- Aperçu des produits
+    // bouton du bloc « Liste des produits sélectionnés » : ouvre le même rendu réel que le bouton du bas
+    var altLive = form.querySelector('[data-live-preview-alt]');
+    if (altLive) { altLive.addEventListener('click', function () { form.querySelector('[data-live-preview]').click(); }); }
+
+    // ---------------------------------------------------------------- Liste des produits sélectionnés (contrôle)
     var pv = form.querySelector('[data-preview-list]');
     var note = form.querySelector('[data-preview-note]');
     form.querySelector('[data-preview-run]').addEventListener('click', function () {

@@ -1128,3 +1128,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .ca-tpl > small { display: block; margin-top: 6px; }
 .ca-vars { margin-top: 6px; }
 .ca-vars summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.ca-preview-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.ca-preview-head .admin-icon { vertical-align: -4px; margin-right: 2px; }
+/* Modèle de carte : lien posé automatiquement autour du modèle, rappelé en lecture seule en haut et en bas du code */
+.tpl-wrap { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 16px; background: #26262e; color: #9a9aae;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; border-bottom: 1px dashed #3a3a46; }
+.tpl-wrap code { background: none; padding: 0; color: #c9b8ff; font-size: 13px; }
+.tpl-wrap span { font-family: system-ui, sans-serif; font-size: 12px; font-style: italic; }
+.tpl-wrap-end { border-bottom: 0; border-top: 1px dashed #3a3a46; }
+.ca-tpl .tpl-wrap-end { margin-top: 0; }
