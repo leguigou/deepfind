@@ -35,6 +35,7 @@ $navGroups = [
         'keys' => ['/admin/keys', 'Clés', 'key'],
         'integration' => ['/admin/integration', 'Intégration', 'code'],
         'cache' => ['/admin/cache', 'Cache', 'database'],
+        'variables' => ['/admin/variables', 'Variables', 'braces'],
         'settings' => ['/admin/settings', 'Paramètres', 'settings'],
     ]],
 ];

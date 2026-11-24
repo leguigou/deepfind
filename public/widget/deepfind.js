@@ -90,6 +90,24 @@
       carousel: 'Product selection', prev: 'Previous products', next: 'Next products', seeMore: 'See all' }
   };
   var t = T[cfg.lang] || T.fr;
+  // Paramètres › Variables : textes modifiés pour la langue, variables personnalisées {{code}} (texte brut)
+  var customVars = {};
+  function applyTexts(c) {
+    if (!c) { return; }
+    if (c.texts && typeof c.texts === 'object') {
+      Object.keys(c.texts).forEach(function (k) {
+        if (Object.prototype.hasOwnProperty.call(t, k) && typeof c.texts[k] === 'string' && c.texts[k] !== '') { t[k] = c.texts[k]; }
+      });
+    }
+    if (c.vars && typeof c.vars === 'object') {
+      customVars = {};
+      Object.keys(c.vars).forEach(function (k) { if (/^[a-z][a-z0-9_]{1,30}$/.test(k) && typeof c.vars[k] === 'string') { customVars[k] = c.vars[k]; } });
+    }
+  }
+  // {{code}} d'une variable personnalisée dans un texte (titre de carrousel…) ; les codes inconnus restent tels quels
+  function withVars(s) {
+    return String(s || '').replace(/\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(customVars, k) ? customVars[k] : m; });
+  }
   var money;
   try { money = new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.currency }); } catch (e) { money = { format: function (n) { return n.toFixed(2) + ' €'; } }; }
   var sid = (function () { var a = new Uint8Array(12); (window.crypto || window.msCrypto).getRandomValues(a); return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); })();
@@ -341,7 +359,9 @@
   // Contenu d'une bannière ou d'une popin dans box : HTML nettoyé (mode code) ou image ordinateur / mobile + lien. false si rien à afficher.
   function fillMedia(box, b, prefix) {
     if (b.mode === 'code') {
-      var doc = new DOMParser().parseFromString('<body>' + String(b.html || '') + '</body>', 'text/html');
+      // variables personnalisées : valeurs échappées avant l'analyse du HTML
+      var html = String(b.html || '').replace(/\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(customVars, k) ? esc(customVars[k]) : m; });
+      var doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
       Array.prototype.forEach.call(doc.body.childNodes, function (c) { box.appendChild(cleanNode(c)); });
       return box.childNodes.length > 0;
     }
@@ -483,7 +503,9 @@
     var regular = mv ? mv.price : p.price;
     var discount = p.on_sale && p.discount_percent > 0 ? '-' + p.discount_percent + '%' : '';
     var image = safeUrl(p.image);
-    return {
+    var vars = {};
+    Object.keys(customVars).forEach(function (k) { vars[k] = customVars[k]; });
+    var sys = {
       name: p.name, brand: p.brand || '', image: image, price: fmt(final),
       // adresse de la page produit : celle du lien posé autour de la carte (déclinaison trouvée, sinon produit)
       url: safeUrl(mv && mv.url) || safeUrl(p.url),
@@ -494,6 +516,8 @@
       from: !mv && p.has_price_range ? t.from : '',
       price_class: p.on_sale ? 'df-sale' : '', media_class: image ? '' : 'df-noimg'
     };
+    Object.keys(sys).forEach(function (k) { vars[k] = sys[k]; });
+    return vars;
   }
   function templateCard(a, p, tpl) {
     var v = cardVars(p);
@@ -1170,7 +1194,24 @@
     }
   }
 
+  // éléments créés avant la configuration : textes (éventuellement modifiés dans l'extranet) remis au démarrage
+  function refreshTexts() {
+    layer.setAttribute('aria-label', t.products);
+    barInput.setAttribute('aria-label', t.search);
+    barInput.placeholder = t.search;
+    closeBtn.setAttribute('aria-label', t.close);
+    sideHead.querySelector('h3').textContent = t.filters;
+    sideCloseBtn.textContent = t.close;
+    sideCloseBtn.setAttribute('aria-label', t.closeFilters);
+    filtersBtn.textContent = t.filters;
+    tgStock.text.nodeValue = ' ' + t.inStock;
+    tgSale.text.nodeValue = ' ' + t.onSale;
+    sortSel.setAttribute('aria-label', t.sort);
+    loader.textContent = t.loading;
+  }
+
   function init() {
+    refreshTexts();
     applyDisplay();
     if (cfg.blockNative) { blockNative(); }
     syncFilterLayout();
@@ -1486,9 +1527,9 @@
       if (c.title) {
         // classes CSS ajoutées depuis l'extranet (ex. celles du thème) : lettres, chiffres, - _ : / [ ] . % # uniquement
         var own = typeof c.title_class === 'string' ? c.title_class.split(/\s+/).filter(function (x) { return /^[A-Za-z0-9_\-:\/\[\].%#!]{1,80}$/.test(x); }).slice(0, 20) : [];
-        head.appendChild(el('h2', 'df-car-title' + (own.length ? ' df-car-title-own ' + own.join(' ') : ''), c.title));
+        head.appendChild(el('h2', 'df-car-title' + (own.length ? ' df-car-title-own ' + own.join(' ') : ''), withVars(c.title)));
       }
-      if (more) { var a = el('a', 'df-car-more', c.more_label || t.seeMore); a.href = more; head.appendChild(a); }
+      if (more) { var a = el('a', 'df-car-more', withVars(c.more_label) || t.seeMore); a.href = more; head.appendChild(a); }
       box.appendChild(head);
     }
     var viewport = el('div', 'df-car-viewport');
@@ -1697,12 +1738,14 @@
     try {
       window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, hover_image: c.hover_image !== false, audience: c.audience || false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [],
-        carousels: c.carousels === true, personal: typeof c.personal === 'string' ? c.personal : 'consent', t: Date.now() }));
+        carousels: c.carousels === true, personal: typeof c.personal === 'string' ? c.personal : 'consent',
+        texts: c.texts || null, vars: c.vars || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
   var TYPES = { below: 1, fullscreen: 1, floating: 1, embedded: 1 };
   function applyCfg(c) {
     if (!c) { return; }
+    applyTexts(c);
     if (cfg.enter === null && c.enter_submit !== undefined) { enterSubmit = c.enter_submit !== false; }
     // photo au survol : réglage de l'extranet (Paramètres › Widget sur le site), appliqué aux cartes affichées ensuite
     if (c.hover_image !== undefined) { cfg.hoverImage = c.hover_image !== false; }
