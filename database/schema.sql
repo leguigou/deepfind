@@ -405,7 +405,7 @@ CREATE TABLE IF NOT EXISTS popins (
   exclude_urls TEXT NOT NULL,
   device ENUM('all','desktop','mobile') NOT NULL DEFAULT 'all',
   delay_seconds SMALLINT UNSIGNED NOT NULL DEFAULT 3,
-  repeat_mode ENUM('visit','page') NOT NULL DEFAULT 'visit',
+  repeat_mode ENUM('visit','page','always') NOT NULL DEFAULT 'visit',
   remember_days SMALLINT UNSIGNED NOT NULL DEFAULT 7,
   placement ENUM('center','bottom_right','bottom_left') NOT NULL DEFAULT 'center',
   max_width SMALLINT UNSIGNED NOT NULL DEFAULT 600,
