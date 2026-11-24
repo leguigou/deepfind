@@ -79,6 +79,6 @@ $insertShort = ['append' => 'dans (fin)', 'prepend' => 'dans (début)', 'before'
     <code>window.deepfindConsent = true</code>. <strong>À faire valider par votre DPO</strong> (finalité « personnalisation » dans le bandeau cookies).</p>
   <div><button class="btn btn-sm">Enregistrer ce réglage</button></div>
 </form>
-<p class="muted small">Une modification est visible sur le site d'ici quelques minutes. Le widget doit être en version <code>?v=<?= (int) \DeepFind\Widget\WidgetConfig::WIDGET_VERSION ?></code> ou plus récente.
+<p class="muted small">Une modification est visible sur le site d'ici quelques minutes.
   Les « produits similaires » et l'historique des pages produit nécessitent un <strong>import complet</strong> après la mise à jour (adresse des produits indexée).</p>
 <script src="<?= e(asset('/assets/page-rules.js')) ?>"></script>

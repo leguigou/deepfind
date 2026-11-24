@@ -72,6 +72,5 @@ $freq = static function (array $p): string {
 </table>
 </div>
 <p class="muted small">Une modification est visible sur le site d'ici quelques minutes (configuration gardée en cache par les navigateurs). Pour tester : le favori « Tester DeepFind »
-  (Paramètres › Intégration) affiche les popins à chaque page, sans les compter ni mémoriser leur fermeture.
-  Le widget doit être en version <code>?v=<?= (int) \DeepFind\Widget\WidgetConfig::WIDGET_VERSION ?></code> ou plus récente.</p>
+  (Paramètres › Intégration) affiche les popins à chaque page, sans les compter ni mémoriser leur fermeture.</p>
 <script src="<?= e(asset('/assets/page-rules.js')) ?>"></script>

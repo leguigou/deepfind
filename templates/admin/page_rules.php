@@ -47,6 +47,5 @@ $condText = static function (array $rule) {
   </tbody>
 </table>
 </div>
-<p class="muted small">Pour vérifier une règle avant de l'activer sur le site : <a href="<?= e(url('/admin/preview')) ?>">Aperçu interne</a>, champ « Page du site ».
-  Le widget doit être en version <code>?v=<?= (int) \DeepFind\Widget\WidgetConfig::WIDGET_VERSION ?></code> ou plus récente (code dans Paramètres › Intégration).</p>
+<p class="muted small">Pour vérifier une règle avant de l'activer sur le site : <a href="<?= e(url('/admin/preview')) ?>">Aperçu interne</a>, champ « Page du site ».</p>
 <script src="<?= e(asset('/assets/page-rules.js')) ?>"></script>
