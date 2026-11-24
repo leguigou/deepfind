@@ -631,7 +631,8 @@ fs.mkdirSync(OUT, { recursive: true });
     && await page.inputValue('[data-f=selector]') === '#reco' && await page.locator('.ca-item').count() === 1);
   await page.screenshot({ path: OUT + '/carrousel-fiche.png', fullPage: true });
   check('fiches : « Supprimer » aligné avec « Enregistrer » (carrousel)', await deleteAligned());
-  await page.click('[data-live-preview]');
+  check('carrousels : liste de contrôle nommée comme telle', (await page.textContent('.ca-preview-head')).includes('Liste des produits sélectionnés (contrôle)'));
+  await page.click('[data-live-preview-alt]'); // « Voir le rendu réel » depuis la liste de contrôle
   const lcf = page.frameLocator('.lv-dialog .lv-frame');
   await lcf.locator('#df-preview-slot .df-carousel .df-card >> nth=0').waitFor({ timeout: 5000 });
   const lcCards = await lcf.locator('.df-carousel .df-card').count();

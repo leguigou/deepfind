@@ -158,8 +158,13 @@ use DeepFind\Rules\Popins;
   </div>
 
   <div class="card ca-preview">
-    <strong>Aperçu des produits</strong>
-    <p class="muted small">Produits que le carrousel afficherait avec les réglages ci-dessus (même non enregistrés), pour une page du site.</p>
+    <div class="ca-preview-head">
+      <strong>Liste des produits sélectionnés (contrôle)</strong>
+      <button type="button" class="btn btn-sm btn-light" data-live-preview-alt><?= admin_icon('eye') ?> Voir le rendu réel (ordinateur / mobile)</button>
+    </div>
+    <p class="muted small">Vérifiez <strong>quels produits</strong> sortent et <strong>dans quel ordre</strong> (numéro = position, SKU pour les identifier), avec les réglages ci-dessus
+      même non enregistrés. Ce n'est pas le rendu du site : pour voir les cartes telles que le visiteur les verra (modèle de carte, couleurs, format ordinateur ou mobile),
+      utilisez « Voir le rendu réel ». La page, le SKU et l'historique saisis ici servent aussi à ce rendu.</p>
     <div class="ca-preview-form">
       <label>Page du site <input data-preview-page value="/" placeholder="/fr/palmes/c4-predator.html"></label>
       <label>SKU du produit de la page <small class="muted">(facultatif)</small> <input data-preview-sku placeholder="C4-PREDATOR"></label>

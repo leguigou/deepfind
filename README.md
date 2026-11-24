@@ -723,7 +723,7 @@ L'onglet **Code HTML** montre et modifie le même contenu (pour les cas que l'é
 
 ### Aperçu direct (popins, carrousels)
 
-Dans la fiche d'une popin ou d'un carrousel, **« Aperçu ordinateur / mobile »** ouvre une fenêtre où le **vrai widget** dessine le contenu sur une page fictive, avec les réglages en cours (même non enregistrés) : bascule **Ordinateur** (1280 × 800) / **Mobile** (390 × 844), affichage réduit pour tenir à l'écran, bouton « Rejouer » après une modification. La popin s'ouvre sans délai ; le carrousel utilise les produits de la page indiquée dans « Aperçu des produits » ; modèle de carte et couleurs du layer actif. Rien n'est compté ni mémorisé. Seule cette page d'aperçu peut s'afficher dans un cadre, et uniquement à l'intérieur de l'extranet.
+Dans la fiche d'une popin ou d'un carrousel, **« Aperçu ordinateur / mobile »** ouvre une fenêtre où le **vrai widget** dessine le contenu sur une page fictive, avec les réglages en cours (même non enregistrés) : bascule **Ordinateur** (1280 × 800) / **Mobile** (390 × 844), affichage réduit pour tenir à l'écran, bouton « Rejouer » après une modification. La popin s'ouvre sans délai ; le carrousel utilise les produits de la page indiquée dans « Liste des produits sélectionnés » ; modèle de carte et couleurs du layer actif. Rien n'est compté ni mémorisé. Seule cette page d'aperçu peut s'afficher dans un cadre, et uniquement à l'intérieur de l'extranet.
 
 ### Popins
 
@@ -762,7 +762,7 @@ Un carrousel comprend :
    Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
 5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
 
-Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. L'**aperçu des produits** de la fiche montre la sélection pour une page, un SKU de produit et un historique de test, sans enregistrer.
+Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. La **liste des produits sélectionnés (contrôle)** de la fiche montre quels produits sortent et dans quel ordre (position, SKU) pour une page, un SKU de produit et un historique de test, sans enregistrer ; ce n'est pas le rendu du site, visible avec « Voir le rendu réel (ordinateur / mobile) ».
 
 **Statistiques** (liste et fiche, 7 / 30 / 90 jours) : **vues** (carrousel visible au moins à moitié à l'écran), **clics** sur un produit, **CTR** ; dans la fiche, les produits les plus vus avec leurs clics et CTR. Totaux par jour, sans donnée personnelle ; l'aperçu (favori « Tester DeepFind ») et la page Démo ne comptent pas. Les statistiques par produit sont purgées avec les journaux (`logs:purge`, au moins 30 jours).
 

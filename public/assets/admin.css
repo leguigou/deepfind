@@ -1128,3 +1128,5 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .ca-tpl > small { display: block; margin-top: 6px; }
 .ca-vars { margin-top: 6px; }
 .ca-vars summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.ca-preview-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.ca-preview-head .admin-icon { vertical-align: -4px; margin-right: 2px; }
