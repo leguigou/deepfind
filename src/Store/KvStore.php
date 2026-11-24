@@ -16,6 +16,9 @@ interface KvStore
     /** Incrémente et retourne la nouvelle valeur ; la clé expire $ttl secondes après sa création. */
     public function incr(string $key, int $ttl): int;
 
+    /** Ajoute $by (≥ 0) et retourne la nouvelle valeur ; même expiration que incr (supervision : durées cumulées). */
+    public function incrBy(string $key, int $by, int $ttl): int;
+
     public function delete(string $key): void;
 
     public function name(): string;

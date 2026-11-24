@@ -384,7 +384,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | Rubrique | Page | À quoi ça sert |
 |---|---|---|
 | | Tableau de bord | État du moteur, recherches et taux sans résultat sur 24 h, nombre de produits (et de produits désactivés auto), derniers imports, alertes de configuration |
-| **Analyse** | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV (voir « Audience » ci-dessous) |
+| **Analyse** | Temps réel & charge | Supervision en direct : visiteurs actifs, recherches par minute, temps de réponse (moyenne, 95e percentile), pages vues, erreurs, charge du processeur et mémoire ; courbes et carte heure par heure sur 5 jours (section 6, « Temps réel & charge ») |
+| | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV (voir « Audience » ci-dessous) |
 | | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | | Journal des recherches | Détail filtrable et exportable |
 | **Catalogues** | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
@@ -520,6 +521,16 @@ Un bloc par thème, une ligne par réglage (valeur par défaut rappelée) :
 - **Recherche** : articles de blog affichés, produits max. par page, cache des réponses, valeurs max. par filtre.
 - **Widget sur le site** : comportement de la touche Entrée, blocage de l'autocomplétion d'origine du site, changement de photo au survol d'un produit (deuxième image, activé par défaut).
 - **Journaux & import** : journalisation des recherches, conservation des journaux, seuil de sécurité des imports complets.
+
+### Temps réel & charge
+
+**Analyse › Temps réel & charge** suit en direct l'activité du site et la charge du serveur DeepFind.
+
+- **Période** : 1 heure, 6 heures, 24 heures ou 5 jours, ou **depuis un instant précis** (5 jours au plus). La fin est toujours « maintenant » : en mode **En direct** (actif par défaut), la page se met à jour toutes les 15 secondes et la fenêtre glisse avec le temps. Pas des courbes : 1 minute (1 h) à 1 heure (5 jours).
+- **Indicateurs** : visiteurs actifs (personnes différentes vues dans les 5 dernières minutes), recherches par minute (moyenne des 5 dernières minutes), temps de réponse moyen des recherches et 95e percentile, recherches (finales, d'après le journal ; à défaut, requêtes à chaque frappe) et part servie par le cache, pages vues et clics, requêtes de l'API, charge du processeur (charge rapportée au nombre de cœurs) et mémoire, erreurs serveur et requêtes refusées (robots, limites), recherches sans résultat. Comparaison avec la période précédente de même durée (sauf 5 jours).
+- **Graphiques** : activité (recherches, pages vues, clics), visiteurs actifs, temps de réponse (avec le seuil de 500 ms), charge du serveur, répartition des temps de réponse, **carte heure par heure des 5 derniers jours**. Survolez une courbe pour le détail ; « Voir les données sous forme de tableau » liste toutes les valeurs.
+
+Fonctionnement : chaque appel de l'API publique (le widget) incrémente des compteurs de la minute **en mémoire** (APCu ou Redis, aucune écriture en base par requête). Une fois par minute, ils sont versés dans `metrics_minute` ; la page ajoute la minute en cours, lue en mémoire. La charge de la machine est relevée chaque minute (`schedule:run`). Rien de personnel n'est conservé : les visiteurs actifs utilisent l'empreinte du jour de la mesure d'audience (sans adresse IP), effacée au bout de 15 minutes ; les compteurs sont gardés **6 jours**. Les recherches tapées dans l'extranet (aperçu interne, démo) ne sont pas comptées. Avec plusieurs serveurs web et APCu, chaque serveur verse ses propres compteurs (les totaux restent justes) ; la charge affichée est celle d'un des serveurs.
 
 ### Audience
 
@@ -801,6 +812,7 @@ Délai de prise en compte : quelques minutes (configuration du widget gardée en
 - **Adresse IP** : jamais stockée en clair. On conserve une **empreinte** (HMAC avec `APP_SECRET`) pour compter et bloquer, et une **IP tronquée** (`203.0.113.x`) pour l'affichage. Aucun cookie.
 - **Conservation** : 90 jours par défaut (Paramètres), purge automatique chaque nuit (`logs:purge`).
 - **Carrousels** : statistiques en totaux quotidiens (par carrousel et par produit), sans donnée personnelle. L'historique des carrousels personnalisés reste dans le navigateur du visiteur, seulement avec son consentement (réglable), et n'est jamais enregistré par DeepFind (voir section 8).
+- **Supervision** (Temps réel & charge) : compteurs par minute sans donnée personnelle (6 jours) ; visiteurs actifs repérés par l'empreinte du jour de la mesure d'audience, sans IP, effacée après 15 minutes.
 - **Popins** : statistiques en totaux quotidiens, sans donnée personnelle. Le choix « ne plus afficher pendant N jours » est gardé dans le navigateur du visiteur (`localStorage` / `sessionStorage`), sans identifiant, et n'est jamais envoyé au serveur.
 - **Mesure d'audience** (Analyse › Audience) : aucun cookie ni stockage sur l'appareil, aucune IP enregistrée ; empreinte valable une journée (clé secrète du jour détruite à la fin de la journée), puis seuls des totaux quotidiens sont gardés. Désactivable entièrement ou par type de mesure.
 - **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site, et l'absence de consentement pour la mesure d'audience (méthode conçue pour entrer dans l'exemption de la CNIL pour la mesure d'audience, à confirmer) et pour la mémorisation de la fermeture des popins (choix exprimé par le visiteur, à confirmer également). Ce README ne constitue pas un avis juridique.

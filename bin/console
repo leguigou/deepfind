@@ -130,6 +130,15 @@ try {
             foreach (DeepFind\Import\Scheduler::tick() as $q) {
                 $out('[' . date('H:i') . "] planifié : $q");
             }
+            // Supervision : charge de la machine chaque minute (courbe continue même sans trafic), ménage horaire
+            try {
+                DeepFind\Logging\Metrics::sampleServer(intdiv(time(), 60));
+                if ((int) date('i') === 0) {
+                    DeepFind\Logging\Metrics::purge(time());
+                }
+            } catch (Throwable $e) {
+                $out('supervision : ' . $e->getMessage());
+            }
             // Mesure d'audience : jours passés agrégés, empreintes et sels du jour supprimés
             try {
                 $n = DeepFind\Logging\Audience::aggregate();

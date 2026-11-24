@@ -37,6 +37,15 @@ final class ApcuStore implements KvStore
         return $ok ? (int) $v : 1;
     }
 
+    public function incrBy(string $key, int $by, int $ttl): int
+    {
+        $k = $this->prefix . $key;
+        apcu_add($k, 0, $ttl);
+        $ok = false;
+        $v = apcu_inc($k, max(0, $by), $ok, $ttl);
+        return $ok ? (int) $v : max(0, $by);
+    }
+
     public function delete(string $key): void
     {
         apcu_delete($this->prefix . $key);

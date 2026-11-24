@@ -8,8 +8,12 @@ use DeepFind\Text;
 
 final class Response
 {
+    /** Instant (hrtime, ns) où la réponse a été écrite : temps de réponse de la supervision. */
+    public static ?int $sentAt = null;
+
     public static function json(array $data, int $status = 200, array $headers = []): void
     {
+        self::$sentAt ??= hrtime(true);
         $body = Text::json($data);
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
@@ -23,6 +27,7 @@ final class Response
 
     public static function noContent(array $headers = []): void
     {
+        self::$sentAt ??= hrtime(true);
         http_response_code(204);
         foreach ($headers as $k => $v) {
             header($k . ': ' . $v);

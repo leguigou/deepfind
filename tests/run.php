@@ -1174,6 +1174,42 @@ if ($base) {
     }
     DeepFind\CacheVersion::bump();
 
+    // ------------------------------------------------ Supervision (Analyse › Temps réel & charge)
+    $MT = DeepFind\Logging\Metrics::class;
+    $mStore = DeepFind\Store\Store::get();
+    $mT = intdiv(time() - 3 * 86400, 60) * 60 + 10; // il y a 3 jours : aucune autre mesure à cette minute
+    DeepFind\Db::exec('DELETE FROM metrics_minute WHERE minute BETWEEN ? AND ?', [date('Y-m-d H:i:s', $mT - 120), date('Y-m-d H:i:s', $mT + 120)]);
+    DeepFind\Db::exec('DELETE FROM live_visitors');
+    $MT::$project = 1;
+    foreach ([[30, false, false], [80, true, false], [150, false, true], [700, false, false]] as [$ms0, $cached0, $empty0]) {
+        $MT::$search = ['cached' => $cached0, 'empty' => $empty0];
+        $MT::record('/api/v1/search', 200, $ms0, '203.0.113.5', 'Mozilla/5.0 A', $mT, $mStore);
+    }
+    $MT::$search = [];
+    $MT::record('/api/v1/visit', 204, 5, '203.0.113.6', 'Mozilla/5.0 B', $mT, $mStore);
+    $MT::record('/api/v1/click', 204, 4, '203.0.113.5', 'Mozilla/5.0 A', $mT, $mStore);
+    $MT::record('/api/v1/search', 429, 2, '198.51.100.9', 'curl/8', $mT, $mStore);
+    $MT::record('/api/v1/search', 500, 40, '203.0.113.7', 'Mozilla/5.0 C', $mT, $mStore);
+    $MT::record('/api/v1/health', 200, 1, '203.0.113.5', 'Mozilla/5.0 A', $mT, $mStore);
+    $MT::$project = null;
+    $MT::flush(intdiv($mT, 60) + 1, intdiv($mT, 60) - 1, $mStore);
+    $mRow = DeepFind\Db::one('SELECT * FROM metrics_minute WHERE project_id = 1 AND minute = ?', [date('Y-m-d H:i:00', $mT)]);
+    check('supervision : compteurs de la minute versés (types, refus, erreurs, visiteurs distincts, santé ignorée)',
+        $mRow !== null && (int) $mRow['requests'] === 8 && (int) $mRow['searches'] === 6 && (int) $mRow['pageviews'] === 1 && (int) $mRow['clicks'] === 1
+        && (int) $mRow['denied'] === 1 && (int) $mRow['errors'] === 1 && (int) $mRow['visitors'] === 2 && (int) $mRow['searches_cached'] === 1
+        && (int) $mRow['searches_empty'] === 1 && (int) $mRow['s_ms_sum'] === 960 && (int) $mRow['h50'] === 1 && (int) $mRow['h100'] === 1
+        && (int) $mRow['h200'] === 1 && (int) $mRow['h1000'] === 1 && $MT::current(1, $mT, $mStore)['requests'] === 0, json_encode($mRow));
+    $mDash = $MT::dashboard(1, $mT - 600, $mT + 30, $mStore);
+    check('supervision : tableau de bord (moyenne, 95e percentile, refus, visiteurs actifs, pas d\'une minute)',
+        $mDash['step'] === 60 && $mDash['kpi']['avg_ms'] === 240 && $mDash['kpi']['p95_ms'] >= 500 && $mDash['kpi']['p95_ms'] <= 1000
+        && $mDash['kpi']['denied'] === 1 && $mDash['kpi']['active'] === 2 && array_sum($mDash['series']['searches']) === 6
+        && $mDash['histogram']['h50'] === 1 && count($mDash['heatmap']) === 5 && !str_contains(json_encode($mDash), '203.0.113'), json_encode($mDash['kpi']));
+    check('supervision : pas des courbes selon la durée', $MT::step(3600) === 60 && $MT::step(86400) === 900 && $MT::step(432000) === 3600);
+    $srv = $MT::server();
+    check('supervision : charge de la machine lue', $srv['cpus'] >= 1 && $srv['load1'] >= 0, json_encode($srv));
+    DeepFind\Db::exec('DELETE FROM metrics_minute WHERE minute BETWEEN ? AND ?', [date('Y-m-d H:i:s', $mT - 120), date('Y-m-d H:i:s', $mT + 120)]);
+    DeepFind\Db::exec('DELETE FROM live_visitors');
+
     // Photo au survol d'un produit (Paramètres › Widget sur le site)
     [, $cfH1] = $get("/api/v1/config?key=$key&lang=fr");
     DeepFind\Settings::set('widget_hover_image', '0');
