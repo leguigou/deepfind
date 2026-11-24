@@ -1077,6 +1077,9 @@ if ($base) {
     DeepFind\Settings::set('carousel_personal', 'consent');
     [$caBad, $caErr] = $CA::sanitize(['name' => '', 'selector' => '', 'source' => 'manual', 'items' => []], 'fr');
     check('carrousels : nom, emplacement et produits (sélection manuelle) obligatoires', $caBad === null && count($caErr) === 3, json_encode($caErr));
+    check('carrousels : classes CSS du titre (Tailwind accepté, caractères dangereux retirés)',
+        $CA::classes('  titre  text-2xl md:text-3xl w-[200px] titre ') === 'titre text-2xl md:text-3xl w-[200px]'
+        && $CA::classes('a"onclick=x b<c d') === 'd' && $CA::classes('') === '');
     check('carrousels : sélecteur CSS contrôlé, CSS personnalisé nettoyé',
         $CA::selector('#home .bloc > div') === '#home .bloc > div' && $CA::selector('div{x}') === null && $CA::selector('a</style>') === null
         && $CA::css("@import url(x.css);\n.df-carousel{color:red}</style><script>") === ".df-carousel{color:red}script");

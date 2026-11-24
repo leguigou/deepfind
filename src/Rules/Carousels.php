@@ -87,7 +87,7 @@ final class Carousels
         return [
             'id' => 0, 'name' => '', 'active' => true, 'position' => 0, 'starts_at' => null, 'ends_at' => null,
             'pages' => 'all', 'home' => false, 'urls' => [], 'exclude_urls' => [], 'device' => 'all',
-            'selector' => '', 'insert_mode' => 'append', 'title' => '', 'more_url' => '', 'more_label' => '',
+            'selector' => '', 'insert_mode' => 'append', 'title' => '', 'title_class' => '', 'more_url' => '', 'more_label' => '',
             'source' => 'auto', 'items' => [], 'match_all' => true, 'conditions' => [], 'sort_by' => 'biz',
             'similar_by' => 'category', 'personal_mode' => 'recommended', 'learning' => false, 'in_stock_only' => true,
             'max_items' => 12, 'per_view_desktop' => 4, 'per_view_mobile' => 2, 'autoplay' => 0, 'custom_css' => '',
@@ -105,7 +105,7 @@ final class Carousels
             'pages' => $r['pages'] === 'custom' ? 'custom' : 'all', 'home' => (int) $r['home'] === 1,
             'urls' => $j($r['urls']), 'exclude_urls' => $j($r['exclude_urls']), 'device' => $pick(Popins::DEVICES, $r['device'], 'all'),
             'selector' => (string) $r['selector'], 'insert_mode' => $pick(self::INSERTS, $r['insert_mode'], 'append'),
-            'title' => (string) $r['title'], 'more_url' => (string) $r['more_url'], 'more_label' => (string) $r['more_label'],
+            'title' => (string) $r['title'], 'title_class' => (string) ($r['title_class'] ?? ''), 'more_url' => (string) $r['more_url'], 'more_label' => (string) $r['more_label'],
             'source' => $pick(self::SOURCES, $r['source'], 'auto'), 'items' => $j($r['items']),
             'match_all' => (int) $r['match_all'] === 1, 'conditions' => $j($r['conditions']), 'sort_by' => $pick(self::SORTS, $r['sort_by'], 'biz'),
             'similar_by' => $pick(self::SIMILAR, $r['similar_by'], 'category'), 'personal_mode' => $pick(self::PERSONAL, $r['personal_mode'], 'recommended'),
@@ -178,7 +178,7 @@ final class Carousels
             'pages' => $pages, 'home' => $pages === 'custom' && $home, 'urls' => $pages === 'custom' ? $urls : [],
             'exclude_urls' => PageRules::sanitizeUrls((array) ($in['exclude_urls'] ?? [])), 'device' => $pick(Popins::DEVICES, 'device', 'all'),
             'selector' => $selector, 'insert_mode' => $pick(self::INSERTS, 'insert_mode', 'append'),
-            'title' => mb_substr(trim((string) ($in['title'] ?? '')), 0, 190, 'UTF-8'), 'more_url' => $moreUrl,
+            'title' => mb_substr(trim((string) ($in['title'] ?? '')), 0, 190, 'UTF-8'), 'title_class' => self::classes((string) ($in['title_class'] ?? '')), 'more_url' => $moreUrl,
             'more_label' => mb_substr(trim((string) ($in['more_label'] ?? '')), 0, 60, 'UTF-8'),
             'source' => $source, 'items' => $items, 'match_all' => $rules[0]['match_all'] ?? true, 'conditions' => $rules[0]['conditions'] ?? [],
             'sort_by' => $pick(self::SORTS, 'sort_by', 'biz'), 'similar_by' => $pick(self::SIMILAR, 'similar_by', 'category'),
@@ -217,6 +217,21 @@ final class Carousels
         return [$desk, $mob];
     }
 
+    /**
+     * Classes CSS saisies (ex. celles du thème : « text-2xl font-bold md:text-3xl ») : séparées par des espaces, 20 au plus ;
+     * lettres, chiffres et - _ : / [ ] . % # ! uniquement (syntaxe Tailwind comprise), les autres sont ignorées.
+     */
+    public static function classes(string $in): string
+    {
+        $out = [];
+        foreach (preg_split('/\s+/', trim($in)) ?: [] as $c) {
+            if (preg_match('/^[A-Za-z0-9_\-:\/\[\].%#!]{1,80}$/', $c) && !in_array($c, $out, true)) {
+                $out[] = $c;
+            }
+        }
+        return implode(' ', array_slice($out, 0, 20));
+    }
+
     /** Sélecteur CSS sûr (pas d'accolade, de « < », de point-virgule ni de guillemet non fermé ; « > » autorisé) ; '' si vide, null si refusé. */
     public static function selector(string $s): ?string
     {
@@ -253,6 +268,7 @@ final class Carousels
             'name' => $c['name'], 'active' => $c['active'] ? 1 : 0, 'starts_at' => $c['starts_at'], 'ends_at' => $c['ends_at'],
             'pages' => $c['pages'], 'home' => $c['home'] ? 1 : 0, 'urls' => Text::json($c['urls']), 'exclude_urls' => Text::json($c['exclude_urls']),
             'device' => $c['device'], 'selector' => $c['selector'], 'insert_mode' => $c['insert_mode'], 'title' => $c['title'],
+            'title_class' => $c['title_class'] !== '' ? $c['title_class'] : null,
             'more_url' => $c['more_url'], 'more_label' => $c['more_label'], 'source' => $c['source'], 'items' => Text::json($c['items']),
             'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => Text::json($c['conditions']), 'sort_by' => $c['sort_by'],
             'similar_by' => $c['similar_by'], 'personal_mode' => $c['personal_mode'], 'learning' => $c['learning'] ? 1 : 0,
@@ -374,7 +390,7 @@ final class Carousels
     public static function payload(array $c): array
     {
         return [
-            'id' => $c['id'], 'title' => $c['title'], 'more_url' => $c['more_url'], 'more_label' => $c['more_label'],
+            'id' => $c['id'], 'title' => $c['title'], 'title_class' => $c['title_class'] ?? '', 'more_url' => $c['more_url'], 'more_label' => $c['more_label'],
             'selector' => $c['selector'], 'insert' => $c['insert_mode'], 'device' => $c['device'],
             'per_view_desktop' => $c['per_view_desktop'], 'per_view_mobile' => $c['per_view_mobile'], 'autoplay' => $c['autoplay'], 'css' => $c['custom_css'],
             // modèles de carte propres au carrousel ('' : ceux de la fenêtre de recherche)

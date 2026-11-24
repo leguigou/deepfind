@@ -16,7 +16,7 @@
     var editor = window.DFEditor(form, { starts_at: c.starts_at, ends_at: c.ends_at });
     var pagesUi = window.DFPages(form, c, urlOps);
 
-    ['name', 'selector', 'title', 'more_url', 'more_label', 'custom_css'].forEach(function (k) { f(k).value = c[k] || ''; });
+    ['name', 'selector', 'title', 'title_class', 'more_url', 'more_label', 'custom_css'].forEach(function (k) { f(k).value = c[k] || ''; });
     ['insert_mode', 'device', 'sort_by', 'similar_by'].forEach(function (k) { if (c[k]) { f(k).value = c[k]; } });
     ['max_items', 'per_view_desktop', 'per_view_mobile', 'autoplay'].forEach(function (k) { f(k).value = c[k] !== undefined ? c[k] : ''; });
     f('active').checked = c.active !== false;
@@ -178,7 +178,7 @@
           duration: period.on ? 'period' : 'always', starts_at: period.start, ends_at: period.end, _period: period,
           pages: pagesUi.mode(), home: f('home').checked, urls: pagesUi.urls('urls'), exclude_urls: pagesUi.urls('exclude_urls'),
           selector: f('selector').value, insert_mode: f('insert_mode').value, device: f('device').value,
-          title: f('title').value, more_url: f('more_url').value, more_label: f('more_label').value,
+          title: f('title').value, title_class: f('title_class').value, more_url: f('more_url').value, more_label: f('more_label').value,
           source: source(), items: skus(), match: form.querySelector('input[name=pr_match]:checked').value, conditions: list0,
           sort_by: f('sort_by').value, similar_by: f('similar_by').value, personal_mode: form.querySelector('input[name=ca_personal]:checked').value,
           learning: f('learning').checked, in_stock_only: f('in_stock_only').checked, max_items: f('max_items').value,

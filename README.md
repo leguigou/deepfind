@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=32" defer
+<script src="https://search.example.com/widget/deepfind.js?v=33" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=31` en `?v=32`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=32` en `?v=33`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -764,7 +764,7 @@ Une popin comprend :
 Un carrousel comprend :
 1. **Statut**, **durée** (en continu ou période) et **pages concernées** : comme les popins (toutes, accueil et/ou adresses, pages exclues).
 2. **Emplacement** : le **sélecteur CSS** du bloc de la page — identifiant (`#accueil-selection`) ou classe (`.category-products`) — et la position : dans le bloc (au début, à la fin), juste avant, juste après, ou à la place de son contenu ; appareils (tous, ordinateur, mobile). Le plus fiable : faire ajouter dans le thème un bloc vide dédié, ex. `<div id="deepfind-carrousel"></div>`. Si le bloc n'existe pas sur une page, rien n'y est affiché (le widget l'attend 10 secondes).
-3. **Titre** et lien **« Voir tout »** (facultatifs).
+3. **Titre** (avec, au besoin, des **classes CSS** du thème, ex. `text-2xl font-bold` : elles remplacent alors le style du titre DeepFind) et lien **« Voir tout »** (facultatifs).
 4. **Produits** :
    - **Produits épinglés en tête** : recherchés par nom, SKU ou marque, rangés par glisser-déposer ;
    - **Source** : *Sélection manuelle* (uniquement les produits épinglés), *Automatique* (conditions comme les règles selon la page : marque, catégorie, type, prix, promotion, nouveauté… + tri), *Produits similaires* (sur une fiche produit : même catégorie la plus précise et/ou même marque que le produit de la page), *Personnalisé* (« Vus récemment » ou « Vous aimerez aussi », d'après l'historique du visiteur) ;
@@ -774,7 +774,7 @@ Un carrousel comprend :
    Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
 5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche) et **lien de la carte** propre au carrousel (ex. `{{url}}?utm_campaign=carrousel-accueil` ; vide = celui de la recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
 
-Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. La **liste des produits sélectionnés (contrôle)** de la fiche montre quels produits sortent et dans quel ordre (position, SKU) pour une page, un SKU de produit et un historique de test, sans enregistrer ; ce n'est pas le rendu du site, visible avec « Voir le rendu réel (ordinateur / mobile) ».
+Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches (chevrons fins, même tracé que les sliders du thème ; couleur réglable avec la variable `--df-car-arrow`, taille avec `.df-car-chevron`). La **liste des produits sélectionnés (contrôle)** de la fiche montre quels produits sortent et dans quel ordre (position, SKU) pour une page, un SKU de produit et un historique de test, sans enregistrer ; ce n'est pas le rendu du site, visible avec « Voir le rendu réel (ordinateur / mobile) ».
 
 **Statistiques** (liste et fiche, 7 / 30 / 90 jours) : **vues** (carrousel visible au moins à moitié à l'écran), **clics** sur un produit, **CTR** ; dans la fiche, les produits les plus vus avec leurs clics et CTR. Totaux par jour, sans donnée personnelle ; l'aperçu (favori « Tester DeepFind ») et la page Démo ne comptent pas. Les statistiques par produit sont purgées avec les journaux (`logs:purge`, au moins 30 jours).
 
