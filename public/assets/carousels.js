@@ -30,6 +30,7 @@
     // mobile identique à l'ordinateur : laissé vide (il suit l'ordinateur)
     var mobileDefault = function () { return tplDefault.mobile !== tplDefault.desktop ? tplDefault.mobile : ''; };
     f('card_template').value = c.card_template || tplDefault.desktop;
+    f('card_link').value = c.card_link || '';
     f('card_template_mobile').value = c.card_template_mobile || (c.card_template ? '' : mobileDefault());
     var tplTab = 'desktop';
     tplBox.querySelectorAll('[data-tpl-tab]').forEach(function (b) {
@@ -43,6 +44,7 @@
       var t = f(tplTab === 'mobile' ? 'card_template_mobile' : 'card_template');
       t.value = tplTab === 'mobile' ? mobileDefault() : tplDefault.desktop;
       t.focus();
+      if (tplTab === 'desktop') { f('card_link').value = ''; } // lien : celui de la recherche
     });
 
     // ---------------------------------------------------------------- Source : blocs affichés selon le choix
@@ -181,7 +183,8 @@
           sort_by: f('sort_by').value, similar_by: f('similar_by').value, personal_mode: form.querySelector('input[name=ca_personal]:checked').value,
           learning: f('learning').checked, in_stock_only: f('in_stock_only').checked, max_items: f('max_items').value,
           per_view_desktop: f('per_view_desktop').value, per_view_mobile: f('per_view_mobile').value, autoplay: f('autoplay').value,
-          custom_css: f('custom_css').value, card_template: f('card_template').value, card_template_mobile: f('card_template_mobile').value
+          custom_css: f('custom_css').value, card_template: f('card_template').value, card_template_mobile: f('card_template_mobile').value,
+          card_link: f('card_link').value
         }
       };
     }

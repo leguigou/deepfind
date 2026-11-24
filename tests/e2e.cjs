@@ -649,7 +649,7 @@ fs.mkdirSync(OUT, { recursive: true });
   // modèle de carte propre au carrousel : visible dans l'aperçu, puis retour au modèle par défaut
   const tplDefault = await page.getAttribute('[data-card-tpl]', 'data-default-desktop');
   const tplStart = await page.inputValue('[data-f=card_template]');
-  const wrapShown = (await page.textContent('[data-card-tpl] .tpl-wrap')).includes('href="{{url}}"');
+  const wrapShown = (await page.textContent('[data-card-tpl] .tpl-wrap')).includes('<a class="df-card" href="') && await page.getAttribute('[data-f=card_link]', 'placeholder') === '{{url}}';
   await page.fill('[data-f=card_template]', '<div class="df-name perso-nom">{{name}}</div>\n<div class="perso-prix">{{price}}</div>\n<small class="perso-url">{{url}}</small>');
   await page.click('[data-live-preview]');
   await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card .perso-prix >> nth=0').waitFor({ timeout: 5000 });
@@ -659,6 +659,20 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForTimeout(300);
   await page.screenshot({ path: OUT + '/apercu-carrousel-modele.png' });
   await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  // lien de la carte du carrousel : paramètres ajoutés à l'adresse du produit, puis chemin seul
+  await page.fill('[data-f=card_link]', '{{url}}?utm_campaign=carrousel&ref={{sku}}');
+  await page.click('[data-live-preview]');
+  await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card >> nth=0').waitFor({ timeout: 5000 });
+  await page.waitForTimeout(300);
+  const linkParams = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card >> nth=0').getAttribute('href');
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.fill('[data-f=card_link]', '{{url_path}}');
+  await page.click('[data-live-preview]');
+  await page.waitForTimeout(800);
+  const linkPath = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card >> nth=0').getAttribute('href');
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  check('carrousels : lien de la carte modifiable ({{url}} + paramètres, {{url_path}})', /^https:\/\/www\.example\.com\/[^?#]+\?utm_campaign=carrousel&ref=[A-Z0-9-]+$/.test(linkParams)
+    && new URL(linkPath).origin === new URL(BASE).origin && new URL(linkPath).pathname.endsWith('.html'));
   await page.click('[data-tpl-reset]');
   check('carrousels : modèle de carte modifiable (aperçu, lien {{url}} affiché et utilisable), « revenir au modèle par défaut »', tplStart === tplDefault && persoN === 8 && persoImg === 0
     && wrapShown && /^https:\/\/www\.example\.com\//.test(persoUrl)
@@ -766,11 +780,21 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.goto(lyResp.url());
   const lyId = new URL(page.url()).searchParams.get('id');
   const tplTxt = await page.textContent('#lp-card-tpl');
-  check('intégration : modèle de carte avec le lien {{url}} affiché et la variable listée', !!lyId && tplTxt.includes('<a class="df-card" href="{{url}}">') && tplTxt.includes('</a>')
+  check('intégration : modèle de carte avec le lien {{url}} affiché et la variable listée', !!lyId && tplTxt.includes('<a class="df-card" href="') && tplTxt.includes('</a>')
+    && await page.inputValue('#lp-card-tpl input[name=card_link]') === '{{url}}'
     && (await page.locator('#lp-card-tpl .lp-vars code', { hasText: '{{url}}' }).count()) === 1);
   await page.evaluate(() => document.getElementById('lp-card-tpl').showModal());
   await page.waitForTimeout(200);
   await page.screenshot({ path: OUT + '/modele-carte-url.png' });
+  // lien de la carte : refusé (javascript:) puis accepté (paramètres), réaffiché après enregistrement
+  await page.fill('#lp-card-tpl input[name=card_link]', 'javascript:alert(1)');
+  await Promise.all([page.waitForNavigation(), page.click('#lp-card-tpl .modal-foot .btn:not(.btn-light)')]);
+  const linkRefused = (await page.textContent('body')).includes('Lien de la carte refusé') && await page.inputValue('#lp-card-tpl input[name=card_link]') === '{{url}}';
+  await page.evaluate(() => document.getElementById('lp-card-tpl').showModal());
+  await page.fill('#lp-card-tpl input[name=card_link]', '{{url}}?utm_source=deepfind');
+  await Promise.all([page.waitForNavigation(), page.click('#lp-card-tpl .modal-foot .btn:not(.btn-light)')]);
+  check('intégration : lien de la carte modifiable (refusé si dangereux, enregistré sinon)', linkRefused
+    && await page.inputValue('#lp-card-tpl input[name=card_link]') === '{{url}}?utm_source=deepfind');
   await page.request.post(BASE + '/admin/integration/layer/delete', { form: { _csrf: lyCsrf, id: lyId } });
 
   // Supervision : indicateurs et graphiques, données du site (requêtes faites par le test), changement de période

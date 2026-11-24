@@ -473,6 +473,7 @@ CREATE TABLE IF NOT EXISTS carousels (
   custom_css MEDIUMTEXT NOT NULL,
   card_template TEXT NULL,
   card_template_mobile TEXT NULL,
+  card_link VARCHAR(500) NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang, position)

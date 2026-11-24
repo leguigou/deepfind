@@ -1211,3 +1211,11 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .mon-table .table { margin-top: 10px; font-size: 13px; }
 @media (max-width: 1000px) { .mon-grid { grid-template-columns: minmax(0, 1fr); } .mon-heat-grid { grid-template-columns: 64px repeat(24, minmax(0, 1fr)); gap: 2px; } }
 .mon-live .toggle-text { display: inline-flex; align-items: center; gap: 6px; }
+/* Lien de la carte modifiable dans la ligne <a class="df-card" href="…"> */
+.tpl-wrap-edit { align-items: center; }
+.tpl-wrap-edit code { white-space: nowrap; }
+.tpl-link { flex: 1 1 240px; min-width: 180px; width: auto; margin: 0; padding: 3px 8px; border-radius: 6px; border: 1px solid #4a4a58; background: #1b1b22; color: #f0e9ff;
+  font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.tpl-link:focus { outline: none; border-color: var(--accent); }
+.tpl-wrap-edit > span { flex-basis: 100%; }
+.tpl-wrap-edit > span code { color: #c9b8ff; }

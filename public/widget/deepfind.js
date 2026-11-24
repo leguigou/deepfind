@@ -50,6 +50,7 @@
     customCssMobile: '',
     cardTemplateDesktop: '',
     cardTemplateMobile: '',
+    cardLink: '',
     maxWidth: 0,
     maxWidthUnit: '%',
     pageSizeMobile: 0,
@@ -96,7 +97,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=26'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=27'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -524,8 +525,36 @@
     }
   }
 
+  /*
+   * Lien de la carte (Intégration › modèle de carte, ou carrousel) : {{url}} par défaut.
+   * « {{url}}?utm_source=… » : paramètres ajoutés à l'adresse du produit (avant un éventuel #, sans doubler le ?) ;
+   * « {{url_path}}… » : chemin seul, sur le domaine de la page ; variables {{sku}}, {{id}} encodées. Adresse non http(s) : lien par défaut.
+   */
+  function cardHref(p, tpl) {
+    var base = safeUrl(p.matched_variant && p.matched_variant.url) || safeUrl(p.url);
+    if (!tpl || tpl === '{{url}}') { return base || '#'; }
+    var path = '';
+    try { if (base) { path = new URL(base).pathname; } } catch (e) { path = ''; }
+    var vars = { url: base, url_path: path, sku: (p.matched_variant && p.matched_variant.sku) || p.sku || '', id: p.id === undefined || p.id === null ? '' : String(p.id) };
+    var fill = function (s, encodeAll) {
+      return s.replace(/\{\{(url|url_path|sku|id)\}\}/g, function (x, k) { return encodeAll || k === 'sku' || k === 'id' ? encodeURIComponent(vars[k]) : vars[k]; });
+    };
+    var extra = /^\{\{url\}\}([?&].*)$/.exec(tpl);
+    if (extra) {
+      if (!base) { return '#'; }
+      try {
+        var u = new URL(base);
+        new URLSearchParams(fill(extra[1].slice(1), true)).forEach(function (val, key) { u.searchParams.set(key, val); });
+        return u.toString();
+      } catch (e2) { return base; }
+    }
+    var out = fill(tpl, false);
+    if (/^\/(?!\/)/.test(out)) { out = location.origin + out; }
+    return safeUrl(out) || base || '#';
+  }
+
   function card(p, position) {
-    var href = safeUrl(p.matched_variant && p.matched_variant.url) || safeUrl(p.url) || '#';
+    var href = cardHref(p, cfg.cardLink);
     var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
     a.href = href;
     var custom = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
@@ -1465,9 +1494,8 @@
     [[prev, t.prev], [next, t.next]].forEach(function (b) { b[0].type = 'button'; b[0].setAttribute('aria-label', b[1]); });
     var cards = [];
     c.products.forEach(function (p, i) {
-      var href = safeUrl(p.url) || '#';
       var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
-      a.href = href;
+      a.href = cardHref(p, c.card_link || cfg.cardLink); // lien du carrousel, sinon celui de la recherche
       a.setAttribute('role', 'listitem');
       // modèle du carrousel (mobile, sinon ordinateur), à défaut celui de la fenêtre de recherche
       var own = typeof c.card_template === 'string' ? c.card_template : '';
@@ -1687,6 +1715,7 @@
       cfg.customCssMobile = typeof l.css_mobile === 'string' ? l.css_mobile : '';
       cfg.cardTemplateDesktop = typeof l.card_template === 'string' ? l.card_template : '';
       cfg.cardTemplateMobile = typeof l.card_template_mobile === 'string' ? l.card_template_mobile : '';
+      cfg.cardLink = typeof l.card_link === 'string' ? l.card_link : '';
     }
     if (Array.isArray(c.filters)) { cfg.filters = c.filters; }
     if (c.sorts && Array.isArray(c.sorts.items)) { cfg.sorts = c.sorts; }

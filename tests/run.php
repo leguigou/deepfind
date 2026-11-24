@@ -1080,9 +1080,16 @@ if ($base) {
     $tplDef = DeepFind\Widget\WidgetConfig::DEFAULT_CARD_TEMPLATE;
     $tplA = $CA::cardTemplates(['card_template' => $tplDef . "\n", 'card_template_mobile' => $tplDef]);
     $tplB = $CA::cardTemplates(['card_template' => '<div class="df-name">{{name}}</div><script>x()</script><p onclick="y()">{{price}}</p>', 'card_template_mobile' => '']);
+    $WC = DeepFind\Widget\WidgetConfig::class;
+    check('lien de la carte : accepté (paramètres, chemin, variables) ou refusé (javascript:, //, espace, variable inconnue)',
+        $WC::cleanCardLink('') === '' && $WC::cleanCardLink(' {{url}} ') === '' && $WC::cleanCardLink('{{url}}?utm_source=deepfind&ref={{sku}}') === '{{url}}?utm_source=deepfind&ref={{sku}}'
+        && $WC::cleanCardLink('{{ url_path }}') === '{{url_path}}' && $WC::cleanCardLink('https://www.example.com/p/{{id}}') === 'https://www.example.com/p/{{id}}'
+        && $WC::cleanCardLink('/produit/{{sku}}') === '/produit/{{sku}}' && $WC::cleanCardLink('javascript:alert(1)') === null && $WC::cleanCardLink('//evil.example/{{sku}}') === null
+        && $WC::cleanCardLink('{{url}} x') === null && $WC::cleanCardLink('{{url}}?a={{prix}}') === null && $WC::cleanCardLink('{{url}}"onmouseover=x') === null
+        && $WC::cleanSettings(['card_link' => '{{url}}?utm_source=x'])['card_link'] === '{{url}}?utm_source=x' && $WC::cleanSettings(['card_link' => 'data:x'])['card_link'] === '');
     check('modèle de carte : variable {{url}} gardée (texte et attribut)', DeepFind\Widget\WidgetConfig::cleanCardTemplate('<div title="{{url}}">{{url}}</div>') === '<div title="{{url}}">{{url}}</div>');
     check('carrousels : modèle de carte (identique à la recherche = vide, personnalisé nettoyé, variables gardées)',
-        $tplA === ['card_template' => '', 'card_template_mobile' => ''] && str_contains($tplB['card_template'], '{{name}}') && str_contains($tplB['card_template'], '{{price}}')
+        $tplA === ['card_template' => '', 'card_template_mobile' => '', 'card_link' => ''] && str_contains($tplB['card_template'], '{{name}}') && str_contains($tplB['card_template'], '{{price}}')
         && !str_contains($tplB['card_template'], 'script') && !str_contains($tplB['card_template'], 'onclick') && $tplB['card_template_mobile'] === '', json_encode([$tplA, $tplB]));
     $caDocs = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'in_stock = 1', 200, 0,
         ['id', 'sku', 'brand', 'url', 'url_path', 'category_names', 'category_paths', 'biz_score', 'in_stock']);
