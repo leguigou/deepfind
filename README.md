@@ -409,7 +409,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Variables | Variables système (lecture seule), textes du widget modifiables par langue, variables personnalisées `{{code}}` (section 6, « Variables ») |
 | | Cache | État et purge des caches |
 | | Paramètres | Seuils anti-robots, recherche, widget sur le site, journaux, sécurité des imports |
-| **Aide** | | Documentation complète (wiki), s'ouvre dans un nouvel onglet : rubriques à gauche, explications détaillées à droite, recherche. Adresse `/admin/wiki` (raccourci `/wiki`), connexion à l'extranet requise. Contenu : fichiers Markdown de `docs/wiki/` (voir « Contribuer à l'aide » sur sa page d'accueil) |
+| **Aide** | | Documentation complète (wiki), s'ouvre dans un nouvel onglet : rubriques à gauche ; à droite, toutes les pages de la rubrique à la suite, la page lue étant surlignée à gauche pendant le défilement ; recherche. Adresse `/admin/wiki` (raccourci `/wiki`), connexion à l'extranet requise. Contenu : fichiers Markdown de `docs/wiki/` (voir « Contribuer à l'aide » sur sa page d'accueil) |
 
 ### Aperçu interne
 

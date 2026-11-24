@@ -1348,3 +1348,16 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .ca-top[open] > summary .ca-top-chev { transform: none; }
 .ca-top[open] > summary { margin-bottom: 10px; }
 .wk-content .wk-img { display: block; max-width: 100%; height: auto; margin: 14px 0; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 6px 20px rgba(15, 23, 42, .08); }
+/* Aide : lecture continue d'une rubrique (pages à la suite) */
+.wk-section { scroll-margin-top: 76px; }
+.wk-section + .wk-section { margin-top: 44px; padding-top: 8px; border-top: 2px solid var(--border); }
+.wk-section > .wk-content > h2:first-child { margin-top: 18px; padding-bottom: 0; border-bottom: 0; font-size: 26px; line-height: 1.25; }
+.wk-section > .wk-content > h3 { margin-top: 30px; padding-bottom: 6px; font-size: 20px; border-bottom: 1px solid var(--border); scroll-margin-top: 76px; }
+.wk-section > .wk-content > h4 { font-size: 16.5px; }
+.wk-content h5 { margin: 16px 0 6px; font-size: 15px; scroll-margin-top: 76px; }
+.wk-content h3:hover .wk-anchor, .wk-content h4:hover .wk-anchor { opacity: .7; }
+.wk-eyebrow { margin: 22px 0 -12px; color: var(--accent); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.wk-toc.is-empty strong { display: none; }
+.wk-tree summary.is-current a { color: var(--text); }
+.wk-content :not(pre) > code, .wk-source code { overflow-wrap: anywhere; }
+.wk-content { overflow-wrap: break-word; }

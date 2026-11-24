@@ -17,9 +17,20 @@ final class Markdown
     public array $toc = [];
     private array $ids = [];
 
+    /** Décalage des titres (1 : « # » devient h2), pour enchaîner plusieurs pages sous le titre d'une rubrique. */
+    private int $shift = 0;
+
     /** @param string $base adresse de la page (liens relatifs du wiki) @param string $images adresse des images du wiki */
-    public function __construct(private readonly string $base = Wiki::BASE, private readonly string $images = Wiki::BASE . '/images')
+    public function __construct(private string $base = Wiki::BASE, private readonly string $images = Wiki::BASE . '/images')
     {
+    }
+
+    /** Page suivante d'une rubrique rendue d'un seul tenant : autre adresse de base, titres décalés (les identifiants restent uniques). */
+    public function at(string $base, int $shift = 0): self
+    {
+        $this->base = $base;
+        $this->shift = max(0, min(2, $shift));
+        return $this;
     }
 
     /** Nom de fichier d'image accepté (seul le nom compte : aucun chemin n'est suivi). */
@@ -64,8 +75,9 @@ final class Markdown
                 if ($level === 2 || $level === 3) {
                     $this->toc[] = ['level' => $level, 'id' => $id, 'text' => self::plain($text)];
                 }
-                $out .= '<h' . $level . ' id="' . self::e($id) . '">' . $this->inline($text)
-                    . ($level >= 2 ? ' <a class="wk-anchor" href="#' . self::e($id) . '" aria-label="Lien vers cette section">#</a>' : '') . '</h' . $level . ">\n";
+                $h = min(6, $level + $this->shift);
+                $out .= '<h' . $h . ' id="' . self::e($id) . '">' . $this->inline($text)
+                    . ($level >= 2 ? ' <a class="wk-anchor" href="#' . self::e($id) . '" aria-label="Lien vers cette section">#</a>' : '') . '</h' . $h . ">\n";
                 $i++;
                 continue;
             }
@@ -242,6 +254,8 @@ final class Markdown
             }
             return '<a href="' . self::e($href) . '"' . ($external ? ' target="_blank" rel="noopener"' : '') . '>' . $m[1] . '</a>';
         }, $text);
+        // adresse seule entre chevrons : <https://…>
+        $text = (string) preg_replace('#&lt;(https?://(?:[^\s&<>"\']|&amp;)+)&gt;#i', '<a href="$1" target="_blank" rel="noopener">$1</a>', $text);
         $text = (string) preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);
         $text = (string) preg_replace('/(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])/', '<em>$1</em>', $text);
         return (string) preg_replace_callback("/\x01(\d+)\x02/", static fn ($m) => $codes[(int) $m[1]], $text);

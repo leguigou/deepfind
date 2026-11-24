@@ -59,16 +59,28 @@ fs.mkdirSync(OUT, { recursive: true });
   check('aide : lien « Aide » dans le menu, nouvel onglet', (await helpLink.textContent()).includes('Aide') && (await helpLink.getAttribute('target')) === '_blank');
   let wr = await page.goto(BASE + '/wiki/recommandations/carrousels/sources-tri-et-apprentissage');
   check('aide : /wiki redirige vers /admin/wiki', wr.status() === 200 && page.url().endsWith('/admin/wiki/recommandations/carrousels/sources-tri-et-apprentissage'));
-  check('aide : page avec titre, fil d\'Ariane, rubrique ouverte et sommaire', (await page.textContent('.wk-content h1')).includes('Sources, tri et apprentissage')
-    && (await page.textContent('.wk-crumbs')).includes('Recommandations') && await page.locator('.wk-nav a.is-current').count() === 1
-    && await page.locator('.wk-toc a').count() > 2);
+  await page.waitForTimeout(400);
+  check('aide : rubrique entière à la suite, page demandée affichée et surlignée à gauche, sommaire',
+    (await page.textContent('.wk-content h1')).includes('Recommandations') && await page.locator('.wk-section').count() > 5
+    && (await page.textContent('#p-recommandations-carrousels-sources-tri-et-apprentissage h2')).includes('Sources, tri et apprentissage')
+    && (await page.textContent('.wk-nav a[aria-current=page]')).includes('Sources, tri et apprentissage')
+    && await page.locator('.wk-toc ul:not([hidden]) a').count() > 2);
+  await page.click('.wk-nav a[data-wk-section$="apercu-direct"]');
+  await page.waitForFunction(() => location.pathname.endsWith('/recommandations/apercu-direct'), null, { timeout: 4000 });
+  await page.waitForTimeout(700);
+  check('aide : clic à gauche = défilement jusqu\'à la page, sans rechargement, page surlignée',
+    (await page.textContent('.wk-nav a[aria-current=page]')).includes('Aperçu direct') && await page.locator('.wk-section').count() > 5);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(400);
+  check('aide : en remontant, la page lue change à gauche', (await page.textContent('.wk-nav a[aria-current=page]')).includes('Recommandations'));
   await page.fill('[data-wk-search]', 'consentement');
   await page.locator('.wk-result >> nth=0').waitFor({ timeout: 3000 });
   check('aide : recherche (sans accents)', (await page.textContent('[data-wk-results]')).includes('Personnalisation et consentement'));
   await page.screenshot({ path: OUT + '/50-aide.png' });
   await page.keyboard.press('Enter');
-  await page.waitForURL(/\/admin\/wiki\//);
-  check('aide : Entrée ouvre le premier résultat', page.url().includes('/admin/wiki/'));
+  await page.waitForURL(/personnalisation-et-consentement$/, { timeout: 5000 });
+  await page.waitForLoadState();
+  check('aide : Entrée ouvre le premier résultat', page.url().endsWith('/carrousels/personnalisation-et-consentement'));
   await page.goto(BASE + '/admin/wiki/catalogue/mapping');
   check('aide : capture d\'écran chargée', await page.$eval('.wk-img', (i) => i.complete && i.naturalWidth > 0));
   // (requêtes directes : une page 404 ouverte dans l'onglet compterait comme erreur de la console)

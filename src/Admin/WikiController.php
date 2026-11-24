@@ -17,33 +17,49 @@ final class WikiController
             return;
         }
         $node = Wiki::find($path);
-        $flat = array_values(array_filter(Wiki::flat(), static fn ($n) => $n['file'] !== null));
-        if ($node === null || $node['file'] === null && $node['type'] !== 'cat') {
+        $top = null; // rubrique de premier niveau : toutes ses pages se suivent sur une seule page
+        if ($node !== null && $node['type'] !== 'home') {
+            $top = $node['trail'] === [] ? ($node['type'] === 'cat' ? $node : null) : Wiki::find($node['trail'][0]['path']);
+        }
+        if ($node === null) {
             http_response_code(404);
             $node = ['type' => 'missing', 'path' => $path, 'title' => 'Page introuvable', 'file' => null, 'children' => [], 'trail' => []];
-            $html = '<p>Cette page du wiki n\'existe pas (ou plus). Choisissez une rubrique à gauche, ou cherchez un mot.</p>';
-            $toc = [];
+            $sections = [['id' => 'p-missing', 'path' => $path, 'title' => $node['title'], 'eyebrow' => '', 'source' => null, 'updated' => null, 'toc' => [],
+                'html' => '<h1>Page introuvable</h1><p>Cette page de l\'aide n\'existe pas (ou plus). Choisissez une rubrique à gauche, ou cherchez un mot.</p>']];
         } else {
-            $md = new Markdown(url(rtrim($node['path'], '/') . ($node['type'] === 'page' ? '' : '/index')), url(Wiki::BASE . '/images'));
-            $html = $node['file'] !== null ? $md->render((string) file_get_contents($node['file'])) : '<h1>' . htmlspecialchars($node['title']) . '</h1>';
-            $toc = $md->toc;
+            $md = new Markdown(url(Wiki::BASE), url(Wiki::BASE . '/images'));
+            $list = $top !== null ? [$top, ...Wiki::flat($top['children'], [['title' => $top['title'], 'path' => $top['path']]])] : [$node];
+            $sections = [];
+            foreach ($list as $k => $n) {
+                $md->at(url(rtrim($n['path'], '/') . ($n['type'] === 'page' ? '' : '/index')), $k === 0 ? 0 : 1);
+                $before = count($md->toc);
+                $html = $n['file'] !== null ? $md->render((string) file_get_contents($n['file']))
+                    : '<h' . ($k === 0 ? 1 : 2) . '>' . htmlspecialchars($n['title'], ENT_QUOTES, 'UTF-8') . '</h' . ($k === 0 ? 1 : 2) . '>';
+                $sections[] = ['id' => Wiki::anchor($n['path']), 'path' => $n['path'], 'title' => $n['title'], 'html' => $html,
+                    'toc' => array_slice($md->toc, $before),
+                    // sous-rubrique (ex. Carrousels) rappelée au-dessus du titre de ses pages
+                    'eyebrow' => implode(' › ', array_column(array_slice($n['trail'] ?? [], 1), 'title')),
+                    'source' => $n['file'] !== null ? substr($n['file'], strlen(APP_ROOT) + 1) : null,
+                    'updated' => $n['file'] !== null ? (int) filemtime($n['file']) : null];
+            }
         }
-        // catégorie : liste de ses pages sous son introduction
+        // précédent / suivant : rubriques de premier niveau (accueil avant la première)
+        $tree = Wiki::tree();
+        $cats = array_values(array_filter($tree, static fn ($n) => $n['type'] === 'cat' || $n['file'] !== null));
+        $here = $top['path'] ?? $node['path'];
         $prev = $next = null;
-        foreach ($flat as $k => $n) {
-            if ($n['path'] === $node['path']) {
-                $prev = $flat[$k - 1] ?? null;
-                $next = $flat[$k + 1] ?? null;
+        foreach ($cats as $k => $n) {
+            if ($n['path'] === $here) {
+                $prev = $cats[$k - 1] ?? ['path' => Wiki::BASE, 'title' => 'Accueil de l\'aide'];
+                $next = $cats[$k + 1] ?? null;
             }
         }
         if ($node['type'] === 'home') {
-            $next = $flat[0] ?? null;
+            $next = $cats[0] ?? null;
         }
         View::render('wiki', [
-            'tree' => Wiki::tree(), 'node' => $node, 'html' => $html, 'toc' => $toc, 'prev' => $prev, 'next' => $next,
+            'tree' => $tree, 'node' => $node, 'top' => $top, 'sections' => $sections, 'prev' => $prev, 'next' => $next,
             'search' => Wiki::searchIndex(),
-            'source' => $node['file'] !== null ? substr($node['file'], strlen(APP_ROOT) + 1) : null,
-            'updated' => $node['file'] !== null ? (int) filemtime($node['file']) : null,
         ], $node['title'], false);
     }
 
