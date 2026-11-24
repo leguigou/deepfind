@@ -362,6 +362,18 @@ if ($base) {
     check('synonymes : modification refusée hors langue ou identifiant inconnu', !DeepFind\Rules\RulesRepository::updateSynonym($synId, 'en', 'alias', 'x', 'y')
         && !DeepFind\Rules\RulesRepository::updateSynonym(999999, 'fr', 'alias', 'x', 'y'));
     DeepFind\Db::exec('DELETE FROM synonyms WHERE id = ?', [$synId]);
+    // Sens unique avec accent : « canoë » → kayak, aussi sans l'accent ; synonymes de la recherche (aperçu interne)
+    DeepFind\Rules\RulesRepository::addSynonym('fr', 'alias', 'Canoë', 'kayak');
+    DeepFind\Rules\RulesRepository::addSynonym('fr', 'equivalent', 'glacière', 'frigo');
+    $synMap = DeepFind\Rules\RulesRepository::meiliSynonyms('fr');
+    $synFor = DeepFind\Rules\RulesRepository::synonymsFor('fr', 'CANOE gonflable');
+    $synFor2 = DeepFind\Rules\RulesRepository::synonymsFor('fr', 'frigo');
+    check('synonymes : variantes sans accents envoyées au moteur, sens unique gardé ; synonymes de la recherche retrouvés (majuscules, accents)',
+        ($synMap['canoë'] ?? null) === ['kayak'] && ($synMap['canoe'] ?? null) === ['kayak'] && !isset($synMap['kayak'])
+        && in_array('glaciere', $synMap['frigo'] ?? [], true) && in_array('frigo', $synMap['glaciere'] ?? [], true)
+        && $synFor === [['term' => 'Canoë', 'synonyms' => ['kayak'], 'one_way' => true]] && $synFor2 === [['term' => 'frigo', 'synonyms' => ['glacière'], 'one_way' => false]]
+        && DeepFind\Rules\RulesRepository::synonymsFor('fr', 'canoes') === [], json_encode([$synMap, $synFor, $synFor2], JSON_UNESCAPED_UNICODE));
+    DeepFind\Db::exec("DELETE FROM synonyms WHERE term IN ('Canoë', 'glacière')");
     check('synonymes : découpage d\'une ligne de mots (virgules, |, doublons, espaces)',
         DeepFind\Rules\RulesRepository::splitWords(' ecoflow, EcoFlau |ecoflau,, eco  flo ') === ['ecoflow', 'EcoFlau', 'eco flo']);
     [$c] = $get("/api/v1/search?key=pk_00000000000000000000000000000000&q=palme");

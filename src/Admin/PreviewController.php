@@ -26,6 +26,7 @@ final class PreviewController
                 $req->pageRule = \DeepFind\Rules\PageRules::match($req->lang, $req->page);
                 $result = (new SearchService(MeiliClient::search()))->search($req, true, !empty($_GET['show_disabled']));
                 $result['_page_rule'] = $req->pageRule;
+                $result['_synonyms'] = self::synonymsCheck($req->lang, $req->q);
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
             }
@@ -64,6 +65,33 @@ final class PreviewController
         View::render('preview', ['active' => 'preview', 'p' => $_GET, 'result' => $result, 'error' => $error,
             'adminBoosts' => $adminBoosts, 'pins' => $pins, 'back' => $back, 'keep' => $keep, 'liveClicks' => $liveClicks, 'disabledRules' => $disabledRules, 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . Auth::lang()),
             'words' => \DeepFind\Search\Relevance::words((string) ($_GET['q'] ?? ''), Auth::lang())], 'Aperçu interne');
+    }
+
+    /**
+     * Synonymes de la recherche, et s'ils sont bien dans les réglages du moteur (un envoi peut être en cours : le moteur
+     * réindexe après chaque changement de synonymes ; ou avoir échoué). @return list<array{term:string, synonyms:list<string>, one_way:bool, engine:?bool}>
+     */
+    private static function synonymsCheck(string $lang, string $q): array
+    {
+        $found = RulesRepository::synonymsFor($lang, $q);
+        if ($found === []) {
+            return [];
+        }
+        try {
+            $engine = (array) (MeiliClient::admin()->getSettings(\DeepFind\Config::productIndex($lang))['synonyms'] ?? []);
+        } catch (\Throwable) {
+            $engine = null;
+        }
+        foreach ($found as &$f) {
+            if ($engine === null) {
+                $f['engine'] = null;
+                continue;
+            }
+            $key = mb_strtolower(trim($f['term']), 'UTF-8');
+            $have = array_map(static fn ($s) => \DeepFind\Text::fold((string) $s), (array) ($engine[$key] ?? $engine[\DeepFind\Text::fold($key)] ?? []));
+            $f['engine'] = array_diff(array_map([\DeepFind\Text::class, 'fold'], $f['synonyms']), $have) === [];
+        }
+        return $found;
     }
 
     /** Tous les produits désactivés (masqués de toutes les recherches), avec filtre et réactivation. */

@@ -394,7 +394,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
 | **Optimisations** | Pertinence & classement | Correspondance des mots, importance des champs, score métier (section 8) |
 | | Règles de boost | Coefficients appliqués aux produits qui remplissent des conditions (section 8) |
-| | Synonymes & alias | Une ligne = des mots qui donnent les mêmes résultats, séparés par des virgules (ex. `ecoflow, ecoflau, ecauflo`) ; option « sens unique » (le 1er mot mène aux suivants) ; recherche et modification dans le tableau ; import CSV (`samples/synonymes.csv`) |
+| | Synonymes & alias | Une ligne = des mots qui donnent les mêmes résultats, séparés par des virgules (ex. `ecoflow, ecoflau, ecauflo`) ; option « sens unique » (le 1er mot mène aux suivants) ; recherche et modification dans le tableau ; import CSV (`samples/synonymes.csv`). Les produits qui contiennent le mot tapé sortent en premier, ceux trouvés grâce au synonyme ensuite ; l'Aperçu interne indique les synonymes appliqués et s'ils sont actifs dans le moteur ; chaque mot est aussi envoyé sans accent |
 | | Redirections | Envoyer certaines recherches vers une page (section 8) |
 | **Recommandations** | Résultats personnalisés | Produits affichés en premier, seuls ou exclus pour certaines recherches (section 8) |
 | | Règles | Résultats selon la **page du site** (adresse), sans mot-clé : uniquement certains produits, filtre pré-coché retirable, ou exclusion (section 8) |

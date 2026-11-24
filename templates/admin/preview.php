@@ -21,6 +21,13 @@
       (<?= e(['only' => 'uniquement ces produits', 'prefilter' => 'filtre pré-coché', 'exclude' => 'produits exclus'][$pr['action']] ?? '') ?>) appliquée.
       <?php else: ?>Page « <?= e((string) $p['page']) ?> » : aucune règle selon la page ne s'applique.<?php endif; ?></div>
   <?php endif; ?>
+  <?php if (!empty($result['_synonyms'])): $synOk = array_filter($result['_synonyms'], static fn ($s) => $s['engine'] !== false) === $result['_synonyms']; ?>
+    <div class="flash <?= $synOk ? 'flash-info' : 'flash-warn' ?>">Synonymes appliqués :
+      <?php foreach ($result['_synonyms'] as $k => $s): ?><?= $k ? ' ; ' : '' ?>« <?= e($s['term']) ?> » <?= $s['one_way'] ? '→' : '↔' ?> <?= e(implode(', ', $s['synonyms'])) ?><?php if ($s['engine'] === false): ?> <strong>(pas encore pris en compte par le moteur)</strong><?php endif; ?><?php endforeach; ?>.
+      <?php if ($synOk): ?>Les produits qui contiennent le mot tapé passent <strong>en premier</strong>, ceux trouvés grâce au synonyme <strong>ensuite</strong> (descendez dans la liste).
+      <?php else: ?>Le moteur applique un changement de synonymes en quelques secondes à quelques minutes (il réindexe le catalogue) : rechargez la page.
+        Si cela dure, cliquez sur « Synchroniser avec Meilisearch » dans <a href="<?= e(url('/admin/synonyms')) ?>">Synonymes &amp; alias</a>.<?php endif; ?></div>
+  <?php endif; ?>
   <?php if (!empty($result['approximate'])): ?><div class="flash flash-warn">Aucun résultat exact (tous les mots) : le visiteur voit « Aucun résultat exact » puis ces produits approchants. Ajoutez un synonyme si l'un d'eux correspond vraiment.</div><?php endif; ?>
   <?php $nDis = count($result['disabled'] ?? []); $showDis = !empty($p['show_disabled']); ?>
   <p><strong><?= fmt_n($result['total']) ?></strong> produit(s) · moteur <?= (int) $result['engine_ms'] ?> ms

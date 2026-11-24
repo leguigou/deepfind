@@ -17,7 +17,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |  | [Robots & blocages](../exploitation/anti-robots) | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
 | **Optimisations** | [Pertinence & classement](../recherche-et-pertinence/pertinence-et-classement) | Correspondance des mots, importance des champs, score métier |
 |  | [Règles de boost](../recherche-et-pertinence/regles-de-boost) | Coefficients appliqués aux produits qui remplissent des conditions |
-|  | [Synonymes & alias](../recherche-et-pertinence/synonymes) | Une ligne = des mots qui donnent les mêmes résultats, séparés par des virgules (ex. `ecoflow, ecoflau, ecauflo`) ; option « sens unique » (le 1er mot mène aux suivants) ; recherche et modification dans le tableau ; import CSV (`samples/synonymes.csv`) |
+|  | [Synonymes & alias](../recherche-et-pertinence/synonymes) | Une ligne = des mots qui donnent les mêmes résultats, séparés par des virgules (ex. `ecoflow, ecoflau, ecauflo`) ; option « sens unique » (le 1er mot mène aux suivants) ; recherche et modification dans le tableau ; import CSV (`samples/synonymes.csv`) ; l'Aperçu interne indique les synonymes appliqués à une recherche |
 |  | [Redirections](../recherche-et-pertinence/redirections) | Envoyer certaines recherches vers une page |
 | **Recommandations** | [Résultats personnalisés](../recherche-et-pertinence/resultats-personnalises) | Produits affichés en premier, seuls ou exclus pour certaines recherches |
 |  | [Règles](../recherche-et-pertinence/regles-selon-la-page) | Résultats selon la **page du site** (adresse), sans mot-clé : uniquement certains produits, filtre pré-coché retirable, ou exclusion |

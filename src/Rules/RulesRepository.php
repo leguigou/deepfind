@@ -37,7 +37,46 @@ final class RulesRepository
                 $map[$w] = array_values(array_unique(array_merge($map[$w] ?? [], $others)));
             }
         }
-        return $map;
+        // Variantes sans accents (« canoë » → aussi « canoe ») : le synonyme marche que le visiteur tape l'accent ou non,
+        // quelle que soit la façon dont la version de Meilisearch installée normalise les accents.
+        $out = [];
+        foreach ($map as $term => $syns) {
+            $all = [...$syns, ...array_map([Text::class, 'fold'], $syns)];
+            foreach (array_unique([(string) $term, Text::fold((string) $term)]) as $k) {
+                $out[$k] = array_values(array_diff(array_unique([...($out[$k] ?? []), ...$all]), [$k]));
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Synonymes qui concernent cette recherche (aperçu interne) : mot (ou expression) tapé → mots ajoutés par le moteur.
+     * Majuscules et accents ignorés. @return list<array{term:string, synonyms:list<string>, one_way:bool}>
+     */
+    public static function synonymsFor(string $lang, string $q): array
+    {
+        $fq = ' ' . trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', Text::fold($q))) . ' ';
+        if (trim($fq) === '') {
+            return [];
+        }
+        $has = static fn (string $w): bool => ($fw = trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', Text::fold($w)))) !== '' && str_contains($fq, ' ' . $fw . ' ');
+        $out = [];
+        foreach (Db::all('SELECT type, term, synonyms FROM synonyms WHERE project_id = ? AND lang = ? ORDER BY term', [\DeepFind\Project::id(), $lang]) as $row) {
+            $syns = array_values(array_filter(array_map('trim', explode('|', (string) $row['synonyms'])), 'strlen'));
+            if ($row['type'] === 'alias') {
+                if ($has((string) $row['term'])) {
+                    $out[] = ['term' => (string) $row['term'], 'synonyms' => $syns, 'one_way' => true];
+                }
+                continue;
+            }
+            foreach ([(string) $row['term'], ...$syns] as $w) {
+                if ($has($w)) {
+                    $out[] = ['term' => $w, 'synonyms' => array_values(array_filter([(string) $row['term'], ...$syns], static fn ($x) => Text::fold($x) !== Text::fold($w))), 'one_way' => false];
+                    break;
+                }
+            }
+        }
+        return $out;
     }
 
     // ------------------------------------------------------------------ Règles compilées (utilisées par l'API)
