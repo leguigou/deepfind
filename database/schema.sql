@@ -455,6 +455,7 @@ CREATE TABLE IF NOT EXISTS carousels (
   selector VARCHAR(300) NOT NULL DEFAULT '',
   insert_mode ENUM('append','prepend','before','after','replace') NOT NULL DEFAULT 'append',
   title VARCHAR(190) NOT NULL DEFAULT '',
+  title_class VARCHAR(300) NULL,
   more_url VARCHAR(500) NOT NULL DEFAULT '',
   more_label VARCHAR(60) NOT NULL DEFAULT '',
   source ENUM('manual','auto','similar','personal') NOT NULL DEFAULT 'auto',

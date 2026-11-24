@@ -57,6 +57,9 @@ use DeepFind\Rules\Popins;
       <div class="grid2 ca-grid">
         <label>Titre affiché <small class="muted">(facultatif)</small>
           <input data-f="title" maxlength="190" placeholder="ex. Nos meilleures ventes"></label>
+        <label>Classe(s) CSS du titre <small class="muted">(facultatif)</small>
+          <input data-f="title_class" maxlength="300" spellcheck="false" autocomplete="off" placeholder="ex. text-2xl font-bold title-font">
+          <small class="muted">Classes de votre thème, séparées par des espaces : elles remplacent alors le style du titre DeepFind. Vide : style DeepFind.</small></label>
         <label>Lien « Voir tout » <small class="muted">(facultatif)</small>
           <input data-f="more_url" maxlength="500" placeholder="https://www.example.com/promotions.html ou /promotions.html"></label>
         <label>Texte du lien

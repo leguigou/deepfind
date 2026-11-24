@@ -97,7 +97,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=27'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=28'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1483,15 +1483,39 @@
     var more = safeUrl(c.more_url) || (/^\/(?!\/)/.test(c.more_url || '') ? c.more_url : '');
     if (c.title || more) {
       var head = el('div', 'df-car-head');
-      if (c.title) { head.appendChild(el('h2', 'df-car-title', c.title)); }
+      if (c.title) {
+        // classes CSS ajoutées depuis l'extranet (ex. celles du thème) : lettres, chiffres, - _ : / [ ] . % # uniquement
+        var own = typeof c.title_class === 'string' ? c.title_class.split(/\s+/).filter(function (x) { return /^[A-Za-z0-9_\-:\/\[\].%#!]{1,80}$/.test(x); }).slice(0, 20) : [];
+        head.appendChild(el('h2', 'df-car-title' + (own.length ? ' df-car-title-own ' + own.join(' ') : ''), c.title));
+      }
       if (more) { var a = el('a', 'df-car-more', c.more_label || t.seeMore); a.href = more; head.appendChild(a); }
       box.appendChild(head);
     }
     var viewport = el('div', 'df-car-viewport');
     var track = el('div', 'df-car-track');
     track.setAttribute('role', 'list');
-    var prev = el('button', 'df-car-btn df-car-prev', '‹');
-    var next = el('button', 'df-car-btn df-car-next', '›');
+    var prev = el('button', 'df-car-btn df-car-prev');
+    var next = el('button', 'df-car-btn df-car-next');
+    // chevron fin (même dessin que les sliders du thème), dessiné en SVG sans HTML inséré ; couleur = currentColor
+    var chevron = function (d) {
+      var NS = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 24 32');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.setAttribute('focusable', 'false');
+      svg.setAttribute('class', 'df-car-chevron');
+      var path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(path);
+      return svg;
+    };
+    prev.appendChild(chevron('M15 28L7 16 15 4'));
+    next.appendChild(chevron('M9 4l8 12-8 12'));
     [[prev, t.prev], [next, t.next]].forEach(function (b) { b[0].type = 'button'; b[0].setAttribute('aria-label', b[1]); });
     var cards = [];
     c.products.forEach(function (p, i) {

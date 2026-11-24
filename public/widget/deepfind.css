@@ -310,7 +310,9 @@ html.df-lock { overflow: hidden; }
 }
 .df-carousel *, .df-carousel *::before, .df-carousel *::after { box-sizing: border-box; }
 .df-car-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
-.df-car-title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25; color: var(--df-text); }
+/* titre : style DeepFind, sauf si le carrousel donne ses propres classes (celles du thème s'appliquent alors seules) */
+.df-car-title { margin: 0; }
+.df-car-title:not(.df-car-title-own) { font-size: 22px; font-weight: 700; line-height: 1.25; color: var(--df-text); }
 .df-car-more { flex: none; color: var(--df-accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
 .df-car-more:hover { text-decoration: underline; }
 .df-car-viewport { position: relative; }
@@ -325,18 +327,19 @@ html.df-lock { overflow: hidden; }
 .df-car-track.df-dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; user-select: none; }
 .df-car-track.df-dragging .df-card { pointer-events: none; }
 .df-car-btn {
-  position: absolute; top: calc(50% - 30px); z-index: 1; display: grid; place-items: center; width: 42px; height: 42px; padding: 0;
-  border: 0; border-radius: 50%; background: #fff; color: var(--df-text); font: 700 26px/1 system-ui, sans-serif; cursor: pointer;
-  box-shadow: 0 3px 12px rgba(20, 30, 60, .22); transition: opacity .15s;
+  position: absolute; top: calc(50% - 46px); z-index: 1; display: grid; place-items: center; width: 52px; height: 72px; padding: 0;
+  border: 0; border-radius: 10px; background: transparent; color: var(--df-car-arrow, #64748b); cursor: pointer; transition: opacity .15s, color .15s;
 }
-.df-car-prev { left: -14px; }
-.df-car-next { right: -14px; }
+/* chevron fin du thème (même tracé que ses sliders) : 32 × 43 px ; couleur et taille personnalisables en CSS (--df-car-arrow, .df-car-chevron) */
+.df-car-chevron { display: block; width: 36px; height: 48px; filter: drop-shadow(0 0 2px rgba(255, 255, 255, .9)); }
+.df-car-prev { left: -10px; }
+.df-car-next { right: -10px; }
 .df-car-btn:hover { color: var(--df-accent); }
 .df-car-btn:focus-visible { outline: 3px solid var(--df-accent); outline-offset: 2px; }
 .df-car-btn[disabled] { opacity: 0; pointer-events: none; }
 @media (max-width: 900px) {
   .df-carousel { --df-gap: 12px; margin: 20px 0; }
-  .df-car-title { font-size: 19px; }
+  .df-car-title:not(.df-car-title-own) { font-size: 19px; }
   /* un bout de la carte suivante dépasse : le visiteur voit qu'il peut faire défiler */
   .df-car-track { grid-auto-columns: calc((100% - var(--df-per-m, 2) * var(--df-gap)) / (var(--df-per-m, 2) + .2)); cursor: auto; }
 }

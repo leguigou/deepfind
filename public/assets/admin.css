@@ -1220,3 +1220,13 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .tpl-wrap-edit > span { flex-basis: 100%; }
 .tpl-wrap-edit > span code { color: #c9b8ff; }
 .cr-section [data-remember][hidden] { display: none !important; }
+/* Encadrés de la fiche carrousel : même rythme vertical que les sections (choix, conditions, bouton d'ajout) */
+.ca-block { display: flex; flex-direction: column; gap: 10px; }
+.ca-block .check { margin: 0; }
+.ca-block-title { margin-bottom: 2px; }
+.ca-block-title small { display: inline; margin-left: 4px; font-weight: 400; }
+.ca-block .br-add-cond, .ca-block > .btn { align-self: flex-start; margin: 2px 0; }
+.ca-block .br-conds:empty { display: none; }
+.ca-block .ca-grid { margin-top: 4px; }
+.ca-block .ca-learning { margin-top: 4px; }
+.ca-block .ca-items { margin: 0; }

@@ -615,6 +615,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('[data-f=selector]', '#reco');
   await page.selectOption('[data-f=insert_mode]', 'after');
   await page.fill('[data-f=title]', 'Nos coups de cœur');
+  await page.fill('[data-f=title_class]', 'titre-theme md:text-3xl');
   await page.fill('[data-f=more_url]', '/boutique/promos.html');
   await page.fill('[data-item-search]', 'predator');
   await page.waitForSelector('.ca-result');
@@ -701,6 +702,7 @@ fs.mkdirSync(OUT, { recursive: true });
   const nCards = await cp1.locator('.df-carousel .df-card').count();
   check('carrousels : inséré après le bloc #reco, titre, lien, produits (épinglé en tête)', placed && nCards === 8
     && (await cp1.textContent('.df-car-title')) === 'Nos coups de cœur' && (await cp1.getAttribute('.df-car-more', 'href')) === '/boutique/promos.html'
+    && (await cp1.getAttribute('.df-car-title', 'class')) === 'df-car-title df-car-title-own titre-theme md:text-3xl'
     && (await cp1.textContent('.df-carousel .df-card >> nth=0')).length > 0);
   await cp1.waitForTimeout(400);
   await cp1.screenshot({ path: OUT + '/carrousel-site.png' });
