@@ -154,6 +154,11 @@ final class CarouselsController
         if (!Carousels::pageMatches($c, $page)) {
             $notes[] = 'Attention : ce carrousel ne s\'affiche pas sur cette page (pages concernées).';
         }
+        $c = Carousels::forPath($c, $page);
+        if ($c['page_rule'] !== null) {
+            $pf = $c['page_filters'][(int) $c['page_key']]['url'];
+            $notes[] = 'Adaptation selon la page appliquée (adresse ' . (\DeepFind\Rules\PageRules::URL_OPS[$pf['match']] ?? $pf['match']) . ' « ' . $pf['text'] . ' »).';
+        }
         $products = Carousels::products($lang, $c, $pageProduct, $history === [] ? null : $history, false);
         $items = array_map(static fn ($p) => ['sku' => $p['sku'] ?? '', 'name' => $p['name'] ?? '', 'image' => $p['image'] ?? '', 'brand' => $p['brand'] ?? '',
             'price' => $p['final_price'] ?? null, 'in_stock' => !empty($p['in_stock'])], $products);

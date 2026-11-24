@@ -462,6 +462,8 @@ CREATE TABLE IF NOT EXISTS carousels (
   items TEXT NOT NULL,
   match_all TINYINT(1) NOT NULL DEFAULT 1,
   conditions TEXT NOT NULL,
+  -- adaptations selon la page : [{url:{match,text}, match_all, conditions}] (conditions ajoutées sur les pages dont l'adresse correspond)
+  page_filters TEXT NULL,
   sort_by VARCHAR(20) NOT NULL DEFAULT 'biz',
   similar_by ENUM('category','brand','category_brand') NOT NULL DEFAULT 'category',
   personal_mode ENUM('recent','recommended') NOT NULL DEFAULT 'recommended',

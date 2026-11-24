@@ -1361,3 +1361,13 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .wk-tree summary.is-current a { color: var(--text); }
 .wk-content :not(pre) > code, .wk-source code { overflow-wrap: anywhere; }
 .wk-content { overflow-wrap: break-word; }
+
+/* Carrousel › Adapter les produits selon la page */
+.ca-pfs { display: flex; flex-direction: column; gap: 10px; }
+.ca-pfs:empty { display: none; }
+.ca-pf { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.ca-pf-head, .ca-pf-match { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ca-pf-head .pr-url-op, .ca-pf-match select { width: auto; margin: 0; }
+.ca-pf-head .pr-url-text { flex: 1; min-width: 180px; margin: 0; }
+.ca-pf-label { font-weight: 600; }
+.ca-pf > .br-add-cond { align-self: flex-start; }

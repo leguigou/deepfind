@@ -10,6 +10,18 @@
    - *Personnalisé* : « vus récemment » (ordre de l'historique) ou « vous aimerez aussi » (catégories et marques de l'historique, produits déjà vus exclus).
 3. Sans contexte (pas de produit dans la page, pas d'historique ou pas de consentement) : **sélection automatique** à la place.
 
+## Adapter les produits selon la page
+
+Section *4. Produits › Adapter les produits selon la page* : liste de lignes `{adresse → conditions}` (30 au plus, colonne `page_filters` de la table `carousels`, JSON `[{url: {match, text}, match_all, conditions}]`).
+
+- Au moment de calculer le carrousel pour une page (`Carousels::forPath`), la **première** ligne dont l'adresse correspond ajoute ses conditions aux filtres (après les conditions générales). Elles s'appliquent à toutes les sources sauf les produits épinglés.
+- La liste en cache est distincte par ligne appliquée (clé `carprod:…:p<n>`) : une page « pêche » et une page « nautisme » n'ont pas la même liste.
+- Aucune ligne ne correspond : carrousel inchangé. Aucun produit ne remplit les conditions : carrousel absent de la page.
+- Catégorie « contient » : traduit en « est » pour toutes les catégories du catalogue qui contiennent le texte (sans tenir compte des majuscules ni des accents), comme les règles selon la page.
+- Vérification : liste de contrôle de la fiche, champ « Page du site » (message « Adaptation selon la page appliquée »).
+
+Pour **ne pas afficher** un carrousel sur certaines pages : *Pages exclues* (section 1 de la fiche), elles l'emportent sur tout le reste.
+
 Toujours exclus : produits désactivés (manuellement ou absents du dernier flux), et en rupture si l'option est cochée. Les conditions limitent aussi les sources « similaires » et « personnalisé ».
 
 ## Tris disponibles

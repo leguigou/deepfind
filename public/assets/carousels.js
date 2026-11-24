@@ -155,22 +155,84 @@
       if (ev.target.isConnected && !ev.target.closest('.ms')) { root.querySelectorAll('.ms-panel').forEach(function (p) { p.hidden = true; }); }
     });
 
+    // ---------------------------------------------------------------- Adapter les produits selon la page : adresse → conditions en plus
+    var pfBox = form.querySelector('[data-pfs]');
+    function addPf(pf) {
+      pf = pf || { url: { match: 'contains', text: '' }, match_all: true, conditions: [{ field: 'category_names', op: 'contains' }] };
+      var box = el('div', 'ca-pf');
+      var head = el('div', 'ca-pf-head');
+      head.appendChild(el('span', 'ca-pf-label', 'Sur les pages dont l\'adresse'));
+      var op = el('select', 'pr-url-op');
+      op.setAttribute('aria-label', 'Comparaison de l\'adresse');
+      Object.keys(urlOps).forEach(function (k) { var o = el('option', '', urlOps[k]); o.value = k; op.appendChild(o); });
+      op.value = urlOps[(pf.url || {}).match] ? pf.url.match : 'contains';
+      var txt = el('input', 'pr-url-text');
+      txt.type = 'text';
+      txt.maxLength = 300;
+      txt.placeholder = '/peche';
+      txt.value = (pf.url || {}).text || '';
+      txt.setAttribute('aria-label', 'Adresse de la page');
+      var rm = el('button', 'icon-btn', '✕');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', 'Supprimer cette adaptation');
+      rm.addEventListener('click', function () { box.remove(); });
+      [op, txt, rm].forEach(function (n) { head.appendChild(n); });
+      var mrow = el('div', 'ca-pf-match');
+      mrow.appendChild(el('span', null, 'proposer uniquement les produits qui remplissent'));
+      var m = el('select', 'ca-pf-all');
+      m.setAttribute('aria-label', 'Toutes ou au moins une condition');
+      [['all', 'toutes les conditions'], ['any', 'au moins une condition']].forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; m.appendChild(o); });
+      m.value = pf.match_all === false ? 'any' : 'all';
+      mrow.appendChild(m);
+      var cl = el('div', 'br-conds');
+      var add = el('button', 'btn btn-light btn-sm br-add-cond', '+ Ajouter une condition');
+      add.type = 'button';
+      function addRow(cond) { var row = lib.conditionRow(cond || {}); cl.appendChild(row); return row; }
+      add.addEventListener('click', function () { addRow().focusField(); });
+      (pf.conditions || []).forEach(function (cd) { addRow(cd); });
+      [head, mrow, cl, add].forEach(function (n) { box.appendChild(n); });
+      pfBox.appendChild(box);
+      return txt;
+    }
+    (c.page_filters || []).forEach(function (pf) { addPf(pf); });
+    form.querySelector('[data-add-pf]').addEventListener('click', function () { addPf().focus(); });
+
     // ---------------------------------------------------------------- Données du formulaire (enregistrement et aperçu)
-    function collect() {
-      var period = editor.period();
-      var list0 = [];
+    // conditions d'un bloc, vérifiées ; prefix : précise le bloc dans le message
+    function readConds(container, prefix) {
+      var out = [];
       var problem = '';
-      conds.querySelectorAll('.br-cond').forEach(function (r) {
+      container.querySelectorAll('.br-cond').forEach(function (r) {
         var cd = r.getCondition && r.getCondition();
-        if (!cd) { return; }
+        if (!cd || problem) { return; }
         if (cd.values && !cd.values.length) {
-          problem = (cd.op === 'contains' || cd.op === 'not_contains' ? 'Saisissez au moins un texte pour « ' : 'Choisissez au moins une valeur pour « ') + (byCode[cd.field] || {}).label + ' ».';
+          problem = prefix + (cd.op === 'contains' || cd.op === 'not_contains' ? 'saisissez au moins un texte pour « ' : 'choisissez au moins une valeur pour « ') + (byCode[cd.field] || {}).label + ' ».';
           return;
         }
-        if (cd.value !== undefined && (cd.value === '' || isNaN(Number(cd.value)))) { problem = 'Valeur numérique attendue pour « ' + (byCode[cd.field] || {}).label + ' ».'; return; }
+        if (cd.value !== undefined && (cd.value === '' || isNaN(Number(cd.value)))) { problem = prefix + 'valeur numérique attendue pour « ' + (byCode[cd.field] || {}).label + ' ».'; return; }
         if (cd.value !== undefined) { cd.value = Number(cd.value); }
-        list0.push(cd);
+        out.push(cd);
       });
+      return { list: out, problem: problem };
+    }
+    function collect() {
+      var period = editor.period();
+      var main = readConds(conds, 'Conditions : ');
+      var list0 = main.list;
+      var problem = main.problem ? main.problem.charAt(0).toUpperCase() + main.problem.slice(1) : '';
+      var pageFilters = [];
+      if (source() !== 'manual') {
+        pfBox.querySelectorAll('.ca-pf').forEach(function (box, i) {
+          var text = box.querySelector('.pr-url-text').value.trim();
+          var prefix = 'Adaptation selon la page n° ' + (i + 1) + (text ? ' (« ' + text + ' »)' : '') + ' : ';
+          var rc = readConds(box, prefix);
+          if (!text && !rc.list.length) { return; }
+          if (!problem && rc.problem) { problem = rc.problem; }
+          if (!problem && !text) { problem = prefix + 'indiquez l\'adresse de la page (ex. contient « /peche »).'; }
+          if (!problem && !rc.list.length) { problem = prefix + 'ajoutez au moins une condition sur les produits.'; }
+          pageFilters.push({ url: { match: box.querySelector('.pr-url-op').value, text: text }, match: box.querySelector('.ca-pf-all').value, conditions: rc.list });
+        });
+      }
       return {
         problem: problem,
         data: {
@@ -179,7 +241,7 @@
           pages: pagesUi.mode(), home: f('home').checked, urls: pagesUi.urls('urls'), exclude_urls: pagesUi.urls('exclude_urls'),
           selector: f('selector').value, insert_mode: f('insert_mode').value, device: f('device').value,
           title: f('title').value, title_class: f('title_class').value, more_url: f('more_url').value, more_label: f('more_label').value,
-          source: source(), items: skus(), match: form.querySelector('input[name=pr_match]:checked').value, conditions: list0,
+          source: source(), items: skus(), match: form.querySelector('input[name=pr_match]:checked').value, conditions: list0, page_filters: pageFilters,
           sort_by: f('sort_by').value, similar_by: f('similar_by').value, personal_mode: form.querySelector('input[name=ca_personal]:checked').value,
           learning: f('learning').checked, in_stock_only: f('in_stock_only').checked, max_items: f('max_items').value,
           per_view_desktop: f('per_view_desktop').value, per_view_mobile: f('per_view_mobile').value, autoplay: f('autoplay').value,
