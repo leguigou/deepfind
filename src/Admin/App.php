@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DeepFind\Admin;
 
 use DeepFind\Http\Response;
+use DeepFind\Wiki\Wiki;
 
 require_once __DIR__ . '/helpers.php';
 
@@ -181,6 +182,10 @@ final class App
             return;
         }
 
+        if ($method === 'GET' && ($path === Wiki::BASE || str_starts_with($path, Wiki::BASE . '/'))) {
+            (new WikiController())->show($path);
+            return;
+        }
         $route = self::ROUTES[$method . ' ' . $path] ?? null;
         if ($route === null) {
             http_response_code(404);

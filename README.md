@@ -409,6 +409,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Variables | Variables système (lecture seule), textes du widget modifiables par langue, variables personnalisées `{{code}}` (section 6, « Variables ») |
 | | Cache | État et purge des caches |
 | | Paramètres | Seuils anti-robots, recherche, widget sur le site, journaux, sécurité des imports |
+| **Aide** | | Documentation complète (wiki), s'ouvre dans un nouvel onglet : rubriques à gauche, explications détaillées à droite, recherche. Adresse `/admin/wiki` (raccourci `/wiki`), connexion à l'extranet requise. Contenu : fichiers Markdown de `docs/wiki/` (voir « Contribuer à l'aide » sur sa page d'accueil) |
 
 ### Aperçu interne
 
@@ -787,7 +788,7 @@ Un carrousel comprend :
 
 Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches (chevrons fins, même tracé que les sliders du thème ; couleur réglable avec la variable `--df-car-arrow`, taille avec `.df-car-chevron`). La **liste des produits sélectionnés (contrôle)** de la fiche montre quels produits sortent et dans quel ordre (position, SKU) pour une page, un SKU de produit et un historique de test, sans enregistrer ; ce n'est pas le rendu du site, visible avec « Voir le rendu réel (ordinateur / mobile) ».
 
-**Statistiques** (liste et fiche, 7 / 30 / 90 jours) : **vues** (carrousel visible au moins à moitié à l'écran), **clics** sur un produit, **CTR** ; dans la fiche, les produits les plus vus avec leurs clics et CTR. Totaux par jour, sans donnée personnelle ; l'aperçu (favori « Tester DeepFind ») et la page Démo ne comptent pas. Les statistiques par produit sont purgées avec les journaux (`logs:purge`, au moins 30 jours).
+**Statistiques** (liste et fiche, 7 / 30 / 90 jours) : **vues** (carrousel visible au moins à moitié à l'écran), **clics** sur un produit, **CTR** ; en bas de la fiche (sous la liste de contrôle, bloc dépliant), les produits les plus vus avec leurs clics et CTR. Totaux par jour, sans donnée personnelle ; l'aperçu (favori « Tester DeepFind ») et la page Démo ne comptent pas. Les statistiques par produit sont purgées avec les journaux (`logs:purge`, au moins 30 jours).
 
 **Produit de la page (similaires)** : reconnu par l'adresse de la page (champ `url_path`, indexé depuis l'URL du flux). Le site peut l'indiquer directement : `<meta name="deepfind:sku" content="SKU-DU-PRODUIT">` (ou un attribut `data-df-sku`). **Après la mise à jour, lancez un import complet** pour indexer l'adresse des produits et le tri par clics.
 

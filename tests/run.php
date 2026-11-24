@@ -67,6 +67,44 @@ check('transform divide:100', Mapper::transform(['to_float', 'divide:100'], '42'
 check('transform split', Mapper::transform(['split:|'], 'a| b |c') === ['a', 'b', 'c']);
 check('transform replace', Mapper::transform(['replace:-| '], 'a-b') === 'a b');
 check('transform default', Mapper::transform(['default:simple'], '') === 'simple');
+// Aide (wiki) : Markdown sûr, liens, arborescence, toutes les pages et leurs liens valides
+$wm = new DeepFind\Wiki\Markdown('/admin/wiki/recommandations/popins', '/admin/wiki/images');
+$wh = $wm->render("# Titre\n\n## Section <b>\n\nTexte <script>alert(1)</script> **gras** `<i>` [a](../catalogue/imports) [b](javascript:alert(1)) [c](https://ex.com)\n\n"
+    . "![Capture](docs/screenshots/14-imports.png) ![x](../../.env)\n\n| A | B |\n|---|---|\n| `a|b` | 2 |\n\n> ⚠️ Attention\n\n- un\n  - deux\n\n```html\n<div>\n```");
+check('wiki : HTML échappé partout (texte, code, titres)', !str_contains($wh, '<script') && !str_contains($wh, '<b>') && !str_contains($wh, '<i>') && !str_contains($wh, '<div>')
+    && str_contains($wh, '&lt;script&gt;') && str_contains($wh, '<code>&lt;i&gt;</code>'), $wh);
+check('wiki : liens relatifs résolus, javascript: refusé, externe en nouvel onglet', str_contains($wh, 'href="/admin/wiki/recommandations/../catalogue/imports"') === false
+    && str_contains($wh, 'href="/admin/wiki/catalogue/imports"') && !str_contains($wh, 'javascript') && str_contains($wh, 'href="https://ex.com" target="_blank" rel="noopener"'), $wh);
+check('wiki : image réduite à son nom (pas de chemin), extension non image refusée', str_contains($wh, 'src="/admin/wiki/images/14-imports.png"') && !str_contains($wh, '.env"'), $wh);
+check('wiki : tableau (| dans le code), encadré, sous-liste, sommaire', str_contains($wh, '<td><code>a|b</code></td>') && str_contains($wh, 'wk-callout wk-warn')
+    && str_contains($wh, '<li>un<ul><li>deux</li></ul>') && array_column($wm->toc, 'id') === ['section-b'], $wh);
+check('wiki : adresse sans préfixe d\'ordre', DeepFind\Wiki\Wiki::slug('02-installation.md') === 'installation' && DeepFind\Wiki\Wiki::find('/admin/wiki/../../.env') === null);
+$wkBad = [];
+$wkNodes = DeepFind\Wiki\Wiki::flat();
+foreach ([...$wkNodes, DeepFind\Wiki\Wiki::find('/admin/wiki')] as $wn) {
+    if ($wn === null || $wn['file'] === null) {
+        $wkBad[] = $wn['path'] ?? 'accueil';
+        continue;
+    }
+    $wr = new DeepFind\Wiki\Markdown(rtrim($wn['path'], '/') . ($wn['type'] === 'page' ? '' : '/index'));
+    $whtml = $wr->render((string) file_get_contents($wn['file']));
+    preg_match_all('/(?:href|src)="([^"#]+)/', $whtml, $wl);
+    foreach ($wl[1] as $u) {
+        $u = html_entity_decode($u);
+        if (str_starts_with($u, '/admin/wiki/images/')) {
+            $ok = is_file(APP_ROOT . '/docs/screenshots/' . basename($u)) || is_file(APP_ROOT . '/docs/wiki/_images/' . basename($u));
+        } elseif (str_starts_with($u, '/admin/wiki')) {
+            $ok = DeepFind\Wiki\Wiki::find($u) !== null;
+        } else {
+            $ok = (bool) preg_match('#^(https?://|/)#', $u);
+        }
+        if (!$ok) {
+            $wkBad[] = $wn['path'] . ' → ' . $u;
+        }
+    }
+}
+check('wiki : chaque page a un titre, tous les liens et images internes existent', count($wkNodes) > 30 && $wkBad === []
+    && !in_array('', array_column($wkNodes, 'title'), true), implode(', ', $wkBad));
 $threw = false;
 try {
     Mapper::transform(['inconnue'], 'x');

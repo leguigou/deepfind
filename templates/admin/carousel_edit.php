@@ -164,6 +164,13 @@ use DeepFind\Rules\Popins;
     </div>
   </div>
 
+  <div class="cr-foot">
+    <?php if ($c['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer le carrousel « <?= e($c['name']) ?> » et ses statistiques ?"><?= admin_icon('trash') ?> Supprimer ce carrousel</button><?php endif; ?>
+    <button type="button" class="btn btn-light lv-open" data-live-preview><?= admin_icon('eye') ?> Aperçu ordinateur / mobile</button>
+    <a class="btn btn-light" href="<?= e(url('/admin/carousels')) ?>">Annuler</a>
+    <button class="btn">Enregistrer</button>
+  </div>
+
   <div class="card ca-preview">
     <div class="ca-preview-head">
       <strong>Liste des produits sélectionnés (contrôle)</strong>
@@ -183,8 +190,8 @@ use DeepFind\Rules\Popins;
   </div>
 
   <?php if ($top): ?>
-    <div class="card ca-top">
-      <strong>Produits les plus vus dans ce carrousel</strong> <small class="muted">(30 derniers jours)</small>
+    <details class="card ca-top">
+      <summary><?= admin_icon('chevron-down', 'ca-top-chev') ?><strong>Produits les plus vus dans ce carrousel</strong> <small class="muted">(30 derniers jours, <?= count($top) ?> produit<?= count($top) > 1 ? 's' : '' ?>)</small></summary>
       <div class="table-scroll"><table class="table">
         <thead><tr><th>Produit</th><th class="num">Vues</th><th class="num">Clics</th><th class="num">CTR</th></tr></thead>
         <tbody><?php foreach ($top as $t): ?>
@@ -192,15 +199,8 @@ use DeepFind\Rules\Popins;
             <td class="num"><?= fmt_n($t['views']) ?></td><td class="num"><?= fmt_n($t['clicks']) ?></td><td class="num"><?= $t['ctr'] === null ? '—' : fmt_n($t['ctr'], 1) . ' %' ?></td></tr>
         <?php endforeach; ?></tbody>
       </table></div>
-    </div>
+    </details>
   <?php endif; ?>
-
-  <div class="cr-foot">
-    <?php if ($c['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer le carrousel « <?= e($c['name']) ?> » et ses statistiques ?"><?= admin_icon('trash') ?> Supprimer ce carrousel</button><?php endif; ?>
-    <button type="button" class="btn btn-light lv-open" data-live-preview><?= admin_icon('eye') ?> Aperçu ordinateur / mobile</button>
-    <a class="btn btn-light" href="<?= e(url('/admin/carousels')) ?>">Annuler</a>
-    <button class="btn">Enregistrer</button>
-  </div>
 </form>
 <?php if ($c['id']): ?>
   <form method="post" action="<?= e(url('/admin/carousels/delete')) ?>" id="cr-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>"></form>
