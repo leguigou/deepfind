@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=30" defer
+<script src="https://search.example.com/widget/deepfind.js?v=31" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=29` en `?v=30`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=30` en `?v=31`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -384,7 +384,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | Rubrique | Page | À quoi ça sert |
 |---|---|---|
 | | Tableau de bord | État du moteur, recherches et taux sans résultat sur 24 h, nombre de produits (et de produits désactivés auto), derniers imports, alertes de configuration |
-| **Analyse** | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV (voir « Audience » ci-dessous) |
+| **Analyse** | Temps réel & charge | Supervision en direct : visiteurs actifs, recherches par minute, temps de réponse (moyenne, 95e percentile), pages vues, erreurs, charge du processeur et mémoire ; courbes et carte heure par heure sur 5 jours (section 6, « Temps réel & charge ») |
+| | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV (voir « Audience » ci-dessous) |
 | | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | | Journal des recherches | Détail filtrable et exportable |
 | **Catalogues** | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
@@ -521,6 +522,16 @@ Un bloc par thème, une ligne par réglage (valeur par défaut rappelée) :
 - **Widget sur le site** : comportement de la touche Entrée, blocage de l'autocomplétion d'origine du site, changement de photo au survol d'un produit (deuxième image, activé par défaut).
 - **Journaux & import** : journalisation des recherches, conservation des journaux, seuil de sécurité des imports complets.
 
+### Temps réel & charge
+
+**Analyse › Temps réel & charge** suit en direct l'activité du site et la charge du serveur DeepFind.
+
+- **Période** : 1 heure, 6 heures, 24 heures ou 5 jours, ou **depuis un instant précis** (5 jours au plus). La fin est toujours « maintenant » : en mode **En direct** (actif par défaut), la page se met à jour toutes les 15 secondes et la fenêtre glisse avec le temps. Pas des courbes : 1 minute (1 h) à 1 heure (5 jours).
+- **Indicateurs** : visiteurs actifs (personnes différentes vues dans les 5 dernières minutes), recherches par minute (moyenne des 5 dernières minutes), temps de réponse moyen des recherches et 95e percentile, recherches (finales, d'après le journal ; à défaut, requêtes à chaque frappe) et part servie par le cache, pages vues et clics, requêtes de l'API, charge du processeur (charge rapportée au nombre de cœurs) et mémoire, erreurs serveur et requêtes refusées (robots, limites), recherches sans résultat. Comparaison avec la période précédente de même durée (sauf 5 jours).
+- **Graphiques** : activité (recherches, pages vues, clics), visiteurs actifs, temps de réponse (avec le seuil de 500 ms), charge du serveur, répartition des temps de réponse, **carte heure par heure des 5 derniers jours**. Survolez une courbe pour le détail ; « Voir les données sous forme de tableau » liste toutes les valeurs.
+
+Fonctionnement : chaque appel de l'API publique (le widget) incrémente des compteurs de la minute **en mémoire** (APCu ou Redis, aucune écriture en base par requête). Une fois par minute, ils sont versés dans `metrics_minute` ; la page ajoute la minute en cours, lue en mémoire. La charge de la machine est relevée chaque minute (`schedule:run`). Rien de personnel n'est conservé : les visiteurs actifs utilisent l'empreinte du jour de la mesure d'audience (sans adresse IP), effacée au bout de 15 minutes ; les compteurs sont gardés **6 jours**. Les recherches tapées dans l'extranet (aperçu interne, démo) ne sont pas comptées. Avec plusieurs serveurs web et APCu, chaque serveur verse ses propres compteurs (les totaux restent justes) ; la charge affichée est celle d'un des serveurs.
+
 ### Audience
 
 **Analyse › Audience** suit l'évolution, jour après jour, de l'usage du site et du moteur de recherche, sans aucune information personnelle :
@@ -594,7 +605,7 @@ Un **layer** est une façon d'afficher la fenêtre de recherche. Un seul est act
 
 **Modèle de carte produit** :
 - HTML simple (div, span, p, strong, img…). Les scripts, événements (`onclick`…) et liens `javascript:` sont retirés à l'enregistrement, puis de nouveau par le widget. Pas de lien : la carte entière mène déjà au produit.
-- Le lien vers la page produit, `<a class="df-card" href="{{url}}">`, est posé automatiquement autour du modèle (toute la carte est cliquable) : l'éditeur le rappelle en haut et en bas du code, en lecture seule.
+- Le lien de la carte, `<a class="df-card" href="…">`, est posé automatiquement autour du modèle (toute la carte est cliquable). L'éditeur l'affiche en haut du code et la valeur de `href` est **modifiable** : `{{url}}` par défaut ; `{{url}}?utm_source=deepfind&utm_medium=recherche` ajoute des paramètres à l'adresse du produit (proprement, même si elle contient déjà `?` ou `#…`) ; `{{url_path}}` = chemin seul (ex. `/c4-predator.html`) sur le domaine de la page ; variables `{{sku}}`, `{{id}}`. Il doit commencer par `{{url}}`, `{{url_path}}`, `https://` ou `/` (sinon il est refusé et le lien par défaut s'applique).
 - Variables (valeurs échappées) : `{{name}}`, `{{brand}}`, `{{image}}`, `{{url}}` (adresse de la page produit, ou de la déclinaison trouvée), `{{price}}`, `{{old_price}}`, `{{discount}}`, `{{from}}`, `{{sku}}`, `{{variant}}`, `{{stock}}`, `{{out_of_stock}}`, `{{new}}`, `{{rating}}`, `{{price_class}}`, `{{media_class}}`.
 - Un élément de classe **`df-if-`*variable*** (ex. `df-if-discount`) n'est affiché que si la variable n'est pas vide. Une image de classe `df-img` change au survol si le produit a une seconde image (désactivable : Paramètres › Widget sur le site).
 - Un modèle identique à l'origine n'est pas enregistré : le layer suit alors le modèle d'origine.
@@ -761,7 +772,7 @@ Un carrousel comprend :
    - **Apprentissage** (facultatif) : les produits sont reclassés selon leur **taux de clic dans ce carrousel** (30 jours, taux lissé : un produit encore peu montré garde le taux moyen et sa chance, un produit souvent montré et peu cliqué descend) ;
    - nombre de produits (2 à 48), en stock uniquement.
    Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
-5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
+5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche) et **lien de la carte** propre au carrousel (ex. `{{url}}?utm_campaign=carrousel-accueil` ; vide = celui de la recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
 
 Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. La **liste des produits sélectionnés (contrôle)** de la fiche montre quels produits sortent et dans quel ordre (position, SKU) pour une page, un SKU de produit et un historique de test, sans enregistrer ; ce n'est pas le rendu du site, visible avec « Voir le rendu réel (ordinateur / mobile) ».
 
@@ -801,6 +812,7 @@ Délai de prise en compte : quelques minutes (configuration du widget gardée en
 - **Adresse IP** : jamais stockée en clair. On conserve une **empreinte** (HMAC avec `APP_SECRET`) pour compter et bloquer, et une **IP tronquée** (`203.0.113.x`) pour l'affichage. Aucun cookie.
 - **Conservation** : 90 jours par défaut (Paramètres), purge automatique chaque nuit (`logs:purge`).
 - **Carrousels** : statistiques en totaux quotidiens (par carrousel et par produit), sans donnée personnelle. L'historique des carrousels personnalisés reste dans le navigateur du visiteur, seulement avec son consentement (réglable), et n'est jamais enregistré par DeepFind (voir section 8).
+- **Supervision** (Temps réel & charge) : compteurs par minute sans donnée personnelle (6 jours) ; visiteurs actifs repérés par l'empreinte du jour de la mesure d'audience, sans IP, effacée après 15 minutes.
 - **Popins** : statistiques en totaux quotidiens, sans donnée personnelle. Le choix « ne plus afficher pendant N jours » est gardé dans le navigateur du visiteur (`localStorage` / `sessionStorage`), sans identifiant, et n'est jamais envoyé au serveur.
 - **Mesure d'audience** (Analyse › Audience) : aucun cookie ni stockage sur l'appareil, aucune IP enregistrée ; empreinte valable une journée (clé secrète du jour détruite à la fin de la journée), puis seuls des totaux quotidiens sont gardés. Désactivable entièrement ou par type de mesure.
 - **À faire valider** par votre référent RGPD / DPO : durée de conservation, mention dans la politique de confidentialité du site, et l'absence de consentement pour la mesure d'audience (méthode conçue pour entrer dans l'exemption de la CNIL pour la mesure d'audience, à confirmer) et pour la mémorisation de la fermeture des popins (choix exprimé par le visiteur, à confirmer également). Ce README ne constitue pas un avis juridique.

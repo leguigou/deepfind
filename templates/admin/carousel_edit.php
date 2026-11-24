@@ -1,5 +1,5 @@
 <?php
-/** @var array $c @var array $fields @var array $urlOps @var array $items @var ?array $stats @var array $top @var string $personal @var array $searchTpl */
+/** @var array $c @var array $fields @var array $urlOps @var array $items @var ?array $stats @var array $top @var string $personal @var array $searchTpl @var string $searchLink */
 use DeepFind\Rules\Carousels;
 use DeepFind\Rules\Popins;
 ?>
@@ -140,7 +140,9 @@ use DeepFind\Rules\Popins;
             <button type="button" class="btn btn-sm btn-light" data-tpl-reset title="Remettre le modèle de la fenêtre de recherche dans l'onglet ouvert">↻ Revenir au modèle par défaut</button>
           </span>
         </div>
-        <div class="tpl-wrap" aria-hidden="true"><code>&lt;a class="df-card" href="{{url}}"&gt;</code><span>ajouté automatiquement : toute la carte mène à la page produit</span></div>
+        <div class="tpl-wrap tpl-wrap-edit"><code>&lt;a class="df-card" href="</code><input data-f="card_link" class="tpl-link" maxlength="500" spellcheck="false" autocomplete="off"
+          placeholder="<?= e($searchLink) ?>" aria-label="Lien de la carte produit (href)"><code>"&gt;</code>
+          <span>vide : comme la recherche (<code><?= e($searchLink) ?></code>) ; ex. <code>{{url}}?utm_campaign=carrousel</code>, <code>{{url_path}}</code></span></div>
         <textarea data-f="card_template" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="desktop" aria-label="Modèle de carte produit, ordinateur"></textarea>
         <textarea data-f="card_template_mobile" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="mobile" hidden aria-label="Modèle de carte produit, mobile"
           placeholder="Vide : le modèle ordinateur s'applique aussi sur mobile."></textarea>

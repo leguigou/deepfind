@@ -473,6 +473,7 @@ CREATE TABLE IF NOT EXISTS carousels (
   custom_css MEDIUMTEXT NOT NULL,
   card_template TEXT NULL,
   card_template_mobile TEXT NULL,
+  card_link VARCHAR(500) NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang, position)
@@ -499,3 +500,50 @@ CREATE TABLE IF NOT EXISTS carousel_product_stats (
   PRIMARY KEY (project_id, carousel_id, product_id, day),
   KEY idx_day (day)
 ) ENGINE=InnoDB;
+
+-- Supervision (Analyse › Temps réel & charge) : compteurs de l'API par minute et par projet, cumulés en mémoire
+-- (APCu / Redis) puis versés une fois par minute (Logging\Metrics) ; conservés 6 jours. Aucune donnée personnelle.
+-- s_* : requêtes de recherche (temps de réponse cumulé, répartition par durée h50 = moins de 50 ms…).
+CREATE TABLE IF NOT EXISTS metrics_minute (
+  project_id INT UNSIGNED NOT NULL,
+  minute DATETIME NOT NULL,
+  requests INT UNSIGNED NOT NULL DEFAULT 0,
+  searches INT UNSIGNED NOT NULL DEFAULT 0,
+  searches_cached INT UNSIGNED NOT NULL DEFAULT 0,
+  searches_empty INT UNSIGNED NOT NULL DEFAULT 0,
+  pageviews INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  configs INT UNSIGNED NOT NULL DEFAULT 0,
+  events INT UNSIGNED NOT NULL DEFAULT 0,
+  errors INT UNSIGNED NOT NULL DEFAULT 0,
+  denied INT UNSIGNED NOT NULL DEFAULT 0,
+  visitors INT UNSIGNED NOT NULL DEFAULT 0,
+  ms_sum BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  s_ms_sum BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  h50 INT UNSIGNED NOT NULL DEFAULT 0,
+  h100 INT UNSIGNED NOT NULL DEFAULT 0,
+  h200 INT UNSIGNED NOT NULL DEFAULT 0,
+  h500 INT UNSIGNED NOT NULL DEFAULT 0,
+  h1000 INT UNSIGNED NOT NULL DEFAULT 0,
+  hmore INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, minute),
+  KEY idx_minute (minute)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Charge de la machine par minute (commune à tous les projets) : charge moyenne sur 1 min, nombre de cœurs, mémoire utilisée.
+CREATE TABLE IF NOT EXISTS server_minute (
+  minute DATETIME NOT NULL PRIMARY KEY,
+  load1 DECIMAL(7,2) NOT NULL DEFAULT 0,
+  cpus SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  mem_pct DECIMAL(5,1) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Visiteurs actifs (« en ce moment ») : empreinte du jour (celle de la mesure d'audience, sans IP) et dernière activité ;
+-- une écriture par visiteur et par minute au plus, lignes supprimées au bout de 15 minutes.
+CREATE TABLE IF NOT EXISTS live_visitors (
+  project_id INT UNSIGNED NOT NULL,
+  vhash CHAR(32) NOT NULL,
+  last_seen INT UNSIGNED NOT NULL,
+  PRIMARY KEY (project_id, vhash),
+  KEY idx_seen (project_id, last_seen)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;

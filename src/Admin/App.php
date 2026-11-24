@@ -112,6 +112,8 @@ final class App
         'POST /admin/integration/sorts' => [IntegrationController::class, 'saveSorts'],
         'GET /admin/stats' => [StatsController::class, 'stats'],
         'GET /admin/logs' => [StatsController::class, 'logs'],
+        'GET /admin/monitor' => [MonitorController::class, 'index'],
+        'GET /admin/monitor/data' => [MonitorController::class, 'data'],
         'GET /admin/audience' => [AudienceController::class, 'index'],
         'GET /admin/audience/export' => [AudienceController::class, 'export'],
         'POST /admin/audience/settings' => [AudienceController::class, 'settings'],

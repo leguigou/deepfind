@@ -66,7 +66,7 @@ final class IntegrationController
             App::back('/admin/integration');
             return;
         }
-        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'max_width', 'max_width_unit', 'cols_desktop', 'cols_mobile', 'per_page_desktop', 'per_page_mobile', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile']));
+        $settings = array_intersect_key($_POST, array_flip(['input', 'container', 'gap', 'max_width', 'max_width_unit', 'cols_desktop', 'cols_mobile', 'per_page_desktop', 'per_page_mobile', 'min_chars', 'logo', 'color_primary', 'color_contrast', 'color_text', 'css', 'css_mobile', 'card_template', 'card_template_mobile', 'card_link']));
         $settings['url_state'] = isset($_POST['url_state']);
         $type = isset(WidgetConfig::TYPES[$_POST['type'] ?? '']) ? (string) $_POST['type'] : $l['type'];
         if ($type === 'embedded' && trim((string) ($settings['container'] ?? '')) === '') {
@@ -83,6 +83,11 @@ final class IntegrationController
         $changed = static fn (string $k) => trim((string) ($settings[$k] ?? '')) !== '' && $saved[$k] !== trim((string) $settings[$k]);
         if ($changed('card_template') || $changed('card_template_mobile')) {
             Auth::flash('warn', 'Modèle de carte produit : des balises ou attributs non autorisés (scripts, événements, liens javascript…) ont été retirés.');
+        }
+        $link = trim((string) ($settings['card_link'] ?? ''));
+        if ($link !== '' && $link !== '{{url}}' && $saved['card_link'] === '') {
+            Auth::flash('error', 'Lien de la carte refusé (lien par défaut {{url}} conservé) : il doit commencer par {{url}}, {{url_path}}, https:// ou /, '
+                . 'sans espace ni guillemet, avec les seules variables {{url}}, {{url_path}}, {{sku}}, {{id}}.');
         }
         Auth::flash('ok', 'Layer enregistré (pris en compte sur le site sous 5 minutes).');
         App::back('/admin/integration/layer', ['id' => $id]);

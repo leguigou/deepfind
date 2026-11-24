@@ -38,6 +38,22 @@ final class MysqlStore implements KvStore
         return (int) substr((string) $v, 2);
     }
 
+    public function incrBy(string $key, int $by, int $ttl): int
+    {
+        $by = max(0, $by);
+        $now = time();
+        $exp = $now + max(1, $ttl);
+        Db::exec(
+            "INSERT INTO kv_store (k, v, expires_at) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               v = IF(expires_at < ?, ?, CONCAT('i:', CAST(SUBSTRING(v, 3, LENGTH(v) - 3) AS UNSIGNED) + ?, ';')),
+               expires_at = IF(expires_at < ?, ?, expires_at)",
+            [$key, 'i:' . $by . ';', $exp, $now, 'i:' . $by . ';', $by, $now, $exp]
+        );
+        $v = Db::value('SELECT v FROM kv_store WHERE k = ?', [$key]);
+        return (int) substr((string) $v, 2);
+    }
+
     public function delete(string $key): void
     {
         Db::exec('DELETE FROM kv_store WHERE k = ?', [$key]);

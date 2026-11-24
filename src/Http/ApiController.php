@@ -33,6 +33,7 @@ final class ApiController
 {
     public function handle(string $method, string $path): void
     {
+        $t0 = hrtime(true);
         try {
             match (true) {
                 $path === '/api/v1/search' && in_array($method, ['GET', 'HEAD'], true) => $this->search(),
@@ -52,6 +53,16 @@ final class ApiController
         } catch (\Throwable $e) {
             error_log('[deepfind] ' . $e::class . ': ' . $e->getMessage() . ' @' . $e->getFile() . ':' . $e->getLine());
             Response::json(['error' => 'server_error'], 500);
+        } finally {
+            // supervision : après l'envoi de la réponse (compteurs en mémoire, sans écriture en base par requête)
+            if ($method !== 'OPTIONS') {
+                try {
+                    \DeepFind\Logging\Metrics::record($path, (int) (http_response_code() ?: 200), (int) round(((Response::$sentAt ?? hrtime(true)) - $t0) / 1e6),
+                        ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+                } catch (\Throwable $e) {
+                    error_log('[deepfind] supervision : ' . $e->getMessage());
+                }
+            }
         }
     }
 
@@ -95,6 +106,7 @@ final class ApiController
         $applied = array_map('intval', (array) ($data['_cr'] ?? []));
         unset($data['_cr']);
         $data['took_ms'] = $tookMs;
+        \DeepFind\Logging\Metrics::$search = ['cached' => $cached, 'empty' => (int) ($data['total'] ?? 0) === 0];
         $data['widget'] = ['enter_submit' => Settings::int('widget_enter_submit') === 1];
         $data['cached'] = $cached;
         Response::json($data, 200, $cors + ['Cache-Control' => 'private, max-age=30', 'Server-Timing' => 'app;dur=' . $tookMs]);
@@ -311,6 +323,7 @@ final class ApiController
         }
         // Toute la suite (paramètres, index, règles, journaux) concerne le projet de cette clé
         \DeepFind\Project::use((int) $key['project_id']);
+        \DeepFind\Logging\Metrics::$project = (int) $key['project_id'];
         $origin = ApiKeys::checkOrigin($key, $_SERVER);
         if ($origin === null) {
             Response::json(['error' => 'origin_not_allowed'], 403);

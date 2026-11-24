@@ -44,6 +44,16 @@ final class RedisStore implements KvStore
         return $v;
     }
 
+    public function incrBy(string $key, int $by, int $ttl): int
+    {
+        $k = $this->prefix . $key;
+        $v = (int) $this->redis->incrBy($k, max(0, $by));
+        if ($v === max(0, $by)) {
+            $this->redis->expire($k, max(1, $ttl));
+        }
+        return $v;
+    }
+
     public function delete(string $key): void
     {
         $this->redis->del($this->prefix . $key);

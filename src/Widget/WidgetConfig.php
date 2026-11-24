@@ -131,7 +131,38 @@ final class WidgetConfig
             // modèle égal au modèle par défaut (ordinateur) ou à celui de l'ordinateur (mobile) : non stocké (vide = celui-ci)
             'card_template' => $tplDesk = self::sameTemplate($d = self::cleanCardTemplate((string) ($in['card_template'] ?? '')), self::DEFAULT_CARD_TEMPLATE) ? '' : $d,
             'card_template_mobile' => self::sameTemplate($m = self::cleanCardTemplate((string) ($in['card_template_mobile'] ?? '')), $tplDesk !== '' ? $tplDesk : self::DEFAULT_CARD_TEMPLATE) ? '' : $m,
+            // lien de la carte (href posé autour du modèle) : vide = {{url}}
+            'card_link' => (string) (self::cleanCardLink((string) ($in['card_link'] ?? '')) ?? ''),
         ];
+    }
+
+    /** Variables du lien de la carte produit. */
+    public const LINK_VARS = [
+        'url' => 'adresse de la page produit (déclinaison trouvée, sinon produit)', 'url_path' => 'son chemin seul (ex. /c4-predator.html), sur le domaine du site',
+        'sku' => 'SKU', 'id' => 'identifiant du produit',
+    ];
+
+    /**
+     * Lien de la carte : commence par {{url}}, {{url_path}}, https:// ou / ; seules les variables LINK_VARS ; pas d'espace,
+     * de guillemet ni de chevron. Retourne '' pour le lien par défaut ({{url}}), null s'il est refusé.
+     * Ex. « {{url}}?utm_source=deepfind » (paramètres ajoutés proprement par le widget, même si l'adresse a déjà ? ou #).
+     */
+    public static function cleanCardLink(string $link): ?string
+    {
+        $vars = implode('|', array_keys(self::LINK_VARS));
+        // variables écrites avec des espaces ({{ url_path }}) : normalisées avant les contrôles
+        $link = (string) preg_replace('/\{\{\s*(' . $vars . ')\s*\}\}/', '{{$1}}', trim($link));
+        if ($link === '' || $link === '{{url}}') {
+            return '';
+        }
+        if (mb_strlen($link, 'UTF-8') > 500 || preg_match('/[\s"\'<>\\`]/', $link)) {
+            return null;
+        }
+        $rest = (string) preg_replace('/\{\{(' . $vars . ')\}\}/', '', $link);
+        if (str_contains($rest, '{{') || str_contains($rest, '}}')) {
+            return null;
+        }
+        return preg_match('#^(\{\{(url|url_path)\}\}|https?://|/(?!/))#i', $link) ? $link : null;
     }
 
     /**
@@ -399,7 +430,7 @@ HTML;
     // ------------------------------------------------------------------ Pour le widget
 
     /** Version du widget à charger (paramètre ?v= du code du site et du favori « Tester DeepFind »). */
-    public const WIDGET_VERSION = 30;
+    public const WIDGET_VERSION = 31;
 
     /** Durée de validité d'un favori « Tester DeepFind » (jeton d'aperçu). */
     public const PREVIEW_DAYS = 7;

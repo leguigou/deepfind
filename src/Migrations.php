@@ -19,7 +19,8 @@ final class Migrations
         'redirects' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirections' => ['new_tab' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER auto'],
         'popins' => ['min_height' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER max_width'],
-        'carousels' => ['card_template' => 'TEXT NULL AFTER custom_css', 'card_template_mobile' => 'TEXT NULL AFTER card_template'],
+        'carousels' => ['card_template' => 'TEXT NULL AFTER custom_css', 'card_template_mobile' => 'TEXT NULL AFTER card_template',
+            'card_link' => 'VARCHAR(500) NULL AFTER card_template_mobile'],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id', 'custom_result_id' => 'INT UNSIGNED NULL AFTER sid'],
         'sources' => [

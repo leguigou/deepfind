@@ -63,6 +63,7 @@ final class CarouselsController
             'active' => 'carousels', 'c' => $c, 'fields' => $fields, 'urlOps' => PageRules::URL_OPS, 'items' => $items,
             'stats' => $c['id'] ? Carousels::stats([$c['id']], 30)[$c['id']] : null, 'top' => $top, 'personal' => Carousels::personalMode(),
             'searchTpl' => Carousels::searchTemplates(),
+            'searchLink' => (string) ((\DeepFind\Widget\WidgetConfig::activeLayer()['settings']['card_link'] ?? '') ?: '{{url}}'),
         ], $c['id'] ? 'Carrousel « ' . $c['name'] . ' »' : 'Nouveau carrousel');
     }
 
@@ -78,6 +79,11 @@ final class CarouselsController
             return;
         }
         $id = Carousels::save($lang, $c, $id > 0 ? $id : null);
+        $link = trim((string) ($in['card_link'] ?? ''));
+        if ($link !== '' && $link !== '{{url}}' && $c['card_link'] === '') {
+            Auth::flash('error', 'Lien de la carte refusé (celui de la recherche s\'applique) : il doit commencer par {{url}}, {{url_path}}, https:// ou /, '
+                . 'sans espace ni guillemet, avec les seules variables {{url}}, {{url_path}}, {{sku}}, {{id}}.');
+        }
         Auth::flash('ok', sprintf('Carrousel « %s » enregistré%s.', $c['name'], $c['active'] ? ' (visible sur le site d\'ici quelques minutes)' : ', inactif'));
         App::back('/admin/carousels/edit', ['id' => $id]);
     }

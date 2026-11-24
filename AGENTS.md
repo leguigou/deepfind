@@ -68,6 +68,9 @@ public/assets/live-preview.js  aperçu direct (popins, carrousels) : cadre /admi
 src/Search/Relevance.php       réglages de pertinence : ordre des champs, mode de correspondance (all puis repli « approchant »),
                                seuil rankingScoreThreshold, position de biz_score et de « attribute » dans rankingRules
 src/Security/                  ClientIp (HMAC, masquage, proxies de confiance), BotGuard (seuils/blocages), ApiKeys (domaines)
+src/Logging/Metrics.php        supervision : compteurs par minute dans le KvStore (incr / incrBy, jamais d'écriture en base par requête),
+                               versés dans metrics_minute une fois par minute (maybeFlush), server_minute (charge), live_visitors ;
+                               Metrics::record() appelé par ApiController::handle (finally), lu par Admin\MonitorController (monitor.js)
 src/Logging/SearchLogger.php   journal des recherches (is_final via sid), clics, purge
 src/Http/ApiController.php     /api/v1/config (projet actif ? + layer actif, filtres, tris, popins), /api/v1/search, /api/v1/click,
                                /api/v1/visit, /api/v1/popin, /api/v1/carousels, /api/v1/carousel, /api/v1/health
@@ -98,7 +101,7 @@ tests/                         run.sh (unitaires + intégration), run.php, fake-
 7. **Les valeurs de filtre Meilisearch** passent toujours par `Search\Filter` ; les codes d'attributs, par `Mapper::code()`.
 8. **Les secrets** (`.env`, clés Meilisearch, jeton d'administration) ne vont ni dans le dépôt, ni dans les journaux, ni dans les réponses.
 
-10. **Projets : toute requête sur sources, synonyms, query_rules, redirects, product_boosts, search_logs, click_logs, api_keys, popins, popin_stats, carousels, carousel_stats, carousel_product_stats
+10. **Projets : toute requête sur sources, synonyms, query_rules, redirects, product_boosts, search_logs, click_logs, api_keys, popins, popin_stats, carousels, carousel_stats, carousel_product_stats, metrics_minute, live_visitors
     filtre ou renseigne `project_id = Project::id()`** (les import_runs passent par leur source). Les paramètres propres à un projet
     sont dans `project_settings` (via `Settings`), les communs (anti-robots, `Migrations::GLOBAL_SETTINGS`) dans `settings`.
     Toute clé de cache dépendant des données inclut `Project::id()`. Les tests d'intégration vérifient l'isolation entre projets.

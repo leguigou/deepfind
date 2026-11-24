@@ -212,7 +212,9 @@ $colors = [
         $mob = $s[$key . '_mobile'] !== '' || $default === '' ? $s[$key . '_mobile'] : $desk; ?>
         <?php if ($key === 'card_template'): ?>
           <?php // lien de la carte : posé par le widget autour du modèle (affiché ici pour information, non modifiable) ?>
-          <div class="tpl-wrap" aria-hidden="true"><code>&lt;a class="df-card" href="{{url}}"&gt;</code><span>ajouté automatiquement : toute la carte mène à la page produit</span></div>
+          <div class="tpl-wrap tpl-wrap-edit"><code>&lt;a class="df-card" href="</code><input name="card_link" class="tpl-link" value="<?= e(($s['card_link'] ?? '') !== '' ? $s['card_link'] : '{{url}}') ?>"
+            maxlength="500" spellcheck="false" autocomplete="off" aria-label="Lien de la carte produit (href)"><code>"&gt;</code>
+            <span>lien de toute la carte, modifiable : ex. <code>{{url}}?utm_source=deepfind</code> ou <code>{{url_path}}</code></span></div>
         <?php endif; ?>
         <textarea name="<?= e($key) ?>" rows="16" class="lp-code" spellcheck="false" data-editor-device="desktop" aria-label="<?= e($title) ?> ordinateur"><?= e($desk) ?></textarea>
         <textarea name="<?= e($key) ?>_mobile" rows="16" class="lp-code" spellcheck="false" data-editor-device="mobile" hidden aria-label="<?= e($title) ?> mobile"
@@ -240,7 +242,9 @@ $colors = [
   $editor('lp-card-tpl', 'Modèle de carte produit', 'HTML', 'card_template', $s, WidgetConfig::DEFAULT_CARD_TEMPLATE,
       '<p class="muted small">HTML simple (div, span, p, strong, img…) ; pas de script ni de lien : la carte entière mène déjà au produit.
         Un élément de classe <code>df-if-</code><em>variable</em> (ex. <code>df-if-discount</code>) n\'est affiché que si la variable n\'est pas vide.
-        Le lien vers la page produit (<code>{{url}}</code>) est posé automatiquement autour du modèle : il est rappelé en haut et en bas du code. Variables disponibles :</p>' . $vars);
+        Le lien de la carte est posé autour du modèle (ligne du haut, modifiable) : <code>{{url}}</code> par défaut ; <code>{{url}}?utm_source=deepfind</code> ajoute des paramètres
+        à l\'adresse du produit (avant un éventuel <code>#</code>) ; <code>{{url_path}}</code> = son chemin seul sur le domaine du site ; aussi <code>{{sku}}</code>, <code>{{id}}</code>.
+        Il doit commencer par <code>{{url}}</code>, <code>{{url_path}}</code>, <code>https://</code> ou <code>/</code>. Variables du modèle :</p>' . $vars);
   ?>
 </form>
 
