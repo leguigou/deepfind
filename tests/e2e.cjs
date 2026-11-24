@@ -21,6 +21,16 @@ fs.mkdirSync(OUT, { recursive: true });
   // Fenêtre de confirmation de l'extranet (remplace confirm() du navigateur) : bouton de validation
   const confirmModal = async () => { await page.click('dialog.modal-confirm[open] [data-ok]'); };
   const check = (name, cond) => { if (cond) { ok++; console.log('  ✔ ' + name); } else { fail.push(name); console.log('  ✘ ' + name); } };
+  // Fiche enregistrée : « Supprimer » sur la même ligne et à la même hauteur que le bouton « Enregistrer »
+  const deleteAligned = async () => page.evaluate(() => {
+    const del = document.querySelector('.cr-delete-btn');
+    const row = del && del.parentElement;
+    const save = row && Array.prototype.filter.call(row.querySelectorAll('button.btn'), (b) => !b.classList.contains('btn-light') && !b.classList.contains('cr-delete-btn'))[0];
+    if (!del || !save) { return false; }
+    const a = del.getBoundingClientRect();
+    const b = save.getBoundingClientRect();
+    return Math.abs(a.top - b.top) < 2 && Math.abs(a.height - b.height) < 2 && a.left < b.left;
+  });
 
   await page.goto(BASE + '/admin');
   check('redirection vers la connexion', page.url().includes('/admin/login'));
@@ -213,7 +223,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await Promise.all([page.waitForNavigation(), page.click('.modal-foot button.btn:not(.btn-light)')]);
   check('règles de boost : règle enregistrée', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('×2'));
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
-  await page.click('form[action$="/admin/boost-rules/delete"] button');
+  await page.click('form[action$="/admin/boost-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Cache : visibilité et purge
@@ -426,7 +436,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('règles de page : ✕ élargit à tout le catalogue', await shop.locator('.df-card').count() > nLimited && (await shop.textContent('.df-pagefilter')).includes('tout le catalogue'));
   await sc.close();
   await page.goto(BASE + '/admin/page-rules');
-  await page.click('form[action$="/admin/page-rules/delete"] button');
+  await page.click('form[action$="/admin/page-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('règles de page : suppression', (await page.textContent('body')).includes('Règle supprimée'));
   // « contient » : textes en tags, enregistrés puis réaffichés
@@ -439,11 +449,12 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('.br-cond .tag-input input.br-text', 'ress');
   await page.press('.br-cond .tag-input input.br-text', 'Enter');
   await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
+  check('fiches : « Supprimer » aligné avec « Enregistrer » (règle selon la page)', await deleteAligned());
   check('règles de page : « contient » proposé, enregistré et réaffiché', lopOptions.join(',') === 'in,not_in,contains,not_contains'
     && (await page.textContent('body')).includes('enregistrée') && await page.inputValue('.br-cond select.br-op') === 'contains'
     && (await page.textContent('.br-cond .tag-input')).includes('ress'));
   page.once('dialog', () => {});
-  await page.click('form[action$="/admin/page-rules/delete"] button');
+  await page.click('form[action$="/admin/page-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Popins : création dans l'extranet, affichage sur un faux site (pages choisies, fermeture mémorisée, statistiques)
@@ -460,6 +471,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('[data-f=link_url]', BASE + '/boutique/soldes.html');
   await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('popins : popin créée', (await page.textContent('body')).includes('Popin « Popin e2e » enregistrée'));
+  check('fiches : « Supprimer » aligné avec « Enregistrer » (popin)', await deleteAligned());
   check('popins : fiche réaffichée (pages, exclusion, délai)', await page.inputValue('[data-urls=urls] .pr-url-text') === '/boutique/promo/'
     && await page.inputValue('[data-urls=exclude_urls] .pr-url-text') === '/boutique/promo/panier' && await page.inputValue('[data-f=delay_seconds]') === '0');
   await page.screenshot({ path: OUT + '/popin-fiche.png', fullPage: true });
@@ -528,7 +540,7 @@ fs.mkdirSync(OUT, { recursive: true });
   // N°, affichages, clics, CTR, fermetures
   check('popins : statistiques (3 affichages, 1 clic, 2 fermetures)', ppNums[1] === '3' && ppNums[2] === '1' && ppNums[4] === '2');
   await page.screenshot({ path: OUT + '/popin-liste.png', fullPage: true });
-  await page.click('form[action$="/admin/popins/delete"] button');
+  await page.click('form[action$="/admin/popins/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('popins : suppression', (await page.textContent('body')).includes('Popin supprimée'));
 
@@ -593,7 +605,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await pp3.waitForTimeout(400);
   await pp3.screenshot({ path: OUT + '/popin-html-site.png' });
   await pc3.close();
-  await page.click('form[action$="/admin/popins/delete"] button');
+  await page.click('form[action$="/admin/popins/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Carrousels de produits : création (produit épinglé, tri), aperçu, affichage sur un faux site (emplacement, défilement, glisser,
@@ -618,6 +630,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('carrousels : carrousel créé et réaffiché', (await page.textContent('body')).includes('Carrousel « Carrousel e2e » enregistré')
     && await page.inputValue('[data-f=selector]') === '#reco' && await page.locator('.ca-item').count() === 1);
   await page.screenshot({ path: OUT + '/carrousel-fiche.png', fullPage: true });
+  check('fiches : « Supprimer » aligné avec « Enregistrer » (carrousel)', await deleteAligned());
   await page.click('[data-live-preview]');
   const lcf = page.frameLocator('.lv-dialog .lv-frame');
   await lcf.locator('#df-preview-slot .df-carousel .df-card >> nth=0').waitFor({ timeout: 5000 });
@@ -736,7 +749,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await cc3.close();
   for (let k = 0; k < 2; k++) {
     await page.goto(BASE + '/admin/carousels');
-    await page.click('form[action$="/admin/carousels/delete"] button');
+    await page.click('form[action$="/admin/carousels/delete"] button, .cr-delete-btn');
     await Promise.all([page.waitForNavigation(), confirmModal()]);
   }
   check('carrousels : suppression', (await page.textContent('body')).includes('Carrousel supprimé') && await page.locator('.ca-table tbody tr[data-row]').count() === 0);
@@ -759,10 +772,18 @@ fs.mkdirSync(OUT, { recursive: true });
   const srcHtml = await page.content();
   check('flux : source enregistrée, mot de passe jamais réaffiché', srcHtml.includes('Source enregistrée') && !srcHtml.includes('s3cret')
     && (await page.getAttribute('input[name=auth_password]', 'placeholder')).includes('enregistré'));
+  check('fiches : « Supprimer la source » sur la ligne des boutons, même hauteur', await page.evaluate(() => {
+    const del = document.querySelector('.cr-delete-btn');
+    const save = document.querySelector('.actions .btn:not(.btn-light)');
+    if (!del || !save) { return false; }
+    const a = del.getBoundingClientRect();
+    const b = save.getBoundingClientRect();
+    return Math.abs(a.top - b.top) < 2 && Math.abs(a.height - b.height) < 2;
+  }));
   await page.click('[data-src-check]');
   await page.waitForSelector('.src-result');
   check('flux : nouveau test avec le mot de passe enregistré', (await page.textContent('.src-check-results')).includes('protection par mot de passe acceptée'));
-  await page.click('form[action$="/admin/sources/delete"] button');
+  await page.click('form[action$="/admin/sources/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   feedSrv.kill();
 

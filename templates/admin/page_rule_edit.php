@@ -47,13 +47,13 @@ use DeepFind\Rules\PageRules;
   </div>
 
   <div class="cr-foot">
+    <?php if ($rule['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer la règle « <?= e($rule['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer cette règle</button><?php endif; ?>
     <a class="btn btn-light" href="<?= e(url('/admin/page-rules')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
 </form>
 <?php if ($rule['id']): ?>
-  <form method="post" action="<?= e(url('/admin/page-rules/delete')) ?>" class="cr-delete"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $rule['id'] ?>">
-    <button class="btn btn-sm btn-danger" data-confirm="Supprimer la règle « <?= e($rule['name']) ?> » ?">Supprimer cette règle</button></form>
+  <form method="post" action="<?= e(url('/admin/page-rules/delete')) ?>" id="cr-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $rule['id'] ?>"></form>
 <?php endif; ?>
 <script src="<?= e(asset('/assets/conditions.js')) ?>"></script>
 <script src="<?= e(asset('/assets/page-rules.js')) ?>"></script>

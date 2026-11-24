@@ -184,14 +184,14 @@ use DeepFind\Rules\Popins;
   <?php endif; ?>
 
   <div class="cr-foot">
+    <?php if ($c['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer le carrousel « <?= e($c['name']) ?> » et ses statistiques ?"><?= admin_icon('trash') ?> Supprimer ce carrousel</button><?php endif; ?>
     <button type="button" class="btn btn-light lv-open" data-live-preview><?= admin_icon('eye') ?> Aperçu ordinateur / mobile</button>
     <a class="btn btn-light" href="<?= e(url('/admin/carousels')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
 </form>
 <?php if ($c['id']): ?>
-  <form method="post" action="<?= e(url('/admin/carousels/delete')) ?>" class="cr-delete"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-    <button class="btn btn-sm btn-danger" data-confirm="Supprimer le carrousel « <?= e($c['name']) ?> » et ses statistiques ?">Supprimer ce carrousel</button></form>
+  <form method="post" action="<?= e(url('/admin/carousels/delete')) ?>" id="cr-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>"></form>
 <?php endif; ?>
 <script src="<?= e(asset('/assets/editor-tools.js')) ?>"></script>
 <script src="<?= e(asset('/assets/live-preview.js')) ?>"></script>

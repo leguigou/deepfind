@@ -208,7 +208,7 @@ pre.code {
 
 /* ---------- Boutons, badges, messages */
 .btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; cursor: pointer;
   font: inherit; font-weight: 600; color: #fff; background: var(--accent-grad); box-shadow: 0 4px 14px rgba(255, 79, 139, .30);
   white-space: nowrap;
 }
@@ -621,8 +621,11 @@ input.cr-name { flex: 1 1 360px; max-width: 560px; font-size: 22px; font-weight:
 .cr-item-actions .icon-btn:disabled { opacity: .35; cursor: default; }
 .cr-rule-ico { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
 .cr-rule-text { flex: 1; min-width: 0; }
-.cr-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
-.cr-delete { margin-top: 10px; }
+.cr-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; }
+/* Bouton « Supprimer » dans la barre du bas, à gauche (même hauteur que Annuler / Enregistrer) ; formulaire de suppression séparé (attribut form) */
+.cr-delete-btn { margin-right: auto; }
+.cr-delete-btn .admin-icon { vertical-align: -4px; margin-right: 2px; }
+.actions .cr-delete-end { margin-left: auto; margin-right: 0; }
 dialog#cr-items-dialog { width: min(760px, calc(100vw - 32px)); }
 input.cr-search { width: 100%; margin: 0 0 12px; }
 .cr-results { display: flex; flex-direction: column; gap: 6px; min-height: 120px; }

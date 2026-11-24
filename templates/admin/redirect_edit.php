@@ -30,13 +30,13 @@
   </div>
 
   <div class="cr-foot">
+    <?php if ($r['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer la redirection « <?= e($r['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer cette redirection</button><?php endif; ?>
     <a class="btn btn-light" href="<?= e(url('/admin/redirects')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
 </form>
 <?php if ($r['id']): ?>
-  <form method="post" action="<?= e(url('/admin/redirects/delete')) ?>" class="cr-delete"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
-    <button class="btn btn-sm btn-danger" data-confirm="Supprimer la redirection « <?= e($r['name']) ?> » ?">Supprimer cette redirection</button></form>
+  <form method="post" action="<?= e(url('/admin/redirects/delete')) ?>" id="cr-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>"></form>
 <?php endif; ?>
 <script src="<?= e(asset('/assets/editor-tools.js')) ?>"></script>
 <script src="<?= e(asset('/assets/redirects.js')) ?>"></script>
