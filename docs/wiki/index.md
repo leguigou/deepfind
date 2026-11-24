@@ -1,7 +1,7 @@
 # Aide de DeepFind
 
 Bienvenue dans l'aide de **DeepFind**, le moteur de recherche instantanée, de recommandations (bannières, popins, carrousels) et de supervision du site.
-Choisissez une rubrique à gauche, ou tapez un mot dans la recherche en haut (raccourci : touche `/`).
+Choisissez une rubrique à gauche, ou tapez un mot dans la recherche en haut (raccourci : touche `/`). Les pages d'une rubrique se suivent : faites défiler, la page en cours de lecture est surlignée à gauche.
 
 ## Par où commencer
 

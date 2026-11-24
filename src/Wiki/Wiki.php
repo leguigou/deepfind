@@ -53,6 +53,12 @@ final class Wiki
         return $out;
     }
 
+    /** Identifiant de la section d'une page dans la lecture continue de sa rubrique (« /admin/wiki/a/b » → « p-a-b »). */
+    public static function anchor(string $path): string
+    {
+        return 'p' . str_replace('/', '-', substr($path, strlen(self::BASE)));
+    }
+
     /** « 02-installation.md » → « installation » */
     public static function slug(string $name): string
     {

@@ -78,6 +78,10 @@ check('wiki : liens relatifs résolus, javascript: refusé, externe en nouvel on
 check('wiki : image réduite à son nom (pas de chemin), extension non image refusée', str_contains($wh, 'src="/admin/wiki/images/14-imports.png"') && !str_contains($wh, '.env"'), $wh);
 check('wiki : tableau (| dans le code), encadré, sous-liste, sommaire', str_contains($wh, '<td><code>a|b</code></td>') && str_contains($wh, 'wk-callout wk-warn')
     && str_contains($wh, '<li>un<ul><li>deux</li></ul>') && array_column($wm->toc, 'id') === ['section-b'], $wh);
+$wm2 = (new DeepFind\Wiki\Markdown())->at('/admin/wiki/a/b', 1);
+$wh2 = $wm2->render("# Page\n\n## Partie\n\nVoir <https://ex.com/a?b=1&c=2> et <javascript:alert(1)>");
+check('wiki : titres décalés dans la lecture continue, lien entre chevrons (http seulement)', str_starts_with($wh2, '<h2 id="page">') && str_contains($wh2, '<h3 id="partie">')
+    && str_contains($wh2, 'href="https://ex.com/a?b=1&amp;c=2"') && !str_contains($wh2, 'href="javascript'), $wh2);
 check('wiki : adresse sans préfixe d\'ordre', DeepFind\Wiki\Wiki::slug('02-installation.md') === 'installation' && DeepFind\Wiki\Wiki::find('/admin/wiki/../../.env') === null);
 $wkBad = [];
 $wkNodes = DeepFind\Wiki\Wiki::flat();
