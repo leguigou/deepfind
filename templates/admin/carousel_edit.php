@@ -140,9 +140,11 @@ use DeepFind\Rules\Popins;
             <button type="button" class="btn btn-sm btn-light" data-tpl-reset title="Remettre le modèle de la fenêtre de recherche dans l'onglet ouvert">↻ Revenir au modèle par défaut</button>
           </span>
         </div>
+        <div class="tpl-wrap" aria-hidden="true"><code>&lt;a class="df-card" href="{{url}}"&gt;</code><span>ajouté automatiquement : toute la carte mène à la page produit</span></div>
         <textarea data-f="card_template" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="desktop" aria-label="Modèle de carte produit, ordinateur"></textarea>
         <textarea data-f="card_template_mobile" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="mobile" hidden aria-label="Modèle de carte produit, mobile"
           placeholder="Vide : le modèle ordinateur s'applique aussi sur mobile."></textarea>
+        <div class="tpl-wrap tpl-wrap-end" aria-hidden="true"><code>&lt;/a&gt;</code></div>
         <small class="muted">Par défaut : le modèle de la fenêtre de recherche (Paramètres › Intégration, layer actif). Modifiez-le pour ce carrousel seulement,
           puis vérifiez avec « Aperçu ordinateur / mobile ». HTML simple (div, span, p, strong, img…), sans script ni lien (la carte entière mène au produit) ;
           un élément de classe <code>df-if-</code><em>variable</em> n'est affiché que si la variable n'est pas vide.</small>

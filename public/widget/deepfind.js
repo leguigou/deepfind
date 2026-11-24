@@ -484,6 +484,8 @@
     var image = safeUrl(p.image);
     return {
       name: p.name, brand: p.brand || '', image: image, price: fmt(final),
+      // adresse de la page produit : celle du lien posé autour de la carte (déclinaison trouvée, sinon produit)
+      url: safeUrl(mv && mv.url) || safeUrl(p.url),
       old_price: regular > final + 0.005 ? fmt(regular) : '', discount: discount,
       sku: (mv && mv.sku) || p.sku || '', variant: mv ? mv.sku || '' : '',
       stock: p.in_stock ? t.inStock : t.outOfStock, out_of_stock: p.in_stock ? '' : t.outOfStock,

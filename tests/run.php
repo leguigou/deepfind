@@ -1080,6 +1080,7 @@ if ($base) {
     $tplDef = DeepFind\Widget\WidgetConfig::DEFAULT_CARD_TEMPLATE;
     $tplA = $CA::cardTemplates(['card_template' => $tplDef . "\n", 'card_template_mobile' => $tplDef]);
     $tplB = $CA::cardTemplates(['card_template' => '<div class="df-name">{{name}}</div><script>x()</script><p onclick="y()">{{price}}</p>', 'card_template_mobile' => '']);
+    check('modèle de carte : variable {{url}} gardée (texte et attribut)', DeepFind\Widget\WidgetConfig::cleanCardTemplate('<div title="{{url}}">{{url}}</div>') === '<div title="{{url}}">{{url}}</div>');
     check('carrousels : modèle de carte (identique à la recherche = vide, personnalisé nettoyé, variables gardées)',
         $tplA === ['card_template' => '', 'card_template_mobile' => ''] && str_contains($tplB['card_template'], '{{name}}') && str_contains($tplB['card_template'], '{{price}}')
         && !str_contains($tplB['card_template'], 'script') && !str_contains($tplB['card_template'], 'onclick') && $tplB['card_template_mobile'] === '', json_encode([$tplA, $tplB]));

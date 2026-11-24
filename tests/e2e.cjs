@@ -649,16 +649,19 @@ fs.mkdirSync(OUT, { recursive: true });
   // modèle de carte propre au carrousel : visible dans l'aperçu, puis retour au modèle par défaut
   const tplDefault = await page.getAttribute('[data-card-tpl]', 'data-default-desktop');
   const tplStart = await page.inputValue('[data-f=card_template]');
-  await page.fill('[data-f=card_template]', '<div class="df-name perso-nom">{{name}}</div>\n<div class="perso-prix">{{price}}</div>');
+  const wrapShown = (await page.textContent('[data-card-tpl] .tpl-wrap')).includes('href="{{url}}"');
+  await page.fill('[data-f=card_template]', '<div class="df-name perso-nom">{{name}}</div>\n<div class="perso-prix">{{price}}</div>\n<small class="perso-url">{{url}}</small>');
   await page.click('[data-live-preview]');
   await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card .perso-prix >> nth=0').waitFor({ timeout: 5000 });
   const persoN = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .perso-prix').count();
   const persoImg = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-media').count();
+  const persoUrl = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .perso-url >> nth=0').textContent();
   await page.waitForTimeout(300);
   await page.screenshot({ path: OUT + '/apercu-carrousel-modele.png' });
   await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
   await page.click('[data-tpl-reset]');
-  check('carrousels : modèle de carte modifiable (aperçu), « revenir au modèle par défaut »', tplStart === tplDefault && persoN === 8 && persoImg === 0
+  check('carrousels : modèle de carte modifiable (aperçu, lien {{url}} affiché et utilisable), « revenir au modèle par défaut »', tplStart === tplDefault && persoN === 8 && persoImg === 0
+    && wrapShown && /^https:\/\/www\.example\.com\//.test(persoUrl)
     && await page.inputValue('[data-f=card_template]') === tplDefault);
   const hFrame = (await page.request.get(BASE + '/admin/live-preview?type=carousel')).headers();
   const hOther = (await page.request.get(BASE + '/admin/carousels')).headers();
@@ -754,6 +757,21 @@ fs.mkdirSync(OUT, { recursive: true });
     await Promise.all([page.waitForNavigation(), confirmModal()]);
   }
   check('carrousels : suppression', (await page.textContent('body')).includes('Carrousel supprimé') && await page.locator('.ca-table tbody tr[data-row]').count() === 0);
+
+  // Intégration › layer › Modèle de carte produit : lien de la carte rappelé autour du code, variable {{url}} listée
+  // (layer de test créé puis supprimé : le reste du test garde l'affichage par défaut)
+  await page.goto(BASE + '/admin/integration');
+  const lyCsrf = await page.getAttribute('input[name=_csrf]', 'value');
+  const lyResp = await page.request.post(BASE + '/admin/integration/layer/create', { form: { _csrf: lyCsrf, name: 'Layer e2e modèle', type: 'below' } });
+  await page.goto(lyResp.url());
+  const lyId = new URL(page.url()).searchParams.get('id');
+  const tplTxt = await page.textContent('#lp-card-tpl');
+  check('intégration : modèle de carte avec le lien {{url}} affiché et la variable listée', !!lyId && tplTxt.includes('<a class="df-card" href="{{url}}">') && tplTxt.includes('</a>')
+    && (await page.locator('#lp-card-tpl .lp-vars code', { hasText: '{{url}}' }).count()) === 1);
+  await page.evaluate(() => document.getElementById('lp-card-tpl').showModal());
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: OUT + '/modele-carte-url.png' });
+  await page.request.post(BASE + '/admin/integration/layer/delete', { form: { _csrf: lyCsrf, id: lyId } });
 
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });

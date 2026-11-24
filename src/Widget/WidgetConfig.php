@@ -159,6 +159,7 @@ HTML;
     /** Variables du modèle de carte produit : {{nom}} => description (valeurs échappées par le widget). */
     public const CARD_VARS = [
         'name' => 'Nom du produit', 'brand' => 'Marque', 'image' => 'Image', 'price' => 'Prix (formaté)',
+        'url' => 'Adresse de la page produit (celle du lien de la carte ; page de la déclinaison trouvée par la recherche, s\'il y en a une)',
         'old_price' => 'Prix avant remise (vide sans remise)', 'discount' => 'Remise, ex. « -20% » (vide sans remise)',
         'from' => '« dès » si le prix varie selon la déclinaison', 'sku' => 'SKU', 'variant' => 'SKU de la déclinaison trouvée (sinon vide)',
         'stock' => '« En stock » ou « Rupture »', 'out_of_stock' => '« Rupture » ou vide', 'new' => '« Nouveau » (sans remise affichée) ou vide',
@@ -398,7 +399,7 @@ HTML;
     // ------------------------------------------------------------------ Pour le widget
 
     /** Version du widget à charger (paramètre ?v= du code du site et du favori « Tester DeepFind »). */
-    public const WIDGET_VERSION = 29;
+    public const WIDGET_VERSION = 30;
 
     /** Durée de validité d'un favori « Tester DeepFind » (jeton d'aperçu). */
     public const PREVIEW_DAYS = 7;
