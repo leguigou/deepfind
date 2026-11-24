@@ -111,6 +111,17 @@ use DeepFind\Rules\Popins;
         <label class="check ca-learning"><input type="checkbox" data-f="learning"><span><strong>Apprentissage</strong> : faire remonter les produits les plus cliqués <em>dans ce carrousel</em>
           par rapport à leur nombre d'affichages (30 derniers jours). Un produit encore peu montré garde sa chance.</span></label>
       </div>
+
+      <div class="ca-block" data-hide="manual">
+        <strong class="ca-block-title">Adapter les produits selon la page <small class="muted">(facultatif)</small></strong>
+        <p class="muted small">Un seul carrousel pour toutes vos catégories : sur une page dont l'adresse correspond, seuls les produits qui remplissent
+          <strong>aussi</strong> les conditions de la ligne sont proposés, avec le même tri et le même affichage. Ex. adresse contient <code>/peche</code> →
+          Catégorie contient « Pêche ». La <strong>première</strong> ligne qui correspond à la page s'applique ; ailleurs, le carrousel ne change pas.
+          Les produits épinglés restent en tête. Si aucun produit ne correspond, le carrousel n'est pas affiché sur cette page.
+          Vérifiez avec la liste de contrôle ci-dessous (champ « Page du site »).</p>
+        <div class="ca-pfs" data-pfs></div>
+        <button type="button" class="btn btn-light" data-add-pf>+ Ajouter une adaptation</button>
+      </div>
       <div class="grid2 ca-grid">
         <label>Nombre de produits (2 à 48)
           <input data-f="max_items" type="number" min="2" max="48" step="1" inputmode="numeric"></label>

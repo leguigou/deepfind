@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=33" defer
+<script src="https://search.example.com/widget/deepfind.js?v=34" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=32` en `?v=33`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=33` en `?v=34`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -782,6 +782,7 @@ Un carrousel comprend :
    - **Source** : *Sélection manuelle* (uniquement les produits épinglés), *Automatique* (conditions comme les règles selon la page : marque, catégorie, type, prix, promotion, nouveauté… + tri), *Produits similaires* (sur une fiche produit : même catégorie la plus précise et/ou même marque que le produit de la page), *Personnalisé* (« Vus récemment » ou « Vous aimerez aussi », d'après l'historique du visiteur) ;
    - **Tri** : score métier (ventes, clics, stock, marge, nouveauté), meilleures ventes 30 j, plus cliqués dans la recherche 30 j, nouveautés, plus grosses remises, mieux notés, prix ;
    - **Apprentissage** (facultatif) : les produits sont reclassés selon leur **taux de clic dans ce carrousel** (30 jours, taux lissé : un produit encore peu montré garde le taux moyen et sa chance, un produit souvent montré et peu cliqué descend) ;
+   - **Adapter les produits selon la page** (facultatif) : un seul carrousel pour toutes les catégories. Chaque ligne associe une **adresse** (contient, commence par, finit par, est exactement) à des **conditions en plus** : ex. adresse contient `/peche` → Catégorie contient « Pêche ». Sur une page qui correspond, seuls les produits qui remplissent aussi ces conditions sont proposés (même tri, même affichage, sources « similaires » et « personnalisé » comprises) ; la **première** ligne qui correspond s'applique ; ailleurs, rien ne change. Les produits épinglés restent en tête. Si aucun produit ne correspond, le carrousel n'est pas affiché sur cette page. Pour **ne pas afficher** le carrousel dans certaines catégories : *Pages exclues* (section 1) ;
    - nombre de produits (2 à 48), en stock uniquement.
    Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
 5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche) et **lien de la carte** propre au carrousel (ex. `{{url}}?utm_campaign=carrousel-accueil` ; vide = celui de la recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).

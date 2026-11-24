@@ -107,6 +107,13 @@ foreach ([...$wkNodes, DeepFind\Wiki\Wiki::find('/admin/wiki')] as $wn) {
         }
     }
 }
+// L'aide suit le code : chaque menu de l'extranet y est décrit, la version du widget figure dans le tableau des versions
+preg_match_all("~=> \\['/admin[^']*', '([^']+)'~", (string) file_get_contents(APP_ROOT . '/templates/admin/_layout.php'), $wkMenu);
+$wkMenuPage = (string) file_get_contents(APP_ROOT . '/docs/wiki/01-demarrage/05-utiliser-l-extranet.md');
+$wkMissing = array_values(array_filter($wkMenu[1], static fn ($l) => !str_contains($wkMenuPage, $l)));
+check('wiki : chaque menu de l\'extranet est décrit dans « Utiliser l\'extranet »', count($wkMenu[1]) > 20 && $wkMissing === [], implode(', ', $wkMissing));
+check('wiki : version actuelle du widget dans le tableau des versions (Mettre à jour)',
+    str_contains((string) file_get_contents(APP_ROOT . '/docs/wiki/01-demarrage/03-mettre-a-jour.md'), '| ' . DeepFind\Widget\WidgetConfig::WIDGET_VERSION . ' |'));
 check('wiki : chaque page a un titre, tous les liens et images internes existent', count($wkNodes) > 30 && $wkBad === []
     && !in_array('', array_column($wkNodes, 'title'), true), implode(', ', $wkBad));
 $threw = false;
@@ -1158,6 +1165,38 @@ if ($base) {
         && !str_contains(json_encode($caA), 'margin') && !str_contains(json_encode($caA), 'biz_score'), json_encode([$caA, $bizA]));
     check('carrousels : pages (accueil, adresse, exclusion)', $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/') && $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/plongee/x.html')
         && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/chasse.html') && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/plongee/checkout/'));
+    // Adapter les produits selon la page : conditions en plus sur les pages dont l'adresse correspond (première ligne qui correspond)
+    [$caPf, $pfErr0] = $CA::sanitize($caMk(['name' => 'Selon la page', 'source' => 'auto', 'max_items' => 8, 'page_filters' => [
+        ['url' => ['match' => 'contains', 'text' => '/palmes'], 'match' => 'all', 'conditions' => [['field' => 'category_names', 'op' => 'contains', 'values' => ['palmes réglables']]]],
+        ['url' => ['match' => 'contains', 'text' => '/'], 'match' => 'all', 'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['Marque inexistante']]]],
+        ['url' => ['match' => 'contains', 'text' => ''], 'conditions' => []]]]), 'fr');
+    $idCaPf = $CA::save('fr', $caPf, null);
+    $pfProducts = static function (string $page) use ($CA, $idCaPf) {
+        $fp = $CA::forPage('fr', ['page' => $page, 'history' => null]);
+        return array_values(array_filter($fp['carousels'], static fn ($c) => $c['id'] === $idCaPf))[0]['products'] ?? null;
+    };
+    $pfCats = static fn (array $ps) => array_map(static fn ($p) => array_values(array_filter($caDocs, static fn ($d) => $d['id'] === $p['id']))[0]['category_names'] ?? [], $ps);
+    $pfPal = $pfProducts('/fr/palmes/');
+    $pfOther = $pfProducts('/fr/kayak.html');
+    $pfPalCats = $pfCats($pfPal ?? []);
+    check('carrousels : adapter selon la page (conditions en plus sur l\'adresse, première ligne qui correspond, ligne vide ignorée, aucun produit = carrousel masqué)',
+        $pfErr0 === [] && count($caPf['page_filters']) === 2 && $pfPal !== null && count($pfPal) > 0
+        && array_filter($pfPalCats, static fn ($cats) => !in_array('Palmes réglables', $cats, true)) === [] && $pfOther === null,
+        json_encode([$pfErr0, $pfPalCats, $pfOther]));
+    $caPf2 = $caPf;
+    $caPf2['page_filters'] = array_slice($caPf['page_filters'], 0, 1);
+    $CA::save('fr', $caPf2, $idCaPf);
+    $pfOther2 = $pfProducts('/fr/kayak.html');
+    check('carrousels : sans adaptation pour la page, le carrousel reste tel quel', $pfOther2 !== null && count($pfOther2) === 8
+        && array_filter($pfCats($pfOther2), static fn ($cats) => !in_array('Palmes réglables', $cats, true)) !== []);
+    [$pfBad, $pfErr] = $CA::sanitize($caMk(['name' => 'X', 'source' => 'auto', 'page_filters' => [
+        ['url' => ['match' => 'contains', 'text' => '/peche'], 'conditions' => []],
+        ['url' => ['match' => 'contains', 'text' => ''], 'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['C4']]]]]]), 'fr');
+    [$pfMan] = $CA::sanitize($caMk(['name' => 'M', 'source' => 'manual', 'items' => ['A'], 'page_filters' => [
+        ['url' => ['match' => 'contains', 'text' => '/peche'], 'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => ['C4']]]]]]), 'fr');
+    check('carrousels : adaptation sans condition ou sans adresse refusée ; ignorée en sélection manuelle', $pfBad === null && count($pfErr) === 2
+        && str_contains($pfErr[0], '/peche') && ($pfMan['page_filters'] ?? null) === [], json_encode($pfErr));
+    $CA::delete($idCaPf, 'fr');
     $caSkus = array_slice(array_column(array_values(array_filter($caDocs, static fn ($d) => ($d['brand'] ?? '') !== 'C4')), 'sku'), 0, 2);
     [$caMan] = $CA::sanitize($caMk(['name' => 'Manuel', 'source' => 'manual', 'items' => [$caSkus[1], $caSkus[0], 'INCONNU-1']]), 'fr');
     $caM = $CA::products('fr', $caMan + ['id' => 0], null, null, false);

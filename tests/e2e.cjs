@@ -82,7 +82,10 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForLoadState();
   check('aide : Entrée ouvre le premier résultat', page.url().endsWith('/carrousels/personnalisation-et-consentement'));
   await page.goto(BASE + '/admin/wiki/catalogue/mapping');
-  check('aide : capture d\'écran chargée', await page.$eval('.wk-img', (i) => i.complete && i.naturalWidth > 0));
+  // image chargée à l'approche (lazy) : la page Mapping est plus bas dans la rubrique Catalogue
+  await page.locator('#p-catalogue-mapping .wk-img').first().scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => { const i = document.querySelector('#p-catalogue-mapping .wk-img'); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 5000 }).catch(() => {});
+  check('aide : capture d\'écran chargée', await page.$eval('#p-catalogue-mapping .wk-img', (i) => i.complete && i.naturalWidth > 0));
   // (requêtes directes : une page 404 ouverte dans l'onglet compterait comme erreur de la console)
   wr = await page.request.get(BASE + '/admin/wiki/inexistante');
   check('aide : page inexistante = 404 avec rubriques', wr.status() === 404 && (await wr.text()).includes('data-wk-nav'));
@@ -815,6 +818,31 @@ fs.mkdirSync(OUT, { recursive: true });
     await Promise.all([page.waitForNavigation(), confirmModal()]);
   }
   check('carrousels : suppression', (await page.textContent('body')).includes('Carrousel supprimé') && await page.locator('.ca-table tbody tr[data-row]').count() === 0);
+
+  // Adapter les produits selon la page : adresse → conditions en plus, vérifiées dans la liste de contrôle, gardées à l'enregistrement
+  await page.goto(BASE + '/admin/carousels/edit');
+  await page.fill('[data-f=name]', 'Selon la page e2e');
+  await page.fill('[data-f=selector]', '#reco');
+  await page.click('[data-add-pf]');
+  await page.fill('.ca-pf .pr-url-text', '/palmes');
+  const pfInput = page.locator('.ca-pf .br-cond input:visible').first();
+  await pfInput.fill('Palmes réglables');
+  await pfInput.press('Enter');
+  await page.fill('[data-preview-page]', '/fr/palmes/');
+  await page.click('[data-preview-run]');
+  await page.waitForFunction(() => /produit/.test(document.querySelector('[data-preview-note]').textContent), null, { timeout: 5000 });
+  const pfNote = await page.textContent('[data-preview-note]');
+  const pfCount = await page.locator('.ca-pcard').count();
+  await page.locator('.ca-pf').screenshot({ path: OUT + '/carrousel-selon-la-page.png' });
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
+  await page.goto(BASE + '/admin/carousels');
+  await page.click('.ca-table tbody tr[data-row] a[href*="carousels/edit?id="]');
+  await page.waitForSelector('.ca-pf');
+  check('carrousels : adapter selon la page (appliquée dans la liste de contrôle, gardée à l\'enregistrement)',
+    pfNote.includes('Adaptation selon la page appliquée') && pfCount > 0 && await page.inputValue('.ca-pf .pr-url-text') === '/palmes'
+    && (await page.textContent('.ca-pf .br-cond')).includes('Palmes réglables'), pfNote);
+  await page.click('.cr-delete-btn');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Intégration › layer › Modèle de carte produit : lien de la carte rappelé autour du code, variable {{url}} listée
   // (layer de test créé puis supprimé : le reste du test garde l'affichage par défaut)

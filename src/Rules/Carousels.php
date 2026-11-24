@@ -28,6 +28,8 @@ use DeepFind\Text;
  */
 final class Carousels
 {
+    /** Adaptations selon la page, au plus. */
+    public const MAX_PAGE_FILTERS = 30;
     public const SOURCES = [
         'auto' => 'Automatique : produits choisis par conditions et triés',
         'manual' => 'Sélection manuelle : uniquement les produits choisis, dans l\'ordre',
@@ -107,7 +109,8 @@ final class Carousels
             'selector' => (string) $r['selector'], 'insert_mode' => $pick(self::INSERTS, $r['insert_mode'], 'append'),
             'title' => (string) $r['title'], 'title_class' => (string) ($r['title_class'] ?? ''), 'more_url' => (string) $r['more_url'], 'more_label' => (string) $r['more_label'],
             'source' => $pick(self::SOURCES, $r['source'], 'auto'), 'items' => $j($r['items']),
-            'match_all' => (int) $r['match_all'] === 1, 'conditions' => $j($r['conditions']), 'sort_by' => $pick(self::SORTS, $r['sort_by'], 'biz'),
+            'match_all' => (int) $r['match_all'] === 1, 'conditions' => $j($r['conditions']), 'page_filters' => $j($r['page_filters'] ?? ''),
+            'sort_by' => $pick(self::SORTS, $r['sort_by'], 'biz'),
             'similar_by' => $pick(self::SIMILAR, $r['similar_by'], 'category'), 'personal_mode' => $pick(self::PERSONAL, $r['personal_mode'], 'recommended'),
             'learning' => (int) $r['learning'] === 1, 'in_stock_only' => (int) $r['in_stock_only'] === 1,
             'max_items' => (int) $r['max_items'], 'per_view_desktop' => (int) $r['per_view_desktop'], 'per_view_mobile' => (int) $r['per_view_mobile'],
@@ -168,6 +171,8 @@ final class Carousels
         [$rules, $condErrors] = CustomResults::sanitizeRules([['match' => ($in['match'] ?? 'all') === 'any' ? 'any' : 'all',
             'conditions' => $source === 'manual' ? [] : (array) ($in['conditions'] ?? [])]], $lang, true);
         $errors = [...$errors, ...$condErrors];
+        [$pageFilters, $pfErrors] = $source === 'manual' ? [[], []] : self::sanitizePageFilters((array) ($in['page_filters'] ?? []), $lang);
+        $errors = [...$errors, ...$pfErrors];
         if ($errors !== []) {
             return [null, $errors];
         }
@@ -181,12 +186,62 @@ final class Carousels
             'title' => mb_substr(trim((string) ($in['title'] ?? '')), 0, 190, 'UTF-8'), 'title_class' => self::classes((string) ($in['title_class'] ?? '')), 'more_url' => $moreUrl,
             'more_label' => mb_substr(trim((string) ($in['more_label'] ?? '')), 0, 60, 'UTF-8'),
             'source' => $source, 'items' => $items, 'match_all' => $rules[0]['match_all'] ?? true, 'conditions' => $rules[0]['conditions'] ?? [],
+            'page_filters' => $pageFilters,
             'sort_by' => $pick(self::SORTS, 'sort_by', 'biz'), 'similar_by' => $pick(self::SIMILAR, 'similar_by', 'category'),
             'personal_mode' => $pick(self::PERSONAL, 'personal_mode', 'recommended'), 'learning' => !empty($in['learning']) && $source !== 'manual',
             'in_stock_only' => !empty($in['in_stock_only']), 'max_items' => $int('max_items', 2, 48, 12),
             'per_view_desktop' => $int('per_view_desktop', 1, 8, 4), 'per_view_mobile' => $int('per_view_mobile', 1, 4, 2),
             'autoplay' => $int('autoplay', 0, 60, 0), 'custom_css' => self::css((string) ($in['custom_css'] ?? '')),
         ] + self::cardTemplates($in), []];
+    }
+
+    /**
+     * Adaptations selon la page : [{url: {match, text}, match_all, conditions}], 30 au plus. Une ligne vide est ignorée ;
+     * une adresse sans condition (ou l'inverse) est refusée.
+     * @return array{0: list<array>, 1: list<string>}
+     */
+    public static function sanitizePageFilters(array $in, string $lang): array
+    {
+        $out = [];
+        $errors = [];
+        foreach (array_slice(array_values($in), 0, self::MAX_PAGE_FILTERS) as $k => $f) {
+            $f = (array) $f;
+            $url = PageRules::sanitizeUrls([(array) ($f['url'] ?? [])])[0] ?? null;
+            $rawConds = (array) ($f['conditions'] ?? []);
+            if ($url === null && $rawConds === []) {
+                continue;
+            }
+            $label = 'Adaptation selon la page n° ' . ($k + 1) . ($url !== null ? ' (« ' . $url['text'] . ' »)' : '');
+            if ($url === null) {
+                $errors[] = $label . ' : indiquez l\'adresse de la page (ex. contient « /peche »).';
+                continue;
+            }
+            [$rules, $condErrors] = CustomResults::sanitizeRules([['match' => ($f['match'] ?? 'all') === 'any' ? 'any' : 'all', 'conditions' => $rawConds]], $lang, true);
+            foreach ($condErrors as $e) {
+                $errors[] = $label . ' : ' . $e;
+            }
+            if (($rules[0]['conditions'] ?? []) === []) {
+                $errors[] = $label . ' : ajoutez au moins une condition sur les produits (ex. Catégorie contient « Pêche »).';
+                continue;
+            }
+            $out[] = ['url' => $url, 'match_all' => $rules[0]['match_all'], 'conditions' => $rules[0]['conditions']];
+        }
+        return [$out, $errors];
+    }
+
+    /**
+     * Carrousel tel qu'il s'applique sur cette page : la première adaptation dont l'adresse correspond ajoute ses conditions
+     * (page_rule) ; page_key distingue les listes en cache.
+     */
+    public static function forPath(array $c, string $path): array
+    {
+        $path = PageRules::normalizePath($path);
+        foreach ($c['page_filters'] ?? [] as $k => $f) {
+            if (PageRules::urlMatches($f['url'], $path)) {
+                return ['page_rule' => ['match_all' => $f['match_all'], 'conditions' => $f['conditions']], 'page_key' => (string) $k] + $c;
+            }
+        }
+        return ['page_rule' => null, 'page_key' => ''] + $c;
     }
 
     /**
@@ -271,6 +326,7 @@ final class Carousels
             'title_class' => $c['title_class'] !== '' ? $c['title_class'] : null,
             'more_url' => $c['more_url'], 'more_label' => $c['more_label'], 'source' => $c['source'], 'items' => Text::json($c['items']),
             'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => Text::json($c['conditions']), 'sort_by' => $c['sort_by'],
+            'page_filters' => ($c['page_filters'] ?? []) !== [] ? Text::json($c['page_filters']) : null,
             'similar_by' => $c['similar_by'], 'personal_mode' => $c['personal_mode'], 'learning' => $c['learning'] ? 1 : 0,
             'in_stock_only' => $c['in_stock_only'] ? 1 : 0, 'max_items' => $c['max_items'], 'per_view_desktop' => $c['per_view_desktop'],
             'per_view_mobile' => $c['per_view_mobile'], 'autoplay' => $c['autoplay'], 'custom_css' => $c['custom_css'],
@@ -378,6 +434,7 @@ final class Carousels
         $pageProduct = $needProduct ? self::pageProduct($lang, $page, (string) ($ctx['sku'] ?? '')) : null;
         $out = [];
         foreach ($matched as $c) {
+            $c = self::forPath($c, $page); // adaptation selon la page (conditions en plus)
             $products = self::products($lang, $c, $pageProduct, $history);
             if ($products === []) {
                 continue;
@@ -468,7 +525,7 @@ final class Carousels
             $ctxKey = $history ? md5(implode(',', $history) . '|' . ($pageProduct['id'] ?? '')) : '';
         }
         $store = Store::get();
-        $key = 'carprod:' . \DeepFind\Project::id() . ':' . $lang . ':' . $c['id'] . ':' . \DeepFind\CacheVersion::get() . ':' . $ctxKey;
+        $key = 'carprod:' . \DeepFind\Project::id() . ':' . $lang . ':' . $c['id'] . ':' . \DeepFind\CacheVersion::get() . ':' . $ctxKey . ':p' . ($c['page_key'] ?? '');
         $cached = $store->get($key);
         if (is_array($cached)) {
             return $cached;
@@ -510,6 +567,11 @@ final class Carousels
         $cond = PageRules::filter(['match_all' => $c['match_all'], 'conditions' => $c['conditions']], $lang);
         if ($cond !== null) {
             $base[] = $cond;
+        }
+        // adaptation selon la page (forPath) : conditions en plus, aussi pour les sources « similaires » et « personnalisé »
+        $pageCond = ($c['page_rule'] ?? null) !== null ? PageRules::filter($c['page_rule'], $lang) : null;
+        if ($pageCond !== null) {
+            $base[] = $pageCond;
         }
         $want = $max - count($pinned);
         // apprentissage : un choix plus large, reclassé ensuite selon les clics dans ce carrousel
