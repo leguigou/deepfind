@@ -87,6 +87,9 @@ src/Migrations.php             ajout des colonnes manquantes sur une base exista
 src/CacheVersion.php           version des données (fichier var/cache/data_version) incluse dans TOUTES les clés de cache :
                                CacheVersion::bump() après import / règle / paramètre ⇒ caches obsolètes partout, immédiatement
 templates/admin/               gabarits PHP (échapper TOUT avec e())
+src/Wiki/                      aide (menu Aide, /admin/wiki ; /wiki redirige) : Wiki.php (arborescence de docs/wiki), Markdown.php (Markdown → HTML, tout échappé)
+docs/wiki/                     pages de l'aide : un dossier = une catégorie (_index.md = titre + intro), un .md = une page, préfixe 01- = ordre ;
+                               captures : docs/screenshots ou docs/wiki/_images, écrites ![texte](nom.png)
 bin/console                    commandes CLI (install, check, import:run, queue:work, rules:*, logs:purge, key:create)
 deploy/                        vhost Apache, service systemd Meilisearch, Supervisor, crontab
 samples/                       flux et CSV FICTIFS + generate.php
@@ -159,3 +162,4 @@ php bin/console import:run --source=produits_fr
 - Si l'extranet ou le widget a changé : `node tests/e2e.cjs` (procédure dans le README), et vérifiez les captures dans les deux thèmes.
 - Testez sur la VM de **recette** avec le vrai Meilisearch avant la production. Le faux moteur `tests/fake-meili.php` ne reproduit pas la pertinence réelle.
 - Mettez à jour `README.md` (installation, formats, paramètres) et ce fichier si l'architecture évolue.
+- Mettez à jour **l'aide** (`docs/wiki/`) dans la même modification : la page de la fonction touchée (écran, réglages, détails techniques), et le tableau des versions du widget (`01-demarrage/03-mettre-a-jour.md`) si `WIDGET_VERSION` change. Un test vérifie que tous les liens internes de l'aide existent.

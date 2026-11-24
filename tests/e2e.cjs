@@ -53,6 +53,36 @@ fs.mkdirSync(OUT, { recursive: true });
     const badToggles = await page.$$eval('label.toggle', (ls) => ls.filter((l) => !l.querySelector('input[role=switch]') || !l.querySelector('.toggle-track') || /^\s*>/.test(l.textContent)).length);
     if (badToggles > 0) { check('interrupteurs bien formés sur ' + p, false); }
   }
+  // Aide (wiki) : menu sous Paramètres, nouvel onglet, rubriques, recherche, 404, raccourci /wiki
+  await page.goto(BASE + '/admin');
+  const helpLink = page.locator('nav.side a[href$="/admin/wiki"]').first();
+  check('aide : lien « Aide » dans le menu, nouvel onglet', (await helpLink.textContent()).includes('Aide') && (await helpLink.getAttribute('target')) === '_blank');
+  let wr = await page.goto(BASE + '/wiki/recommandations/carrousels/sources-tri-et-apprentissage');
+  check('aide : /wiki redirige vers /admin/wiki', wr.status() === 200 && page.url().endsWith('/admin/wiki/recommandations/carrousels/sources-tri-et-apprentissage'));
+  check('aide : page avec titre, fil d\'Ariane, rubrique ouverte et sommaire', (await page.textContent('.wk-content h1')).includes('Sources, tri et apprentissage')
+    && (await page.textContent('.wk-crumbs')).includes('Recommandations') && await page.locator('.wk-nav a.is-current').count() === 1
+    && await page.locator('.wk-toc a').count() > 2);
+  await page.fill('[data-wk-search]', 'consentement');
+  await page.locator('.wk-result >> nth=0').waitFor({ timeout: 3000 });
+  check('aide : recherche (sans accents)', (await page.textContent('[data-wk-results]')).includes('Personnalisation et consentement'));
+  await page.screenshot({ path: OUT + '/50-aide.png' });
+  await page.keyboard.press('Enter');
+  await page.waitForURL(/\/admin\/wiki\//);
+  check('aide : Entrée ouvre le premier résultat', page.url().includes('/admin/wiki/'));
+  await page.goto(BASE + '/admin/wiki/catalogue/mapping');
+  check('aide : capture d\'écran chargée', await page.$eval('.wk-img', (i) => i.complete && i.naturalWidth > 0));
+  // (requêtes directes : une page 404 ouverte dans l'onglet compterait comme erreur de la console)
+  wr = await page.request.get(BASE + '/admin/wiki/inexistante');
+  check('aide : page inexistante = 404 avec rubriques', wr.status() === 404 && (await wr.text()).includes('data-wk-nav'));
+  wr = await page.request.get(BASE + '/admin/wiki/images/..%2F..%2F.env');
+  check('aide : image hors dossier refusée', wr.status() === 404);
+  // Fiche carrousel : boutons d'action au-dessus de la liste de contrôle
+  await page.goto(BASE + '/admin/carousels/edit');
+  check('carrousel : boutons avant la liste de contrôle', await page.evaluate(() => {
+    const f = document.querySelector('.cr-foot'); const l = document.querySelector('.ca-preview');
+    return !!(f && l && (f.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING));
+  }));
+
   await page.goto(BASE + '/admin/preview?q=palme');
   check('aperçu : interrupteurs de filtre lisibles', (await page.textContent('form.card')).includes('En stock') && !(await page.textContent('form.card')).includes('> En stock'));
   await page.screenshot({ path: OUT + '/02-apercu-interne.png', fullPage: false });

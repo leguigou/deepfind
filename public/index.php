@@ -31,6 +31,11 @@ if (str_starts_with($path, '/api/')) {
     return;
 }
 
+// /wiki : raccourci vers l'aide (menu Aide), servie dans l'extranet (/admin/wiki, connexion requise)
+if ($path === '/wiki' || str_starts_with($path, '/wiki/')) {
+    header('Location: ' . $base . '/admin' . $path, true, 302);
+    return;
+}
 if ($path === '/admin' || str_starts_with($path, '/admin/')) {
     (new DeepFind\Admin\App())->handle($method, $path);
     return;

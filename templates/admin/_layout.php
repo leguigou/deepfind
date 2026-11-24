@@ -51,7 +51,7 @@ $navLink = static function (string $key, array $item) use ($active): void {
     [$href, $label, $icon] = $item;
     ?>
     <a href="<?= e(url($href)) ?>"<?= $active === $key ? ' class="on" aria-current="page"' : '' ?>
-       <?= $key === 'demo' ? 'target="_blank" rel="noopener"' : '' ?> title="<?= e($label) ?>" aria-label="<?= e($label) ?>">
+       <?= $key === 'demo' || $key === 'wiki' ? 'target="_blank" rel="noopener"' : '' ?> title="<?= e($label) ?>" aria-label="<?= e($label) ?>">
       <span class="nav-ico" aria-hidden="true"><?= admin_icon($icon) ?></span><span class="nav-label"><?= e($label) ?></span>
     </a>
     <?php
@@ -107,6 +107,7 @@ $navLink = static function (string $key, array $item) use ($active): void {
           </details>
         <?php endforeach; ?>
       </div>
+      <?php $navLink('wiki', [\DeepFind\Wiki\Wiki::BASE, 'Aide', 'lifebuoy']); // documentation (s'ouvre dans un nouvel onglet) ?>
     </div>
     <div class="side-foot">
       <button type="button" class="theme-btn" data-toggle-theme title="Basculer thème clair / sombre" aria-label="Basculer thème clair / sombre">
