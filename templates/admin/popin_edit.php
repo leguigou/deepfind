@@ -59,11 +59,11 @@ use DeepFind\Rules\Popins;
       <?php foreach (Popins::REPEATS as $v => $l): ?>
         <label class="check"><input type="radio" name="pp_repeat" value="<?= e($v) ?>"><span><?= e($l) ?></span></label>
       <?php endforeach; ?>
-      <label class="pp-remember">Une fois fermée (ou cliquée), ne plus l'afficher au visiteur pendant
+      <label class="pp-remember" data-remember>Une fois fermée (ou cliquée), ne plus l'afficher au visiteur pendant
         <span class="pp-inline"><input data-f="remember_days" type="number" min="0" max="365" step="1" inputmode="numeric" aria-label="Nombre de jours"> jour(s)</span>
         <small class="muted">0 = jusqu'à la fin de sa visite seulement. Mémorisé dans le navigateur du visiteur (sans cookie ni donnée personnelle) : un autre navigateur, une navigation privée ou un effacement des données du site la feront réapparaître.</small></label>
       <?php if ($p['id']): ?>
-        <label class="check"><input type="checkbox" data-f="reset_memory"><span>À l'enregistrement, la <strong>reproposer aux visiteurs qui l'ont déjà fermée</strong> <small class="muted">(utile après un changement de contenu)</small></span></label>
+        <label class="check" data-remember><input type="checkbox" data-f="reset_memory"><span>À l'enregistrement, la <strong>reproposer aux visiteurs qui l'ont déjà fermée</strong> <small class="muted">(utile après un changement de contenu)</small></span></label>
       <?php endif; ?>
     </div>
 

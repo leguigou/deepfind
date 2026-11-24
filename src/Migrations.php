@@ -75,6 +75,7 @@ final class Migrations
     private const ENUMS = [
         'import_runs' => ['type' => ['scores', "ENUM('full','delta','scores') NOT NULL"]],
         'click_logs' => ['doc_type' => ['banner', "ENUM('product','post','banner') NOT NULL"]],
+        'popins' => ['repeat_mode' => ['always', "ENUM('visit','page','always') NOT NULL DEFAULT 'visit'"]],
     ];
 
     private static function indexExists(string $table, string $name): bool

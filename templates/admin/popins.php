@@ -7,6 +7,9 @@ use DeepFind\Rules\Popins;
 // résumé court (le détail est dans la fiche) : appareils · délai, puis fréquence · mémorisation après fermeture
 $devices = ['all' => 'Tous appareils', 'desktop' => 'Ordinateur', 'mobile' => 'Mobile'];
 $freq = static function (array $p): string {
+    if ($p['repeat_mode'] === 'always') {
+        return 'Toujours (chaque page)';
+    }
     $out = $p['repeat_mode'] === 'page' ? 'Chaque page' : '1×/visite';
     return $out . ' · fermée : ' . ($p['remember_days'] > 0 ? $p['remember_days'] . ' j' : 'visite');
 };

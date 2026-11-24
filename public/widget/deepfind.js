@@ -1252,7 +1252,8 @@
   }
   function popinMem(p) { return POPIN_KEY + p.id + ':' + (parseInt(p.rev, 10) || 1); }
   function popinHidden(p) {
-    if (preview || renderMode) { return false; }
+    // fréquence « toujours » : affichée à chaque page, fermeture jamais mémorisée
+    if (preview || renderMode || p.repeat === 'always') { return false; }
     var k = popinMem(p);
     try {
       var until = parseInt(window.localStorage.getItem(k) || '0', 10);
@@ -1264,7 +1265,7 @@
     return false;
   }
   function popinRemember(p, flag) {
-    if (preview || renderMode) { return; }
+    if (preview || renderMode || p.repeat === 'always') { return; }
     var k = popinMem(p);
     try {
       window.sessionStorage.setItem(k + ':' + flag, '1');

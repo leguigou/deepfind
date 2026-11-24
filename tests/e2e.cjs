@@ -817,6 +817,30 @@ fs.mkdirSync(OUT, { recursive: true });
     monKpis === 9 && monCharts === 5 && monHeat === 120 && monReq > 0 && monTip);
   await page.click('[data-range="1h"]');
 
+  // Popin en fréquence « toujours » : réaffichée après fermeture et rechargement, rien n'est mémorisé
+  await page.goto(BASE + '/admin/popins/edit');
+  await page.fill('[data-f=name]', 'Popin toujours');
+  await page.selectOption('[data-f=mode]', 'code');
+  await page.fill('[data-f=delay_seconds]', '0');
+  await page.click('[data-wy-tab=code]');
+  await page.fill('[data-f=html]', '<h2>Toujours</h2>');
+  await page.check('input[name=pp_repeat][value=always]');
+  const rememberHidden = await page.isHidden('.pp-remember');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lp-open):not(.lv-open):not(.cr-delete-btn)')]);
+  const savedAlways = (await page.textContent('body')).includes('Popin « Popin toujours » enregistrée') && await page.isChecked('input[name=pp_repeat][value=always]');
+  const [pc4, pp4] = await popinCtx();
+  await pp4.goto(BASE + '/boutique/plongee.html');
+  await pp4.waitForSelector('.df-popin-html h2', { timeout: 5000 });
+  await pp4.click('.df-popin-close');
+  await pp4.reload();
+  await pp4.waitForSelector('.df-popin-html h2', { timeout: 5000 }).catch(() => {});
+  const again = await pp4.locator('.df-popin').count();
+  const memo = await pp4.evaluate(() => Object.keys(localStorage).concat(Object.keys(sessionStorage)).filter((k) => k.indexOf('df-popin:') === 0).length);
+  await pc4.close();
+  check('popins : fréquence « toujours » (durée masquée, réaffichée après fermeture, rien de mémorisé)', rememberHidden && savedAlways && again === 1 && memo === 0);
+  await page.click('.cr-delete-btn');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
+
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });
   await new Promise((r) => setTimeout(r, 500));

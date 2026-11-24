@@ -33,7 +33,14 @@
     var pagesUi = window.DFPages(form, p, urlOps);
     var urlsOf = pagesUi.urls;
 
-    form.querySelector('input[name=pp_repeat][value=' + (p.repeat_mode === 'page' ? 'page' : 'visit') + ']').checked = true;
+    form.querySelector('input[name=pp_repeat][value=' + (['page', 'always'].indexOf(p.repeat_mode) !== -1 ? p.repeat_mode : 'visit') + ']').checked = true;
+    // « toujours » : rien n'est mémorisé, la durée après fermeture ne s'applique pas
+    function syncRepeat() {
+      var always = form.querySelector('input[name=pp_repeat]:checked').value === 'always';
+      form.querySelectorAll('[data-remember]').forEach(function (n) { n.hidden = always; });
+    }
+    form.querySelectorAll('input[name=pp_repeat]').forEach(function (r) { r.addEventListener('change', syncRepeat); });
+    syncRepeat();
 
     // ---------------------------------------------------------------- Contenu : image(s) + lien, ou HTML
     function showMode() {

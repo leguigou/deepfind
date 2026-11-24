@@ -1015,6 +1015,9 @@ if ($base) {
         'html' => '<a href="https://www.example.com" onclick="x()">Offre</a><script>alert(1)</script>']);
     check('popins : hauteur minimale bornée (0 à 1200 px)', $PP::sanitize(['name' => 'H', 'mode' => 'code', 'html' => '<p>x</p>', 'min_height' => '5000'])[0]['min_height'] === 1200
         && $PP::sanitize(['name' => 'H', 'mode' => 'code', 'html' => '<p>x</p>', 'min_height' => '250'])[0]['min_height'] === 250);
+    check('popins : fréquence « toujours » acceptée, valeur inconnue ramenée à « une fois par visite »',
+        $PP::sanitize(['name' => 'T', 'mode' => 'code', 'html' => '<p>x</p>', 'repeat_mode' => 'always'])[0]['repeat_mode'] === 'always'
+        && $PP::sanitize(['name' => 'T', 'mode' => 'code', 'html' => '<p>x</p>', 'repeat_mode' => 'n-importe'])[0]['repeat_mode'] === 'visit');
     check('popins : HTML nettoyé ; « toutes les pages » ignore accueil et adresses', $ppCode !== null && !str_contains($ppCode['html'], 'script') && !str_contains($ppCode['html'], 'onclick')
         && str_contains($ppCode['html'], 'Offre') && $ppCode['home'] === false && $ppCode['urls'] === [], json_encode($ppCode));
     $wyIn = '<h2 style="text-align: center;">Titre</h2><p><span style="color: rgb(228, 0, 58);">rouge</span> <b>gras</b></p>'

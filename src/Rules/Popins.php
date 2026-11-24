@@ -27,6 +27,7 @@ final class Popins
     public const REPEATS = [
         'visit' => 'Une seule fois par visite',
         'page' => 'À chaque page concernée, tant que le visiteur ne l\'a pas fermée',
+        'always' => 'Toujours : à chaque page concernée, même si le visiteur l\'a fermée (rien n\'est mémorisé)',
     ];
     public const PLACEMENTS = ['center' => 'Au centre (fond assombri)', 'bottom_right' => 'En bas à droite', 'bottom_left' => 'En bas à gauche'];
     public const EVENTS = ['v' => 'views', 'c' => 'clicks', 'x' => 'closes'];

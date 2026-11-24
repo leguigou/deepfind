@@ -1219,3 +1219,4 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .tpl-link:focus { outline: none; border-color: var(--accent); }
 .tpl-wrap-edit > span { flex-basis: 100%; }
 .tpl-wrap-edit > span code { color: #c9b8ff; }
+.cr-section [data-remember][hidden] { display: none !important; }
