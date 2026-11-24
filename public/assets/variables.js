@@ -23,10 +23,12 @@
       var tr = el('tr');
       tr.setAttribute('data-var-row', '');
       var td1 = el('td');
-      td1.appendChild(el('span', 'var-brace', '{{'));
+      var wrap = el('span', 'var-code-wrap');
+      wrap.appendChild(el('span', 'var-brace', '{{'));
       var code = input('vars[' + i + '][code]', { class: 'var-code-input', maxlength: '31', pattern: '[a-z][a-z0-9_]{1,30}', 'aria-label': 'Code', required: 'required', placeholder: 'livraison' });
-      td1.appendChild(code);
-      td1.appendChild(el('span', 'var-brace', '}}'));
+      wrap.appendChild(code);
+      wrap.appendChild(el('span', 'var-brace', '}}'));
+      td1.appendChild(wrap);
       var td2 = el('td');
       td2.appendChild(input('vars[' + i + '][value]', { maxlength: '300', 'aria-label': 'Valeur', placeholder: 'ex. Livraison offerte dès 50 €' }));
       var td3 = el('td');

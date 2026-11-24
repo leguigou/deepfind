@@ -1249,3 +1249,5 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .var-brace { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 0 3px; }
 .var-add { margin-top: 10px; }
 @media (max-width: 900px) { .var-texts { grid-template-columns: minmax(0, 1fr); } }
+.var-code-wrap { display: inline-flex; align-items: center; gap: 2px; }
+.var-code-wrap .var-code-input { flex: none; }

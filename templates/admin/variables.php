@@ -31,8 +31,8 @@
   <section class="card var-card">
     <h2>Textes du widget <small class="muted">— langue <?= e(strtoupper($lang)) ?></small></h2>
     <p class="muted small">Champ vide = texte d'origine (affiché en gris). <code>%s</code> est remplacé par la recherche ou le nom du filtre. Texte brut, sans balise.</p>
-    <?php foreach ($groups as $title => $keys): ?>
-      <h3 class="var-group"><?= e($title) ?></h3>
+    <?php foreach ($groups as $groupTitle => $keys): // pas $title : c'est le titre de la page (gabarit commun) ?>
+      <h3 class="var-group"><?= e($groupTitle) ?></h3>
       <div class="var-texts">
         <?php foreach ($keys as $k => $help): ?>
           <label class="var-text<?= isset($overrides[$k]) ? ' is-changed' : '' ?>">
@@ -54,10 +54,10 @@
       <tbody data-var-rows data-reserved="<?= e(\DeepFind\Text::json($reserved)) ?>">
       <?php foreach ($custom as $i => $v): ?>
         <tr data-var-row>
-          <td><span class="var-brace">{{</span><input name="vars[<?= $i ?>][code]" value="<?= e($v['code']) ?>" class="var-code-input" maxlength="31" pattern="[a-z][a-z0-9_]{1,30}" aria-label="Code" required><span class="var-brace">}}</span></td>
+          <td><span class="var-code-wrap"><span class="var-brace">{{</span><input name="vars[<?= $i ?>][code]" value="<?= e($v['code']) ?>" class="var-code-input" maxlength="31" pattern="[a-z][a-z0-9_]{1,30}" aria-label="Code" required><span class="var-brace">}}</span></span></td>
           <td><input name="vars[<?= $i ?>][value]" value="<?= e($values[$v['code']] ?? '') ?>" maxlength="300" aria-label="Valeur"></td>
           <td><input name="vars[<?= $i ?>][description]" value="<?= e($v['description']) ?>" maxlength="300" aria-label="Description"></td>
-          <td class="actions"><button type="button" class="icon-btn" data-var-remove aria-label="Supprimer la variable <?= e($v['code']) ?>"><?= admin_icon('trash') ?></button></td>
+          <td class="actions"><button type="button" class="icon-btn" data-var-remove aria-label="Supprimer la variable <?= e($v['code']) ?>">✕</button></td>
         </tr>
       <?php endforeach; ?>
       </tbody>
