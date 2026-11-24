@@ -3,7 +3,7 @@
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=33" defer
+<script src="https://search.example.com/widget/deepfind.js?v=34" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -12,12 +12,12 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 
 **Fonctionnement**
 - **Activation** : au chargement, le widget demande à l'API (`/api/v1/config`) si le projet de la clé est actif, et récupère l'affichage choisi dans l'extranet (layer actif, filtres, tris). Il ne prend la main que si le projet est actif. **Projet désactivé** ou **API injoignable** : rien n'est modifié, la recherche d'origine du site fonctionne normalement. La réponse est gardée 1 min par le navigateur et 5 min dans la session du visiteur : un changement dans l'extranet arrive sur le site en 5 minutes au plus.
-- **Affichage** : selon le layer actif (section 7) : sous la barre de recherche (par défaut), plein écran, flottant ou intégré dans un bloc de la page.
+- **Affichage** : selon le layer actif ([Layers, filtres et tris](../affichage-du-widget/layers-filtres-et-tris)) : sous la barre de recherche (par défaut), plein écran, flottant ou intégré dans un bloc de la page.
 - **Touche Entrée** : ouvre la page de résultats du site, ou, si ce réglage est désactivé (Paramètres › Paramètres › Widget sur le site), laisse seulement la fenêtre DeepFind. `data-enter="off"` / `"on"` force le comportement sur une page.
 - **Autocomplétion d'origine du site** (panneau Magento « Suggestions de recherche », Amasty, Mirasvit, Smile ElasticSuite…) : bloquée par défaut, pour que deux fenêtres ne s'ouvrent pas en même temps. Le réglage « Bloquer l'autocomplétion d'origine » (Paramètres › Paramètres › Widget sur le site) la réactive. Sur le script, `data-native="keep"` (laisser) ou `data-native="block"` (bloquer) est prioritaire sur ce réglage. Si un autre panneau apparaît encore, ajoutez son sélecteur : `data-hide=".mon-panneau"`.
 - **Fonctions** : attente de 180 ms après la frappe, annulation des requêtes dépassées, cache local, chargement au défilement, filtres (marques, catégories, attributs, prix avec curseur, en stock, en promotion), blocs de filtres repliables, tris, articles de blog, redirections, bannières, touche Échap, version mobile avec bouton « Filtres ».
 - **Clics** : chaque ouverture d'un produit, d'un article ou d'une bannière depuis la fenêtre (clic, Ctrl/Cmd + clic, clic molette) est mesurée (`sendBeacon`), sans cookie, avec un identifiant aléatoire créé à chaque chargement de page. Les clics des 30 derniers jours entrent dans le score métier.
-- **Mesure d'audience** : sur les pages choisies dans **Analyse › Audience**, le widget envoie un signal « page vue » anonyme (`/api/v1/visit`), sans cookie ni donnée personnelle (section 6, « Audience »).
+- **Mesure d'audience** : sur les pages choisies dans **Analyse › Audience**, le widget envoie un signal « page vue » anonyme (`/api/v1/visit`), sans cookie ni donnée personnelle ([Audience](../analyse/audience)).
 - **Multilingue** : `data-lang="en"` et une clé autorisée pour `en`. Chaque langue a son propre index et sa propre source de flux.
 
 **Attributs du script**
@@ -36,7 +36,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=32` en `?v=33`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=33` en `?v=34`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## Clés et domaines autorisés
 

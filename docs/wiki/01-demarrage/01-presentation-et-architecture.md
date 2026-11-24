@@ -30,7 +30,7 @@ DeepFind remplace la recherche d'origine du site Magento par une recherche insta
 
 | Dossier / fichier | Rôle |
 |---|---|
-| `public/index.php` | Point d'entrée unique : `/api/*` (widget), `/admin/*` (extranet), `/wiki` (cette aide) |
+| `public/index.php` | Point d'entrée unique : `/api/*` (widget), `/admin/*` (extranet, dont cette aide en `/admin/wiki`) ; `/wiki` redirige vers l'aide |
 | `public/widget/deepfind.js`, `deepfind.css` | Le **widget** chargé par le site : fenêtre de recherche, popins, carrousels, mesures |
 | `src/Http/ApiController.php` | API publique appelée par le widget |
 | `src/Search/` | Recherche : validation des paramètres, appel à Meilisearch, pertinence, filtres |

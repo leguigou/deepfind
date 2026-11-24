@@ -107,6 +107,13 @@ foreach ([...$wkNodes, DeepFind\Wiki\Wiki::find('/admin/wiki')] as $wn) {
         }
     }
 }
+// L'aide suit le code : chaque menu de l'extranet y est décrit, la version du widget figure dans le tableau des versions
+preg_match_all("~=> \\['/admin[^']*', '([^']+)'~", (string) file_get_contents(APP_ROOT . '/templates/admin/_layout.php'), $wkMenu);
+$wkMenuPage = (string) file_get_contents(APP_ROOT . '/docs/wiki/01-demarrage/05-utiliser-l-extranet.md');
+$wkMissing = array_values(array_filter($wkMenu[1], static fn ($l) => !str_contains($wkMenuPage, $l)));
+check('wiki : chaque menu de l\'extranet est décrit dans « Utiliser l\'extranet »', count($wkMenu[1]) > 20 && $wkMissing === [], implode(', ', $wkMissing));
+check('wiki : version actuelle du widget dans le tableau des versions (Mettre à jour)',
+    str_contains((string) file_get_contents(APP_ROOT . '/docs/wiki/01-demarrage/03-mettre-a-jour.md'), '| ' . DeepFind\Widget\WidgetConfig::WIDGET_VERSION . ' |'));
 check('wiki : chaque page a un titre, tous les liens et images internes existent', count($wkNodes) > 30 && $wkBad === []
     && !in_array('', array_column($wkNodes, 'title'), true), implode(', ', $wkBad));
 $threw = false;

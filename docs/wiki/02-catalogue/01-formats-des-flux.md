@@ -40,7 +40,7 @@ Deux options pour les flux :
 
 **Blocs particuliers :**
 - `categories` : une ou plusieurs catégories, avec leur chemin « A > B > C ».
-- `attributes` : attributs génériques (code, libellé, `filterable="1"`). Les attributs filtrables peuvent devenir des filtres du widget (section 7).
+- `attributes` : attributs génériques (code, libellé, `filterable="1"`). Les attributs filtrables peuvent devenir des filtres du widget ([Layers, filtres et tris](../affichage-du-widget/layers-filtres-et-tris)).
 - `variants` : les enfants, avec les champs `id, sku, ean, url, image, price, final_price, in_stock, salable_qty`, plus leurs propres attributs (taille…).
 
 ## Parents et enfants Magento

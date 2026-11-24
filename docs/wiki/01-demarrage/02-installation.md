@@ -143,4 +143,4 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 5. **Planification des imports** (dans la fiche du flux) : choisissez par exemple « Chaque nuit à 3 h 15 » pour l'import complet et « Toutes les 15 min de 6 h à 23 h » pour le delta.
 6. **Import complet** pour un premier chargement immédiat, puis suivez l'avancement dans **Catalogues › Imports**.
 7. **Paramètres › Clés** : créez une clé pour le domaine de votre site (ex. `example.com`), puis testez avec **Recommandations › Démo du widget**.
-8. **Paramètres › Intégration** : copiez le code à ajouter sur le site (section 4) et réglez l'affichage (section 7).
+8. **Paramètres › Intégration** : copiez le code à ajouter sur le site ([Intégrer le widget](../demarrage/integrer-le-widget)) et réglez l'affichage ([Layers, filtres et tris](../affichage-du-widget/layers-filtres-et-tris)).
