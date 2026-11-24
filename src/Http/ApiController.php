@@ -285,6 +285,7 @@ final class ApiController
             'block_native' => Settings::int('widget_block_native') === 1,
             // deuxième photo du produit au survol de sa carte
             'hover_image' => Settings::int('widget_hover_image') === 1,
+        ] + \DeepFind\Widget\WidgetTexts::forWidget($lang) + [
             // mesure d'audience : pages qui signalent une page vue (sans cookie, sans donnée personnelle), ou false
             'audience' => Audience::widgetConfig(),
             // popins en cours : le widget choisit celle de la page (adresse, appareil, fermeture mémorisée)

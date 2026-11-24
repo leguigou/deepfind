@@ -121,6 +121,8 @@ final class App
         'GET /admin/bots' => [BotsController::class, 'index'],
         'POST /admin/bots/block' => [BotsController::class, 'block'],
         'POST /admin/bots/unblock' => [BotsController::class, 'unblock'],
+        'GET /admin/variables' => [VariablesController::class, 'index'],
+        'POST /admin/variables/save' => [VariablesController::class, 'save'],
         'GET /admin/settings' => [SettingsController::class, 'index'],
         'POST /admin/settings/save' => [SettingsController::class, 'save'],
         'GET /admin/preview' => [PreviewController::class, 'preview'],

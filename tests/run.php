@@ -1223,6 +1223,40 @@ if ($base) {
     DeepFind\Db::exec('DELETE FROM metrics_minute WHERE minute BETWEEN ? AND ?', [date('Y-m-d H:i:s', $mT - 120), date('Y-m-d H:i:s', $mT + 120)]);
     DeepFind\Db::exec('DELETE FROM live_visitors');
 
+    // ------------------------------------------------ Paramètres › Variables (textes du widget, variables personnalisées)
+    $WT = DeepFind\Widget\WidgetTexts::class;
+    $wjs = (string) file_get_contents(dirname(__DIR__) . '/public/widget/deepfind.js');
+    $blocks = ['fr' => substr($wjs, strpos($wjs, '    fr: { products'), strpos($wjs, '    en: { products') - strpos($wjs, '    fr: { products')),
+        'en' => substr($wjs, strpos($wjs, '    en: { products'), 3000)];
+    $missing = [];
+    foreach ($WT::DEFAULTS as $l0 => $texts0) {
+        foreach ($texts0 as $k0 => $v0) {
+            if (!str_contains($blocks[$l0], $k0 . ": '" . str_replace("'", "\\'", $v0) . "'")) {
+                $missing[] = "$l0.$k0";
+            }
+        }
+    }
+    $groupKeys = array_merge(...array_map('array_keys', array_values($WT::GROUPS)));
+    check('variables : textes d\'origine identiques à ceux du widget, tous présentés à l\'écran', $missing === [] && count($WT::DEFAULTS['fr']) === 42
+        && array_diff(array_keys($WT::DEFAULTS['fr']), $groupKeys) === [] && array_keys($WT::DEFAULTS['fr']) === array_keys($WT::DEFAULTS['en']), json_encode($missing));
+    $WT::saveTexts('fr', ['from' => '  À partir de :  ', 'isNew' => 'Nouveau', 'clear' => '<b>Tout effacer</b>', 'inconnu' => 'x', 'filters' => '']);
+    $wErr = $WT::saveCustom('fr', [['code' => '{{ livraison }}', 'value' => 'Livraison offerte', 'description' => 'Bandeau'], ['code' => 'name', 'value' => 'x'],
+        ['code' => 'Mauvais code', 'value' => 'x'], ['code' => 'livraison', 'value' => 'doublon'], ['code' => 'retour', 'value' => '']]);
+    $WT::saveCustom('en', [['code' => 'livraison', 'value' => 'Free delivery'], ['code' => 'retour', 'value' => 'Free returns']]);
+    check('variables : textes modifiés gardés (nettoyés), identiques au texte d\'origine ignorés ; codes système et invalides refusés',
+        $WT::overrides('fr') === ['from' => 'À partir de :', 'clear' => 'Tout effacer'] && count($wErr) === 2
+        && array_column($WT::customVars(), 'code') === ['livraison', 'retour'] && $WT::customValues('fr') === ['livraison' => 'Livraison offerte', 'retour' => '']
+        && $WT::customValues('en') === ['livraison' => 'Free delivery', 'retour' => 'Free returns'], json_encode([$WT::overrides('fr'), $wErr, $WT::customValues('fr')]));
+    DeepFind\CacheVersion::bump();
+    [, $cfV] = $get("/api/v1/config?key=$key&lang=fr");
+    check('variables : envoyées au widget (textes modifiés, variables non vides de la langue)', ($cfV['texts']['from'] ?? '') === 'À partir de :'
+        && ($cfV['vars'] ?? null) === ['livraison' => 'Livraison offerte'] && !isset($cfV['texts']['isNew']), json_encode([$cfV['texts'] ?? null, $cfV['vars'] ?? null]));
+    check('variables : {{code}} personnalisé gardé dans un modèle de carte', str_contains(DeepFind\Widget\WidgetConfig::cleanCardTemplate('<div class="df-if-livraison">{{livraison}}</div>'), '{{livraison}}'));
+    DeepFind\Settings::set('widget_texts_fr', '{}');
+    DeepFind\Settings::set('custom_vars', '[]');
+    DeepFind\Settings::set('custom_vars_fr', '{}');
+    DeepFind\Settings::set('custom_vars_en', '{}');
+
     // Photo au survol d'un produit (Paramètres › Widget sur le site)
     [, $cfH1] = $get("/api/v1/config?key=$key&lang=fr");
     DeepFind\Settings::set('widget_hover_image', '0');

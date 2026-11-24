@@ -406,6 +406,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
 | | Clés | Clés publiques et domaines autorisés |
 | | Intégration | Layers, filtres, options de tri, code du site, favori de test (section 7) |
+| | Variables | Variables système (lecture seule), textes du widget modifiables par langue, variables personnalisées `{{code}}` (section 6, « Variables ») |
 | | Cache | État et purge des caches |
 | | Paramètres | Seuils anti-robots, recherche, widget sur le site, journaux, sécurité des imports |
 
@@ -511,6 +512,16 @@ php bin/console import:run --project=test --source=produits_fr
 - **« + Ajouter une clé »** ouvre une fenêtre : nom, domaines autorisés (séparés par des virgules, sous-domaines inclus), langues.
 - Une ligne par clé : nom, clé publique **masquée** (début et fin visibles), domaines, langues, active. L'**œil** affiche la clé complète, le bouton **copier** la met dans le presse-papiers.
 - La clé publique est visible dans le code des pages du site : c'est normal. Elle est protégée par la liste des domaines autorisés et par les seuils anti-robots.
+
+### Variables
+
+**Paramètres › Variables**, pour la langue choisie en bas du menu :
+
+- **Variables système** (lecture seule) : remplies par le widget pour chaque produit, dans les modèles de carte : `{{name}}`, `{{brand}}`, `{{price}}`, `{{from}}`… Une variable peut être remplacée par un texte fixe ; gardez alors la classe `df-if-<variable>` pour qu'il ne s'affiche que si la variable a une valeur (ex. `<span class="df-if-from">À partir de :</span>`). Le lien de la carte accepte `{{url}}`, `{{url_path}}`, `{{sku}}`, `{{id}}`.
+- **Textes du widget** : tous les libellés affichés sur le site, rangés par thème (cartes produit, fenêtre de recherche, filtres et tri, carrousels et popins) : « dès » (`{{from}}`), « Nouveau », « Rupture », « Tout voir », « Aucun résultat pour », « Filtres »… Champ vide = texte d'origine ; `%s` est remplacé par la recherche ou le nom du filtre. Texte brut, une valeur par langue.
+- **Variables personnalisées** : un code (minuscules, chiffres, `_`, ex. `livraison`) et une valeur par langue (ex. « Livraison offerte dès 50 € »), utilisables sous la forme `{{livraison}}` dans les modèles de carte (avec `df-if-livraison` au besoin), le contenu HTML des popins et bannières, le titre et le texte « Voir tout » des carrousels. Les codes sont communs à toutes les langues ; une variable sans valeur dans une langue n'affiche rien. Un code de variable système est refusé ; un code inconnu reste affiché tel quel (`{{inconnue}}`), ce qui aide à repérer une faute de frappe.
+
+Les valeurs sont envoyées au widget avec sa configuration (visibles sur le site d'ici quelques minutes) et insérées comme du texte, jamais comme du HTML. Elles ne sont pas encore copiées par la copie de configuration entre projets.
 
 ### Paramètres
 

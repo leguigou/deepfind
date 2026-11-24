@@ -76,6 +76,9 @@ src/Http/ApiController.php     /api/v1/config (projet actif ? + layer actif, fil
                                /api/v1/visit, /api/v1/popin, /api/v1/carousels, /api/v1/carousel, /api/v1/health
 src/Widget/WidgetConfig.php    page Intégration : layers (table layers, un seul actif : below | fullscreen | floating | embedded),
                                filtres (ordre, nom, visibilité : widget_filters_<lang>) et tris (widget_sorts_<lang>) envoyés au widget
+src/Widget/WidgetTexts.php     Paramètres › Variables : textes du widget par langue (DEFAULTS = copie de la table T de deepfind.js,
+                               un test vérifie qu'elles sont identiques ; ajoutez tout nouveau texte aux deux et à GROUPS),
+                               variables personnalisées {{code}} (custom_vars, custom_vars_<langue>) ; envoyés par /api/v1/config
 src/Admin/                     extranet : App (routes + CSRF), Auth (jeton unique), *Controller (dont MappingController = mapping visuel), View
 src/Project.php                projet courant (session extranet / clé publique API / source importée) ; préfixe d'index par projet ;
                                projet désactivé (projects.active = 0) → le widget ne prend pas la main sur le site

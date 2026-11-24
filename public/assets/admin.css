@@ -1230,3 +1230,22 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .ca-block .ca-grid { margin-top: 4px; }
 .ca-block .ca-learning { margin-top: 4px; }
 .ca-block .ca-items { margin: 0; }
+
+/* ---------- Paramètres › Variables */
+.var-card { margin-bottom: 16px; }
+.var-card h2 { margin: 0 0 6px; font-size: 17px; }
+.var-group { margin: 18px 0 8px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.var-texts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+.var-text { display: flex; flex-direction: column; gap: 4px; margin: 0; font-weight: 400; }
+.var-text-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text); }
+.var-text input { margin: 0; }
+.var-text.is-changed input { border-color: var(--accent); }
+.var-code { padding: 2px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text); font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: copy; }
+.var-code.is-copied { border-color: var(--ok); color: var(--ok); }
+.var-custom td { vertical-align: middle; }
+.var-custom td:first-child { white-space: nowrap; }
+.var-custom input { margin: 0; }
+.var-code-input { width: 170px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.var-brace { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 0 3px; }
+.var-add { margin-top: 10px; }
+@media (max-width: 900px) { .var-texts { grid-template-columns: minmax(0, 1fr); } }

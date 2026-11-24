@@ -44,7 +44,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
   const pages = ['/admin/sources', '/admin/sources/edit?id=1', '/admin/sources/test?id=1', '/admin/imports', '/admin/imports/view?id=1',
     '/admin/synonyms', '/admin/custom-results', '/admin/custom-results/edit', '/admin/page-rules', '/admin/page-rules/edit', '/admin/banners', '/admin/banners/edit', '/admin/popins', '/admin/popins/edit', '/admin/carousels', '/admin/carousels/edit', '/admin/redirects', '/admin/redirects/edit', '/admin/preview?q=palme', '/admin/preview?q=palme&brand[]=C4&show_disabled=1', '/admin/disabled', '/admin/boost-rules', '/admin/monitor', '/admin/stats', '/admin/audience', '/admin/audience?days=365', '/admin/logs', '/admin/bots',
-    '/admin/keys', '/admin/integration', '/admin/integration?tab=filters', '/admin/integration?tab=sorts', '/admin/settings'];
+    '/admin/keys', '/admin/variables', '/admin/integration', '/admin/integration?tab=filters', '/admin/integration?tab=sorts', '/admin/settings'];
   for (const p of pages) {
     const resp = await page.goto(BASE + p);
     const txt = await page.textContent('body');
@@ -842,6 +842,52 @@ fs.mkdirSync(OUT, { recursive: true });
   check('popins : fréquence « toujours » (durée masquée, réaffichée après fermeture, rien de mémorisé)', rememberHidden && savedAlways && again === 1 && memo === 0);
   await page.click('.cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
+
+  // Paramètres › Variables : texte modifié (bouton des filtres, « dès »), variable personnalisée dans une popin, sur un faux site
+  await page.goto(BASE + '/admin/variables');
+  await page.fill('input[name="texts[filters]"]', 'Affiner');
+  await page.fill('input[name="texts[from]"]', 'À partir de :');
+  await page.click('[data-var-add]');
+  await page.fill('[data-var-rows] tr:last-child input[name$="[code]"]', 'Livraison Été');
+  const codeTyped = await page.inputValue('[data-var-rows] tr:last-child input[name$="[code]"]');
+  await page.fill('[data-var-rows] tr:last-child input[name$="[value]"]', 'Livraison offerte dès 50 €');
+  await Promise.all([page.waitForNavigation(), page.click('.var-form .cr-foot button.btn')]);
+  const varsSaved = (await page.textContent('body')).includes('Variables enregistrées') && await page.inputValue('input[name="texts[filters]"]') === 'Affiner'
+    && await page.locator('.var-text.is-changed').count() === 2;
+  await page.screenshot({ path: OUT + '/variables.png', fullPage: true });
+  await page.goto(BASE + '/admin/popins/edit');
+  await page.fill('[data-f=name]', 'Popin variable');
+  await page.selectOption('[data-f=mode]', 'code');
+  await page.fill('[data-f=delay_seconds]', '0');
+  await page.click('[data-wy-tab=code]');
+  await page.fill('[data-f=html]', '<p class="var-test">{{livraison_ete}} – {{inconnue}}</p>');
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open):not(.cr-delete-btn)')]);
+  const [pc5, pp5] = await popinCtx();
+  // un produit à prix variable (le catalogue de test n'en a pas) : « dès » / texte modifié affiché
+  await pc5.route('**/api/v1/search?*', async (route) => {
+    const resp = await route.fetch();
+    const json = await resp.json();
+    if (json.products && json.products[0]) { json.products[0].has_price_range = true; }
+    await route.fulfill({ response: resp, json });
+  });
+  await pp5.goto(BASE + '/boutique/plongee.html');
+  await pp5.waitForSelector('.df-popin .var-test', { timeout: 5000 });
+  const popinVar = await pp5.textContent('.df-popin .var-test');
+  await pp5.click('.df-popin-close');
+  await pp5.fill('input[name=q]', 'palme');
+  await pp5.waitForSelector('.df-card', { timeout: 5000 });
+  const filtersTxt = await pp5.textContent('.df-filters-btn');
+  const fromTxt = await pp5.evaluate(() => Array.prototype.some.call(document.querySelectorAll('.df-from'), (n) => n.textContent === 'À partir de :'));
+  await pc5.close();
+  check('variables : enregistrées (code nettoyé), texte modifié et variable personnalisée affichés sur le site',
+    codeTyped === 'livraison_ete' && varsSaved && popinVar === 'Livraison offerte dès 50 € – {{inconnue}}' && filtersTxt === 'Affiner' && fromTxt);
+  await page.click('.cr-delete-btn');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
+  await page.goto(BASE + '/admin/variables');
+  await page.fill('input[name="texts[filters]"]', '');
+  await page.fill('input[name="texts[from]"]', '');
+  await page.click('[data-var-rows] tr:last-child [data-var-remove]');
+  await Promise.all([page.waitForNavigation(), page.click('.var-form .cr-foot button.btn')]);
 
   // Flux protégé par mot de passe (.htaccess) : test de connexion, enregistrement, mot de passe jamais réaffiché
   const feedSrv = require('child_process').spawn('php', ['-S', '127.0.0.1:7797', 'tests/fake-feed.php'], { stdio: 'ignore' });
