@@ -64,17 +64,33 @@
       else if (f('mode').value === 'visual' && !/^https?:\/\//i.test(f('image_desktop').value.trim())) { problem = 'Ajoutez au moins l\'image « Ordinateur ».'; }
       else if (f('mode').value === 'code' && !f('html').value.trim()) { problem = 'Saisissez le code HTML de la popin.'; }
       if (problem) { ev.preventDefault(); ui.alert(problem); return; }
+      form.querySelector('input[name=payload]').value = JSON.stringify(payload());
+    });
+    function payload() {
+      var period = editor.period();
       var reset = f('reset_memory');
-      form.querySelector('input[name=payload]').value = JSON.stringify({
+      return {
         id: p.id || 0, name: f('name').value, active: f('active').checked,
         duration: period.on ? 'period' : 'always', starts_at: period.start, ends_at: period.end,
-        pages: pages, home: f('home').checked, urls: urls, exclude_urls: urlsOf('exclude_urls'),
+        pages: pagesUi.mode(), home: f('home').checked, urls: urlsOf('urls'), exclude_urls: urlsOf('exclude_urls'),
         device: f('device').value, placement: f('placement').value, delay_seconds: f('delay_seconds').value, max_width: f('max_width').value, min_height: f('min_height').value,
         repeat_mode: form.querySelector('input[name=pp_repeat]:checked').value, remember_days: f('remember_days').value,
         reset_memory: !!(reset && reset.checked),
         mode: f('mode').value, image_desktop: f('image_desktop').value, image_mobile: f('image_mobile').value,
         alt: f('alt').value, link_url: f('link_url').value, new_window: f('new_window').checked, html: f('html').value
-      });
+      };
+    }
+
+    // ---------------------------------------------------------------- Aperçu direct (ordinateur / mobile), réglages en cours non enregistrés
+    window.DFLivePreview({
+      button: form.querySelector('[data-live-preview]'), frameUrl: form.getAttribute('data-frame-url'), type: 'popin',
+      load: function () {
+        var body = new FormData();
+        body.append('_csrf', form.getAttribute('data-csrf'));
+        body.append('payload', JSON.stringify(payload()));
+        return fetch(form.getAttribute('data-preview-url'), { method: 'POST', body: body, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.json(); });
+      }
     });
   });
 })();

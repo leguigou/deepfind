@@ -136,6 +136,19 @@ final class PreviewController
     }
 
     /** Page de démonstration du widget (simule l'en-tête du site). */
+    /**
+     * Aperçu direct (popins, carrousels) : page fictive affichée dans un cadre de la fiche, qui charge le vrai widget en mode
+     * « render » ; la fiche lui envoie la popin ou le carrousel à dessiner (window.postMessage, même origine uniquement).
+     */
+    public function live(): void
+    {
+        $lang = Auth::lang();
+        View::render('live_preview', [
+            'type' => ($_GET['type'] ?? '') === 'carousel' ? 'carousel' : 'popin', 'lang' => $lang,
+            'config' => \DeepFind\Widget\WidgetConfig::forWidget($lang) + ['hover_image' => \DeepFind\Settings::int('widget_hover_image') === 1],
+        ], 'Aperçu', false);
+    }
+
     public function demo(): void
     {
         $keys = Db::all('SELECT name, public_key, langs FROM api_keys WHERE active = 1 AND project_id = ? ORDER BY id', [\DeepFind\Project::id()]);

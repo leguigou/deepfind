@@ -1,5 +1,5 @@
 <?php
-/** @var array $c @var array $fields @var array $urlOps @var array $items @var ?array $stats @var array $top @var string $personal */
+/** @var array $c @var array $fields @var array $urlOps @var array $items @var ?array $stats @var array $top @var string $personal @var array $searchTpl */
 use DeepFind\Rules\Carousels;
 use DeepFind\Rules\Popins;
 ?>
@@ -8,7 +8,7 @@ use DeepFind\Rules\Popins;
 <form method="post" action="<?= e(url('/admin/carousels/save')) ?>" class="form cr-form ca-form" data-carousel-form
       data-carousel="<?= e(\DeepFind\Text::json($c)) ?>" data-items="<?= e(\DeepFind\Text::json($items)) ?>" data-fields="<?= e(\DeepFind\Text::json($fields)) ?>"
       data-url-ops="<?= e(\DeepFind\Text::json($urlOps)) ?>" data-values-url="<?= e(url('/admin/boost-rules/values')) ?>"
-      data-search-url="<?= e(url('/admin/custom-results/search')) ?>" data-preview-url="<?= e(url('/admin/carousels/preview')) ?>"
+      data-search-url="<?= e(url('/admin/custom-results/search')) ?>" data-frame-url="<?= e(url('/admin/live-preview', ['type' => 'carousel'])) ?>" data-preview-url="<?= e(url('/admin/carousels/preview')) ?>"
       data-csrf="<?= e(\DeepFind\Admin\Auth::csrf()) ?>">
   <?= csrf_field() ?><input type="hidden" name="payload" value="">
 
@@ -129,6 +129,27 @@ use DeepFind\Rules\Popins;
       </div>
       <p class="muted small">Les cartes produit reprennent le style de la fenêtre de recherche (modèle de carte et couleurs du layer actif, Paramètres › Intégration).
         Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches.</p>
+      <div class="ca-tpl" data-card-tpl data-default-desktop="<?= e($searchTpl[0]) ?>" data-default-mobile="<?= e($searchTpl[1]) ?>">
+        <div class="bn-code-head">
+          <span>Modèle de carte produit <small>(HTML)</small></span>
+          <span class="ca-tpl-tools">
+            <span class="lv-switch" role="group" aria-label="Version du modèle">
+              <button type="button" class="lv-sw" data-tpl-tab="desktop" aria-pressed="true">Ordinateur</button>
+              <button type="button" class="lv-sw" data-tpl-tab="mobile" aria-pressed="false">Mobile</button>
+            </span>
+            <button type="button" class="btn btn-sm btn-light" data-tpl-reset title="Remettre le modèle de la fenêtre de recherche dans l'onglet ouvert">↻ Revenir au modèle par défaut</button>
+          </span>
+        </div>
+        <textarea data-f="card_template" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="desktop" aria-label="Modèle de carte produit, ordinateur"></textarea>
+        <textarea data-f="card_template_mobile" class="bn-code-area" rows="14" spellcheck="false" data-tpl-device="mobile" hidden aria-label="Modèle de carte produit, mobile"
+          placeholder="Vide : le modèle ordinateur s'applique aussi sur mobile."></textarea>
+        <small class="muted">Par défaut : le modèle de la fenêtre de recherche (Paramètres › Intégration, layer actif). Modifiez-le pour ce carrousel seulement,
+          puis vérifiez avec « Aperçu ordinateur / mobile ». HTML simple (div, span, p, strong, img…), sans script ni lien (la carte entière mène au produit) ;
+          un élément de classe <code>df-if-</code><em>variable</em> n'est affiché que si la variable n'est pas vide.</small>
+        <details class="ca-vars"><summary>Variables disponibles</summary>
+          <ul class="lp-vars"><?php foreach (\DeepFind\Widget\WidgetConfig::CARD_VARS as $v => $help): ?><li><code>{{<?= e($v) ?>}}</code> <span class="muted"><?= e($help) ?></span></li><?php endforeach; ?></ul>
+        </details>
+      </div>
       <div class="bn-code-head"><span>CSS personnalisé <small>(facultatif)</small></span></div>
       <textarea data-f="custom_css" class="bn-code-area" rows="6" spellcheck="false" placeholder=".df-carousel-<?= $c['id'] ?: 'N' ?> .df-car-title { font-size: 26px; }&#10;.df-carousel-<?= $c['id'] ?: 'N' ?> { --df-accent: #e4003a; background: #f6f7fb; padding: 16px; }"></textarea>
       <small class="muted">Visez <code>.df-carousel-<?= $c['id'] ?: 'N' ?></code> (ce carrousel) ou <code>.df-carousel</code> (tous) ; variables : <code>--df-accent</code>, <code>--df-text</code>, <code>--df-gap</code>.
@@ -163,6 +184,7 @@ use DeepFind\Rules\Popins;
   <?php endif; ?>
 
   <div class="cr-foot">
+    <button type="button" class="btn btn-light lv-open" data-live-preview><?= admin_icon('eye') ?> Aperçu ordinateur / mobile</button>
     <a class="btn btn-light" href="<?= e(url('/admin/carousels')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
@@ -172,5 +194,6 @@ use DeepFind\Rules\Popins;
     <button class="btn btn-sm btn-danger" data-confirm="Supprimer le carrousel « <?= e($c['name']) ?> » et ses statistiques ?">Supprimer ce carrousel</button></form>
 <?php endif; ?>
 <script src="<?= e(asset('/assets/editor-tools.js')) ?>"></script>
+<script src="<?= e(asset('/assets/live-preview.js')) ?>"></script>
 <script src="<?= e(asset('/assets/conditions.js')) ?>"></script>
 <script src="<?= e(asset('/assets/carousels.js')) ?>"></script>

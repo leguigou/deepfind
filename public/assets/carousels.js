@@ -24,6 +24,27 @@
     f('in_stock_only').checked = c.in_stock_only !== false;
     form.querySelector('input[name=ca_personal][value=' + (c.personal_mode === 'recent' ? 'recent' : 'recommended') + ']').checked = true;
 
+    // ---------------------------------------------------------------- Modèle de carte produit : ordinateur / mobile, retour au modèle par défaut
+    var tplBox = form.querySelector('[data-card-tpl]');
+    var tplDefault = { desktop: tplBox.getAttribute('data-default-desktop') || '', mobile: tplBox.getAttribute('data-default-mobile') || '' };
+    // mobile identique à l'ordinateur : laissé vide (il suit l'ordinateur)
+    var mobileDefault = function () { return tplDefault.mobile !== tplDefault.desktop ? tplDefault.mobile : ''; };
+    f('card_template').value = c.card_template || tplDefault.desktop;
+    f('card_template_mobile').value = c.card_template_mobile || (c.card_template ? '' : mobileDefault());
+    var tplTab = 'desktop';
+    tplBox.querySelectorAll('[data-tpl-tab]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        tplTab = b.getAttribute('data-tpl-tab');
+        tplBox.querySelectorAll('[data-tpl-tab]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        tplBox.querySelectorAll('[data-tpl-device]').forEach(function (t) { t.hidden = t.getAttribute('data-tpl-device') !== tplTab; });
+      });
+    });
+    tplBox.querySelector('[data-tpl-reset]').addEventListener('click', function () {
+      var t = f(tplTab === 'mobile' ? 'card_template_mobile' : 'card_template');
+      t.value = tplTab === 'mobile' ? mobileDefault() : tplDefault.desktop;
+      t.focus();
+    });
+
     // ---------------------------------------------------------------- Source : blocs affichés selon le choix
     var itemsTitle = form.querySelector('[data-items-title]');
     function source() { var r = form.querySelector('input[name=ca_source]:checked'); return r ? r.value : 'auto'; }
@@ -160,7 +181,7 @@
           sort_by: f('sort_by').value, similar_by: f('similar_by').value, personal_mode: form.querySelector('input[name=ca_personal]:checked').value,
           learning: f('learning').checked, in_stock_only: f('in_stock_only').checked, max_items: f('max_items').value,
           per_view_desktop: f('per_view_desktop').value, per_view_mobile: f('per_view_mobile').value, autoplay: f('autoplay').value,
-          custom_css: f('custom_css').value
+          custom_css: f('custom_css').value, card_template: f('card_template').value, card_template_mobile: f('card_template_mobile').value
         }
       };
     }
@@ -178,6 +199,32 @@
       form.querySelector('input[name=payload]').value = JSON.stringify(d);
     });
 
+    // ---------------------------------------------------------------- Aperçu direct (ordinateur / mobile) : produits de la page choisie ci-dessous
+    function previewBody(r) {
+      var body = new FormData();
+      body.append('_csrf', form.getAttribute('data-csrf'));
+      body.append('payload', JSON.stringify(r.data));
+      body.append('page', form.querySelector('[data-preview-page]').value);
+      body.append('sku', form.querySelector('[data-preview-sku]').value);
+      body.append('history', form.querySelector('[data-preview-history]').value);
+      return body;
+    }
+    window.DFLivePreview({
+      button: form.querySelector('[data-live-preview]'), frameUrl: form.getAttribute('data-frame-url'), type: 'carousel',
+      load: function () {
+        var r = collect();
+        if (r.problem) { return Promise.resolve({ error: r.problem }); }
+        delete r.data._period;
+        return fetch(form.getAttribute('data-preview-url'), { method: 'POST', body: previewBody(r), credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(function (res) { return res.json(); })
+          .then(function (d) {
+            if (!d.carousel) { return { error: d.note || 'Aperçu impossible.' }; }
+            if (!d.carousel.products.length) { return { error: 'Aucun produit pour cette page : vérifiez les conditions (ou la page choisie dans « Aperçu des produits »).' }; }
+            return { item: d.carousel, note: d.note };
+          });
+      }
+    });
+
     // ---------------------------------------------------------------- Aperçu des produits
     var pv = form.querySelector('[data-preview-list]');
     var note = form.querySelector('[data-preview-note]');
@@ -185,12 +232,7 @@
       var r = collect();
       if (r.problem) { ui.alert(r.problem); return; }
       delete r.data._period;
-      var body = new FormData();
-      body.append('_csrf', form.getAttribute('data-csrf'));
-      body.append('payload', JSON.stringify(r.data));
-      body.append('page', form.querySelector('[data-preview-page]').value);
-      body.append('sku', form.querySelector('[data-preview-sku]').value);
-      body.append('history', form.querySelector('[data-preview-history]').value);
+      var body = previewBody(r);
       note.textContent = 'Chargement…';
       pv.textContent = '';
       fetch(form.getAttribute('data-preview-url'), { method: 'POST', body: body, credentials: 'same-origin', headers: { Accept: 'application/json' } })

@@ -62,6 +62,7 @@ final class CarouselsController
         View::render('carousel_edit', [
             'active' => 'carousels', 'c' => $c, 'fields' => $fields, 'urlOps' => PageRules::URL_OPS, 'items' => $items,
             'stats' => $c['id'] ? Carousels::stats([$c['id']], 30)[$c['id']] : null, 'top' => $top, 'personal' => Carousels::personalMode(),
+            'searchTpl' => Carousels::searchTemplates(),
         ], $c['id'] ? 'Carrousel « ' . $c['name'] . ' »' : 'Nouveau carrousel');
     }
 
@@ -147,10 +148,12 @@ final class CarouselsController
         if (!Carousels::pageMatches($c, $page)) {
             $notes[] = 'Attention : ce carrousel ne s\'affiche pas sur cette page (pages concernées).';
         }
+        $products = Carousels::products($lang, $c, $pageProduct, $history === [] ? null : $history, false);
         $items = array_map(static fn ($p) => ['sku' => $p['sku'] ?? '', 'name' => $p['name'] ?? '', 'image' => $p['image'] ?? '', 'brand' => $p['brand'] ?? '',
-            'price' => $p['final_price'] ?? null, 'in_stock' => !empty($p['in_stock'])],
-            Carousels::products($lang, $c, $pageProduct, $history === [] ? null : $history, false));
-        Response::json(['items' => $items, 'note' => implode(' ', $notes)]);
+            'price' => $p['final_price'] ?? null, 'in_stock' => !empty($p['in_stock'])], $products);
+        // carrousel : prêt pour le widget (aperçu direct ordinateur / mobile)
+        $c['id'] = $c['id'] ?: 1;
+        Response::json(['items' => $items, 'note' => implode(' ', $notes), 'carousel' => Carousels::payload($c) + ['products' => $products]]);
     }
 
     /** SKU saisis pour l'historique de test → identifiants des produits. @return list<string> */

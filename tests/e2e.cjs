@@ -403,7 +403,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('.br-cond .ms-toggle');
   await page.locator('.ms-list .ms-item', { hasText: 'C4' }).first().click();
   await page.click('[data-f=name]');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('règles de page : règle créée', (await page.textContent('body')).includes('Règle « Règle C4 » enregistrée'));
   await page.goto(BASE + '/admin/page-rules');
   check('règles de page : liste (adresse, action)', (await page.textContent('.pr-table')).includes('/boutique/c4/') && (await page.textContent('.pr-table')).includes('Filtre pré-coché'));
@@ -438,7 +438,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.selectOption('.br-cond select.br-op', 'contains');
   await page.fill('.br-cond .tag-input input.br-text', 'ress');
   await page.press('.br-cond .tag-input input.br-text', 'Enter');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('règles de page : « contient » proposé, enregistré et réaffiché', lopOptions.join(',') === 'in,not_in,contains,not_contains'
     && (await page.textContent('body')).includes('enregistrée') && await page.inputValue('.br-cond select.br-op') === 'contains'
     && (await page.textContent('.br-cond .tag-input')).includes('ress'));
@@ -458,7 +458,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('[data-f=image_desktop]', BASE + '/assets/demo/palme.svg');
   await page.fill('[data-f=alt]', 'Soldes sur les palmes');
   await page.fill('[data-f=link_url]', BASE + '/boutique/soldes.html');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('popins : popin créée', (await page.textContent('body')).includes('Popin « Popin e2e » enregistrée'));
   check('popins : fiche réaffichée (pages, exclusion, délai)', await page.inputValue('[data-urls=urls] .pr-url-text') === '/boutique/promo/'
     && await page.inputValue('[data-urls=exclude_urls] .pr-url-text') === '/boutique/promo/panier' && await page.inputValue('[data-f=delay_seconds]') === '0');
@@ -560,7 +560,24 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('[data-wy-tab=visual]');
   check('éditeur visuel : modification du code reprise, script ignoré', (await page.textContent('.wy-area')).includes('Ajout en code') && await page.locator('.wy-area script').count() === 0);
   await page.click('.wy-area h2');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  // aperçu direct : la popin non enregistrée, dessinée par le vrai widget, en format ordinateur puis mobile
+  await page.click('[data-live-preview]');
+  const lpf = page.frameLocator('.lv-dialog .lv-frame');
+  await lpf.locator('.df-popin .df-popin-html h2').waitFor({ timeout: 5000 });
+  const lpDesk = await lpf.locator('.df-popin-box').boundingBox();
+  const lpTitle = await lpf.locator('.df-popin-html h2').textContent();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: OUT + '/apercu-popin-ordinateur.png' });
+  await page.click('.lv-sw[data-device=mobile]');
+  await page.waitForTimeout(500);
+  const lpMob = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-popin-box').evaluate((n) => n.getBoundingClientRect().width);
+  const lpFrameW = await page.evaluate(() => document.querySelector('.lv-dialog .lv-frame').style.width);
+  await page.screenshot({ path: OUT + '/apercu-popin-mobile.png' });
+  check('aperçu direct : popin non enregistrée dessinée par le widget, ordinateur puis mobile', lpTitle === 'Livraison offerte' && lpDesk !== null
+    && lpFrameW === '390px' && lpMob <= 390 - 31 && lpMob > 300);
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.evaluate(() => localStorage.removeItem('df-lp-device'));
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('éditeur visuel : popin enregistrée, contenu réaffiché', (await page.textContent('body')).includes('Popin « Popin éditeur » enregistrée')
     && (await page.textContent('.wy-area')).includes('Livraison offerte') && !(await page.inputValue('[data-f=html]')).includes('script'));
   const [pc3, pp3] = await popinCtx();
@@ -597,10 +614,43 @@ fs.mkdirSync(OUT, { recursive: true });
   const pinnedSku = await page.getAttribute('.ca-item', 'data-sku');
   const pvCount = await page.locator('.ca-pcard').count();
   check('carrousels : aperçu des produits (épinglé en tête, nombre)', pvCount === 8 && (await page.textContent('.ca-pcard >> nth=0')).includes(pinnedSku));
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('carrousels : carrousel créé et réaffiché', (await page.textContent('body')).includes('Carrousel « Carrousel e2e » enregistré')
     && await page.inputValue('[data-f=selector]') === '#reco' && await page.locator('.ca-item').count() === 1);
   await page.screenshot({ path: OUT + '/carrousel-fiche.png', fullPage: true });
+  await page.click('[data-live-preview]');
+  const lcf = page.frameLocator('.lv-dialog .lv-frame');
+  await lcf.locator('#df-preview-slot .df-carousel .df-card >> nth=0').waitFor({ timeout: 5000 });
+  const lcCards = await lcf.locator('.df-carousel .df-card').count();
+  const lcTitle = await lcf.locator('.df-car-title').textContent();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: OUT + '/apercu-carrousel-ordinateur.png' });
+  await page.click('.lv-sw[data-device=mobile]');
+  await page.waitForTimeout(600);
+  const lcMob = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-car-next').evaluate((n) => getComputedStyle(n).display);
+  await page.screenshot({ path: OUT + '/apercu-carrousel-mobile.png' });
+  check('aperçu direct : carrousel dessiné dans une page fictive (8 produits, titre), mobile sans flèches', lcCards === 8 && lcTitle === 'Nos coups de cœur' && lcMob === 'none');
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.evaluate(() => localStorage.removeItem('df-lp-device'));
+  // modèle de carte propre au carrousel : visible dans l'aperçu, puis retour au modèle par défaut
+  const tplDefault = await page.getAttribute('[data-card-tpl]', 'data-default-desktop');
+  const tplStart = await page.inputValue('[data-f=card_template]');
+  await page.fill('[data-f=card_template]', '<div class="df-name perso-nom">{{name}}</div>\n<div class="perso-prix">{{price}}</div>');
+  await page.click('[data-live-preview]');
+  await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card .perso-prix >> nth=0').waitFor({ timeout: 5000 });
+  const persoN = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .perso-prix').count();
+  const persoImg = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-media').count();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: OUT + '/apercu-carrousel-modele.png' });
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.click('[data-tpl-reset]');
+  check('carrousels : modèle de carte modifiable (aperçu), « revenir au modèle par défaut »', tplStart === tplDefault && persoN === 8 && persoImg === 0
+    && await page.inputValue('[data-f=card_template]') === tplDefault);
+  const hFrame = (await page.request.get(BASE + '/admin/live-preview?type=carousel')).headers();
+  const hOther = (await page.request.get(BASE + '/admin/carousels')).headers();
+  check('aperçu direct : seule la page d\'aperçu peut s\'afficher dans un cadre, et seulement dans l\'extranet',
+    hFrame['x-frame-options'] === 'SAMEORIGIN' && hFrame['content-security-policy'].includes("frame-ancestors 'self'")
+    && hOther['x-frame-options'] === 'DENY' && hOther['content-security-policy'].includes("frame-ancestors 'none'"));
   const shopCar = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Boutique</title>'
     + '<style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;max-width:1200px;margin:auto}</style></head><body>'
     + '<input name="q"><h1>Boutique</h1><div id="reco"><p>Bloc du thème</p></div><div id="reco2"></div><p>Suite de la page</p>'
@@ -665,7 +715,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.check('input[name=ca_source][value=personal]');
   await page.check('input[name=ca_personal][value=recent]');
   await page.fill('[data-f=max_items]', '4');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   const [cc3, cp3] = await carCtx();
   await cp3.goto(BASE + '/boutique/plongee.html');
   await cp3.waitForSelector('#reco2 .df-carousel .df-card', { timeout: 5000 });

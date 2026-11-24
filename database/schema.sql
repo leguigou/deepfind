@@ -471,6 +471,8 @@ CREATE TABLE IF NOT EXISTS carousels (
   per_view_mobile TINYINT UNSIGNED NOT NULL DEFAULT 2,
   autoplay SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   custom_css MEDIUMTEXT NOT NULL,
+  card_template TEXT NULL,
+  card_template_mobile TEXT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang, position)

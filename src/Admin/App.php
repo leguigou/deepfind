@@ -65,6 +65,8 @@ final class App
         'POST /admin/banners/toggle' => [BannersController::class, 'toggle'],
         'POST /admin/banners/delete' => [BannersController::class, 'delete'],
         'POST /admin/banners/upload' => [BannersController::class, 'upload'],
+        'GET /admin/live-preview' => [PreviewController::class, 'live'],
+        'POST /admin/popins/preview' => [PopinsController::class, 'preview'],
         'GET /admin/carousels' => [CarouselsController::class, 'index'],
         'GET /admin/carousels/edit' => [CarouselsController::class, 'edit'],
         'POST /admin/carousels/save' => [CarouselsController::class, 'save'],
@@ -128,10 +130,13 @@ final class App
 
     public function handle(string $method, string $path): void
     {
-        header('X-Frame-Options: DENY');
+        // Seule la page d'aperçu (popins, carrousels) peut s'afficher dans un cadre, et seulement dans l'extranet lui-même
+        $framable = $path === '/admin/live-preview';
+        header('X-Frame-Options: ' . ($framable ? 'SAMEORIGIN' : 'DENY'));
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: same-origin');
-        header("Content-Security-Policy: default-src 'self'; img-src * data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'");
+        header("Content-Security-Policy: default-src 'self'; img-src * data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors "
+            . ($framable ? "'self'" : "'none'") . "; form-action 'self'");
         header('Cache-Control: no-store');
 
         Auth::start();

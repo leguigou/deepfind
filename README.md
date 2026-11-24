@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=28" defer
+<script src="https://search.example.com/widget/deepfind.js?v=29" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=27` en `?v=28`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=28` en `?v=29`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -721,6 +721,10 @@ Pour une bannière ou une popin, le mode **Contenu HTML** remplace l'image par u
 
 L'onglet **Code HTML** montre et modifie le même contenu (pour les cas que l'éditeur ne couvre pas). Un texte collé depuis Word ou une page web garde sa structure (titres, listes, gras, liens) mais pas sa mise en forme d'origine. L'aperçu de l'éditeur a la largeur maximale de la popin ; le rendu final dépend aussi des styles du site. Le contenu est nettoyé à l'enregistrement, puis par le widget : seules les balises et attributs autorisés sont gardés. Nécessite le widget `?v=26` pour la mise en page des popins au contenu HTML.
 
+### Aperçu direct (popins, carrousels)
+
+Dans la fiche d'une popin ou d'un carrousel, **« Aperçu ordinateur / mobile »** ouvre une fenêtre où le **vrai widget** dessine le contenu sur une page fictive, avec les réglages en cours (même non enregistrés) : bascule **Ordinateur** (1280 × 800) / **Mobile** (390 × 844), affichage réduit pour tenir à l'écran, bouton « Rejouer » après une modification. La popin s'ouvre sans délai ; le carrousel utilise les produits de la page indiquée dans « Aperçu des produits » ; modèle de carte et couleurs du layer actif. Rien n'est compté ni mémorisé. Seule cette page d'aperçu peut s'afficher dans un cadre, et uniquement à l'intérieur de l'extranet.
+
 ### Popins
 
 **Recommandations › Popins** ouvre une fenêtre (« popin ») sur les **pages du site**, même sans recherche : opération commerciale, nouveauté, information de livraison… Le widget, déjà présent sur toutes les pages, l'affiche : rien à ajouter sur le site.
@@ -756,7 +760,7 @@ Un carrousel comprend :
    - **Apprentissage** (facultatif) : les produits sont reclassés selon leur **taux de clic dans ce carrousel** (30 jours, taux lissé : un produit encore peu montré garde le taux moyen et sa chance, un produit souvent montré et peu cliqué descend) ;
    - nombre de produits (2 à 48), en stock uniquement.
    Les conditions limitent aussi les sources « similaires » et « personnalisé ». Sans produit dans la page ou sans historique, ces sources affichent la sélection automatique.
-5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
+5. **Affichage** : produits visibles à la fois (ordinateur 1 à 8, mobile 1 à 4, le bord du suivant dépasse), défilement automatique (en pause au survol, au toucher, hors écran ; jamais si le visiteur limite les animations), **modèle de carte produit** propre au carrousel (onglets ordinateur / mobile, mêmes variables `{{…}}` et règles que le modèle de la recherche ; bouton « Revenir au modèle par défaut » = celui de la fenêtre de recherche), **CSS personnalisé** (`.df-carousel-N` pour ce carrousel, `.df-carousel` pour tous ; variables `--df-accent`, `--df-text`, `--df-gap`).
 
 Les cartes produit sont celles de la fenêtre de recherche (modèle de carte et couleurs du layer actif). Les visiteurs font défiler au doigt, à la souris (glisser) ou avec les flèches. L'**aperçu des produits** de la fiche montre la sélection pour une page, un SKU de produit et un historique de test, sans enregistrer.
 

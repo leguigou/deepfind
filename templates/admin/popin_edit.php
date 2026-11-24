@@ -6,7 +6,8 @@ use DeepFind\Rules\Popins;
 
 <form method="post" action="<?= e(url('/admin/popins/save')) ?>" class="form cr-form pp-form" data-popin-form data-max-kb="<?= $maxKb ?>"
       data-popin="<?= e(\DeepFind\Text::json($p)) ?>" data-url-ops="<?= e(\DeepFind\Text::json($urlOps)) ?>"
-      data-upload-url="<?= e(url('/admin/popins/upload')) ?>" data-csrf="<?= e(\DeepFind\Admin\Auth::csrf()) ?>">
+      data-upload-url="<?= e(url('/admin/popins/upload')) ?>" data-preview-url="<?= e(url('/admin/popins/preview')) ?>"
+      data-frame-url="<?= e(url('/admin/live-preview', ['type' => 'popin'])) ?>" data-csrf="<?= e(\DeepFind\Admin\Auth::csrf()) ?>">
   <?= csrf_field() ?><input type="hidden" name="payload" value="">
 
   <div class="cr-head">
@@ -74,6 +75,7 @@ use DeepFind\Rules\Popins;
   </div>
 
   <div class="cr-foot">
+    <button type="button" class="btn btn-light lv-open" data-live-preview><?= admin_icon('eye') ?> Aperçu ordinateur / mobile</button>
     <a class="btn btn-light" href="<?= e(url('/admin/popins')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
@@ -83,4 +85,5 @@ use DeepFind\Rules\Popins;
     <button class="btn btn-sm btn-danger" data-confirm="Supprimer la popin « <?= e($p['name']) ?> » et ses statistiques ?">Supprimer cette popin</button></form>
 <?php endif; ?>
 <script src="<?= e(asset('/assets/editor-tools.js')) ?>"></script>
+<script src="<?= e(asset('/assets/live-preview.js')) ?>"></script>
 <script src="<?= e(asset('/assets/popins.js')) ?>"></script>
