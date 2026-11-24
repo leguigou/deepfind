@@ -40,13 +40,13 @@
   </div>
 
   <div class="cr-foot">
+    <?php if ($b['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer la bannière « <?= e($b['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer cette bannière</button><?php endif; ?>
     <a class="btn btn-light" href="<?= e(url('/admin/banners')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
 </form>
 <?php if ($b['id']): ?>
-  <form method="post" action="<?= e(url('/admin/banners/delete')) ?>" class="cr-delete"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
-    <button class="btn btn-sm btn-danger" data-confirm="Supprimer la bannière « <?= e($b['name']) ?> » ?">Supprimer cette bannière</button></form>
+  <form method="post" action="<?= e(url('/admin/banners/delete')) ?>" id="cr-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $b['id'] ?>"></form>
 <?php endif; ?>
 <script src="<?= e(asset('/assets/editor-tools.js')) ?>"></script>
 <script src="<?= e(asset('/assets/banners.js')) ?>"></script>

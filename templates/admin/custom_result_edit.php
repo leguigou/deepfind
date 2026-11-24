@@ -59,13 +59,13 @@
   </div>
 
   <div class="cr-foot">
+    <?php if ($cr['id']): ?><button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer le résultat personnalisé « <?= e($cr['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer ce résultat</button><?php endif; ?>
     <a class="btn btn-light" href="<?= e(url('/admin/custom-results')) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
 </form>
 <?php if ($cr['id']): ?>
-  <form method="post" action="<?= e(url('/admin/custom-results/delete')) ?>" class="cr-delete"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $cr['id'] ?>">
-    <button class="btn btn-sm btn-danger" data-confirm="Supprimer le résultat personnalisé « <?= e($cr['name']) ?> » ?">Supprimer ce résultat</button></form>
+  <form method="post" action="<?= e(url('/admin/custom-results/delete')) ?>" id="cr-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $cr['id'] ?>"></form>
 <?php endif; ?>
 
 <dialog id="cr-items-dialog" class="modal" aria-labelledby="cr-items-title">

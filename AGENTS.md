@@ -60,6 +60,8 @@ src/Rules/Redirections.php     redirections (redirections) : termes, période, a
 src/Security/HtmlSanitizer.php HTML des bannières : balises / attributs autorisés, pas de script ni javascript: (le widget refiltre aussi)
 public/assets/editor-tools.js  termes + période (calendrier) des pages d'édition ; gabarit templates/admin/_terms_period.php ;
                                DFImageSlots : images téléversées des bannières et popins (gabarit templates/admin/_media_fields.php)
+public/assets/live-preview.js  aperçu direct (popins, carrousels) : cadre /admin/live-preview (seule page de l'extranet autorisée en cadre,
+                               même origine) où le widget en mode data-render="1" dessine l'élément reçu par postMessage (DeepFind.render)
                                DFPages : pages concernées / exclues (gabarit templates/admin/_pages_fields.php) des popins et carrousels
                                DFWysiwyg : éditeur visuel (contenteditable + execCommand) du contenu HTML, relié au champ html ;
                                refiltre le HTML chargé ou collé (mêmes balises que HtmlSanitizer, qui reste la référence)

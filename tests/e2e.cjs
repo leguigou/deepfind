@@ -21,6 +21,16 @@ fs.mkdirSync(OUT, { recursive: true });
   // Fenêtre de confirmation de l'extranet (remplace confirm() du navigateur) : bouton de validation
   const confirmModal = async () => { await page.click('dialog.modal-confirm[open] [data-ok]'); };
   const check = (name, cond) => { if (cond) { ok++; console.log('  ✔ ' + name); } else { fail.push(name); console.log('  ✘ ' + name); } };
+  // Fiche enregistrée : « Supprimer » sur la même ligne et à la même hauteur que le bouton « Enregistrer »
+  const deleteAligned = async () => page.evaluate(() => {
+    const del = document.querySelector('.cr-delete-btn');
+    const row = del && del.parentElement;
+    const save = row && Array.prototype.filter.call(row.querySelectorAll('button.btn'), (b) => !b.classList.contains('btn-light') && !b.classList.contains('cr-delete-btn'))[0];
+    if (!del || !save) { return false; }
+    const a = del.getBoundingClientRect();
+    const b = save.getBoundingClientRect();
+    return Math.abs(a.top - b.top) < 2 && Math.abs(a.height - b.height) < 2 && a.left < b.left;
+  });
 
   await page.goto(BASE + '/admin');
   check('redirection vers la connexion', page.url().includes('/admin/login'));
@@ -213,7 +223,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await Promise.all([page.waitForNavigation(), page.click('.modal-foot button.btn:not(.btn-light)')]);
   check('règles de boost : règle enregistrée', (await page.textContent('body')).includes('Règle « Test e2e » enregistrée') && (await page.textContent('table')).includes('×2'));
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
-  await page.click('form[action$="/admin/boost-rules/delete"] button');
+  await page.click('form[action$="/admin/boost-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Cache : visibilité et purge
@@ -403,7 +413,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('.br-cond .ms-toggle');
   await page.locator('.ms-list .ms-item', { hasText: 'C4' }).first().click();
   await page.click('[data-f=name]');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('règles de page : règle créée', (await page.textContent('body')).includes('Règle « Règle C4 » enregistrée'));
   await page.goto(BASE + '/admin/page-rules');
   check('règles de page : liste (adresse, action)', (await page.textContent('.pr-table')).includes('/boutique/c4/') && (await page.textContent('.pr-table')).includes('Filtre pré-coché'));
@@ -426,7 +436,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('règles de page : ✕ élargit à tout le catalogue', await shop.locator('.df-card').count() > nLimited && (await shop.textContent('.df-pagefilter')).includes('tout le catalogue'));
   await sc.close();
   await page.goto(BASE + '/admin/page-rules');
-  await page.click('form[action$="/admin/page-rules/delete"] button');
+  await page.click('form[action$="/admin/page-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('règles de page : suppression', (await page.textContent('body')).includes('Règle supprimée'));
   // « contient » : textes en tags, enregistrés puis réaffichés
@@ -438,12 +448,13 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.selectOption('.br-cond select.br-op', 'contains');
   await page.fill('.br-cond .tag-input input.br-text', 'ress');
   await page.press('.br-cond .tag-input input.br-text', 'Enter');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
+  check('fiches : « Supprimer » aligné avec « Enregistrer » (règle selon la page)', await deleteAligned());
   check('règles de page : « contient » proposé, enregistré et réaffiché', lopOptions.join(',') === 'in,not_in,contains,not_contains'
     && (await page.textContent('body')).includes('enregistrée') && await page.inputValue('.br-cond select.br-op') === 'contains'
     && (await page.textContent('.br-cond .tag-input')).includes('ress'));
   page.once('dialog', () => {});
-  await page.click('form[action$="/admin/page-rules/delete"] button');
+  await page.click('form[action$="/admin/page-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Popins : création dans l'extranet, affichage sur un faux site (pages choisies, fermeture mémorisée, statistiques)
@@ -458,8 +469,9 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('[data-f=image_desktop]', BASE + '/assets/demo/palme.svg');
   await page.fill('[data-f=alt]', 'Soldes sur les palmes');
   await page.fill('[data-f=link_url]', BASE + '/boutique/soldes.html');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('popins : popin créée', (await page.textContent('body')).includes('Popin « Popin e2e » enregistrée'));
+  check('fiches : « Supprimer » aligné avec « Enregistrer » (popin)', await deleteAligned());
   check('popins : fiche réaffichée (pages, exclusion, délai)', await page.inputValue('[data-urls=urls] .pr-url-text') === '/boutique/promo/'
     && await page.inputValue('[data-urls=exclude_urls] .pr-url-text') === '/boutique/promo/panier' && await page.inputValue('[data-f=delay_seconds]') === '0');
   await page.screenshot({ path: OUT + '/popin-fiche.png', fullPage: true });
@@ -528,7 +540,7 @@ fs.mkdirSync(OUT, { recursive: true });
   // N°, affichages, clics, CTR, fermetures
   check('popins : statistiques (3 affichages, 1 clic, 2 fermetures)', ppNums[1] === '3' && ppNums[2] === '1' && ppNums[4] === '2');
   await page.screenshot({ path: OUT + '/popin-liste.png', fullPage: true });
-  await page.click('form[action$="/admin/popins/delete"] button');
+  await page.click('form[action$="/admin/popins/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   check('popins : suppression', (await page.textContent('body')).includes('Popin supprimée'));
 
@@ -560,7 +572,24 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('[data-wy-tab=visual]');
   check('éditeur visuel : modification du code reprise, script ignoré', (await page.textContent('.wy-area')).includes('Ajout en code') && await page.locator('.wy-area script').count() === 0);
   await page.click('.wy-area h2');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  // aperçu direct : la popin non enregistrée, dessinée par le vrai widget, en format ordinateur puis mobile
+  await page.click('[data-live-preview]');
+  const lpf = page.frameLocator('.lv-dialog .lv-frame');
+  await lpf.locator('.df-popin .df-popin-html h2').waitFor({ timeout: 5000 });
+  const lpDesk = await lpf.locator('.df-popin-box').boundingBox();
+  const lpTitle = await lpf.locator('.df-popin-html h2').textContent();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: OUT + '/apercu-popin-ordinateur.png' });
+  await page.click('.lv-sw[data-device=mobile]');
+  await page.waitForTimeout(500);
+  const lpMob = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-popin-box').evaluate((n) => n.getBoundingClientRect().width);
+  const lpFrameW = await page.evaluate(() => document.querySelector('.lv-dialog .lv-frame').style.width);
+  await page.screenshot({ path: OUT + '/apercu-popin-mobile.png' });
+  check('aperçu direct : popin non enregistrée dessinée par le widget, ordinateur puis mobile', lpTitle === 'Livraison offerte' && lpDesk !== null
+    && lpFrameW === '390px' && lpMob <= 390 - 31 && lpMob > 300);
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.evaluate(() => localStorage.removeItem('df-lp-device'));
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('éditeur visuel : popin enregistrée, contenu réaffiché', (await page.textContent('body')).includes('Popin « Popin éditeur » enregistrée')
     && (await page.textContent('.wy-area')).includes('Livraison offerte') && !(await page.inputValue('[data-f=html]')).includes('script'));
   const [pc3, pp3] = await popinCtx();
@@ -576,7 +605,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await pp3.waitForTimeout(400);
   await pp3.screenshot({ path: OUT + '/popin-html-site.png' });
   await pc3.close();
-  await page.click('form[action$="/admin/popins/delete"] button');
+  await page.click('form[action$="/admin/popins/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Carrousels de produits : création (produit épinglé, tri), aperçu, affichage sur un faux site (emplacement, défilement, glisser,
@@ -597,10 +626,44 @@ fs.mkdirSync(OUT, { recursive: true });
   const pinnedSku = await page.getAttribute('.ca-item', 'data-sku');
   const pvCount = await page.locator('.ca-pcard').count();
   check('carrousels : aperçu des produits (épinglé en tête, nombre)', pvCount === 8 && (await page.textContent('.ca-pcard >> nth=0')).includes(pinnedSku));
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   check('carrousels : carrousel créé et réaffiché', (await page.textContent('body')).includes('Carrousel « Carrousel e2e » enregistré')
     && await page.inputValue('[data-f=selector]') === '#reco' && await page.locator('.ca-item').count() === 1);
   await page.screenshot({ path: OUT + '/carrousel-fiche.png', fullPage: true });
+  check('fiches : « Supprimer » aligné avec « Enregistrer » (carrousel)', await deleteAligned());
+  await page.click('[data-live-preview]');
+  const lcf = page.frameLocator('.lv-dialog .lv-frame');
+  await lcf.locator('#df-preview-slot .df-carousel .df-card >> nth=0').waitFor({ timeout: 5000 });
+  const lcCards = await lcf.locator('.df-carousel .df-card').count();
+  const lcTitle = await lcf.locator('.df-car-title').textContent();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: OUT + '/apercu-carrousel-ordinateur.png' });
+  await page.click('.lv-sw[data-device=mobile]');
+  await page.waitForTimeout(600);
+  const lcMob = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-car-next').evaluate((n) => getComputedStyle(n).display);
+  await page.screenshot({ path: OUT + '/apercu-carrousel-mobile.png' });
+  check('aperçu direct : carrousel dessiné dans une page fictive (8 produits, titre), mobile sans flèches', lcCards === 8 && lcTitle === 'Nos coups de cœur' && lcMob === 'none');
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.evaluate(() => localStorage.removeItem('df-lp-device'));
+  // modèle de carte propre au carrousel : visible dans l'aperçu, puis retour au modèle par défaut
+  const tplDefault = await page.getAttribute('[data-card-tpl]', 'data-default-desktop');
+  const tplStart = await page.inputValue('[data-f=card_template]');
+  await page.fill('[data-f=card_template]', '<div class="df-name perso-nom">{{name}}</div>\n<div class="perso-prix">{{price}}</div>');
+  await page.click('[data-live-preview]');
+  await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-card .perso-prix >> nth=0').waitFor({ timeout: 5000 });
+  const persoN = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .perso-prix').count();
+  const persoImg = await page.frameLocator('.lv-dialog .lv-frame').locator('.df-carousel .df-media').count();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: OUT + '/apercu-carrousel-modele.png' });
+  await page.click('.lv-dialog .lv-actions .btn:not(.btn-light)');
+  await page.click('[data-tpl-reset]');
+  check('carrousels : modèle de carte modifiable (aperçu), « revenir au modèle par défaut »', tplStart === tplDefault && persoN === 8 && persoImg === 0
+    && await page.inputValue('[data-f=card_template]') === tplDefault);
+  const hFrame = (await page.request.get(BASE + '/admin/live-preview?type=carousel')).headers();
+  const hOther = (await page.request.get(BASE + '/admin/carousels')).headers();
+  check('aperçu direct : seule la page d\'aperçu peut s\'afficher dans un cadre, et seulement dans l\'extranet',
+    hFrame['x-frame-options'] === 'SAMEORIGIN' && hFrame['content-security-policy'].includes("frame-ancestors 'self'")
+    && hOther['x-frame-options'] === 'DENY' && hOther['content-security-policy'].includes("frame-ancestors 'none'"));
   const shopCar = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Boutique</title>'
     + '<style>body{font-family:system-ui,sans-serif;margin:0;padding:24px;max-width:1200px;margin:auto}</style></head><body>'
     + '<input name="q"><h1>Boutique</h1><div id="reco"><p>Bloc du thème</p></div><div id="reco2"></div><p>Suite de la page</p>'
@@ -665,7 +728,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.check('input[name=ca_source][value=personal]');
   await page.check('input[name=ca_personal][value=recent]');
   await page.fill('[data-f=max_items]', '4');
-  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.lv-open)')]);
   const [cc3, cp3] = await carCtx();
   await cp3.goto(BASE + '/boutique/plongee.html');
   await cp3.waitForSelector('#reco2 .df-carousel .df-card', { timeout: 5000 });
@@ -686,7 +749,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await cc3.close();
   for (let k = 0; k < 2; k++) {
     await page.goto(BASE + '/admin/carousels');
-    await page.click('form[action$="/admin/carousels/delete"] button');
+    await page.click('form[action$="/admin/carousels/delete"] button, .cr-delete-btn');
     await Promise.all([page.waitForNavigation(), confirmModal()]);
   }
   check('carrousels : suppression', (await page.textContent('body')).includes('Carrousel supprimé') && await page.locator('.ca-table tbody tr[data-row]').count() === 0);
@@ -709,10 +772,18 @@ fs.mkdirSync(OUT, { recursive: true });
   const srcHtml = await page.content();
   check('flux : source enregistrée, mot de passe jamais réaffiché', srcHtml.includes('Source enregistrée') && !srcHtml.includes('s3cret')
     && (await page.getAttribute('input[name=auth_password]', 'placeholder')).includes('enregistré'));
+  check('fiches : « Supprimer la source » sur la ligne des boutons, même hauteur', await page.evaluate(() => {
+    const del = document.querySelector('.cr-delete-btn');
+    const save = document.querySelector('.actions .btn:not(.btn-light)');
+    if (!del || !save) { return false; }
+    const a = del.getBoundingClientRect();
+    const b = save.getBoundingClientRect();
+    return Math.abs(a.top - b.top) < 2 && Math.abs(a.height - b.height) < 2;
+  }));
   await page.click('[data-src-check]');
   await page.waitForSelector('.src-result');
   check('flux : nouveau test avec le mot de passe enregistré', (await page.textContent('.src-check-results')).includes('protection par mot de passe acceptée'));
-  await page.click('form[action$="/admin/sources/delete"] button');
+  await page.click('form[action$="/admin/sources/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
   feedSrv.kill();
 

@@ -91,6 +91,7 @@ final class Carousels
             'source' => 'auto', 'items' => [], 'match_all' => true, 'conditions' => [], 'sort_by' => 'biz',
             'similar_by' => 'category', 'personal_mode' => 'recommended', 'learning' => false, 'in_stock_only' => true,
             'max_items' => 12, 'per_view_desktop' => 4, 'per_view_mobile' => 2, 'autoplay' => 0, 'custom_css' => '',
+            'card_template' => '', 'card_template_mobile' => '',
         ];
     }
 
@@ -111,6 +112,7 @@ final class Carousels
             'learning' => (int) $r['learning'] === 1, 'in_stock_only' => (int) $r['in_stock_only'] === 1,
             'max_items' => (int) $r['max_items'], 'per_view_desktop' => (int) $r['per_view_desktop'], 'per_view_mobile' => (int) $r['per_view_mobile'],
             'autoplay' => (int) $r['autoplay'], 'custom_css' => (string) $r['custom_css'],
+            'card_template' => (string) ($r['card_template'] ?? ''), 'card_template_mobile' => (string) ($r['card_template_mobile'] ?? ''),
         ];
     }
 
@@ -183,7 +185,34 @@ final class Carousels
             'in_stock_only' => !empty($in['in_stock_only']), 'max_items' => $int('max_items', 2, 48, 12),
             'per_view_desktop' => $int('per_view_desktop', 1, 8, 4), 'per_view_mobile' => $int('per_view_mobile', 1, 4, 2),
             'autoplay' => $int('autoplay', 0, 60, 0), 'custom_css' => self::css((string) ($in['custom_css'] ?? '')),
-        ], []];
+        ] + self::cardTemplates($in), []];
+    }
+
+    /**
+     * Modèles de carte produit du carrousel (ordinateur, mobile), nettoyés comme celui de la recherche (WidgetConfig::cleanCardTemplate).
+     * Identique au modèle de la recherche (layer actif, sinon modèle d'origine) : '' (le carrousel suit alors ce modèle).
+     * Mobile identique à l'ordinateur : ''.
+     * @return array{card_template:string, card_template_mobile:string}
+     */
+    public static function cardTemplates(array $in): array
+    {
+        [$baseDesk, $baseMob] = self::searchTemplates();
+        $desk = \DeepFind\Widget\WidgetConfig::cleanCardTemplate((string) ($in['card_template'] ?? ''));
+        $mob = \DeepFind\Widget\WidgetConfig::cleanCardTemplate((string) ($in['card_template_mobile'] ?? ''));
+        $same = [\DeepFind\Widget\WidgetConfig::class, 'sameTemplate'];
+        $desk = $desk === '' || $same($desk, $baseDesk) ? '' : $desk;
+        $mobRef = $desk !== '' ? $desk : $baseMob;
+        $mob = $mob === '' || $same($mob, $mobRef) ? '' : $mob;
+        return ['card_template' => $desk, 'card_template_mobile' => $mob];
+    }
+
+    /** Modèles de carte de la fenêtre de recherche (layer actif), modèle d'origine à défaut. @return array{0:string, 1:string} */
+    public static function searchTemplates(): array
+    {
+        $s = \DeepFind\Widget\WidgetConfig::activeLayer()['settings'] ?? [];
+        $desk = (string) ($s['card_template'] ?? '') !== '' ? (string) $s['card_template'] : \DeepFind\Widget\WidgetConfig::DEFAULT_CARD_TEMPLATE;
+        $mob = (string) ($s['card_template_mobile'] ?? '') !== '' ? (string) $s['card_template_mobile'] : $desk;
+        return [$desk, $mob];
     }
 
     /** Sélecteur CSS sûr (pas d'accolade, de « < », de point-virgule ni de guillemet non fermé ; « > » autorisé) ; '' si vide, null si refusé. */
@@ -226,7 +255,9 @@ final class Carousels
             'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => Text::json($c['conditions']), 'sort_by' => $c['sort_by'],
             'similar_by' => $c['similar_by'], 'personal_mode' => $c['personal_mode'], 'learning' => $c['learning'] ? 1 : 0,
             'in_stock_only' => $c['in_stock_only'] ? 1 : 0, 'max_items' => $c['max_items'], 'per_view_desktop' => $c['per_view_desktop'],
-            'per_view_mobile' => $c['per_view_mobile'], 'autoplay' => $c['autoplay'], 'custom_css' => $c['custom_css'], 'updated_at' => date('Y-m-d H:i:s'),
+            'per_view_mobile' => $c['per_view_mobile'], 'autoplay' => $c['autoplay'], 'custom_css' => $c['custom_css'],
+            'card_template' => $c['card_template'] !== '' ? $c['card_template'] : null, 'card_template_mobile' => $c['card_template_mobile'] !== '' ? $c['card_template_mobile'] : null,
+            'updated_at' => date('Y-m-d H:i:s'),
         ];
         $pid = \DeepFind\Project::id();
         if ($id !== null && self::find($id, $lang) !== null) {
@@ -343,6 +374,8 @@ final class Carousels
             'id' => $c['id'], 'title' => $c['title'], 'more_url' => $c['more_url'], 'more_label' => $c['more_label'],
             'selector' => $c['selector'], 'insert' => $c['insert_mode'], 'device' => $c['device'],
             'per_view_desktop' => $c['per_view_desktop'], 'per_view_mobile' => $c['per_view_mobile'], 'autoplay' => $c['autoplay'], 'css' => $c['custom_css'],
+            // modèles de carte propres au carrousel ('' : ceux de la fenêtre de recherche)
+            'card_template' => $c['card_template'] ?? '', 'card_template_mobile' => $c['card_template_mobile'] ?? '',
         ];
     }
 

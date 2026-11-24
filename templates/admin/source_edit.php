@@ -87,14 +87,14 @@
     <button class="btn btn-light" name="to_mapping" value="1">Enregistrer et ouvrir le mapping visuel</button>
     <?php if ($source['id']): ?>
       <button class="btn btn-light" formaction="<?= e(url('/admin/sources/test', ['id' => $source['id']])) ?>">Tester ce mapping (sans enregistrer)</button>
+      <button class="btn btn-danger cr-delete-btn cr-delete-end" form="cr-delete-form" data-confirm="Supprimer définitivement cette source ?"><?= admin_icon('trash') ?> Supprimer la source</button>
     <?php endif; ?>
   </div>
 </form>
 
 <?php if ($source['id']): ?>
-<form method="post" action="<?= e(url('/admin/sources/delete')) ?>" class="danger-zone">
+<form method="post" action="<?= e(url('/admin/sources/delete')) ?>" id="cr-delete-form" hidden>
   <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $source['id'] ?>">
-  <button class="btn btn-danger btn-sm" data-confirm="Supprimer définitivement cette source ?">Supprimer la source</button>
 </form>
 <?php endif; ?>
 

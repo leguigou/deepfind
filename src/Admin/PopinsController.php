@@ -91,6 +91,21 @@ final class PopinsController
         App::back('/admin/popins');
     }
 
+    /** Aperçu direct : la popin du formulaire (non enregistrée), nettoyée comme à l'enregistrement, prête pour le widget. JSON. */
+    public function preview(): void
+    {
+        $in = json_decode((string) ($_POST['payload'] ?? ''), true);
+        if (is_array($in) && trim((string) ($in['name'] ?? '')) === '') {
+            $in['name'] = 'Aperçu';
+        }
+        [$p, $errors] = is_array($in) ? Popins::sanitize($in) : [null, ['Formulaire illisible : rechargez la page.']];
+        if ($p === null) {
+            Response::json(['error' => implode(' ', $errors)], 422);
+            return;
+        }
+        Response::json(['item' => Popins::payload(['id' => (int) ($in['id'] ?? 0) ?: 1, 'rev' => 1] + $p)]);
+    }
+
     /** Téléversement d'une image (JSON : url ou erreur) ; même stockage que les bannières. */
     public function upload(): void
     {

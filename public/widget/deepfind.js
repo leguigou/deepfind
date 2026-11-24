@@ -62,7 +62,9 @@
   // Panneaux d'autocomplétion connus (Magento Luma / Hyvä, Amasty, Mirasvit, Smile ElasticSuite) : masqués si présents
   var NATIVE_PANELS = '#search_autocomplete, .search-autocomplete, .amsearch-results, .amsearch-wrapper-block .amsearch-results, '
     + '.mst-searchautocomplete__autocomplete, .smile-elasticsuite-autocomplete-result';
-  if (!cfg.key) { console.warn('[DeepFind] data-key manquant'); return; }
+  // Aperçu de l'extranet (data-render="1") : popin ou carrousel dessiné à partir des données de la fiche, sans API ni mesure
+  var renderMode = ds.render === '1';
+  if (!cfg.key && !renderMode) { console.warn('[DeepFind] data-key manquant'); return; }
 
   var T = {
     fr: { products: 'Produits', brands: 'Marques', posts: 'Articles de blog', filters: 'Filtres', inStock: 'En stock', onSale: 'En promotion',
@@ -94,7 +96,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=25'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=26'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1219,7 +1221,7 @@
   }
   function popinMem(p) { return POPIN_KEY + p.id + ':' + (parseInt(p.rev, 10) || 1); }
   function popinHidden(p) {
-    if (preview) { return false; }
+    if (preview || renderMode) { return false; }
     var k = popinMem(p);
     try {
       var until = parseInt(window.localStorage.getItem(k) || '0', 10);
@@ -1231,7 +1233,7 @@
     return false;
   }
   function popinRemember(p, flag) {
-    if (preview) { return; }
+    if (preview || renderMode) { return; }
     var k = popinMem(p);
     try {
       window.sessionStorage.setItem(k + ':' + flag, '1');
@@ -1353,7 +1355,7 @@
     } catch (e) { return []; }
   }
   function historyAdd(id) {
-    if (!id || !consentOk() || preview) { return; }
+    if (!id || !consentOk() || preview || renderMode) { return; }
     id = String(id);
     if (!/^[A-Za-z0-9_.:-]{1,64}$/.test(id)) { return; }
     try {
@@ -1465,7 +1467,10 @@
       var a = el('a', 'df-card' + (p.in_stock ? '' : ' df-oos'));
       a.href = href;
       a.setAttribute('role', 'listitem');
-      var custom = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
+      // modèle du carrousel (mobile, sinon ordinateur), à défaut celui de la fenêtre de recherche
+      var own = typeof c.card_template === 'string' ? c.card_template : '';
+      var ownMobile = typeof c.card_template_mobile === 'string' ? c.card_template_mobile : '';
+      var custom = mobile.matches ? (ownMobile || own || cfg.cardTemplateMobile || cfg.cardTemplateDesktop) : (own || cfg.cardTemplateDesktop);
       if (custom) { a.classList.add('df-card-tpl'); }
       templateCard(a, p, custom || DEFAULT_CARD);
       a.__dfId = String(p.id);
@@ -1734,6 +1739,25 @@
     // consentement du visiteur aux carrousels personnalisés (à appeler par le bandeau cookies du site) ; false efface l'historique
     consent: function (on) { setConsent(!!on); }
   };
+
+  /*
+   * Aperçu de l'extranet : DeepFind.render({ config, type: 'popin' | 'carousel', item, slot }) dessine la popin (sans délai) ou le
+   * carrousel (dans l'élément slot) exactement comme sur le site, avec le modèle de carte et les couleurs du layer (config).
+   * Rien n'est mémorisé ni compté ; aucune requête vers l'API.
+   */
+  if (renderMode) {
+    noAudience = true;
+    window.DeepFind.render = function (p) {
+      if (!p || !p.item) { return; }
+      if (!started) { applyCfg(p.config || null); started = true; document.head.appendChild(css); }
+      Array.prototype.forEach.call(document.querySelectorAll('.df-popin, .df-carousel, style[data-deepfind^="carousel-"]'), function (n) { n.remove(); });
+      if (p.type === 'popin') { showPopin(p.item); return; }
+      var box = renderCarousel(p.item);
+      (p.slot || document.body).appendChild(box);
+      box.__dfStart();
+    };
+    return;
+  }
 
   var known = readCfg();
   if (known) {

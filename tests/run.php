@@ -1077,6 +1077,12 @@ if ($base) {
     check('carrousels : sélecteur CSS contrôlé, CSS personnalisé nettoyé',
         $CA::selector('#home .bloc > div') === '#home .bloc > div' && $CA::selector('div{x}') === null && $CA::selector('a</style>') === null
         && $CA::css("@import url(x.css);\n.df-carousel{color:red}</style><script>") === ".df-carousel{color:red}script");
+    $tplDef = DeepFind\Widget\WidgetConfig::DEFAULT_CARD_TEMPLATE;
+    $tplA = $CA::cardTemplates(['card_template' => $tplDef . "\n", 'card_template_mobile' => $tplDef]);
+    $tplB = $CA::cardTemplates(['card_template' => '<div class="df-name">{{name}}</div><script>x()</script><p onclick="y()">{{price}}</p>', 'card_template_mobile' => '']);
+    check('carrousels : modèle de carte (identique à la recherche = vide, personnalisé nettoyé, variables gardées)',
+        $tplA === ['card_template' => '', 'card_template_mobile' => ''] && str_contains($tplB['card_template'], '{{name}}') && str_contains($tplB['card_template'], '{{price}}')
+        && !str_contains($tplB['card_template'], 'script') && !str_contains($tplB['card_template'], 'onclick') && $tplB['card_template_mobile'] === '', json_encode([$tplA, $tplB]));
     $caDocs = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'in_stock = 1', 200, 0,
         ['id', 'sku', 'brand', 'url', 'url_path', 'category_names', 'category_paths', 'biz_score', 'in_stock']);
     $caRef = array_values(array_filter($caDocs, static fn ($d) => in_array('Palmes réglables', $d['category_names'] ?? [], true)))[0] ?? null;
