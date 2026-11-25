@@ -287,6 +287,49 @@ final class Audience
             [\DeepFind\Project::id(), $day ?? self::measureDay(), $productId, mb_substr($name, 0, 255, 'UTF-8'), ...array_map('intval', array_values($inc))]);
     }
 
+    // ------------------------------------------------------------------ Chiffre d'affaires par emplacement
+
+    /** Emplacements : search, carousel:<id>, direct (aucun clic DeepFind sur ce produit dans la journée). */
+    public static function placementLabel(string $placement, string $lang = 'fr'): string
+    {
+        if ($placement === 'search') {
+            return 'Recherche';
+        }
+        if (str_starts_with($placement, 'carousel:')) {
+            $c = \DeepFind\Rules\Carousels::find((int) substr($placement, 9), $lang);
+            return 'Carrousel « ' . ($c['name'] ?? '#' . substr($placement, 9)) . ' »';
+        }
+        return 'Sans clic DeepFind (navigation du site)';
+    }
+
+    /** @param array<string,int> $inc clicks, carts, orders, revenue */
+    public static function attrib(string $placement, string $productId, array $inc, ?string $day = null): void
+    {
+        $productId = substr(trim($productId), 0, 64);
+        $placement = substr($placement, 0, 40);
+        $inc = array_intersect_key($inc, array_flip(['clicks', 'carts', 'orders', 'revenue']));
+        if ($productId === '' || $placement === '' || $inc === []) {
+            return;
+        }
+        $cols = array_keys($inc);
+        Db::exec('INSERT INTO audience_attrib (project_id, day, placement, product_id, ' . implode(', ', $cols) . ') VALUES (?, ?, ?, ?' . str_repeat(', ?', count($cols)) . ')
+            ON DUPLICATE KEY UPDATE ' . implode(', ', array_map(static fn ($c) => "$c = $c + VALUES($c)", $cols)),
+            [\DeepFind\Project::id(), $day ?? self::measureDay(), $placement, $productId, ...array_map('intval', array_values($inc))]);
+    }
+
+    /** Dernier emplacement où le visiteur a cliqué sur ce produit dans la journée (mémoire seulement). */
+    public static function lastPlacement(string $vhash, string $productId, ?string $set = null): string
+    {
+        $key = 'aud:pl:' . \DeepFind\Project::id() . ':' . $vhash . ':' . md5($productId);
+        $store = Store::get();
+        if ($set !== null) {
+            $store->set($key, $set, 30 * 3600);
+            return $set;
+        }
+        $v = $store->get($key);
+        return is_string($v) && $v !== '' ? $v : 'direct';
+    }
+
     /**
      * Produit du catalogue d'après son SKU (ou celui d'une déclinaison), pour les ajouts au panier et commandes envoyés par le site :
      * identifiant, nom, prix. Gardé une heure en mémoire. @return ?array{id:string, name:string, price:float}

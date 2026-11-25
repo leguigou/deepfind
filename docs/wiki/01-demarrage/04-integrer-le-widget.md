@@ -3,7 +3,7 @@
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=35" defer
+<script src="https://search.example.com/widget/deepfind.js?v=36" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -36,7 +36,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=34` en `?v=35`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=35` en `?v=36`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## Clés et domaines autorisés
 
@@ -51,6 +51,11 @@ Chaque appel du widget indique de quel site il vient (en-tête `Origin`, à déf
 ## Paniers et commandes (parcours d'achat)
 
 Pour relier recherches et ventes, le site signale les ajouts au panier et les commandes : automatiquement s'il envoie déjà les événements GA4 au `dataLayer`, sinon avec `DeepFind.track('cart', …)` et `DeepFind.track('order', …)`. Voir [Parcours d'achat](../analyse/parcours-d-achat).
+
+## Produit de la page et panier (recommandations)
+
+- **Fiche produit** : `<meta name="deepfind:sku" content="SKU">` (ou un élément avec `data-df-sku`) indique le produit de la page : carrousels « similaires », « achetés ensemble », « aussi regardé ».
+- **Panier** : lu automatiquement dans Magento ; sinon `DeepFind.cart({ items: [{ sku, qty }], total, freeShipping })`. Seuil de livraison offerte aussi possible avec `data-free-shipping="50"` sur la balise du widget. Voir [Sources, tri et apprentissage](../recommandations/carrousels/sources-tri-et-apprentissage).
 
 ## Points d'attention
 

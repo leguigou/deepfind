@@ -238,7 +238,7 @@
         data: {
           id: c.id || 0, name: f('name').value, active: f('active').checked,
           duration: period.on ? 'period' : 'always', starts_at: period.start, ends_at: period.end, _period: period,
-          pages: pagesUi.mode(), home: f('home').checked, urls: pagesUi.urls('urls'), exclude_urls: pagesUi.urls('exclude_urls'),
+          pages: pagesUi.mode(), home: f('home').checked, urls: pagesUi.urls('urls'), exclude_urls: pagesUi.urls('exclude_urls'), segments: pagesUi.segments(),
           selector: f('selector').value, insert_mode: f('insert_mode').value, device: f('device').value,
           title: f('title').value, title_class: f('title_class').value, more_url: f('more_url').value, more_label: f('more_label').value,
           source: source(), items: skus(), match: form.querySelector('input[name=pr_match]:checked').value, conditions: list0, page_filters: pageFilters,
@@ -272,6 +272,8 @@
       body.append('page', form.querySelector('[data-preview-page]').value);
       body.append('sku', form.querySelector('[data-preview-sku]').value);
       body.append('history', form.querySelector('[data-preview-history]').value);
+      body.append('cart', form.querySelector('[data-preview-cart]').value);
+      body.append('cart_total', form.querySelector('[data-preview-cart-total]').value);
       return body;
     }
     window.DFLivePreview({

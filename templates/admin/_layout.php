@@ -28,6 +28,7 @@ $navGroups = [
         'banners' => ['/admin/banners', 'Bannières', 'speakerphone'],
         'popins' => ['/admin/popins', 'Popins', 'app-window'],
         'carousels' => ['/admin/carousels', 'Carrousels', 'carousel'],
+        'campaigns' => ['/admin/campaigns', 'Campagnes', 'target'],
         'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'demo' => ['/admin/demo', 'Démo du widget', 'external-link'],
     ]],

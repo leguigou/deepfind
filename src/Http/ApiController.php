@@ -196,9 +196,10 @@ final class ApiController
         if ($key === null) {
             return;
         }
-        // a = 0 : page hors des pages mesurées par l'audience, envoyée seulement pour les parcours
+        // a = 0 : page hors des pages mesurées par l'audience, envoyée seulement pour les parcours ou la provenance (ciblage)
         $counted = ($p['a'] ?? '1') !== '0';
-        if (!\DeepFind\Project::isActive() || (!($counted && Audience::tracks('pageviews')) && !Journeys::enabled())) {
+        $source = \DeepFind\Rules\Segments::fromInput($p);
+        if (!\DeepFind\Project::isActive() || (!($counted && Audience::tracks('pageviews')) && !Journeys::enabled() && $source === [])) {
             Response::noContent($cors);
             return;
         }
@@ -213,7 +214,8 @@ final class ApiController
         Response::finish();
         // chemin de la page : envoyé par le widget (anciennes versions : page d'origine de la requête)
         $path = (string) ($p['p'] ?? parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?? '/');
-        (new Tracker($ip, $ua, (string) ($p['d'] ?? ''), $lang))->page($path, mb_substr((string) ($p['t'] ?? ''), 0, 200, 'UTF-8'), $counted);
+        (new Tracker($ip, $ua, (string) ($p['d'] ?? ''), $lang))->page($path, mb_substr((string) ($p['t'] ?? ''), 0, 200, 'UTF-8'), $counted,
+            mb_substr(trim((string) ($p['s'] ?? '')), 0, 64, 'UTF-8'), $source);
     }
 
     /**
@@ -296,10 +298,15 @@ final class ApiController
             return;
         }
         $history = isset($_GET['h']) ? array_filter(explode(',', substr((string) $_GET['h'], 0, 1500)), 'strlen') : null;
+        $cart = \DeepFind\Rules\Carousels::cartContext($lang, $_GET);
         $data = \DeepFind\Rules\Carousels::forPage($lang, [
             'page' => substr((string) ($_GET['page'] ?? '/'), 0, 500), 'sku' => substr((string) ($_GET['sku'] ?? ''), 0, 64), 'history' => $history,
+            // provenance du visiteur (ciblage) : page d'arrivée, sinon gardée pour la journée sous son empreinte du jour
+            'segment' => \DeepFind\Rules\Segments::forRequest($_GET, ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')),
+            'cart' => $cart,
         ]);
-        Response::json($data, 200, $cors + ['Cache-Control' => $history !== null ? 'private, no-store' : 'private, max-age=60']);
+        // dépend du visiteur (provenance, panier, historique) : pas de cache partagé
+        Response::json($data, 200, $cors + ['Cache-Control' => 'private, no-store']);
     }
 
     /** Événement d'un carrousel (vu à l'écran, clic sur un produit) : réponse immédiate, comptage après l'envoi. */
@@ -365,6 +372,11 @@ final class ApiController
             // carrousels : le widget demande ceux de la page seulement s'il en existe ; historique du visiteur (off | consent | always)
             'carousels' => \DeepFind\Project::isActive() && \DeepFind\Rules\Carousels::active($lang) !== [],
             'personal' => \DeepFind\Rules\Carousels::personalMode(),
+            // panier du visiteur demandé avec les carrousels (« achetés ensemble », « aussi regardé », page panier)
+            'cart_context' => \DeepFind\Project::isActive() && \DeepFind\Rules\Carousels::needsCart($lang),
+            // ciblage selon la provenance : le widget envoie la provenance d'arrivée ; segment = provenance du visiteur (canal, UTM)
+            'segments' => $needSeg = \DeepFind\Project::isActive() && \DeepFind\Rules\Carousels::needsSegments($lang),
+            'segment' => $needSeg ? \DeepFind\Rules\Segments::describe(\DeepFind\Rules\Segments::forRequest($_GET, ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''))) : null,
         ] + \DeepFind\Widget\WidgetConfig::forWidget($lang, $preview = substr((string) ($_GET['preview'] ?? ''), 0, 80)),
             200, $cors + ['Cache-Control' => $preview !== '' ? 'no-store' : 'private, max-age=60']);
     }

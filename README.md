@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=35" defer
+<script src="https://search.example.com/widget/deepfind.js?v=36" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=34` en `?v=35`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=35` en `?v=36`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -400,8 +400,9 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | **Recommandations** | Résultats personnalisés | Produits affichés en premier, seuls ou exclus pour certaines recherches (section 8) |
 | | Règles | Résultats selon la **page du site** (adresse), sans mot-clé : uniquement certains produits, filtre pré-coché retirable, ou exclusion (section 8) |
 | | Bannières | Image ou code HTML en haut des résultats (section 8) |
-| | Popins | Fenêtre affichée sur les pages du site choisies (accueil, adresses), avec période, délai, fréquence et statistiques (section 8) |
-| | Carrousels | Bandeaux de produits qui défilent, insérés dans un bloc des pages choisies : produits manuels, automatiques, similaires ou personnalisés, apprentissage par les clics (section 8) |
+| | Popins | Fenêtre affichée sur les pages du site choisies (accueil, adresses), selon la provenance du visiteur, avec période, délai, fréquence et statistiques (section 8) |
+| | Carrousels | Bandeaux de produits qui défilent, insérés dans un bloc des pages choisies : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte), ciblage selon la provenance, apprentissage par les clics (section 8) |
+| | Campagnes | Produits à pousser sur une période : clics, affichages, paniers, commandes, chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
 | | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
@@ -409,7 +410,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Intégration | Layers, filtres, options de tri, code du site, favori de test (section 7) |
 | | Variables | Variables système (lecture seule), textes du widget modifiables par langue, variables personnalisées `{{code}}` (section 6, « Variables ») |
 | | Cache | État et purge des caches |
-| | Paramètres | Seuils anti-robots, recherche, widget sur le site, journaux, sécurité des imports |
+| | Paramètres | Seuils anti-robots, recherche, widget sur le site (dont le seuil de livraison offerte), journaux, sécurité des imports |
 | **Aide** | | Documentation complète (wiki), s'ouvre dans un nouvel onglet : rubriques à gauche ; à droite, toutes les pages de la rubrique à la suite, la page lue étant surlignée à gauche pendant le défilement ; recherche. Adresse `/admin/wiki` (raccourci `/wiki`), connexion à l'extranet requise. Contenu : fichiers Markdown de `docs/wiki/` (voir « Contribuer à l'aide » sur sa page d'accueil) |
 
 ### Aperçu interne
@@ -571,6 +572,14 @@ Fonctionnement : chaque appel de l'API publique (le widget) incrémente des comp
 - sinon, avec le widget : `DeepFind.track('cart', { sku, qty, price, name })` et, sur la page de confirmation, `DeepFind.track('order', { id, total, items: [{ sku, qty, price }] })`. Le numéro de commande sert seulement à ne pas compter deux fois la même commande ; il n'est pas enregistré. Prix absent : prix du catalogue.
 
 Les termes des recherches sont **masqués** avant d'être comptés (e-mails, téléphones, numéros de carte, IBAN). Termes et produits sont purgés avec les journaux (`logs:purge`).
+
+### Campagnes, nouvelles sources de carrousels, ciblage
+
+- **Recommandations › Campagnes** : produits à pousser sur une période, avec objectif ; tableau de bord par produit (affichages en carrousel, clics, position moyenne dans la recherche, paniers, commandes, chiffre d'affaires, rupture) comparé à la période précédente, et **chiffre d'affaires par emplacement** (dernier clic du visiteur sur le produit le même jour : recherche, carrousel, ou aucun).
+- **Carrousels** : nouvelles sources *Tendances*, *Souvent achetés ensemble*, *Les visiteurs ont aussi regardé*, *Page panier* (compléments du panier, message « Plus que X € pour profiter de la livraison offerte » : seuil dans *Paramètres › Widget sur le site* ou donné par le site). Panier lu dans Magento (`mage-cache-storage`) ou donné par `DeepFind.cart({ items, total, freeShipping })`. Paires de produits gardées 90 jours (`reco_pairs`, totaux sans visiteur).
+- **Ciblage selon la provenance** (popins et carrousels) : canaux (direct, moteurs, publicité, réseaux sociaux, e-mail, affiliation, autres sites, campagne UTM) et conditions `utm_*`. Provenance lue sur la page d'arrivée, gardée en mémoire pour la journée sous l'empreinte du jour.
+
+Détails : aide, rubrique Recommandations.
 
 ### Parcours
 
@@ -800,7 +809,7 @@ Un carrousel comprend :
 3. **Titre** (avec, au besoin, des **classes CSS** du thème, ex. `text-2xl font-bold` : elles remplacent alors le style du titre DeepFind) et lien **« Voir tout »** (facultatifs).
 4. **Produits** :
    - **Produits épinglés en tête** : recherchés par nom, SKU ou marque, rangés par glisser-déposer ;
-   - **Source** : *Sélection manuelle* (uniquement les produits épinglés), *Automatique* (conditions comme les règles selon la page : marque, catégorie, type, prix, promotion, nouveauté… + tri), *Produits similaires* (sur une fiche produit : même catégorie la plus précise et/ou même marque que le produit de la page), *Personnalisé* (« Vus récemment » ou « Vous aimerez aussi », d'après l'historique du visiteur) ;
+   - **Source** : *Sélection manuelle* (uniquement les produits épinglés), *Automatique* (conditions comme les règles selon la page : marque, catégorie, type, prix, promotion, nouveauté… + tri), *Produits similaires* (sur une fiche produit : même catégorie la plus précise et/ou même marque que le produit de la page), *Personnalisé* (« Vus récemment » ou « Vous aimerez aussi », d'après l'historique du visiteur) ; *Tendances* (produits dont l'intérêt monte sur 7 jours), *Souvent achetés ensemble* et *Les visiteurs ont aussi regardé* (avec le produit de la page ou ceux du panier), *Page panier* (compléments du panier, avec le message « Plus que X € pour la livraison offerte ») ;
    - **Tri** : score métier (ventes, clics, stock, marge, nouveauté), meilleures ventes 30 j, plus cliqués dans la recherche 30 j, nouveautés, plus grosses remises, mieux notés, prix ;
    - **Apprentissage** (facultatif) : les produits sont reclassés selon leur **taux de clic dans ce carrousel** (30 jours, taux lissé : un produit encore peu montré garde le taux moyen et sa chance, un produit souvent montré et peu cliqué descend) ;
    - **Adapter les produits selon la page** (facultatif) : un seul carrousel pour toutes les catégories. Chaque ligne associe une **adresse** (contient, commence par, finit par, est exactement) à des **conditions en plus** : ex. adresse contient `/peche` → Catégorie contient « Pêche ». Sur une page qui correspond, seuls les produits qui remplissent aussi ces conditions sont proposés (même tri, même affichage, sources « similaires » et « personnalisé » comprises) ; la **première** ligne qui correspond s'applique ; ailleurs, rien ne change. Les produits épinglés restent en tête. Si aucun produit ne correspond, le carrousel n'est pas affiché sur cette page. Pour **ne pas afficher** le carrousel dans certaines catégories : *Pages exclues* (section 1) ;

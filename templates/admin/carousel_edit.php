@@ -88,6 +88,29 @@ use DeepFind\Rules\Popins;
           Sans historique ou sans consentement : sélection automatique ci-dessous.</small>
       </div>
 
+      <div class="ca-sub" data-show="trending">
+        <small class="muted">Produits dont l'intérêt monte : clics (recherche, carrousels), ajouts au panier (× 3) et commandes (× 5) des
+          <?= (int) \DeepFind\Rules\Recos::TREND_DAYS ?> derniers jours, comparés à la moyenne des 4 semaines d'avant. Calculé à partir de la mesure d'audience
+          (Analyse › Audience) ; tant qu'il y a peu d'activité mesurée : sélection automatique ci-dessous.</small>
+      </div>
+      <div class="ca-sub" data-show="bought">
+        <small class="muted">Produits commandés en même temps que le produit de la page (fiche produit) ou que ceux du panier du visiteur, sur
+          <?= (int) \DeepFind\Rules\Recos::WINDOW_DAYS ?> jours ; complétés par « aussi regardé » tant que les commandes sont peu nombreuses. Nécessite les commandes
+          (Analyse › Audience › Parcours d'achat). Sans produit de référence : sélection automatique ci-dessous.</small>
+      </div>
+      <div class="ca-sub" data-show="viewed">
+        <small class="muted">Produits ouverts par les mêmes visiteurs dans la même journée (clic dans la recherche ou un carrousel, fiche produit, panier),
+          sur <?= (int) \DeepFind\Rules\Recos::WINDOW_DAYS ?> jours. Pour compter les fiches produit visitées, le site peut indiquer le produit de la page :
+          <code>&lt;meta name="deepfind:sku" content="SKU"&gt;</code>. Sans produit de référence : sélection automatique ci-dessous.</small>
+      </div>
+      <div class="ca-sub" data-show="cart">
+        <small class="muted">À placer sur la page panier : compléments des produits du panier (achetés ensemble, puis aussi regardés), sans les produits déjà
+          dans le panier. Panier lu dans Magento (données du panier déjà présentes dans le navigateur) ou donné par le site avec
+          <code>DeepFind.cart({ items: [{ sku, qty }], total })</code>. Avec un seuil de livraison offerte (<a href="<?= e(url('/admin/settings')) ?>">Paramètres › Widget sur le site</a>,
+          ou <code>freeShipping</code> donné par le site), le carrousel affiche « Plus que X € pour profiter de la livraison offerte » et place en tête
+          les produits qui suffisent à l'atteindre.</small>
+      </div>
+
       <div class="ca-block">
         <strong class="ca-block-title" data-items-title>Produits épinglés en tête <small class="muted">(facultatif, dans cet ordre)</small></strong>
         <div class="ca-picker">
@@ -194,6 +217,8 @@ use DeepFind\Rules\Popins;
       <label>Page du site <input data-preview-page value="/" placeholder="/fr/palmes/c4-predator.html"></label>
       <label>SKU du produit de la page <small class="muted">(facultatif)</small> <input data-preview-sku placeholder="C4-PREDATOR"></label>
       <label>Historique de test <small class="muted">(SKU séparés par des virgules)</small> <input data-preview-history placeholder="C4-PREDATOR, CRESSI-F1"></label>
+      <label>Panier de test <small class="muted">(SKU, « achetés ensemble », page panier)</small> <input data-preview-cart placeholder="C4-PREDATOR, CRESSI-F1"></label>
+      <label>Total du panier <small class="muted">(€, livraison offerte)</small> <input data-preview-cart-total inputmode="decimal" placeholder="38,90"></label>
       <button type="button" class="btn btn-light" data-preview-run>Voir les produits</button>
     </div>
     <p class="muted small" data-preview-note></p>

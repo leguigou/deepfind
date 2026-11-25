@@ -79,7 +79,7 @@
       return {
         id: p.id || 0, name: f('name').value, active: f('active').checked,
         duration: period.on ? 'period' : 'always', starts_at: period.start, ends_at: period.end,
-        pages: pagesUi.mode(), home: f('home').checked, urls: urlsOf('urls'), exclude_urls: urlsOf('exclude_urls'),
+        pages: pagesUi.mode(), home: f('home').checked, urls: urlsOf('urls'), exclude_urls: urlsOf('exclude_urls'), segments: pagesUi.segments(),
         device: f('device').value, placement: f('placement').value, delay_seconds: f('delay_seconds').value, max_width: f('max_width').value, min_height: f('min_height').value,
         repeat_mode: form.querySelector('input[name=pp_repeat]:checked').value, remember_days: f('remember_days').value,
         reset_memory: !!(reset && reset.checked),

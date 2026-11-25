@@ -856,6 +856,47 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.uncheck('#aud-settings input[name=journeys]', { force: true });
   await Promise.all([page.waitForNavigation(), page.click('#aud-settings > button.btn')]);
 
+  // Campagne de produits à pousser : création depuis l'écran (recherche d'un produit + liste de SKU collée), tableau de bord
+  await page.goto(BASE + '/admin/campaigns/edit');
+  await page.fill('input[name=name]', 'Campagne e2e');
+  await page.fill('[data-item-search]', 'masque');
+  await page.locator('.ca-result >> nth=0').click();
+  await page.keyboard.press('Escape');
+  await page.click('.cp-bulk summary');
+  await page.fill('[data-bulk]', 'SEAC-X-VISION\nINCONNU-E2E');
+  await page.click('[data-bulk-add]');
+  await Promise.all([page.waitForNavigation(), page.click('.cp-form .cr-foot button.btn:not(.btn-danger)')]);
+  const cpBody = await page.textContent('body');
+  check('campagnes : création, tableau de bord par produit et par emplacement, SKU introuvable signalé',
+    cpBody.includes('Campagne « Campagne e2e » enregistrée') && await page.locator('.cp-table tbody tr').count() >= 2
+    && cpBody.includes('introuvable dans le catalogue') && cpBody.includes('Où les ventes ont été faites'));
+  await page.screenshot({ path: OUT + '/campagne.png', fullPage: true });
+  await page.goto(BASE + '/admin/campaigns');
+  check('campagnes : liste', (await page.textContent('.cp-table')).includes('Campagne e2e'));
+
+  // Carrousel « page panier » : panier lu dans les données Magento du navigateur, message de livraison offerte
+  await page.goto(BASE + '/admin/settings');
+  const csrfS = await page.getAttribute('input[name=_csrf]', 'value');
+  await page.request.post(BASE + '/admin/settings/save', { form: { _csrf: csrfS, free_shipping_threshold: '200' } });
+  await page.goto(BASE + '/admin/carousels/edit');
+  const csrfC = await page.getAttribute('[data-carousel-form]', 'data-csrf');
+  const payloadC = { name: 'Panier e2e', active: true, duration: 'always', pages: 'all', selector: '#reco', insert_mode: 'after', title: 'Complétez votre panier',
+    source: 'cart', items: [], match: 'all', conditions: [], sort_by: 'biz', max_items: 6, per_view_desktop: 4, per_view_mobile: 2, in_stock_only: false,
+    segments: { channels: [], utm: [] } };
+  const savedC = await page.request.post(BASE + '/admin/carousels/save', { form: { _csrf: csrfC, payload: JSON.stringify(payloadC) } });
+  const cartCarId = new URL(savedC.url()).searchParams.get('id');
+  const [kc, kp] = await carCtx();
+  await kp.addInitScript(() => { try { localStorage.setItem('mage-cache-storage', JSON.stringify({ cart: { items: [{ product_sku: 'C4-PREDATOR', qty: 1 }], subtotalAmount: '120.00' } })); } catch (e) { /* */ } });
+  await kp.goto(BASE + '/boutique/plongee.html');
+  await kp.waitForSelector('.df-car-ship', { timeout: 8000 });
+  const shipTxt = await kp.textContent('.df-car-ship');
+  check('page panier : panier Magento lu, « plus que 80 € pour la livraison offerte », produits du panier exclus', shipTxt.includes('Plus que') && shipTxt.includes('80,00')
+    && !(await kp.evaluate(() => Array.prototype.some.call(document.querySelectorAll('.df-carousel .df-card'), (a) => /c4-predator/i.test(a.href)))), shipTxt);
+  await kp.locator('.df-carousel').screenshot({ path: OUT + '/carrousel-panier.png' });
+  await kc.close();
+  await page.request.post(BASE + '/admin/carousels/delete', { form: { _csrf: csrfC, id: cartCarId } });
+  await page.request.post(BASE + '/admin/settings/save', { form: { _csrf: csrfS, free_shipping_threshold: '0' } });
+
   // Adapter les produits selon la page : adresse → conditions en plus, vérifiées dans la liste de contrôle, gardées à l'enregistrement
   await page.goto(BASE + '/admin/carousels/edit');
   await page.fill('[data-f=name]', 'Selon la page e2e');

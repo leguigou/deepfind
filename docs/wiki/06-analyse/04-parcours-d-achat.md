@@ -48,6 +48,10 @@ window.DeepFind && DeepFind.track('order', { id: '100045', total: 89.9, items: [
 - **Lire les événements GA4 du dataLayer** : lecture automatique décrite plus haut.
 - **Heure de changement de la clé du jour** : début de la journée de mesure (4 h par défaut).
 
+## Chiffre d'affaires par emplacement
+
+Chaque panier et commande d'un produit est attribué à l'**endroit où le visiteur l'a cliqué en dernier** le même jour : la recherche, un carrousel précis, ou aucun (navigation du site). Visible dans les [campagnes](../recommandations/campagnes) (table `audience_attrib`, purgée avec les journaux).
+
 ## Détails techniques
 
 - API : `POST /api/v1/event` avec `e` = `bar` (barre ouverte), `close` (fermée sans clic, `q`), `cart` (`sku`, `qty`, `price`, `name`), `order` (`tid`, `value`, `items` en JSON). Réponse immédiate, traitement après l'envoi (`src/Logging/Tracker.php`).

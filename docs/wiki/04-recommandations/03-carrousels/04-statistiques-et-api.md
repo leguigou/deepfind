@@ -16,7 +16,8 @@ Tables : `carousel_stats` (par carrousel et par jour), `carousel_product_stats` 
 
 - Le widget ne fait cette demande que si `/api/v1/config` indique `carousels: true`.
 - `h` (historique) n'est envoyé qu'avec le consentement ; la réponse est alors `no-store`.
-- Réponse : `carousels` (emplacement, titre, affichage, produits publics) et `page_product` (identifiant du produit de la page, pour l'historique).
+- Ciblage et panier (si nécessaires) : `src_s`, `src_m`, `src_c`, `src_r`, `src_ad` (provenance d'arrivée), `ci` (SKU du panier), `ct` (total), `fs` (seuil de livraison offerte du site). Réponse jamais mise en cache (dépend du visiteur).
+- Réponse : `carousels` (emplacement, titre, affichage, produits publics) et `page_product` (identifiant du produit de la page, pour l'historique) ; pour un carrousel « page panier » avec seuil : `free_shipping` (`threshold`, `total`, `left`, en centimes).
 
 ## Code
 

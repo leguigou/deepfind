@@ -77,7 +77,8 @@
       price: 'Prix', min: 'Min.', max: 'Max.', apply: 'Valider', reset: 'Réinitialiser', search: 'Rechercher',
       pageLimited: 'Résultats limités à', pageRemove: 'Retirer le filtre « %s » et chercher dans tout le catalogue',
       pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »', popin: 'Message',
-      carousel: 'Sélection de produits', prev: 'Produits précédents', next: 'Produits suivants', seeMore: 'Voir tout' },
+      carousel: 'Sélection de produits', prev: 'Produits précédents', next: 'Produits suivants', seeMore: 'Voir tout',
+      freeShippingLeft: 'Plus que %s pour profiter de la livraison offerte', freeShippingDone: 'La livraison vous est offerte !' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
@@ -87,7 +88,8 @@
       price: 'Price', min: 'Min.', max: 'Max.', apply: 'Apply', reset: 'Reset', search: 'Search',
       pageLimited: 'Results limited to', pageRemove: 'Remove the “%s” filter and search the whole catalogue',
       pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”', popin: 'Message',
-      carousel: 'Product selection', prev: 'Previous products', next: 'Next products', seeMore: 'See all' }
+      carousel: 'Product selection', prev: 'Previous products', next: 'Next products', seeMore: 'See all',
+      freeShippingLeft: 'Only %s away from free delivery', freeShippingDone: 'You get free delivery!' }
   };
   var t = T[cfg.lang] || T.fr;
   // Paramètres › Variables : textes modifiés pour la langue, variables personnalisées {{code}} (texte brut)
@@ -115,7 +117,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=28'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=29'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1294,6 +1296,7 @@
   }
   function popinForPage(p, path) {
     if ((p.device === 'desktop' && mobile.matches) || (p.device === 'mobile' && !mobile.matches)) { return false; }
+    if (!segmentMatch(p.segments)) { return false; }
     if ((p.exclude || []).some(function (u) { return urlMatch(u, path); })) { return false; }
     if (p.pages !== 'custom') { return true; }
     return (!!p.home && isHomePath(path)) || (p.urls || []).some(function (u) { return urlMatch(u, path); });
@@ -1480,6 +1483,8 @@
     if (sku) { p.set('sku', sku); }
     // historique envoyé seulement avec le consentement (vide : sert à reconnaître le produit de la page pour l'historique)
     if (consentOk() && !preview) { p.set('h', historyGet().map(function (h) { return h.id; }).join(',')); }
+    addSource(p);
+    if (cartWanted) { addCart(p); }
     fetch(cfg.api + '/carousels?' + p.toString(), { credentials: 'omit', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
       .then(function (d) {
@@ -1539,6 +1544,19 @@
       }
       if (more) { var a = el('a', 'df-car-more', withVars(c.more_label) || t.seeMore); a.href = more; head.appendChild(a); }
       box.appendChild(head);
+    }
+    // page panier : « plus que X € pour la livraison offerte » (montants envoyés par le serveur, en centimes)
+    if (c.free_shipping && c.free_shipping.threshold > 0) {
+      var leftC = parseInt(c.free_shipping.left, 10) || 0;
+      var fsBox = el('p', 'df-car-ship' + (leftC > 0 ? '' : ' df-car-ship-done'), leftC > 0 ? t.freeShippingLeft.replace('%s', fmt(leftC / 100)) : t.freeShippingDone);
+      if (leftC > 0) {
+        var bar = el('span', 'df-car-ship-bar');
+        var fill = el('span', 'df-car-ship-fill');
+        fill.style.width = Math.max(4, Math.min(100, Math.round(100 * (c.free_shipping.total || 0) / c.free_shipping.threshold))) + '%';
+        bar.appendChild(fill);
+        fsBox.appendChild(bar);
+      }
+      box.appendChild(fsBox);
     }
     var viewport = el('div', 'df-car-viewport');
     var track = el('div', 'df-car-track');
@@ -1748,6 +1766,7 @@
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [],
         carousels: c.carousels === true, personal: typeof c.personal === 'string' ? c.personal : 'consent',
         journey: c.journey === true, events: c.events === true, commerce: c.commerce || false,
+        segments: c.segments === true, segment: c.segment || null, cart_context: c.cart_context === true,
         texts: c.texts || null, vars: c.vars || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1765,6 +1784,10 @@
     if (c.carousels === true) { carouselsWanted = true; startCarousels(); }
     // parcours d'achat : événements (barre ouverte, fermeture sans clic), panier et commandes
     trackCfg = { events: c.events === true, journey: c.journey === true, commerce: !!c.commerce };
+    // ciblage selon la provenance (popins, carrousels) et panier du visiteur (recommandations)
+    segmentsWanted = c.segments === true;
+    if (c.segment && typeof c.segment === 'object') { visitorSegment = c.segment; }
+    cartWanted = c.cart_context === true;
     hookCommerce(c);
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
@@ -1801,11 +1824,80 @@
     if (c.sorts && Array.isArray(c.sorts.items)) { cfg.sorts = c.sorts; }
   }
   function fetchCfg() {
-    return fetch(cfg.api + '/config?key=' + encodeURIComponent(cfg.key) + '&lang=' + encodeURIComponent(cfg.lang) + (preview ? '&preview=' + encodeURIComponent(preview) : ''),
+    var sp = new URLSearchParams();
+    addSource(sp, true);
+    return fetch(cfg.api + '/config?key=' + encodeURIComponent(cfg.key) + '&lang=' + encodeURIComponent(cfg.lang) + (preview ? '&preview=' + encodeURIComponent(preview) : '')
+      + (sp.toString() ? '&' + sp.toString() : ''),
       { credentials: 'omit', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
       .then(function (c) { writeCfg(c); applyCfg(c); return c; });
   }
+  // ------------------------------------------------------------------ Provenance du visiteur (ciblage des popins et carrousels)
+  // Lue sur la page d'ARRIVÉE uniquement (paramètres utm_*, clic publicitaire, site d'origine) ; rien n'est stocké sur l'appareil :
+  // le serveur la garde pour la journée sous l'empreinte anonyme du visiteur.
+  var segmentsWanted = false;
+  var visitorSegment = null;
+  var cartWanted = false;
+  var landing = null;
+  function landingSource() {
+    if (landing) { return landing; }
+    landing = {};
+    try {
+      var q = new URLSearchParams(location.search);
+      [['s', 'utm_source'], ['m', 'utm_medium'], ['c', 'utm_campaign']].forEach(function (k) {
+        var v = q.get(k[1]);
+        if (v) { landing[k[0]] = v.slice(0, 100); }
+      });
+      if (['gclid', 'gbraid', 'wbraid', 'fbclid', 'msclkid', 'ttclid', 'dclid', 'li_fat_id'].some(function (k) { return q.get(k); })) { landing.ad = '1'; }
+      if (document.referrer) {
+        var host = new URL(document.referrer).hostname.replace(/^www\./, '');
+        if (host && host !== location.hostname.replace(/^www\./, '')) { landing.r = host.slice(0, 100); }
+      }
+    } catch (e) { /* provenance inconnue */ }
+    return landing;
+  }
+  // force : page d'arrivée, demande de configuration (le serveur ne garde la provenance que si un ciblage l'utilise)
+  function addSource(p, force) {
+    if (!force && !segmentsWanted && !(readCfg() || {}).segments) { return; }
+    var src = landingSource();
+    Object.keys(src).forEach(function (k) { p.set('src_' + k, src[k]); });
+  }
+  function segmentMatch(rule) {
+    if (!rule || ((!rule.channels || !rule.channels.length) && (!rule.utm || !rule.utm.length))) { return true; }
+    var s = visitorSegment || { channel: 'direct', s: '', m: '', c: '' };
+    if (rule.channels && rule.channels.length && rule.channels.indexOf(s.channel) === -1) { return false; }
+    return (rule.utm || []).every(function (u) {
+      var v = String(s[u.field] || '').toLowerCase();
+      if (u.op === 'equals') { return v === u.text; }
+      if (u.op === 'not_contains') { return v.indexOf(u.text) === -1; }
+      return v !== '' && v.indexOf(u.text) !== -1;
+    });
+  }
+  // Panier du visiteur (recommandations « achetés ensemble », page panier) : donné par le site (DeepFind.cart) ou lu dans les données
+  // que Magento garde déjà dans le navigateur (mage-cache-storage, section cart) ; seuls les SKU et le total sont envoyés.
+  var siteCart = null;
+  function cartData() {
+    if (siteCart) { return siteCart; }
+    try {
+      var raw = window.localStorage.getItem('mage-cache-storage');
+      var mc = raw ? JSON.parse(raw).cart : null;
+      if (mc && Array.isArray(mc.items)) {
+        return { items: mc.items.map(function (it) { return { sku: it.product_sku, qty: it.qty }; }),
+          total: mc.subtotalAmount !== undefined ? mc.subtotalAmount : mc.subtotal_incl_tax };
+      }
+    } catch (e) { /* pas de panier Magento lisible */ }
+    return null;
+  }
+  function addCart(p) {
+    var cd = cartData();
+    if (!cd) { return; }
+    var skus = (cd.items || []).map(function (it) { return String(it.sku || '').trim(); }).filter(Boolean).slice(0, 30);
+    p.set('ci', skus.join(','));
+    if (cd.total !== undefined && cd.total !== null && cd.total !== '') { p.set('ct', String(cd.total)); }
+    if (cd.freeShipping !== undefined && cd.freeShipping !== null && cd.freeShipping !== '') { p.set('fs', String(cd.freeShipping)); }
+    else if (ds.freeShipping) { p.set('fs', ds.freeShipping); }
+  }
+
   // ------------------------------------------------------------------ Parcours d'achat (sans cookie ni stockage sur l'appareil)
   // Le serveur reconnaît le visiteur pendant une journée par une empreinte anonyme ; rien n'est envoyé depuis la Démo ni en aperçu.
   var trackCfg = { events: false, journey: false, commerce: false };
@@ -1922,12 +2014,17 @@
     if (visitSent || noAudience || !c || !c.enabled) { return; }
     // page mesurée par l'audience, ou (parcours activés) toute page : le serveur ne garde que les visiteurs qui cherchent
     var counted = !!(c.audience && audiencePage(c.audience));
-    if (!counted && !c.journey) { return; }
+    var src = landingSource();
+    var hasSrc = c.segments === true && Object.keys(src).length > 0;
+    if (!counted && !c.journey && !hasSrc) { return; }
     visitSent = true;
     try {
       var path = location.pathname || '/';
       var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, d: device, p: path, a: counted ? '1' : '0' });
       if (c.journey && !PRIVATE_PATH.test(path)) { body.set('t', String(document.title || '').slice(0, 200)); }
+      if (c.segments === true) { addSource(body); }
+      var psku = pageSku();
+      if (psku) { body.set('s', psku); } // produit de la page (« les visiteurs ont aussi regardé »)
       if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/visit', body))) {
         fetch(cfg.api + '/visit', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
       }
@@ -1950,6 +2047,10 @@
     consent: function (on) { setConsent(!!on); },
     // parcours d'achat, appelé par le site : DeepFind.track('cart', { sku, qty, price, name }) ;
     // DeepFind.track('order', { id, total, items: [{ sku, qty, price }] }) (numéro de commande : seulement pour ne pas compter deux fois)
+    // panier du visiteur pour les recommandations : DeepFind.cart({ items: [{ sku, qty }], total: 42.5, freeShipping: 50 })
+    cart: function (data) {
+      siteCart = data && Array.isArray(data.items) ? { items: data.items.slice(0, 30), total: data.total, freeShipping: data.freeShipping } : null;
+    },
     track: function (type, data) {
       data = data || {};
       if (type === 'cart') { cartAdd(data.sku, data.qty, data.price, data.name); } else if (type === 'order') { orderDone(data); }

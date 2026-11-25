@@ -35,7 +35,13 @@ final class Carousels
         'manual' => 'Sélection manuelle : uniquement les produits choisis, dans l\'ordre',
         'similar' => 'Produits similaires au produit de la page (fiche produit)',
         'personal' => 'Personnalisé selon le visiteur (avec son consentement)',
+        'trending' => 'Tendances : produits dont l\'intérêt monte (clics, paniers, ventes des 7 derniers jours)',
+        'bought' => 'Souvent achetés ensemble (avec le produit de la page ou ceux du panier)',
+        'viewed' => 'Les visiteurs ont aussi regardé (avec le produit de la page ou ceux du panier)',
+        'cart' => 'Page panier : compléments des produits du panier (et aide à la livraison offerte)',
     ];
+    /** Sources qui ont besoin du contenu du panier du visiteur (envoyé par le widget). */
+    public const CART_SOURCES = ['bought', 'viewed', 'cart'];
     public const SORTS = [
         'biz' => 'Score métier (ventes, clics, stock, marge, nouveauté)',
         'sales' => 'Meilleures ventes (30 jours)',
@@ -110,6 +116,7 @@ final class Carousels
             'title' => (string) $r['title'], 'title_class' => (string) ($r['title_class'] ?? ''), 'more_url' => (string) $r['more_url'], 'more_label' => (string) $r['more_label'],
             'source' => $pick(self::SOURCES, $r['source'], 'auto'), 'items' => $j($r['items']),
             'match_all' => (int) $r['match_all'] === 1, 'conditions' => $j($r['conditions']), 'page_filters' => $j($r['page_filters'] ?? ''),
+            'segments' => Segments::sanitize($j($r['segments'] ?? '')),
             'sort_by' => $pick(self::SORTS, $r['sort_by'], 'biz'),
             'similar_by' => $pick(self::SIMILAR, $r['similar_by'], 'category'), 'personal_mode' => $pick(self::PERSONAL, $r['personal_mode'], 'recommended'),
             'learning' => (int) $r['learning'] === 1, 'in_stock_only' => (int) $r['in_stock_only'] === 1,
@@ -186,7 +193,7 @@ final class Carousels
             'title' => mb_substr(trim((string) ($in['title'] ?? '')), 0, 190, 'UTF-8'), 'title_class' => self::classes((string) ($in['title_class'] ?? '')), 'more_url' => $moreUrl,
             'more_label' => mb_substr(trim((string) ($in['more_label'] ?? '')), 0, 60, 'UTF-8'),
             'source' => $source, 'items' => $items, 'match_all' => $rules[0]['match_all'] ?? true, 'conditions' => $rules[0]['conditions'] ?? [],
-            'page_filters' => $pageFilters,
+            'page_filters' => $pageFilters, 'segments' => Segments::sanitize($in['segments'] ?? []),
             'sort_by' => $pick(self::SORTS, 'sort_by', 'biz'), 'similar_by' => $pick(self::SIMILAR, 'similar_by', 'category'),
             'personal_mode' => $pick(self::PERSONAL, 'personal_mode', 'recommended'), 'learning' => !empty($in['learning']) && $source !== 'manual',
             'in_stock_only' => !empty($in['in_stock_only']), 'max_items' => $int('max_items', 2, 48, 12),
@@ -327,6 +334,7 @@ final class Carousels
             'more_url' => $c['more_url'], 'more_label' => $c['more_label'], 'source' => $c['source'], 'items' => Text::json($c['items']),
             'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => Text::json($c['conditions']), 'sort_by' => $c['sort_by'],
             'page_filters' => ($c['page_filters'] ?? []) !== [] ? Text::json($c['page_filters']) : null,
+            'segments' => Segments::isEmpty($c['segments'] ?? null) ? null : Text::json($c['segments']),
             'similar_by' => $c['similar_by'], 'personal_mode' => $c['personal_mode'], 'learning' => $c['learning'] ? 1 : 0,
             'in_stock_only' => $c['in_stock_only'] ? 1 : 0, 'max_items' => $c['max_items'], 'per_view_desktop' => $c['per_view_desktop'],
             'per_view_mobile' => $c['per_view_mobile'], 'autoplay' => $c['autoplay'], 'custom_css' => $c['custom_css'],
@@ -427,19 +435,28 @@ final class Carousels
     public static function forPage(string $lang, array $ctx): array
     {
         $page = PageRules::normalizePath((string) ($ctx['page'] ?? '/'));
-        $matched = array_slice(array_values(array_filter(self::active($lang), static fn ($c) => self::pageMatches($c, $page))), 0, self::MAX_PER_PAGE);
+        // provenance du visiteur (ciblage) : $ctx['segment'] ; absente = accès direct
+        $segment = (array) ($ctx['segment'] ?? []);
+        $matched = array_slice(array_values(array_filter(self::active($lang),
+            static fn ($c) => self::pageMatches($c, $page) && Segments::matches($c['segments'] ?? null, $segment))), 0, self::MAX_PER_PAGE);
         $history = self::personalAllowed() && is_array($ctx['history'] ?? null) ? self::cleanIds($ctx['history']) : null;
         // produit de la page : pour les « similaires », et pour l'historique du visiteur (s'il a consenti)
         $needProduct = $history !== null || array_filter($matched, static fn ($c) => $c['source'] === 'similar') !== [];
         $pageProduct = $needProduct ? self::pageProduct($lang, $page, (string) ($ctx['sku'] ?? '')) : null;
         $out = [];
+        $cart = is_array($ctx['cart'] ?? null) ? $ctx['cart'] : null;
         foreach ($matched as $c) {
             $c = self::forPath($c, $page); // adaptation selon la page (conditions en plus)
-            $products = self::products($lang, $c, $pageProduct, $history);
+            $products = self::products($lang, $c, $pageProduct, $history, true, $cart);
             if ($products === []) {
                 continue;
             }
-            $out[] = self::payload($c) + ['products' => $products];
+            $extra = [];
+            // page panier : message « plus que X € pour la livraison offerte » (ou atteinte)
+            if ($c['source'] === 'cart' && $cart !== null && ($cart['threshold'] ?? 0) > 0 && $cart['total'] !== null) {
+                $extra['free_shipping'] = ['threshold' => $cart['threshold'], 'total' => $cart['total'], 'left' => self::freeShippingLeft($cart)];
+            }
+            $out[] = self::payload($c) + $extra + ['products' => $products];
         }
         return ['carousels' => $out, 'page_product' => $pageProduct['id'] ?? null];
     }
@@ -512,10 +529,14 @@ final class Carousels
      * @param ?array $pageProduct produit de la page (champs DOC_FIELDS) ; @param ?list<string> $history historique du visiteur
      * @return list<array>
      */
-    public static function products(string $lang, array $c, ?array $pageProduct = null, ?array $history = null, bool $useCache = true): array
+    /**
+     * @param ?array{ids: list<string>, total: int, threshold: int} $cart panier du visiteur (identifiants, total et seuil de livraison
+     *        offerte en centimes), pour les sources « achetés ensemble », « aussi regardé », « page panier »
+     */
+    public static function products(string $lang, array $c, ?array $pageProduct = null, ?array $history = null, bool $useCache = true, ?array $cart = null): array
     {
         if (!$useCache) {
-            return self::compute($lang, $c, $pageProduct, $history); // aperçu de l'extranet (formulaire non enregistré)
+            return self::compute($lang, $c, $pageProduct, $history, $cart); // aperçu de l'extranet (formulaire non enregistré)
         }
         $source = $c['source'];
         $ctxKey = '';
@@ -523,6 +544,8 @@ final class Carousels
             $ctxKey = (string) ($pageProduct['id'] ?? '');
         } elseif ($source === 'personal') {
             $ctxKey = $history ? md5(implode(',', $history) . '|' . ($pageProduct['id'] ?? '')) : '';
+        } elseif (in_array($source, self::CART_SOURCES, true)) {
+            $ctxKey = md5(($pageProduct['id'] ?? '') . '|' . implode(',', $cart['ids'] ?? []) . '|' . intdiv(self::freeShippingLeft($cart), 100));
         }
         $store = Store::get();
         $key = 'carprod:' . \DeepFind\Project::id() . ':' . $lang . ':' . $c['id'] . ':' . \DeepFind\CacheVersion::get() . ':' . $ctxKey . ':p' . ($c['page_key'] ?? '');
@@ -530,17 +553,21 @@ final class Carousels
         if (is_array($cached)) {
             return $cached;
         }
-        $list = self::compute($lang, $c, $pageProduct, $history);
+        $list = self::compute($lang, $c, $pageProduct, $history, $cart);
         $store->set($key, $list, $source === 'personal' ? 60 : 300);
         return $list;
     }
 
     /** @return list<array> */
-    private static function compute(string $lang, array $c, ?array $pageProduct, ?array $history): array
+    private static function compute(string $lang, array $c, ?array $pageProduct, ?array $history, ?array $cart = null): array
     {
         $max = max(1, $c['max_items']);
         $base = self::baseFilters($lang, $c);
         $exclude = $pageProduct ? [(string) $pageProduct['id']] : [];
+        // produits déjà dans le panier : jamais proposés par les sources qui en tiennent compte
+        if (in_array($c['source'], self::CART_SOURCES, true)) {
+            $exclude = [...$exclude, ...($cart['ids'] ?? [])];
+        }
         // 1. produits épinglés, dans l'ordre choisi
         $pinned = [];
         if ($c['items'] !== []) {
@@ -576,7 +603,7 @@ final class Carousels
         $want = $max - count($pinned);
         // apprentissage : un choix plus large, reclassé ensuite selon les clics dans ce carrousel
         $pool = $c['learning'] ? min(100, max($want * 3, $want + 12)) : $want;
-        $rest = self::fromSource($lang, $c, $base, $exclude, $pageProduct, $history, $pool);
+        $rest = self::fromSource($lang, $c, $base, $exclude, $pageProduct, $history, $pool, $cart);
         if ($rest === null) {
             // pas de contexte (aucun produit dans la page, pas d'historique) : sélection automatique
             $rest = self::query($lang, ['filter' => [...$base, ...self::notIds($exclude)], 'sort' => self::SORT_RULES[$c['sort_by']] ?? ['biz_score:desc'],
@@ -589,10 +616,34 @@ final class Carousels
     }
 
     /** Produits selon la source ; null = pas de contexte (repli sur la sélection automatique). @return ?list<array> */
-    private static function fromSource(string $lang, array $c, array $base, array $exclude, ?array $pageProduct, ?array $history, int $limit): ?array
+    private static function fromSource(string $lang, array $c, array $base, array $exclude, ?array $pageProduct, ?array $history, int $limit, ?array $cart = null): ?array
     {
         $sort = self::SORT_RULES[$c['sort_by']] ?? ['biz_score:desc'];
         $fields = SearchService::PUBLIC_FIELDS;
+        if ($c['source'] === 'trending') {
+            return self::ranked($lang, $base, \DeepFind\Rules\Recos::trending(min(200, $limit * 2 + 10)), $exclude, $limit);
+        }
+        if (in_array($c['source'], self::CART_SOURCES, true)) {
+            // produits de référence : ceux du panier, et (sauf page panier) le produit de la page
+            $refs = $cart['ids'] ?? [];
+            if ($c['source'] !== 'cart' && $pageProduct) {
+                array_unshift($refs, (string) $pageProduct['id']);
+            }
+            if ($refs === []) {
+                return null;
+            }
+            $want = min(200, $limit * 2 + 10);
+            $ids = match ($c['source']) {
+                'viewed' => \DeepFind\Rules\Recos::related('v', $refs, $want, $exclude),
+                // achetés ensemble, complétés par « aussi regardé » quand les commandes sont encore peu nombreuses
+                default => array_values(array_unique([...\DeepFind\Rules\Recos::related('b', $refs, $want, $exclude), ...\DeepFind\Rules\Recos::related('v', $refs, $want, $exclude)])),
+            };
+            $hits = self::ranked($lang, $base, $ids, $exclude, $c['source'] === 'cart' ? min(200, $limit * 2 + 10) : $limit);
+            if ($hits !== null && $c['source'] === 'cart') {
+                $hits = array_slice(self::freeShippingOrder($hits, self::freeShippingLeft($cart)), 0, $limit);
+            }
+            return $hits;
+        }
         if ($c['source'] === 'auto') {
             return self::query($lang, ['filter' => [...$base, ...self::notIds($exclude)], 'sort' => $sort, 'limit' => $limit, 'attributesToRetrieve' => $fields]);
         }
@@ -623,6 +674,94 @@ final class Carousels
         $f = self::similarFilters($docs, 'category', true);
         return $f === [] ? null : self::query($lang, ['filter' => [...$base, ...self::notIds([...$exclude, ...$history]), ...$f], 'sort' => $sort,
             'limit' => $limit, 'attributesToRetrieve' => $fields]);
+    }
+
+    /** Produits $ids (dans cet ordre), filtrés comme les autres (disponibles, en stock…) ; null si aucun. @return ?list<array> */
+    private static function ranked(string $lang, array $base, array $ids, array $exclude, int $limit): ?array
+    {
+        $ids = array_slice(array_values(array_diff(array_unique(array_map('strval', $ids)), $exclude)), 0, 200);
+        if ($ids === []) {
+            return null;
+        }
+        $hits = self::query($lang, ['filter' => [...$base, Filter::in('id', $ids)], 'limit' => count($ids), 'attributesToRetrieve' => SearchService::PUBLIC_FIELDS]);
+        $rank = array_flip($ids);
+        usort($hits, static fn ($a, $b) => ($rank[(string) $a['id']] ?? 999) <=> ($rank[(string) $b['id']] ?? 999));
+        $hits = array_slice($hits, 0, $limit);
+        return $hits === [] ? null : $hits;
+    }
+
+    /** Reste à ajouter au panier pour la livraison offerte (centimes ; 0 = atteinte, pas de seuil ou panier inconnu). */
+    public static function freeShippingLeft(?array $cart): int
+    {
+        if ($cart === null || (int) ($cart['threshold'] ?? 0) <= 0 || !isset($cart['total'])) {
+            return 0;
+        }
+        return max(0, (int) $cart['threshold'] - (int) $cart['total']);
+    }
+
+    /**
+     * Page panier : quand il manque $left centimes pour la livraison offerte, d'abord les produits qui suffisent à l'atteindre,
+     * puis les autres (chaque groupe garde l'ordre de pertinence : achetés ensemble, puis aussi regardés).
+     * @param list<array> $hits @return list<array>
+     */
+    public static function freeShippingOrder(array $hits, int $left): array
+    {
+        if ($left <= 0) {
+            return $hits;
+        }
+        $enough = array_values(array_filter($hits, static fn ($h) => (int) round((float) ($h['final_price'] ?? 0) * 100) >= $left));
+        $ids = array_column($enough, 'id');
+        return [...$enough, ...array_values(array_filter($hits, static fn ($h) => !in_array($h['id'], $ids, true)))];
+    }
+
+    /** Un carrousel actif utilise-t-il le panier du visiteur (le widget l'envoie alors) ? */
+    public static function needsCart(string $lang): bool
+    {
+        foreach (self::active($lang) as $c) {
+            if (in_array($c['source'], self::CART_SOURCES, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Un popin ou carrousel actif est-il ciblé selon la provenance (le widget envoie alors la provenance d'arrivée) ? */
+    public static function needsSegments(string $lang): bool
+    {
+        foreach (self::active($lang) as $c) {
+            if (!Segments::isEmpty($c['segments'] ?? null)) {
+                return true;
+            }
+        }
+        foreach (Popins::forWidget($lang) as $p) {
+            if (!empty($p['segments'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Panier envoyé par le widget : SKU (ci), total (ct, en euros), seuil du site (fs, en euros, sinon réglage de l'extranet).
+     * @return ?array{ids: list<string>, total: ?int, threshold: int, skus: list<string>}
+     */
+    public static function cartContext(string $lang, array $in): ?array
+    {
+        if (!isset($in['ci']) && !isset($in['ct'])) {
+            return null;
+        }
+        $skus = array_slice(array_values(array_unique(array_filter(array_map(static fn ($s) => mb_strtoupper(trim($s), 'UTF-8'),
+            explode(',', substr((string) ($in['ci'] ?? ''), 0, 2000))), 'strlen'))), 0, 30);
+        $ids = [];
+        if ($skus !== []) {
+            foreach (self::query($lang, ['filter' => [Filter::in('all_skus', $skus)], 'limit' => count($skus) * 2, 'attributesToRetrieve' => ['id']]) as $h) {
+                $ids[] = (string) $h['id'];
+            }
+        }
+        $site = isset($in['fs']) && (string) $in['fs'] !== '' ? \DeepFind\Logging\Audience::cents($in['fs']) : 0;
+        $threshold = $site > 0 ? $site : (int) round(Settings::float('free_shipping_threshold') * 100);
+        return ['ids' => array_values(array_unique($ids)), 'skus' => $skus,
+            'total' => isset($in['ct']) && (string) $in['ct'] !== '' ? \DeepFind\Logging\Audience::cents($in['ct']) : null, 'threshold' => $threshold];
     }
 
     /**
