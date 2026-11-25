@@ -14,7 +14,7 @@
     var dialog = el('dialog', 'lv-dialog');
     dialog.setAttribute('aria-label', 'Aperçu');
     var bar = el('div', 'lv-bar');
-    bar.appendChild(el('strong', 'lv-title', opts.type === 'carousel' ? 'Aperçu du carrousel' : 'Aperçu de la popin'));
+    bar.appendChild(el('strong', 'lv-title', opts.type === 'carousel' ? 'Aperçu du carrousel' : (opts.type === 'push' ? 'Aperçu de l\'invitation aux notifications' : 'Aperçu de la popin')));
     var sw = el('div', 'lv-switch');
     sw.setAttribute('role', 'group');
     sw.setAttribute('aria-label', 'Format d\'écran');

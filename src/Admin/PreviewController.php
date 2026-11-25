@@ -172,7 +172,7 @@ final class PreviewController
     {
         $lang = Auth::lang();
         View::render('live_preview', [
-            'type' => ($_GET['type'] ?? '') === 'carousel' ? 'carousel' : 'popin', 'lang' => $lang,
+            'type' => in_array($_GET['type'] ?? '', ['carousel', 'push'], true) ? (string) $_GET['type'] : 'popin', 'lang' => $lang,
             'config' => \DeepFind\Widget\WidgetConfig::forWidget($lang) + ['hover_image' => \DeepFind\Settings::int('widget_hover_image') === 1]
                 + \DeepFind\Widget\WidgetTexts::forWidget($lang),
         ], 'Aperçu', false);

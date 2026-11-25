@@ -1147,6 +1147,98 @@ if ($base) {
     check('recommandations : tendances (intérêt qui monte, pas seulement élevé ; trop peu d\'activité ignorée)', $RC::trending() === [$rId[3], $rId[4]], json_encode($RC::trending()));
 
 
+    // ------------------------------------------------ Notifications (Web Push) : chiffrement, abonnement, envoi, statistiques
+    $WP = DeepFind\Push\WebPush::class;
+    $PU = DeepFind\Push\Push::class;
+    // vecteur officiel de la RFC 8291 (chiffrement aes128gcm) : le message produit doit être identique, octet pour octet
+    $asV = $WP::privateFromRaw($WP::b64uDecode('yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw'), $WP::b64uDecode('BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8'));
+    $uaV = 'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4';
+    $vecBody = $WP::encrypt('When I grow up, I want to be a watermelon', $uaV, 'BTBZMqHH6r4Tts7J_aSIgg', $WP::b64uDecode('DGv6ra1nlYgDCS1FRnbzlw'), $asV);
+    check('notifications : chiffrement conforme au vecteur officiel (RFC 8291) et déchiffrable par le navigateur',
+        $WP::b64u($vecBody) === 'DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPTpK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN'
+        && $WP::decrypt($vecBody, $WP::privateFromRaw($WP::b64uDecode('q1dXpw3UpT5VOmu_cf_v6ih07Aems3njxI-JWgLcM94'), $WP::b64uDecode($uaV)), 'BTBZMqHH6r4Tts7J_aSIgg') === 'When I grow up, I want to be a watermelon');
+    $vapidOk = static function (string $header, string $aud) use ($WP): bool {
+        if (!preg_match('/^vapid t=([^.]+)\.([^.]+)\.([^,]+), k=(.+)$/', $header, $m)) {
+            return false;
+        }
+        $raw = $WP::b64uDecode($m[3]);
+        $int = static function (string $x): string { $x = ltrim($x, "\0"); return (ord($x[0]) & 0x80) ? "\0" . $x : $x; };
+        [$r, $s] = [$int(substr($raw, 0, 32)), $int(substr($raw, 32))];
+        $der = "\x30" . chr(4 + strlen($r) + strlen($s)) . "\x02" . chr(strlen($r)) . $r . "\x02" . chr(strlen($s)) . $s;
+        $claims = json_decode($WP::b64uDecode($m[2]), true);
+        return openssl_verify($m[1] . '.' . $m[2], $der, $WP::publicFromRaw($WP::b64uDecode($m[4])), OPENSSL_ALGO_SHA256) === 1
+            && ($claims['aud'] ?? '') === $aud && ($claims['exp'] ?? 0) > time() && $m[4] === $WP::vapid()['public'];
+    };
+    check('notifications : clés VAPID de l\'installation (privée chiffrée en base), signature ES256 valide',
+        strlen($WP::b64uDecode($WP::vapid()['public'])) === 65 && $WP::vapid() === $WP::vapid() && !str_contains(DeepFind\Settings::get('push_vapid_private'), 'BEGIN')
+        && $vapidOk($WP::vapidHeader('https://fcm.googleapis.com/fcm/send/x', 'mailto:test@example.com'), 'https://fcm.googleapis.com'));
+    foreach (['push_subscriptions', 'push_campaigns', 'push_stats'] as $tP) {
+        DeepFind\Db::exec("DELETE FROM `$tP`");
+    }
+    DeepFind\Settings::set('push_enabled', '0');
+    [, $cfP0] = $getUa("/api/v1/config?key=$key&lang=fr", 'Mozilla/5.0 (Linux; Android 14) Push/1');
+    DeepFind\Settings::set('push_enabled', '1');
+    DeepFind\Settings::set('push_devices', 'phone');
+    DeepFind\Settings::set('push_form', 'bell');
+    [, $cfP1] = $getUa("/api/v1/config?key=$key&lang=fr", 'Mozilla/5.0 (Linux; Android 14) Push/1');
+    check('notifications : invitation annoncée au widget seulement si activée (forme, appareils, iPhone exclus par défaut, clé publique)',
+        ($cfP0['push'] ?? null) === false && ($cfP1['push']['form'] ?? '') === 'bell' && ($cfP1['push']['devices'] ?? '') === 'phone'
+        && ($cfP1['push']['exclude_ios'] ?? null) === true && ($cfP1['push']['key'] ?? '') === $WP::vapid()['public'] && ($cfP1['push']['sw'] ?? '') === '/sw.js',
+        json_encode($cfP1['push'] ?? null));
+    check('notifications : réglages contrôlés (chemin du sw.js, couleurs, CSS sans balises)', $PU::swPath('../../etc/passwd') === '/sw.js' && $PU::swPath('static/js/sw.js') === '/static/js/sw.js'
+        && $PU::swPath('/sw.php') === '/sw.js' && $PU::color('red', '#000000') === '#000000' && $PU::css('<script>x</script>.a{color:red}@import url(x)') === 'x.a{color:red} url(x)');
+    // deux « navigateurs » abonnés au faux service d'envoi, puis un message
+    $pushLog = __DIR__ . '/_tmp/push.log';
+    @unlink($pushLog);
+    $pushSrv = proc_open(['php', '-S', '127.0.0.1:7796', __DIR__ . '/fake-push.php'], [0 => ['pipe', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pushPipes, null,
+        ['FAKE_PUSH_LOG' => $pushLog, 'PATH' => getenv('PATH')]);
+    usleep(400000);
+    $browsers = [];
+    foreach (['ok', 'gone'] as $kind) {
+        $k = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
+        $browsers[$kind] = ['key' => $k, 'p256dh' => $WP::b64u($WP::rawPublic($k)), 'auth' => $WP::b64u(random_bytes(16)), 'endpoint' => 'http://127.0.0.1:7796/' . $kind . '/' . bin2hex(random_bytes(4))];
+    }
+    $subCodes = [];
+    foreach ($browsers as $kind => $br) {
+        $subCodes[] = $post('/api/v1/push/subscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => $br['endpoint'], 'p256dh' => $br['p256dh'], 'auth' => $br['auth'],
+            'd' => 'm', 'src_s' => 'brevo', 'src_m' => 'email'], 'Mozilla/5.0 (Linux; Android 14) Push/' . $kind);
+    }
+    $subCodes[] = $post('/api/v1/push/subscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => 'javascript:alert(1)', 'p256dh' => 'x', 'auth' => 'y', 'd' => 'm'], 'Mozilla/5.0 Push/bad');
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'e' => 'iv'], 'Mozilla/5.0 Push/ev');
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'e' => 'ig'], 'Mozilla/5.0 Push/ev');
+    usleep(300000);
+    $pStats = $PU::stats(1);
+    check('notifications : abonnements (téléphone, provenance e-mail) ; adresse invalide refusée ; statistiques de l\'invitation',
+        $subCodes === [200, 200, 422] && $PU::counts('fr')['phone'] === 2 && (int) DeepFind\Db::value("SELECT COUNT(*) FROM push_subscriptions WHERE channel = 'email'") === 2
+        && $pStats['sub'] === 2 && $pStats['iv'] === 1 && $pStats['ig'] === 1, json_encode([$subCodes, $pStats]));
+    [$pcBad, $pcErr] = $PU::sanitize(['title' => '', 'url' => 'javascript:x', 'when' => 'at', 'scheduled_at' => '']);
+    [$pc] = $PU::sanitize(['title' => 'Soldes -20 %', 'body' => 'Jusqu\'à dimanche', 'url' => '/promotions.html', 'devices' => 'phone', 'channels' => ['email', 'nope'], 'when' => 'now']);
+    $idPc = $PU::save('fr', $pc, null);
+    check('notifications : message contrôlé (titre, lien, date), envoi « maintenant » programmé', $pcBad === null && count($pcErr) === 3 && $pc['status'] === 'scheduled'
+        && $pc['channels'] === ['email'] && $PU::audience($pc, 'fr') === 2, json_encode($pcErr));
+    $nSent = $PU::runDue();
+    usleep(200000);
+    $reqs = array_map(static fn ($l) => json_decode($l, true), array_filter(explode("\n", (string) @file_get_contents($pushLog))));
+    $okReq = array_values(array_filter($reqs, static fn ($r) => str_starts_with($r['path'], '/ok/')))[0] ?? null;
+    $payloadP = $okReq ? json_decode($WP::decrypt(base64_decode($okReq['body']), $browsers['ok']['key'], $browsers['ok']['auth']), true) : null;
+    $pcAfter = $PU::find($idPc, 'fr');
+    check('notifications : envoi chiffré reçu et lu par le navigateur abonné (titre, texte, lien, compteurs) ; signature VAPID valide',
+        $nSent === 1 && count($reqs) === 2 && $okReq['encoding'] === 'aes128gcm' && $vapidOk($okReq['auth'], 'http://127.0.0.1:7796')
+        && ($payloadP['t'] ?? '') === 'Soldes -20 %' && ($payloadP['b'] ?? '') === 'Jusqu\'à dimanche' && ($payloadP['u'] ?? '') === '/promotions.html'
+        && ($payloadP['c'] ?? 0) === $idPc && str_starts_with((string) ($payloadP['k'] ?? ''), 'pk_'), json_encode([$nSent, count($reqs), $payloadP]));
+    check('notifications : abonnement expiré (410) supprimé, message marqué envoyé ; nouvel essai sans effet',
+        $pcAfter['status'] === 'sent' && $pcAfter['sent'] === 1 && $pcAfter['failed'] === 1 && $PU::counts('fr')['total'] === 1 && $PU::runDue() === 0, json_encode($pcAfter));
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 's'], 'Mozilla/5.0 Push/sw');
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 'c'], 'Mozilla/5.0 Push/sw');
+    $unsub = $post('/api/v1/push/unsubscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => $browsers['ok']['endpoint']], 'Mozilla/5.0 Push/ok');
+    usleep(300000);
+    $pcAfter = $PU::find($idPc, 'fr');
+    check('notifications : affichage et clic signalés par le service worker ; désabonnement', $pcAfter['shown'] === 1 && $pcAfter['clicks'] === 1
+        && $unsub === 200 && $PU::counts('fr')['total'] === 0 && $PU::stats(1)['uns'] === 1, json_encode($pcAfter));
+    proc_terminate($pushSrv);
+    DeepFind\Settings::set('push_enabled', '0');
+    DeepFind\Settings::set('push_form', 'banner_bottom');
+
     // ------------------------------------------------ Flux protégé par mot de passe (.htaccess) et test de connexion
     $SE = DeepFind\Security\Secrets::class;
     $encA = $SE::encrypt('s3cret');

@@ -25,6 +25,8 @@ use DeepFind\Text;
  *   POST /api/v1/click   (key, q, lang, doc_type, doc_id, position, sid)
  *   POST /api/v1/visit   (key, lang, d = m|t|d, p = chemin, t = titre, a = 0|1)   page vue (mesure d'audience anonyme ;
  *        a = 0 : page non mesurée par l'audience, seulement pour le parcours)
+ *   POST /api/v1/push/subscribe (key, lang, endpoint, p256dh, auth, d)   abonnement aux notifications ; push/unsubscribe (endpoint)
+ *   POST /api/v1/push/event (key, e = iv|ia|il|ig|id, ou c = message et e = s|c)   invitation, réponse du navigateur, notification affichée / cliquée
  *   POST /api/v1/event   (key, lang, e = bar|close|cart|order, d, q | sku, qty, price, name | value, tid, items)   parcours d'achat
  *   POST /api/v1/popin   (key, lang, id, e = v|c|x)   popin affichée, cliquée ou fermée (compteurs du jour, sans donnée personnelle)
  *   GET  /api/v1/carousels?key&lang&page=/chemin[&sku=…][&h=id1,id2]   carrousels de la page et leurs produits
@@ -44,6 +46,7 @@ final class ApiController
                 $path === '/api/v1/click' && $method === 'POST' => $this->click(),
                 $path === '/api/v1/visit' && $method === 'POST' => $this->visit(),
                 $path === '/api/v1/event' && $method === 'POST' => $this->event(),
+                str_starts_with($path, '/api/v1/push/') && $method === 'POST' => $this->push(substr($path, 13)),
                 $path === '/api/v1/popin' && $method === 'POST' => $this->popin(),
                 $path === '/api/v1/carousels' && in_array($method, ['GET', 'HEAD'], true) => $this->carousels(),
                 $path === '/api/v1/carousel' && $method === 'POST' => $this->carouselEvent(),
@@ -218,6 +221,51 @@ final class ApiController
             mb_substr(trim((string) ($p['s'] ?? '')), 0, 64, 'UTF-8'), $source);
     }
 
+    /** Notifications : abonnement, désabonnement, événements (invitation, navigateur, notification affichée / cliquée). */
+    private function push(string $action): void
+    {
+        $p = $_POST;
+        $lang = (string) ($p['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($p['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        $ip = ClientIp::resolve($_SERVER);
+        $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        if ((new BotGuard(Store::get()))->check($ip, $ua, '', 'push') !== null) {
+            Response::noContent($cors);
+            return;
+        }
+        if ($action === 'subscribe') {
+            if (!\DeepFind\Push\Push::enabled()) {
+                Response::json(['error' => 'push_disabled'], 403, $cors);
+                return;
+            }
+            $device = ['m' => 'phone', 't' => 'tablet', 'd' => 'desktop'][(string) ($p['d'] ?? '')] ?? 'phone';
+            $src = \DeepFind\Rules\Segments::forRequest($p, $ip, $ua);
+            $ok = \DeepFind\Push\Push::subscribe($lang, (string) ($p['endpoint'] ?? ''), (string) ($p['p256dh'] ?? ''), (string) ($p['auth'] ?? ''),
+                $device, \DeepFind\Rules\Segments::channel($src));
+            Response::json(['ok' => $ok], $ok ? 200 : 422, $cors);
+            return;
+        }
+        if ($action === 'unsubscribe') {
+            Response::json(['ok' => \DeepFind\Push\Push::unsubscribe((string) ($p['endpoint'] ?? ''))], 200, $cors);
+            return;
+        }
+        Response::noContent($cors);
+        if ($action !== 'event') {
+            return;
+        }
+        Response::finish();
+        $e = (string) ($p['e'] ?? '');
+        if (isset($p['c'])) {
+            \DeepFind\Push\Push::campaignEvent((int) $p['c'], $e);
+        } elseif (($p['na'] ?? '') !== '1') {
+            \DeepFind\Push\Push::stat($e);
+        }
+    }
+
     /**
      * Événement du parcours d'achat envoyé par le widget : barre de recherche ouverte, fenêtre fermée sans clic,
      * ajout au panier, commande (montant). Réponse immédiate, comptage après l'envoi.
@@ -369,6 +417,8 @@ final class ApiController
             'commerce' => Audience::tracks('commerce') || Journeys::enabled() ? ['datalayer' => Settings::int('audience_datalayer') === 1] : false,
             // popins en cours : le widget choisit celle de la page (adresse, appareil, fermeture mémorisée)
             'popins' => \DeepFind\Project::isActive() ? \DeepFind\Rules\Popins::forWidget($lang) : [],
+            // notifications : invitation à s'abonner (forme, appareils, textes, style), ou false
+            'push' => \DeepFind\Push\Push::widgetConfig(),
             // carrousels : le widget demande ceux de la page seulement s'il en existe ; historique du visiteur (off | consent | always)
             'carousels' => \DeepFind\Project::isActive() && \DeepFind\Rules\Carousels::active($lang) !== [],
             'personal' => \DeepFind\Rules\Carousels::personalMode(),

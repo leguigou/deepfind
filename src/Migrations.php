@@ -74,6 +74,8 @@ final class Migrations
         'scheduler_last_run', 'scores_scheduled_at',
         // journée de mesure (audience, parcours) : heure de changement de la clé du jour, commune à tous les projets
         'audience_day_hour', 'audience_day_hour_next', 'audience_day_hour_at',
+        // notifications : clés VAPID de l'installation (la clé privée est chiffrée avec APP_SECRET)
+        'push_vapid_public', 'push_vapid_private',
     ];
 
     /** Colonnes ENUM à élargir : table => [colonne => [valeur requise, nouvelle définition]] */

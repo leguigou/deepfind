@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=36" defer
+<script src="https://search.example.com/widget/deepfind.js?v=37" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=35` en `?v=36`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=36` en `?v=37`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -402,12 +402,14 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Bannières | Image ou code HTML en haut des résultats (section 8) |
 | | Popins | Fenêtre affichée sur les pages du site choisies (accueil, adresses), selon la provenance du visiteur, avec période, délai, fréquence et statistiques (section 8) |
 | | Carrousels | Bandeaux de produits qui défilent, insérés dans un bloc des pages choisies : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte), ciblage selon la provenance, apprentissage par les clics (section 8) |
+| | Envoi de notifications | Messages envoyés aux abonnés aux notifications (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics (voir « Notifications » ci-dessous) |
 | | Campagnes | Produits à pousser sur une période : clics, affichages, paniers, commandes, chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
 | | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
 | | Clés | Clés publiques et domaines autorisés |
 | | Intégration | Layers, filtres, options de tri, code du site, favori de test (section 7) |
+| | Notifications | Invitation à recevoir les notifications : forme (bandeau, popin, cloche, bloc), appareils, exclusion des iPhone, contenu, style, installation du sw.js |
 | | Variables | Variables système (lecture seule), textes du widget modifiables par langue, variables personnalisées `{{code}}` (section 6, « Variables ») |
 | | Cache | État et purge des caches |
 | | Paramètres | Seuils anti-robots, recherche, widget sur le site (dont le seuil de livraison offerte), journaux, sécurité des imports |
@@ -580,6 +582,15 @@ Les termes des recherches sont **masqués** avant d'être comptés (e-mails, té
 - **Ciblage selon la provenance** (popins et carrousels) : canaux (direct, moteurs, publicité, réseaux sociaux, e-mail, affiliation, autres sites, campagne UTM) et conditions `utm_*`. Provenance lue sur la page d'arrivée, gardée en mémoire pour la journée sous l'empreinte du jour.
 
 Détails : aide, rubrique Recommandations.
+
+### Notifications
+
+Messages envoyés sur le téléphone ou l'ordinateur des visiteurs qui l'acceptent, **sans application ni outil payant** (standard Web Push, chiffrement et signature faits par DeepFind). Désactivé par défaut.
+
+- **Paramètres › Notifications** : forme de l'invitation (bandeau en bas / en haut, popin au centre / dans un coin, cloche flottante, bloc dans la page), appareils (**téléphones uniquement** par défaut, téléphones et tablettes, tous, ordinateurs), **exclusion des iPhone et iPad** (par défaut : ils n'acceptent les notifications que si le site est ajouté à l'écran d'accueil), délai, N-ième page vue, pages exclues, textes, couleurs, CSS, aperçu ordinateur / mobile.
+- **Installation** : déposer une fois sur le site un fichier `sw.js` d'une ligne, `importScripts('https://<DeepFind>/widget/push-sw.js');` (le widget ne peut pas le créer : règle des navigateurs).
+- **Recommandations › Envoi de notifications** : titre, texte, lien, image, appareils, provenance à l'abonnement ; brouillon, envoi maintenant ou programmé (`schedule:run`, ou `php bin/console push:send`) ; envoyés, affichés, clics.
+- Le visiteur clique d'abord sur l'invitation, puis le navigateur demande son accord (fenêtre non modifiable, jamais reproposée s'il refuse).
 
 ### Parcours
 

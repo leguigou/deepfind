@@ -114,7 +114,8 @@ final class Campaigns
     public static function period(array $c, ?string $today = null): array
     {
         $today ??= Audience::measureDay();
-        $from = $c['starts_at'] ?? substr((string) $c['created_at'], 0, 10);
+        // sans date de début : journée de mesure de la création (une campagne créée à 1 h du matin compte la journée en cours)
+        $from = $c['starts_at'] ?? Audience::measureDay((int) strtotime((string) $c['created_at']));
         $to = min($c['ends_at'] ?? $today, $today);
         $to = max($to, $from);
         $days = (int) round((strtotime($to) - strtotime($from)) / 86400) + 1;

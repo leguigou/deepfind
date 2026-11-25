@@ -87,6 +87,8 @@ src/Migrations.php             ajout des colonnes manquantes sur une base exista
 src/CacheVersion.php           version des données (fichier var/cache/data_version) incluse dans TOUTES les clés de cache :
                                CacheVersion::bump() après import / règle / paramètre ⇒ caches obsolètes partout, immédiatement
 templates/admin/               gabarits PHP (échapper TOUT avec e())
+src/Push/WebPush.php           notifications : chiffrement RFC 8291 (aes128gcm), signature VAPID RFC 8292, envoi par lots (cURL)
+src/Push/Push.php              notifications : réglages de l'invitation, abonnés, messages, envoi programmé, statistiques
 src/Rules/Recos.php            recommandations : paires achetés / regardés ensemble (reco_pairs), tendances
 src/Rules/Segments.php         ciblage selon la provenance (canal, UTM), mémorisée pour la journée sous l'empreinte du jour
 src/Rules/Campaigns.php        campagnes de produits à pousser et leurs résultats (audience_products, audience_attrib)
