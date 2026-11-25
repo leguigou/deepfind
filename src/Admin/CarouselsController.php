@@ -155,16 +155,33 @@ final class CarouselsController
             $notes[] = 'Attention : ce carrousel ne s\'affiche pas sur cette page (pages concernées).';
         }
         $c = Carousels::forPath($c, $page);
+        // panier de test : « achetés ensemble », « aussi regardé », page panier (livraison offerte)
+        $cart = trim((string) ($_POST['cart'] ?? '')) !== '' || trim((string) ($_POST['cart_total'] ?? '')) !== ''
+            ? Carousels::cartContext($lang, ['ci' => str_replace(' ', '', (string) ($_POST['cart'] ?? '')), 'ct' => (string) ($_POST['cart_total'] ?? '')]) : null;
+        if (in_array($c['source'], Carousels::CART_SOURCES, true) && $cart === null && $c['source'] === 'cart') {
+            $notes[] = 'Page panier : indiquez un panier de test (SKU) pour voir les compléments ; sans panier, sélection automatique.';
+        }
+        if ($c['source'] === 'trending' && \DeepFind\Rules\Recos::trending(1) === []) {
+            $notes[] = 'Pas encore assez d\'activité mesurée pour les tendances : sélection automatique affichée.';
+        }
         if ($c['page_rule'] !== null) {
             $pf = $c['page_filters'][(int) $c['page_key']]['url'];
             $notes[] = 'Adaptation selon la page appliquée (adresse ' . (\DeepFind\Rules\PageRules::URL_OPS[$pf['match']] ?? $pf['match']) . ' « ' . $pf['text'] . ' »).';
         }
-        $products = Carousels::products($lang, $c, $pageProduct, $history === [] ? null : $history, false);
+        $products = Carousels::products($lang, $c, $pageProduct, $history === [] ? null : $history, false, $cart);
         $items = array_map(static fn ($p) => ['sku' => $p['sku'] ?? '', 'name' => $p['name'] ?? '', 'image' => $p['image'] ?? '', 'brand' => $p['brand'] ?? '',
             'price' => $p['final_price'] ?? null, 'in_stock' => !empty($p['in_stock'])], $products);
         // carrousel : prêt pour le widget (aperçu direct ordinateur / mobile)
         $c['id'] = $c['id'] ?: 1;
-        Response::json(['items' => $items, 'note' => implode(' ', $notes), 'carousel' => Carousels::payload($c) + ['products' => $products]]);
+        $extra = [];
+        if ($c['source'] === 'cart' && $cart !== null && $cart['threshold'] > 0 && $cart['total'] !== null) {
+            $extra['free_shipping'] = ['threshold' => $cart['threshold'], 'total' => $cart['total'], 'left' => Carousels::freeShippingLeft($cart)];
+            $notes[] = $extra['free_shipping']['left'] > 0 ? 'Livraison offerte : il manque ' . number_format($extra['free_shipping']['left'] / 100, 2, ',', ' ') . ' € ; les produits qui suffisent à l\'atteindre passent en tête.'
+                : 'Livraison offerte atteinte.';
+        } elseif ($c['source'] === 'cart' && ($cart['threshold'] ?? 0) === 0) {
+            $notes[] = 'Aucun seuil de livraison offerte (Paramètres › Widget sur le site, ou donné par le site).';
+        }
+        Response::json(['items' => $items, 'note' => implode(' ', $notes), 'carousel' => Carousels::payload($c) + $extra + ['products' => $products]]);
     }
 
     /** SKU saisis pour l'historique de test → identifiants des produits. @return list<string> */

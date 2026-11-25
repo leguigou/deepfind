@@ -5,6 +5,9 @@
 | Journal des recherches | recherche, empreinte IP, IP tronquée, navigateur | base DeepFind | réglable (Paramètres) |
 | Mesure d'audience | empreinte du jour (sans IP), puis totaux | base DeepFind | 1 jour, puis totaux anonymes |
 | Parcours d'achat | paniers et commandes (montants) par empreinte du jour, puis totaux ; termes masqués | base DeepFind | 1 jour, puis totaux (termes et produits : durée des journaux) |
+| Provenance (ciblage) | canal et UTM de la page d'arrivée, sous l'empreinte du jour | mémoire du serveur (jamais en base) | 30 h au plus |
+| Recommandations, CA par emplacement | paires de produits achetés / regardés ensemble, emplacement du dernier clic (mémoire), totaux par jour | base DeepFind (totaux), mémoire (par visiteur) | 90 jours (paires), journaux (emplacements), 30 h (mémoire) |
+| Panier (recommandations) | SKU et total du panier, envoyés avec la demande des carrousels | non enregistré | — |
 | Parcours (désactivé par défaut) | chronologie d'une journée par empreinte du jour : pages, recherches masquées, clics, panier, commande | base DeepFind | 24 h après le dernier événement |
 | Supervision (temps réel) | compteurs, empreinte du jour des visiteurs actifs | base DeepFind | 15 min (visiteurs), 6 jours (compteurs) |
 | Popins | fermeture mémorisée | navigateur du visiteur | N jours (réglage) |

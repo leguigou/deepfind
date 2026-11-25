@@ -1076,7 +1076,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .ca-missing { border-style: dashed; opacity: .75; }
 .ca-grip { color: var(--muted); }
 .ca-preview, .ca-top, .ca-settings { margin-top: 16px; }
-.ca-preview-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 10px 14px; align-items: end; margin: 8px 0; }
+.ca-preview-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; align-items: end; margin: 8px 0; }
 .ca-preview-form label { margin: 0; }
 .ca-preview-form input { margin: 0; }
 .ca-preview-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
@@ -1402,3 +1402,19 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
   .jr-ev { grid-template-columns: 62px 40px minmax(0, 1fr); }
   .jr-timeline::before { left: 81px; }
 }
+
+/* Fiches popin et carrousel : provenance du visiteur (ciblage) */
+.pp-seg { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.pp-seg-channels { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2px 16px; margin: 4px 0 8px; }
+.pp-seg-row select { width: auto; }
+
+/* Recommandations › Campagnes */
+.cp-up { color: var(--ok); font-weight: 600; }
+.cp-down { color: var(--ko); font-weight: 600; }
+.cp-table td { vertical-align: top; }
+.cp-form { margin-top: 22px; }
+.cp-form .grid2 { align-items: end; }
+.cp-active { align-self: center; }
+.cp-bulk { margin: 6px 0 10px; }
+.cp-bulk summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.cp-bulk textarea { margin: 6px 0; max-width: 560px; }

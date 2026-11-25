@@ -18,6 +18,10 @@ Une popin comprend :
 - **Tester** : le favori « Tester DeepFind » (Paramètres › Intégration) affiche les popins à chaque page, sans les compter ni mémoriser leur fermeture. La page Démo de l'extranet n'affiche pas de popin.
 - Projet désactivé : aucune popin. Nécessite le widget `?v=25` ou plus récent (`?v=27` pour la hauteur minimale et la croix à l'extérieur).
 
+## Ciblage selon la provenance
+
+Une popin peut ne s'afficher que pour les visiteurs venus de certains canaux (newsletter, réseaux sociaux, publicité…) ou d'une campagne UTM : voir [Ciblage selon la provenance](ciblage-par-provenance).
+
 ## Détails techniques
 
 - **Données** : table `popins` (réglages), `popin_stats` (affichages, clics, fermetures par jour, sans donnée personnelle). Code : `src/Rules/Popins.php`, fiche `templates/admin/popin_edit.php` et `public/assets/popins.js`.

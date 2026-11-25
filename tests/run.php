@@ -1044,6 +1044,109 @@ if ($base) {
         && (int) DeepFind\Db::value('SELECT COUNT(*) FROM journey_events') === 0 && $JR::purge() === 0);
     DeepFind\Settings::set('journeys_enabled', '0');
 
+    // ------------------------------------------------ Ciblage selon la provenance (popins, carrousels)
+    $SG = DeepFind\Rules\Segments::class;
+    $CA = DeepFind\Rules\Carousels::class;
+    $chan = static fn (array $src) => $SG::channel($src);
+    check('provenance : canal d\'arrivée (direct, moteurs, publicité, réseaux, e-mail, affiliation, autres sites, campagne)',
+        $chan([]) === 'direct' && $chan(['r' => 'www.google.fr']) === 'organic' && $chan(['s' => 'google']) === 'organic' && $chan(['s' => 'google', 'm' => 'cpc']) === 'paid'
+        && $chan(['r' => 'www.google.fr', 'ad' => '1']) === 'paid' && $chan(['r' => 'l.facebook.com']) === 'social' && $chan(['s' => 'instagram', 'm' => 'story']) === 'social'
+        && $chan(['s' => 'brevo', 'm' => 'email']) === 'email' && $chan(['r' => 'mail.google.com']) === 'email' && $chan(['s' => 'awin', 'm' => 'affiliate']) === 'affiliate'
+        && $chan(['r' => 'forum-plongee.fr']) === 'referral' && $chan(['s' => 'salon-nautique']) === 'campaign');
+    $segRule = $SG::sanitize(['channels' => ['email', 'inconnu'], 'utm' => [['field' => 'c', 'op' => 'contains', 'text' => ' Soldes '], ['field' => 'x', 'op' => '??', 'text' => 'été'], ['text' => '']]]);
+    check('provenance : règle nettoyée (canaux connus, UTM en minuscules), visiteur dans la cible ou non ; règle vide = tout le monde',
+        $segRule === ['channels' => ['email'], 'utm' => [['field' => 'c', 'op' => 'contains', 'text' => 'soldes'], ['field' => 's', 'op' => 'contains', 'text' => 'été']]]
+        && !$SG::matches($segRule, ['s' => 'newsletter-été', 'm' => 'email', 'c' => 'noel']) && $SG::matches($segRule, ['s' => 'newsletter-été', 'm' => 'email', 'c' => 'soldes-hiver'])
+        && $SG::matches($SG::sanitize([]), []) && $SG::sanitize(['channels' => array_keys($SG::CHANNELS)])['channels'] === [], json_encode($segRule, JSON_UNESCAPED_UNICODE));
+
+    // ------------------------------------------------ Recommandations : achetés / regardés ensemble, tendances ; CA par emplacement
+    $RC = DeepFind\Rules\Recos::class;
+    foreach (['reco_pairs', 'audience_attrib', 'audience_products'] as $tR) {
+        DeepFind\Db::exec("DELETE FROM `$tR`");
+    }
+    $rDocs = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'in_stock = 1', 8, 0, ['id', 'sku', 'final_price']);
+    $rId = array_column($rDocs, 'id');
+    $rSku = array_column($rDocs, 'sku');
+    $uaR = 'Mozilla/5.0 (Windows NT 10.0) Recos/1';
+    $post('/api/v1/click', ['key' => $key, 'lang' => 'fr', 'q' => 'palme', 'doc_type' => 'product', 'doc_id' => $rId[0], 'position' => 4, 'sid' => 'sidreco000000001', 'd' => 'd', 'n' => 'P0'], $uaR);
+    $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'p' => '/fr/p1.html', 's' => $rSku[1], 'a' => '1'], $uaR); // fiche produit (meta deepfind:sku)
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'cart', 'sku' => $rSku[0], 'qty' => 1], $uaR);
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'cart', 'sku' => $rSku[2], 'qty' => 1], $uaR);
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'order', 'tid' => 'R-1', 'value' => '300',
+        'items' => json_encode([['sku' => $rSku[0], 'qty' => 1, 'price' => 100], ['sku' => $rSku[2], 'qty' => 2, 'price' => 100]])], $uaR);
+    usleep(400000);
+    $attrib = [];
+    foreach (DeepFind\Db::all('SELECT placement, product_id, clicks, carts, orders, revenue FROM audience_attrib') as $r) {
+        $attrib[$r['placement'] . '|' . $r['product_id']] = [(int) $r['clicks'], (int) $r['carts'], (int) $r['orders'], (int) $r['revenue']];
+    }
+    check('CA par emplacement : clic dans la recherche puis panier et commande attribués à la recherche ; produit acheté sans clic = navigation du site',
+        ($attrib['search|' . $rId[0]] ?? null) === [1, 1, 1, 10000] && ($attrib['direct|' . $rId[2]] ?? null) === [0, 1, 1, 20000], json_encode($attrib));
+    check('recommandations : achetés ensemble (même commande) et regardés ensemble (clic, fiche produit, panier du même visiteur)',
+        $RC::related('b', [$rId[0]]) === [$rId[2]] && $RC::related('b', [$rId[2]]) === [$rId[0]]
+        && in_array($rId[1], $RC::related('v', [$rId[0]]), true) && in_array($rId[2], $RC::related('v', [$rId[1]]), true)
+        && $RC::related('v', [$rId[0]], 10, [$rId[1]]) === array_values(array_diff($RC::related('v', [$rId[0]]), [$rId[1]])),
+        json_encode([$RC::related('b', [$rId[0]]), $RC::related('v', [$rId[0]])]));
+    // carrousels « page panier », ciblés
+    [$caCart] = $CA::sanitize(['name' => 'Panier', 'selector' => '#panier', 'source' => 'cart', 'max_items' => 6, 'in_stock_only' => true, 'active' => true], 'fr');
+    $cartCtx = $CA::cartContext('fr', ['ci' => $rSku[0], 'ct' => '20,00', 'fs' => '100']); // tous les compléments suffisent : ordre de pertinence
+    $pCart = $CA::products('fr', $caCart + ['id' => 0], null, null, false, $cartCtx);
+    check('page panier : compléments du panier (achetés ensemble d\'abord), sans les produits du panier ; seuil du site prioritaire',
+        $cartCtx['ids'] === [$rId[0]] && $cartCtx['total'] === 2000 && $cartCtx['threshold'] === 10000 && $CA::freeShippingLeft($cartCtx) === 8000
+        && ($pCart[0]['id'] ?? '') === $rId[2] && !in_array($rId[0], array_column($pCart, 'id'), true), json_encode([$cartCtx, array_column($pCart, 'id')]));
+    $fsHits = [['id' => 'a', 'final_price' => 10], ['id' => 'b', 'final_price' => 40], ['id' => 'c', 'final_price' => 25], ['id' => 'd', 'final_price' => 90]];
+    DeepFind\Settings::set('free_shipping_threshold', '49');
+    check('livraison offerte : produits qui suffisent d\'abord (ordre de pertinence gardé), seuil de l\'extranet sinon',
+        array_column($CA::freeShippingOrder($fsHits, 3000), 'id') === ['b', 'd', 'a', 'c'] && array_column($CA::freeShippingOrder($fsHits, 0), 'id') === ['a', 'b', 'c', 'd']
+        && $CA::cartContext('fr', ['ci' => '', 'ct' => '10'])['threshold'] === 4900);
+    $idCart = $CA::save('fr', $caCart, null);
+    [$caSeg] = $CA::sanitize(['name' => 'E-mail', 'selector' => '#news', 'source' => 'auto', 'max_items' => 4, 'active' => true, 'segments' => ['channels' => ['email']]], 'fr');
+    $idSeg = $CA::save('fr', $caSeg, null);
+    DeepFind\CacheVersion::bump();
+    $fpCart = $CA::forPage('fr', ['page' => '/checkout/cart/', 'history' => null, 'cart' => $CA::cartContext('fr', ['ci' => $rSku[0], 'ct' => '20'])]);
+    $fpMail = $CA::forPage('fr', ['page' => '/', 'history' => null, 'segment' => ['s' => 'brevo', 'm' => 'email']]);
+    $ids0 = array_column($fpCart['carousels'], 'id');
+    $cartIdx = array_search($idCart, $ids0, true);
+    check('carrousels : message de livraison offerte (seuil, total, reste) ; carrousel ciblé « e-mail » seulement pour ces visiteurs',
+        $cartIdx !== false && ($fpCart['carousels'][$cartIdx]['free_shipping'] ?? null) === ['threshold' => 4900, 'total' => 2000, 'left' => 2900]
+        && !in_array($idSeg, $ids0, true) && in_array($idSeg, array_column($fpMail['carousels'], 'id'), true), json_encode([$ids0, $idCart, $idSeg]));
+    [, $cfS0] = $getUa("/api/v1/config?key=$key&lang=fr", $uaR);
+    [, $cfS1] = $getUa("/api/v1/config?key=$key&lang=fr&src_s=brevo&src_m=email", 'Mozilla/5.0 (Windows NT 10.0) Recos/2');
+    [, $cfS2] = $getUa("/api/v1/config?key=$key&lang=fr", 'Mozilla/5.0 (Windows NT 10.0) Recos/2'); // page suivante : provenance retenue
+    check('provenance : annoncée au widget (ciblage utilisé, panier demandé), retenue pour la journée sans cookie',
+        ($cfS0['segments'] ?? null) === true && ($cfS0['segment']['channel'] ?? '') === 'direct' && ($cfS1['segment']['channel'] ?? '') === 'email'
+        && ($cfS2['segment']['channel'] ?? '') === 'email' && ($cfS2['segment']['s'] ?? '') === 'brevo' && ($cfS0['cart_context'] ?? null) === true,
+        json_encode([$cfS0['segment'] ?? null, $cfS1['segment'] ?? null, $cfS2['segment'] ?? null]));
+    $CA::delete($idCart, 'fr');
+    $CA::delete($idSeg, 'fr');
+    DeepFind\Settings::set('free_shipping_threshold', '0');
+
+    // ------------------------------------------------ Campagnes de produits à pousser
+    $CP = DeepFind\Rules\Campaigns::class;
+    DeepFind\Db::exec('DELETE FROM campaigns');
+    [$cpBad, $cpErr] = $CP::sanitize(['name' => '', 'items' => [], 'starts_at' => '2026-05-10', 'ends_at' => '2026-05-01']);
+    [$cp] = $CP::sanitize(['name' => 'Été', 'active' => '1', 'items' => [$rSku[0], strtolower($rSku[0]), $rSku[2], 'INCONNU-9'], 'objective' => 'Écouler']);
+    $idCp = $CP::save('fr', $cp, null);
+    $cpStats = $CP::stats($CP::find($idCp, 'fr'), 'fr');
+    $plSearch = array_values(array_filter($cpStats['placements'], static fn ($pl) => $pl['placement'] === 'search'))[0] ?? null;
+    check('campagnes : nom, produits et dates contrôlés ; SKU en double ignoré', $cpBad === null && count($cpErr) === 3 && $cp['items'] === [$rSku[0], $rSku[2], 'INCONNU-9'], json_encode($cpErr));
+    check('campagnes : résultats (CA, commandes, produit introuvable signalé, CA par emplacement)',
+        $cpStats['total']['orders'] === 2 && $cpStats['rows'][2]['found'] === false && $cpStats['rows'][0]['found']
+        && $plSearch !== null && $plSearch['revenue'] === 10000 && $plSearch['label'] === 'Recherche'
+        && $CP::status($CP::find($idCp, 'fr')) === 'current', json_encode([$cpStats['total'], $cpStats['placements']]));
+    $CP::delete($idCp, 'fr');
+    // tendances (après les campagnes : les totaux par produit sont remplacés par des données de test)
+    $mDay = $AU::measureDay();
+    DeepFind\Db::exec('DELETE FROM audience_products');
+    foreach ([[$rId[3], 0, 20], [$rId[4], 30, 20], [$rId[5], 0, 2]] as [$tid, $old, $new]) { // produit, intérêt d'avant (4 semaines), intérêt récent
+        if ($old > 0) {
+            $AU::product($tid, '', ['clicks' => $old], date('Y-m-d', strtotime($mDay . ' -14 days')));
+        }
+        $AU::product($tid, '', ['clicks' => $new], $mDay);
+    }
+    DeepFind\Store\Store::get()->delete('reco:trend:' . DeepFind\Project::id() . ':' . $mDay . ':48');
+    check('recommandations : tendances (intérêt qui monte, pas seulement élevé ; trop peu d\'activité ignorée)', $RC::trending() === [$rId[3], $rId[4]], json_encode($RC::trending()));
+
+
     // ------------------------------------------------ Flux protégé par mot de passe (.htaccess) et test de connexion
     $SE = DeepFind\Security\Secrets::class;
     $encA = $SE::encrypt('s3cret');
@@ -1429,7 +1532,7 @@ if ($base) {
         }
     }
     $groupKeys = array_merge(...array_map('array_keys', array_values($WT::GROUPS)));
-    check('variables : textes d\'origine identiques à ceux du widget, tous présentés à l\'écran', $missing === [] && count($WT::DEFAULTS['fr']) === 42
+    check('variables : textes d\'origine identiques à ceux du widget, tous présentés à l\'écran', $missing === [] && count($WT::DEFAULTS['fr']) === 44
         && array_diff(array_keys($WT::DEFAULTS['fr']), $groupKeys) === [] && array_keys($WT::DEFAULTS['fr']) === array_keys($WT::DEFAULTS['en']), json_encode($missing));
     $WT::saveTexts('fr', ['from' => '  À partir de :  ', 'isNew' => 'Nouveau', 'clear' => '<b>Tout effacer</b>', 'inconnu' => 'x', 'filters' => '']);
     $wErr = $WT::saveCustom('fr', [['code' => '{{ livraison }}', 'value' => 'Livraison offerte', 'description' => 'Bandeau'], ['code' => 'name', 'value' => 'x'],

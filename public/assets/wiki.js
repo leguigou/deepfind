@@ -137,7 +137,14 @@
       if (start && !location.hash) { start.scrollIntoView(); }
       var ticking = false;
       var ready = false; // l'adresse ne change qu'après le placement initial
+      var lockUntil = 0; // défilement lancé par un clic : la page choisie reste surlignée jusqu'à l'arrivée
+      function unlock() { if (lockUntil) { lockUntil = 0; setActive(sectionInView(), true); } }
+      window.addEventListener('scrollend', unlock);
       window.addEventListener('scroll', function () {
+        if (lockUntil) {
+          if (Date.now() < lockUntil) { return; }
+          unlock();
+        }
         if (ticking) { return; }
         ticking = true;
         window.requestAnimationFrame(function () { ticking = false; setActive(sectionInView(), ready); });
@@ -159,6 +166,7 @@
         box.hidden = true;
         activeId = null;
         setActive(target, true);
+        lockUntil = Date.now() + 2500;
         dest.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     } else if (sections.length === 1 && tocBox) {

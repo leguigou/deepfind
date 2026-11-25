@@ -46,13 +46,36 @@ final class Tracker
         }
     }
 
-    /** Page vue. $counted : page mesurée par l'audience (réglage des pages) ; sinon seulement pour le parcours. */
-    public function page(string $path, string $title, bool $counted): void
+    /**
+     * Page vue. $counted : page mesurée par l'audience (réglage des pages) ; sinon seulement pour le parcours.
+     * $sku : produit de la page, si le site l'indique (« regardés ensemble »). $source : provenance à l'arrivée (ciblage).
+     */
+    public function page(string $path, string $title, bool $counted, string $sku = '', array $source = []): void
     {
         if ($counted && Audience::tracks('pageviews')) {
             $this->count(['pageviews' => 1]);
         }
+        if ($source !== [] && $this->vhash() !== '') {
+            \DeepFind\Rules\Segments::remember($this->vhash(), $source);
+        }
+        if ($sku !== '' && Audience::tracks('pageviews') && $this->vhash() !== '') {
+            $prod = Audience::productBySku($this->lang, $sku);
+            if ($prod !== null) {
+                \DeepFind\Rules\Recos::viewed($this->vhash(), $prod['id'], $this->day);
+            }
+        }
         $this->journey('page', ['path' => self::path($path), 'title' => $title]);
+    }
+
+    /** Clic sur un produit depuis un emplacement : CA par emplacement (attribution) et produits regardés ensemble. */
+    private function placementClick(string $placement, string $productId): void
+    {
+        if ($productId === '' || $this->vhash() === '') {
+            return;
+        }
+        Audience::attrib($placement, $productId, ['clicks' => 1], $this->day);
+        Audience::lastPlacement($this->vhash(), $productId, $placement);
+        \DeepFind\Rules\Recos::viewed($this->vhash(), $productId, $this->day);
     }
 
     /**
@@ -101,6 +124,7 @@ final class Tracker
             $this->count(['clicks' => 1]);
             if ($type === 'product') {
                 Audience::product($id, $name, ['clicks' => 1], $this->day);
+                $this->placementClick('search', $id);
             }
         }
         $this->journey('click', ['q' => $q, 'id' => $id, 'name' => $name, 'pos' => $position]);
@@ -112,6 +136,7 @@ final class Tracker
         if (Audience::tracks('clicks')) {
             $this->count(['carousel_clicks' => 1]);
             Audience::product($productId, $name, ['clicks' => 1], $this->day);
+            $this->placementClick('carousel:' . $carouselId, $productId);
         }
         $c = \DeepFind\Rules\Carousels::find($carouselId, $this->lang);
         $this->journey('carousel_click', ['carousel' => $c ? ($c['title'] !== '' ? $c['title'] : $c['name']) : '#' . $carouselId, 'id' => $productId, 'name' => $name]);
@@ -176,6 +201,10 @@ final class Tracker
             $this->count(['carts' => 1, 'cart_value' => $value]);
             if ($prod !== null) {
                 Audience::product($prod['id'], $name, ['carts' => 1], $this->day);
+                if ($this->vhash() !== '') {
+                    Audience::attrib(Audience::lastPlacement($this->vhash(), $prod['id']), $prod['id'], ['carts' => 1], $this->day);
+                    \DeepFind\Rules\Recos::viewed($this->vhash(), $prod['id'], $this->day);
+                }
             }
             $term = $this->vhash() !== '' ? Audience::lastTerm($this->vhash()) : '';
             if ($term !== '') {
@@ -218,12 +247,18 @@ final class Tracker
         }
         if ($this->commerce()) {
             $this->count(['orders' => 1, 'revenue' => $value]);
+            $bought = [];
             foreach ($lines as $l) {
                 $prod = Audience::productBySku($this->lang, $l['sku']);
                 if ($prod !== null) {
+                    $bought[] = $prod['id'];
                     Audience::product($prod['id'], $prod['name'], ['orders' => 1, 'revenue' => $l['cents']], $this->day);
+                    $placement = $this->vhash() !== '' ? Audience::lastPlacement($this->vhash(), $prod['id']) : 'direct';
+                    Audience::attrib($placement, $prod['id'], ['orders' => 1, 'revenue' => $l['cents']], $this->day);
                 }
             }
+            // « souvent achetés ensemble » : produits de la même commande
+            \DeepFind\Rules\Recos::pairs('b', $bought, $this->day);
             $term = $this->vhash() !== '' ? Audience::lastTerm($this->vhash()) : '';
             if ($term !== '') {
                 Audience::term($term, ['orders' => 1, 'revenue' => $value], $this->day);

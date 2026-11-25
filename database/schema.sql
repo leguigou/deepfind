@@ -413,6 +413,51 @@ CREATE TABLE IF NOT EXISTS audience_products (
   KEY idx_day (day)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Chiffre d'affaires par emplacement : clics, paniers, commandes et CA d'un produit selon l'endroit où il a été cliqué
+-- (search, carousel:<id>, direct = panier sans clic DeepFind dans la journée). Totaux uniquement ; purgés avec les journaux.
+CREATE TABLE IF NOT EXISTS audience_attrib (
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  placement VARCHAR(40) CHARACTER SET ascii NOT NULL,
+  product_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  carts INT UNSIGNED NOT NULL DEFAULT 0,
+  orders INT UNSIGNED NOT NULL DEFAULT 0,
+  revenue BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, day, placement, product_id),
+  KEY idx_product (project_id, product_id, day),
+  KEY idx_day (day)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Recommandations : paires de produits achetés ensemble (kind b, même commande) ou regardés ensemble (kind v, même visiteur,
+-- même journée de mesure). Totaux par jour, sans visiteur ; gardés Recos::WINDOW_DAYS jours.
+CREATE TABLE IF NOT EXISTS reco_pairs (
+  project_id INT UNSIGNED NOT NULL,
+  kind CHAR(1) NOT NULL,
+  day DATE NOT NULL,
+  a VARCHAR(64) COLLATE ascii_bin NOT NULL,
+  b VARCHAR(64) COLLATE ascii_bin NOT NULL,
+  n INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, kind, a, day, b),
+  KEY idx_day (day)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Campagnes de produits à pousser (Recommandations › Campagnes) : liste de SKU, période, objectif ; suivi des ventes.
+CREATE TABLE IF NOT EXISTS campaigns (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL DEFAULT 1,
+  lang CHAR(2) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  starts_at DATE NULL,
+  ends_at DATE NULL,
+  objective VARCHAR(500) NOT NULL DEFAULT '',
+  items TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project_lang (project_id, lang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Parcours (Analyse › Parcours) : uniquement les visiteurs qui ont cherché ou cliqué sur un carrousel, identifiés par
 -- l'EMPREINTE DU JOUR (aucune IP, rien sur l'appareil). Supprimés Journeys::RETENTION_HOURS après leur dernier événement.
 CREATE TABLE IF NOT EXISTS journeys (
@@ -492,6 +537,8 @@ CREATE TABLE IF NOT EXISTS popins (
   home TINYINT(1) NOT NULL DEFAULT 0,
   urls TEXT NOT NULL,
   exclude_urls TEXT NOT NULL,
+  -- ciblage selon la provenance du visiteur (voir carousels.segments)
+  segments TEXT NULL,
   device ENUM('all','desktop','mobile') NOT NULL DEFAULT 'all',
   delay_seconds SMALLINT UNSIGNED NOT NULL DEFAULT 3,
   repeat_mode ENUM('visit','page','always') NOT NULL DEFAULT 'visit',
@@ -547,12 +594,14 @@ CREATE TABLE IF NOT EXISTS carousels (
   title_class VARCHAR(300) NULL,
   more_url VARCHAR(500) NOT NULL DEFAULT '',
   more_label VARCHAR(60) NOT NULL DEFAULT '',
-  source ENUM('manual','auto','similar','personal') NOT NULL DEFAULT 'auto',
+  source ENUM('manual','auto','similar','personal','trending','bought','viewed','cart') NOT NULL DEFAULT 'auto',
   items TEXT NOT NULL,
   match_all TINYINT(1) NOT NULL DEFAULT 1,
   conditions TEXT NOT NULL,
   -- adaptations selon la page : [{url:{match,text}, match_all, conditions}] (conditions ajoutées sur les pages dont l'adresse correspond)
   page_filters TEXT NULL,
+  -- ciblage selon la provenance du visiteur : {channels: [...], utm: [{field, op, text}]} (vide : tout le monde)
+  segments TEXT NULL,
   sort_by VARCHAR(20) NOT NULL DEFAULT 'biz',
   similar_by ENUM('category','brand','category_brand') NOT NULL DEFAULT 'category',
   personal_mode ENUM('recent','recommended') NOT NULL DEFAULT 'recommended',

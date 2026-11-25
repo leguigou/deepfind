@@ -18,10 +18,10 @@ final class Migrations
         'query_rules' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirects' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'redirections' => ['new_tab' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER auto'],
-        'popins' => ['min_height' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER max_width'],
+        'popins' => ['min_height' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER max_width', 'segments' => 'TEXT NULL AFTER exclude_urls'],
         'carousels' => ['card_template' => 'TEXT NULL AFTER custom_css', 'card_template_mobile' => 'TEXT NULL AFTER card_template',
             'card_link' => 'VARCHAR(500) NULL AFTER card_template_mobile', 'title_class' => 'VARCHAR(300) NULL AFTER title',
-            'page_filters' => 'TEXT NULL AFTER conditions'],
+            'page_filters' => 'TEXT NULL AFTER conditions', 'segments' => 'TEXT NULL AFTER page_filters'],
         'audience_visitors' => ['bar_opens' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'closes' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_searches' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carousel_clicks' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carts' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'cart_value' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'revenue' => 'INT UNSIGNED NOT NULL DEFAULT 0'],
         'audience_daily' => ['bar_openers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'closers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_searchers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_leavers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carousel_clickers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carters' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'buyers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'revenue' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0', 'abandoners' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_carters' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_buyers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_revenue' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0', 'searcher_abandoners' => 'INT UNSIGNED NOT NULL DEFAULT 0'],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
@@ -81,6 +81,7 @@ final class Migrations
         'import_runs' => ['type' => ['scores', "ENUM('full','delta','scores') NOT NULL"]],
         'click_logs' => ['doc_type' => ['banner', "ENUM('product','post','banner') NOT NULL"]],
         'popins' => ['repeat_mode' => ['always', "ENUM('visit','page','always') NOT NULL DEFAULT 'visit'"]],
+        'carousels' => ['source' => ['cart', "ENUM('manual','auto','similar','personal','trending','bought','viewed','cart') NOT NULL DEFAULT 'auto'"]],
     ];
 
     private static function indexExists(string $table, string $name): bool

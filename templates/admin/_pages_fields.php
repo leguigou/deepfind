@@ -15,3 +15,15 @@
       <p class="muted small pp-excl-help"><strong>Pages exclues</strong> (facultatif) : jamais <?= e($pagesNoun ?? 'de popin') ?> sur ces pages, même si elles correspondent ci-dessus. Ex. contient <code>/checkout</code>, contient <code>/customer/</code>.</p>
       <div class="pr-urls" data-urls="exclude_urls"></div>
       <button type="button" class="btn btn-light btn-sm" data-add-url="exclude_urls">+ Ajouter une page exclue</button>
+      <div class="pp-seg" data-segments data-utm-fields="<?= e(\DeepFind\Text::json(\DeepFind\Rules\Segments::UTM_FIELDS)) ?>" data-utm-ops="<?= e(\DeepFind\Text::json(\DeepFind\Rules\Segments::UTM_OPS)) ?>">
+        <p class="muted small pp-excl-help"><strong>Provenance du visiteur</strong> (facultatif) : <?= e(mb_strtolower(mb_substr($pagesWho ?? 'La popin s\'affiche', 0, 1)) . mb_substr($pagesWho ?? 'La popin s\'affiche', 1)) ?>
+          seulement pour les visiteurs arrivés par ces canaux ; la provenance est retenue pour toute leur visite de la journée. Aucune case cochée : tous les visiteurs.</p>
+        <div class="pp-seg-channels">
+          <?php foreach (\DeepFind\Rules\Segments::CHANNELS as $k => $label): ?>
+            <label class="check"><input type="checkbox" data-seg-channel value="<?= e($k) ?>"><span><?= e($label) ?></span></label>
+          <?php endforeach; ?>
+        </div>
+        <p class="muted small">Campagne précise (paramètres <code>utm_*</code> de l'adresse d'arrivée, majuscules ignorées) : toutes les conditions doivent être remplies.</p>
+        <div class="pp-seg-utm" data-seg-utm></div>
+        <button type="button" class="btn btn-light btn-sm" data-seg-add>+ Ajouter une condition UTM</button>
+      </div>

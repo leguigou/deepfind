@@ -345,3 +345,9 @@ html.df-lock { overflow: hidden; }
 }
 @media (max-width: 900px), (hover: none) { .df-car-btn { display: none; } }
 @media (prefers-reduced-motion: reduce) { .df-car-track { scroll-behavior: auto; } }
+
+/* Carrousel « page panier » : montant restant pour la livraison offerte */
+.df-car-ship { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: color-mix(in srgb, var(--df-accent, #e11d48) 8%, transparent); color: var(--df-text, #1f2937); font-size: 14px; font-weight: 600; }
+.df-car-ship-done { background: color-mix(in srgb, #16a34a 12%, transparent); color: #166534; }
+.df-car-ship-bar { display: block; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--df-text, #1f2937) 12%, transparent); overflow: hidden; }
+.df-car-ship-fill { display: block; height: 100%; border-radius: inherit; background: var(--df-accent, #e11d48); }

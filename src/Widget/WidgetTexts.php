@@ -30,6 +30,7 @@ final class WidgetTexts
             'pageLimited' => 'Résultats limités à', 'pageRemove' => 'Retirer le filtre « %s » et chercher dans tout le catalogue',
             'pageAll' => 'Résultats de tout le catalogue.', 'pageBack' => 'Revenir à « %s »', 'popin' => 'Message',
             'carousel' => 'Sélection de produits', 'prev' => 'Produits précédents', 'next' => 'Produits suivants', 'seeMore' => 'Voir tout',
+            'freeShippingLeft' => 'Plus que %s pour profiter de la livraison offerte', 'freeShippingDone' => 'La livraison vous est offerte !',
         ],
         'en' => [
             'products' => 'Products', 'brands' => 'Brands', 'posts' => 'Blog posts', 'filters' => 'Filters', 'inStock' => 'In stock', 'onSale' => 'On sale',
@@ -42,6 +43,7 @@ final class WidgetTexts
             'pageLimited' => 'Results limited to', 'pageRemove' => 'Remove the “%s” filter and search the whole catalogue',
             'pageAll' => 'Results from the whole catalogue.', 'pageBack' => 'Back to “%s”', 'popin' => 'Message',
             'carousel' => 'Product selection', 'prev' => 'Previous products', 'next' => 'Next products', 'seeMore' => 'See all',
+            'freeShippingLeft' => 'Only %s away from free delivery', 'freeShippingDone' => 'You get free delivery!',
         ],
     ];
 
@@ -76,6 +78,8 @@ final class WidgetTexts
             'prev' => 'Flèche précédente (lecteurs d\'écran)', 'next' => 'Flèche suivante (lecteurs d\'écran)',
             'carousel' => 'Nom d\'un carrousel sans titre (lecteurs d\'écran)', 'popin' => 'Nom d\'une popin sans texte alternatif (lecteurs d\'écran)',
             'close' => 'Bouton de fermeture (lecteurs d\'écran)',
+            'freeShippingLeft' => 'Carrousel « page panier » : montant restant pour la livraison offerte (%s = le montant)',
+            'freeShippingDone' => 'Carrousel « page panier » : livraison offerte atteinte',
         ],
     ];
 

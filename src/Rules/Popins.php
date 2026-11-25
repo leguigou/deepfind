@@ -65,6 +65,7 @@ final class Popins
             'starts_at' => $r['starts_at'] ?: null, 'ends_at' => $r['ends_at'] ?: null,
             'pages' => $r['pages'] === 'custom' ? 'custom' : 'all', 'home' => (int) $r['home'] === 1,
             'urls' => json_decode((string) $r['urls'], true) ?: [], 'exclude_urls' => json_decode((string) $r['exclude_urls'], true) ?: [],
+            'segments' => Segments::sanitize(json_decode((string) ($r['segments'] ?? ''), true) ?: []),
             'device' => $pick(self::DEVICES, $r['device'], 'all'), 'delay_seconds' => (int) $r['delay_seconds'],
             'repeat_mode' => $pick(self::REPEATS, $r['repeat_mode'], 'visit'), 'remember_days' => (int) $r['remember_days'],
             'placement' => $pick(self::PLACEMENTS, $r['placement'], 'center'), 'max_width' => (int) $r['max_width'],
@@ -103,6 +104,8 @@ final class Popins
     {
         $out = [
             'id' => $p['id'], 'rev' => $p['rev'], 'pages' => $p['pages'], 'home' => $p['home'], 'urls' => $p['urls'], 'exclude' => $p['exclude_urls'],
+            // ciblage selon la provenance (null : tout le monde) ; le widget compare avec la provenance du visiteur reçue dans /config
+            'segments' => Segments::isEmpty($p['segments'] ?? null) ? null : $p['segments'],
             'device' => $p['device'], 'delay' => $p['delay_seconds'], 'repeat' => $p['repeat_mode'], 'remember_days' => $p['remember_days'],
             'placement' => $p['placement'], 'max_width' => $p['max_width'], 'min_height' => $p['min_height'], 'mode' => $p['mode'],
         ];
@@ -168,6 +171,7 @@ final class Popins
             'name' => $name, 'active' => !empty($in['active']), 'starts_at' => $start, 'ends_at' => $end,
             'pages' => $pages, 'home' => $pages === 'custom' && $home, 'urls' => $pages === 'custom' ? $urls : [],
             'exclude_urls' => PageRules::sanitizeUrls((array) ($in['exclude_urls'] ?? [])),
+            'segments' => Segments::sanitize($in['segments'] ?? []),
             'device' => $pick(self::DEVICES, 'device', 'all'), 'delay_seconds' => $int('delay_seconds', 0, 600, 3),
             'repeat_mode' => $pick(self::REPEATS, 'repeat_mode', 'visit'), 'remember_days' => $int('remember_days', 0, 365, 7),
             'placement' => $pick(self::PLACEMENTS, 'placement', 'center'), 'max_width' => $int('max_width', 280, 1200, 600),
@@ -190,6 +194,7 @@ final class Popins
         $row = [
             'name' => $p['name'], 'active' => $p['active'] ? 1 : 0, 'starts_at' => $p['starts_at'], 'ends_at' => $p['ends_at'],
             'pages' => $p['pages'], 'home' => $p['home'] ? 1 : 0, 'urls' => Text::json($p['urls']), 'exclude_urls' => Text::json($p['exclude_urls']),
+            'segments' => Segments::isEmpty($p['segments'] ?? null) ? null : Text::json($p['segments']),
             'device' => $p['device'], 'delay_seconds' => $p['delay_seconds'], 'repeat_mode' => $p['repeat_mode'], 'remember_days' => $p['remember_days'],
             'placement' => $p['placement'], 'max_width' => $p['max_width'], 'min_height' => $p['min_height'], 'mode' => $p['mode'], 'image_desktop' => $p['image_desktop'],
             'image_mobile' => $p['image_mobile'], 'alt' => $p['alt'], 'link_url' => $p['link_url'], 'new_window' => $p['new_window'] ? 1 : 0,
@@ -278,6 +283,12 @@ final class Popins
 
     /** Résumé lisible des pages : « Toutes les pages », « Accueil, contient /nautisme/ ». */
     public static function describePages(array $p): string
+    {
+        $seg = Segments::summary($p['segments'] ?? null);
+        return self::describeUrls($p) . ($seg !== '' ? ' · ' . $seg : '');
+    }
+
+    private static function describeUrls(array $p): string
     {
         if ($p['pages'] !== 'custom') {
             return 'Toutes les pages';

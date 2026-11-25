@@ -33,3 +33,4 @@ Le serveur renvoie **toujours le dernier fichier** du widget, quel que soit le n
 | 33 | Flèches en chevron fin, classes du titre des carrousels |
 | 34 | Textes du widget et variables personnalisées |
 | 35 | Parcours d'achat : barre ouverte, fermeture sans clic, panier et commandes (DeepFind.track, dataLayer GA4), pages vues pour les parcours |
+| 36 | Ciblage selon la provenance, panier du visiteur pour les recommandations (DeepFind.cart, panier Magento), message de livraison offerte, produit de la page pour « aussi regardé » |
