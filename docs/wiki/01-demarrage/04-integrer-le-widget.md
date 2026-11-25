@@ -3,7 +3,7 @@
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=34" defer
+<script src="https://search.example.com/widget/deepfind.js?v=35" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -36,7 +36,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=33` en `?v=34`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=34` en `?v=35`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## Clés et domaines autorisés
 
@@ -47,6 +47,10 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 - La clé publique est visible dans le code des pages du site : c'est normal. Elle est protégée par la liste des domaines autorisés et par les seuils anti-robots.
 
 Chaque appel du widget indique de quel site il vient (en-tête `Origin`, à défaut `Referer`). Si le domaine n'est pas autorisé pour la clé, ou si la provenance est inconnue (adresse de l'API ouverte directement dans un onglet), l'API répond `{"error":"origin_not_allowed"}`. Un domaine autorisé couvre ses sous-domaines (`cabesto.com` couvre `mcstaging2.cabesto.com`). Un champ vide accepte tous les domaines : déconseillé en production (n'importe qui peut utiliser la clé, statistiques faussées) ; préférez une clé de test distincte.
+
+## Paniers et commandes (parcours d'achat)
+
+Pour relier recherches et ventes, le site signale les ajouts au panier et les commandes : automatiquement s'il envoie déjà les événements GA4 au `dataLayer`, sinon avec `DeepFind.track('cart', …)` et `DeepFind.track('order', …)`. Voir [Parcours d'achat](../analyse/parcours-d-achat).
 
 ## Points d'attention
 

@@ -93,7 +93,7 @@ final class Metrics
         // visiteurs : refusés (robots, IP bloquées) non comptés
         if ($status < 400 && $ip !== '') {
             try {
-                $vh = Audience::visitorHash($ip, $ua, date('Y-m-d', $now));
+                $vh = Audience::visitorHash($ip, $ua, Audience::measureDay($now));
                 if ($store->incr('mv:' . $pid . ':' . $minute . ':' . $vh, 150) === 1) {
                     $inc('visitors');
                     // dernière activité : une écriture par visiteur et par minute au plus

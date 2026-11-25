@@ -339,6 +339,15 @@ CREATE TABLE IF NOT EXISTS audience_visitors (
   pageviews INT UNSIGNED NOT NULL DEFAULT 0,
   searches INT UNSIGNED NOT NULL DEFAULT 0,
   clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  -- parcours d'achat de la journée (compteurs ; montants en centimes)
+  bar_opens INT UNSIGNED NOT NULL DEFAULT 0,
+  closes INT UNSIGNED NOT NULL DEFAULT 0,
+  zero_searches INT UNSIGNED NOT NULL DEFAULT 0,
+  carousel_clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  carts INT UNSIGNED NOT NULL DEFAULT 0,
+  cart_value INT UNSIGNED NOT NULL DEFAULT 0,
+  orders INT UNSIGNED NOT NULL DEFAULT 0,
+  revenue INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (project_id, day, vhash),
   KEY idx_day (day)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
@@ -357,8 +366,88 @@ CREATE TABLE IF NOT EXISTS audience_daily (
   searchers_1 INT UNSIGNED NOT NULL DEFAULT 0,
   searchers_2_3 INT UNSIGNED NOT NULL DEFAULT 0,
   searchers_4p INT UNSIGNED NOT NULL DEFAULT 0,
+  -- parcours d'achat (nombre de visiteurs, sauf orders / revenue ; montants en centimes)
+  bar_openers INT UNSIGNED NOT NULL DEFAULT 0,
+  closers INT UNSIGNED NOT NULL DEFAULT 0,
+  zero_searchers INT UNSIGNED NOT NULL DEFAULT 0,
+  zero_leavers INT UNSIGNED NOT NULL DEFAULT 0,
+  carousel_clickers INT UNSIGNED NOT NULL DEFAULT 0,
+  carters INT UNSIGNED NOT NULL DEFAULT 0,
+  buyers INT UNSIGNED NOT NULL DEFAULT 0,
+  orders INT UNSIGNED NOT NULL DEFAULT 0,
+  revenue BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  abandoners INT UNSIGNED NOT NULL DEFAULT 0,
+  searcher_carters INT UNSIGNED NOT NULL DEFAULT 0,
+  searcher_buyers INT UNSIGNED NOT NULL DEFAULT 0,
+  searcher_orders INT UNSIGNED NOT NULL DEFAULT 0,
+  searcher_revenue BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  searcher_abandoners INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (project_id, day, device)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Recherches qui rapportent : par terme (masqué : e-mails, téléphones… retirés) et par jour, ajouts au panier et commandes
+-- attribués à la DERNIÈRE recherche du visiteur dans la journée. Totaux uniquement ; purgés avec les journaux.
+CREATE TABLE IF NOT EXISTS audience_terms (
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  term VARCHAR(190) NOT NULL,
+  searches INT UNSIGNED NOT NULL DEFAULT 0,
+  carts INT UNSIGNED NOT NULL DEFAULT 0,
+  orders INT UNSIGNED NOT NULL DEFAULT 0,
+  revenue BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, day, term),
+  KEY idx_day (day)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Produits : clics (recherche et carrousels), ajouts au panier, commandes, par jour. Totaux uniquement ; purgés avec les journaux.
+CREATE TABLE IF NOT EXISTS audience_products (
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  product_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  name VARCHAR(255) NOT NULL DEFAULT '',
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  carts INT UNSIGNED NOT NULL DEFAULT 0,
+  orders INT UNSIGNED NOT NULL DEFAULT 0,
+  revenue BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, day, product_id),
+  KEY idx_day (day)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Parcours (Analyse › Parcours) : uniquement les visiteurs qui ont cherché ou cliqué sur un carrousel, identifiés par
+-- l'EMPREINTE DU JOUR (aucune IP, rien sur l'appareil). Supprimés Journeys::RETENTION_HOURS après leur dernier événement.
+CREATE TABLE IF NOT EXISTS journeys (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  vhash CHAR(32) CHARACTER SET ascii NOT NULL,
+  device ENUM('mobile','tablet','desktop') NOT NULL,
+  started_at DATETIME NOT NULL,
+  last_at DATETIME NOT NULL,
+  entry_path VARCHAR(300) NOT NULL DEFAULT '',
+  trigger_type VARCHAR(12) NOT NULL DEFAULT 'search',
+  pageviews INT UNSIGNED NOT NULL DEFAULT 0,
+  searches INT UNSIGNED NOT NULL DEFAULT 0,
+  zero_searches INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  carousel_clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  carts INT UNSIGNED NOT NULL DEFAULT 0,
+  cart_value INT UNSIGNED NOT NULL DEFAULT 0,
+  orders INT UNSIGNED NOT NULL DEFAULT 0,
+  revenue INT UNSIGNED NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_visitor (project_id, day, vhash),
+  KEY idx_last (project_id, last_at),
+  KEY idx_purge (last_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Événements d'un parcours, datés à la milliseconde. data : détails en JSON (recherches masquées).
+CREATE TABLE IF NOT EXISTS journey_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  journey_id BIGINT UNSIGNED NOT NULL,
+  at DATETIME(3) NOT NULL,
+  type VARCHAR(16) CHARACTER SET ascii NOT NULL,
+  data TEXT NOT NULL,
+  KEY idx_journey (journey_id, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Sel aléatoire de l'empreinte du jour : supprimé dès que le jour est agrégé.
 CREATE TABLE IF NOT EXISTS audience_salts (

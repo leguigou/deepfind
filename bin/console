@@ -139,11 +139,15 @@ try {
             } catch (Throwable $e) {
                 $out('supervision : ' . $e->getMessage());
             }
-            // Mesure d'audience : jours passés agrégés, empreintes et sels du jour supprimés
+            // Mesure d'audience : jours passés agrégés, empreintes et sels du jour supprimés ; parcours expirés supprimés
             try {
                 $n = DeepFind\Logging\Audience::aggregate();
                 if ($n > 0) {
                     $out('[' . date('H:i') . "] audience : $n jour(s) agrégé(s)");
+                }
+                $j = DeepFind\Logging\Journeys::purge();
+                if ($j > 0) {
+                    $out('[' . date('H:i') . "] parcours : $j supprimé(s) (conservation " . DeepFind\Logging\Journeys::RETENTION_HOURS . ' h)');
                 }
             } catch (Throwable $e) {
                 $out('audience : ' . $e->getMessage());

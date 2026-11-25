@@ -287,6 +287,7 @@
 
   function search(append) {
     if (state.q.length < cfg.minChars) { return; }
+    if (!append) { searchedSinceOpen = true; clickedSinceSearch = false; }
     var offset = append ? state.offset : 0;
     var url = buildUrl(offset);
     var id = ++state.reqId;
@@ -584,7 +585,7 @@
     var custom = (mobile.matches && cfg.cardTemplateMobile) || cfg.cardTemplateDesktop;
     if (custom) { a.classList.add('df-card-tpl'); }
     templateCard(a, p, custom || DEFAULT_CARD);
-    onOpen(a, function () { track('product', p.id, position, p.cr); });
+    onOpen(a, function () { track('product', p.id, position, p.cr, p.name); });
     return a;
   }
 
@@ -668,7 +669,7 @@
         var im = safeUrl(p.image);
         if (im) { var img = el('img'); img.src = im; img.alt = ''; img.loading = 'lazy'; a.appendChild(img); }
         a.appendChild(el('span', null, p.title));
-        onOpen(a, function () { track('post', p.id, i + 1); });
+        onOpen(a, function () { track('post', p.id, i + 1, 0, p.title); });
         ps.appendChild(a);
       });
       sideContent.appendChild(ps);
@@ -799,10 +800,12 @@
     a.addEventListener('auxclick', function (ev) { if (ev.button === 1) { fn(); } });
   }
 
-  function track(type, id, position, cr) {
+  function track(type, id, position, cr, name) {
     if (type === 'product') { historyAdd(id); }
+    clickedSinceSearch = true;
     try {
       var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, q: state.q, doc_type: type, doc_id: id, position: String(position), sid: sid, d: device });
+      if (name) { body.set('n', String(name).slice(0, 200)); } // nom du produit (parcours)
       if (noAudience) { body.set('na', '1'); }
       if (cr) { body.set('cr', String(cr)); } // produit mis en avant par un résultat personnalisé
       if (navigator.sendBeacon) { navigator.sendBeacon(cfg.api + '/click', body); }
@@ -895,6 +898,7 @@
     }
   }
   function open() {
+    if (overlay.hidden) { barOpened(); }
     if (cfg.type === 'embedded') {
       host = host && host.isConnected ? host : document.querySelector(cfg.container);
       if (!host) { cfg.type = 'below'; overlay.className = 'df-overlay df-type-below'; } // bloc introuvable : affichage par défaut
@@ -928,6 +932,9 @@
   }
   function close() {
     var wasOpen = !overlay.hidden;
+    // fenêtre fermée après une recherche, sans clic sur un résultat (parcours d'achat)
+    if (wasOpen && searchedSinceOpen && !clickedSinceSearch && state.q.length >= cfg.minChars) { sendEvent('close', { q: state.q }); }
+    searchedSinceOpen = false;
     overlay.hidden = true;
     placeClose();
     setFiltersOpen(false);
@@ -1317,7 +1324,7 @@
   function popinEvent(p, e) {
     if (noAudience) { return; } // page Démo ou aperçu : non compté
     try {
-      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, id: String(p.id), e: e });
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, id: String(p.id), e: e, d: device });
       if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/popin', body))) {
         fetch(cfg.api + '/popin', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
       }
@@ -1454,10 +1461,11 @@
     var v = (m && m.getAttribute('content')) || (d && d.getAttribute('data-df-sku')) || '';
     return String(v).trim().slice(0, 64);
   }
-  function carouselEvent(c, e, ids) {
+  function carouselEvent(c, e, ids, name) {
     if (noAudience || !ids.length) { return; }
     try {
-      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, id: String(c.id), e: e });
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, id: String(c.id), e: e, d: device });
+      if (name) { body.set('n', String(name).slice(0, 200)); }
       ids.forEach(function (id) { body.append('p[]', String(id)); });
       if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/carousel', body))) {
         fetch(cfg.api + '/carousel', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
@@ -1573,7 +1581,7 @@
       onOpen(a, function () {
         if (a.__dfDragged) { return; }
         historyAdd(p.id);
-        carouselEvent(c, 'c', [p.id]);
+        carouselEvent(c, 'c', [p.id], p.name);
       });
       cards.push(a);
       track.appendChild(a);
@@ -1739,6 +1747,7 @@
       window.sessionStorage.setItem(cfgKey, JSON.stringify({ enabled: !!c.enabled, enter_submit: c.enter_submit !== false, block_native: c.block_native !== false, hover_image: c.hover_image !== false, audience: c.audience || false,
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [],
         carousels: c.carousels === true, personal: typeof c.personal === 'string' ? c.personal : 'consent',
+        journey: c.journey === true, events: c.events === true, commerce: c.commerce || false,
         texts: c.texts || null, vars: c.vars || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1754,6 +1763,9 @@
     // carrousels : demandés une fois par page, dès que la configuration indique qu'il en existe
     if (typeof c.personal === 'string') { personalMode = c.personal; }
     if (c.carousels === true) { carouselsWanted = true; startCarousels(); }
+    // parcours d'achat : événements (barre ouverte, fermeture sans clic), panier et commandes
+    trackCfg = { events: c.events === true, journey: c.journey === true, commerce: !!c.commerce };
+    hookCommerce(c);
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
     if (ds.native !== 'keep' && ds.native !== 'block' && c.block_native !== undefined) { cfg.blockNative = c.block_native !== false; }
@@ -1794,6 +1806,100 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
       .then(function (c) { writeCfg(c); applyCfg(c); return c; });
   }
+  // ------------------------------------------------------------------ Parcours d'achat (sans cookie ni stockage sur l'appareil)
+  // Le serveur reconnaît le visiteur pendant une journée par une empreinte anonyme ; rien n'est envoyé depuis la Démo ni en aperçu.
+  var trackCfg = { events: false, journey: false, commerce: false };
+  var searchedSinceOpen = false;
+  var clickedSinceSearch = false;
+  var lastBar = 0;
+  function sendEvent(e, data) {
+    if (noAudience || !trackCfg.events && e !== 'cart' && e !== 'order') { return; }
+    if ((e === 'cart' || e === 'order') && !trackCfg.commerce) { return; }
+    try {
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, e: e, d: device });
+      Object.keys(data || {}).forEach(function (k) {
+        var v = data[k];
+        if (v === undefined || v === null || v === '') { return; }
+        body.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v).slice(0, 300));
+      });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/event', body))) {
+        fetch(cfg.api + '/event', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
+      }
+    } catch (err) { /* mesure facultative */ }
+  }
+  function barOpened() {
+    var now = Date.now();
+    if (now - lastBar < 10000) { return; } // ouvertures rapprochées : une seule
+    lastBar = now;
+    sendEvent('bar', {});
+  }
+  // Ajouts au panier et commandes : DeepFind.track() appelé par le site, événements GA4 du dataLayer, événement Magento (Luma)
+  var lastCart = {};
+  function cartAdd(sku, qty, price, name) {
+    sku = String(sku || '').trim();
+    if (!sku) { return; }
+    qty = Math.max(1, parseInt(qty, 10) || 1);
+    var k = sku + '|' + qty;
+    var now = Date.now();
+    if (lastCart[k] && now - lastCart[k] < 3000) { return; } // même ajout signalé deux fois (dataLayer et Magento)
+    lastCart[k] = now;
+    sendEvent('cart', { sku: sku, qty: qty, price: price, name: name });
+  }
+  function orderDone(o) {
+    o = o || {};
+    var items = (Array.isArray(o.items) ? o.items : []).slice(0, 100).map(function (it) {
+      return { sku: String(it.sku || it.item_id || it.id || ''), qty: parseInt(it.qty || it.quantity, 10) || 1, price: it.price };
+    });
+    sendEvent('order', { tid: o.id || o.transaction_id || '', value: o.total !== undefined ? o.total : o.value, items: items });
+  }
+  function fromGa(name, ec) {
+    ec = ec || {};
+    var items = Array.isArray(ec.items) ? ec.items : [];
+    if (name === 'add_to_cart') {
+      items.forEach(function (it) { cartAdd(it.item_id || it.id, it.quantity, it.price, it.item_name || it.name); });
+    } else if (name === 'purchase') {
+      orderDone({ id: ec.transaction_id, value: ec.value, items: items });
+    }
+  }
+  function readDl(entry, purchaseOnly) {
+    if (!entry || typeof entry !== 'object') { return; }
+    // gtag('event', 'purchase', {...}) : objet « arguments » ; Google Tag Manager : { event: 'purchase', ecommerce: {...} }
+    if (entry.length !== undefined && entry[0] === 'event' && typeof entry[1] === 'string') {
+      if (!purchaseOnly || entry[1] === 'purchase') { fromGa(entry[1], entry[2]); }
+    } else if (typeof entry.event === 'string') {
+      if (!purchaseOnly || entry.event === 'purchase') { fromGa(entry.event, entry.ecommerce); }
+    }
+  }
+  var commerceHooked = false;
+  function hookCommerce(c) {
+    if (commerceHooked || noAudience || !c || !c.enabled || !c.commerce) { return; }
+    commerceHooked = true;
+    if (c.commerce.datalayer) {
+      try {
+        var dl = window.dataLayer = window.dataLayer || [];
+        dl.forEach(function (entry) { readDl(entry, true); }); // commande déjà annoncée avant le chargement du widget
+        var push = dl.push;
+        dl.push = function () {
+          var r = push.apply(dl, arguments);
+          try { Array.prototype.forEach.call(arguments, function (entry) { readDl(entry, false); }); } catch (err) { /* sans importance */ }
+          return r;
+        };
+      } catch (err) { /* dataLayer indisponible */ }
+    }
+    // Magento (thème Luma) : événement « ajax:addToCart » de jQuery
+    try {
+      if (window.jQuery) {
+        window.jQuery(document).on('ajax:addToCart', function (ev, d) {
+          d = d || {};
+          var info = Array.isArray(d.productInfo) && d.productInfo[0] ? d.productInfo[0] : {};
+          cartAdd(d.sku, info.qty, undefined, undefined);
+        });
+      }
+    } catch (err) { /* sans importance */ }
+  }
+  // Pages où le titre peut contenir des informations du client : seul le chemin est envoyé
+  var PRIVATE_PATH = /(customer|account|compte|checkout|sales|wishlist|password|login|connexion|paiement|payment)/i;
+
   // Page vue (mesure d'audience anonyme, une fois par page) : ni cookie ni donnée personnelle envoyés.
   // Jamais depuis la page Démo de l'extranet ni pendant un aperçu (favori « Tester DeepFind »).
   var visitSent = false;
@@ -1813,10 +1919,15 @@
     return true;
   }
   function sendVisit(c) {
-    if (visitSent || noAudience || !c || !c.enabled || !c.audience || !audiencePage(c.audience)) { return; }
+    if (visitSent || noAudience || !c || !c.enabled) { return; }
+    // page mesurée par l'audience, ou (parcours activés) toute page : le serveur ne garde que les visiteurs qui cherchent
+    var counted = !!(c.audience && audiencePage(c.audience));
+    if (!counted && !c.journey) { return; }
     visitSent = true;
     try {
-      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, d: device });
+      var path = location.pathname || '/';
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, d: device, p: path, a: counted ? '1' : '0' });
+      if (c.journey && !PRIVATE_PATH.test(path)) { body.set('t', String(document.title || '').slice(0, 200)); }
       if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/visit', body))) {
         fetch(cfg.api + '/visit', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* sans importance */ });
       }
@@ -1836,7 +1947,13 @@
     open: function (q) { if (!started) { return; } if (q) { state.q = q; resetFilters(); } open(); search(false); },
     close: close,
     // consentement du visiteur aux carrousels personnalisés (à appeler par le bandeau cookies du site) ; false efface l'historique
-    consent: function (on) { setConsent(!!on); }
+    consent: function (on) { setConsent(!!on); },
+    // parcours d'achat, appelé par le site : DeepFind.track('cart', { sku, qty, price, name }) ;
+    // DeepFind.track('order', { id, total, items: [{ sku, qty, price }] }) (numéro de commande : seulement pour ne pas compter deux fois)
+    track: function (type, data) {
+      data = data || {};
+      if (type === 'cart') { cartAdd(data.sku, data.qty, data.price, data.name); } else if (type === 'order') { orderDone(data); }
+    }
   };
 
   /*

@@ -858,6 +858,7 @@ if ($base) {
 
     // ------------------------------------------------ Mesure d'audience (anonyme, statistiques quotidiennes)
     $AU = DeepFind\Logging\Audience::class;
+    $todayM = $AU::measureDay(); // journée de mesure en cours (change à 4 h, heure de Paris)
     check('audience : type d\'appareil (user-agent, indication du widget prioritaire)',
         $AU::device('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148') === 'mobile'
         && $AU::device('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)') === 'tablet'
@@ -898,7 +899,7 @@ if ($base) {
     $get("/api/v1/search?key=$key&q=lampe&sid=sidaud0000000003&na=1");      // page Démo / aperçu : non compté
     $post('/api/v1/click', ['key' => $key, 'lang' => 'fr', 'q' => 'bouee', 'doc_type' => 'product', 'doc_id' => 'x', 'position' => 1, 'sid' => 'sidaud0000000002', 'd' => 'd']);
     usleep(400000);
-    $sumA = $AU::summary(date('Y-m-d'), date('Y-m-d'));
+    $sumA = $AU::summary($todayM, $todayM);
     $tA = $sumA['total'];
     check('audience : pages vues, visiteurs, appareils', $codes === [204, 204, 204] && $tA['visitors'] === 2 && $tA['pageviews'] === 3
         && $sumA['devices']['mobile']['visitors'] === 1 && $sumA['devices']['desktop']['visitors'] === 1, json_encode([$codes, $tA]));
@@ -912,7 +913,7 @@ if ($base) {
     $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd'], 'Mozilla/5.0 Autre navigateur');
     [, $cfB] = $get("/api/v1/config?key=$key&lang=fr");
     usleep(300000);
-    check('audience : pages vues désactivées', ($cfB['audience'] ?? null) === false && $AU::summary(date('Y-m-d'), date('Y-m-d'))['total']['visitors'] === 2);
+    check('audience : pages vues désactivées', ($cfB['audience'] ?? null) === false && $AU::summary($todayM, $todayM)['total']['visitors'] === 2);
     DeepFind\Settings::set('audience_pageviews', '1');
     DeepFind\Settings::set('audience_pages', 'paths');
     DeepFind\Settings::set('audience_paths', "/fr/plongee");
@@ -922,21 +923,21 @@ if ($base) {
     DeepFind\Settings::set('audience_paths', '');
 
     // agrégation : la veille passe en totaux quotidiens ; empreintes et sel de la veille supprimés
-    $yesterday = date('Y-m-d', strtotime('-1 day'));
+    $yesterday = date('Y-m-d', strtotime($todayM . ' -1 day'));
     $AU::record('pageview', '198.51.100.1', 'Mozilla/5.0 (iPhone) Mobile', '', $yesterday);
     $AU::record('search', '198.51.100.1', 'Mozilla/5.0 (iPhone) Mobile', '', $yesterday);
     $AU::record('pageview', '198.51.100.2', 'Mozilla/5.0 (Windows NT 10.0)', '', $yesterday);
     $before = $AU::summary($yesterday, $yesterday)['total'];
     $nAgg = $AU::aggregate();
-    $after = $AU::summary($yesterday, date('Y-m-d'));
+    $after = $AU::summary($yesterday, $todayM);
     check('audience : agrégation quotidienne puis suppression des empreintes et du sel', $nAgg === 1 && $before['visitors'] === 2
         && $after['days'][$yesterday]['visitors'] === 2 && $after['days'][$yesterday]['searchers'] === 1 && $after['devices']['mobile']['visitors'] === 2
-        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day < CURDATE()') === 0
-        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_salts WHERE day < CURDATE()') === 0
-        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day = CURDATE()') === 2, json_encode([$nAgg, $before, $after['total']]));
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day < ?', [$todayM]) === 0
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_salts WHERE day < ?', [$todayM]) === 0
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM audience_visitors WHERE day = ?', [$todayM]) === 2, json_encode([$nAgg, $before, $after['total']]));
     check('audience : nouvelle agrégation sans jour passé = rien à faire', $AU::aggregate() === 0);
     $AC = DeepFind\Admin\AudienceController::class;
-    $todayA = date('Y-m-d');
+    $todayA = $todayM;
     $pA = $AC::period(['from' => '2026-03-10', 'to' => '2026-03-01']);
     $pB = $AC::period(['from' => '2000-01-01', 'to' => '2999-01-01']);
     $pC = $AC::period(['from' => '2026-02-30', 'to' => '2026-03-01', 'days' => '90']);
@@ -944,6 +945,104 @@ if ($base) {
         $pA['custom'] && $pA['from'] === '2026-03-01' && $pA['to'] === min('2026-03-10', $todayA) && $pA['query'] === ['from' => $pA['from'], 'to' => $pA['to']]
         && $pB['to'] === $todayA && (strtotime($pB['to']) - strtotime($pB['from'])) / 86400 <= $AC::MAX_CUSTOM_DAYS
         && !$pC['custom'] && $pC['days'] === 90 && $pC['to'] === $todayA, json_encode([$pA, $pB, $pC]));
+
+    // ------------------------------------------------ Journée de mesure réglable (heure de changement de la clé du jour)
+    $tzP = new DateTimeZone('Europe/Paris');
+    $tsAt = static fn (string $local) => (new DateTimeImmutable($local, $tzP))->getTimestamp();
+    DeepFind\Settings::set('audience_day_hour', '4');
+    DeepFind\Settings::set('audience_day_hour_next', '');
+    DeepFind\Settings::set('audience_day_hour_at', '0');
+    check('journée de mesure : 4 h par défaut (1 h du matin = veille), heure d\'été et d\'hiver',
+        $AU::measureDay($tsAt('2026-11-25 02:00')) === '2026-11-24' && $AU::measureDay($tsAt('2026-11-25 04:00')) === '2026-11-25'
+        && $AU::measureDay($tsAt('2026-07-14 03:59')) === '2026-07-13' && $AU::measureDay($tsAt('2026-07-14 04:00')) === '2026-07-14'
+        && $AU::dayBounds($tsAt('2026-11-25 10:00')) === [$tsAt('2026-11-25 04:00'), $tsAt('2026-11-26 04:00')]);
+    $atSw = $AU::scheduleDayHour(0, $tsAt('2026-11-25 10:00'));
+    check('journée de mesure : nouvelle heure appliquée à la bascule suivante (jamais en cours de journée), puis en vigueur',
+        $atSw === $tsAt('2026-11-26 04:00') && $AU::dayHour($tsAt('2026-11-26 03:00')) === 4 && $AU::measureDay($tsAt('2026-11-26 03:00')) === '2026-11-25'
+        && $AU::dayHour($tsAt('2026-11-26 04:00')) === 0 && $AU::measureDay($tsAt('2026-11-26 04:00')) === '2026-11-26'
+        && $AU::measureDay($tsAt('2026-11-26 23:59')) === '2026-11-26' && $AU::measureDay($tsAt('2026-11-27 00:00')) === '2026-11-27', json_encode($atSw));
+    $AU::promoteDayHour($tsAt('2026-11-26 05:00'));
+    check('journée de mesure : changement échu enregistré comme heure en vigueur', DeepFind\Settings::get('audience_day_hour') === '0'
+        && DeepFind\Settings::get('audience_day_hour_next') === '' && $AU::scheduleDayHour(0) === null);
+    DeepFind\Settings::set('audience_day_hour', '4');
+
+    // ------------------------------------------------ Parcours d'achat et parcours (Analyse › Parcours), sans cookie
+    $JR = DeepFind\Logging\Journeys::class;
+    check('parcours : masquage des données personnelles (e-mail, téléphone, carte, IBAN), références produit gardées',
+        $JR::mask('jean.dupont@mail.fr 06 12 34 56 78 +33 6 12 34 56 78 4970 1234 5678 9012 FR76 3000 6000 0112 3456 7890 189') === '[e-mail] [téléphone] [téléphone] [carte] [iban]'
+        && $JR::mask('C4-PREDATOR 3760123456789 palme 45') === 'C4-PREDATOR 3760123456789 palme 45');
+    check('parcours d\'achat : montants du site en centimes', $AU::cents('54,90') === 5490 && $AU::cents('1 234.50 €') === 123450 && $AU::cents('1.234,5') === 123450
+        && $AU::cents(19.99) === 1999 && $AU::cents('abc') === 0);
+    foreach (['audience_visitors', 'audience_terms', 'audience_products', 'journeys', 'journey_events'] as $tJ) {
+        DeepFind\Db::exec("DELETE FROM `$tJ`");
+    }
+    DeepFind\Settings::set('journeys_enabled', '0');
+    [, $cfJ0] = $get("/api/v1/config?key=$key&lang=fr");
+    DeepFind\Settings::set('journeys_enabled', '1');
+    [, $cfJ1] = $get("/api/v1/config?key=$key&lang=fr");
+    check('parcours : réglages envoyés au widget (parcours désactivés par défaut, panier et commandes, dataLayer)',
+        ($cfJ0['journey'] ?? null) === false && ($cfJ1['journey'] ?? null) === true && ($cfJ1['events'] ?? null) === true
+        && ($cfJ1['commerce']['datalayer'] ?? null) === true, json_encode([$cfJ0['journey'] ?? null, $cfJ1['journey'] ?? null, $cfJ1['commerce'] ?? null]));
+    $uaJ = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Parcours/1';
+    $uaN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) SansRecherche/1';
+    $jDoc = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'in_stock = 1', 1, 0, ['id', 'sku'])[0] ?? null;
+    $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'p' => '/fr/plongee/', 't' => 'Plongée', 'a' => '1'], $uaN); // ne cherche pas
+    $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'p' => '/fr/plongee/?x=1', 't' => 'Plongée sous-marine', 'a' => '0'], $uaJ);
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'bar'], $uaJ);
+    usleep(200000);
+    $noJourneyYet = (int) DeepFind\Db::value('SELECT COUNT(*) FROM journeys');
+    $sumJ = static fn () => $AU::summary($todayM, $todayM)['total'];
+    $pvBefore = $sumJ()['pageviews'];
+    $getUa = static function (string $path, string $ua): array {
+        $ch = curl_init(getenv('TEST_BASE_URL') . $path);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_NOPROXY => '*', CURLOPT_HTTPHEADER => ['Origin: http://localhost:8080', 'User-Agent: ' . $ua]]);
+        $body = (string) curl_exec($ch);
+        return [(int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE), json_decode($body, true)];
+    };
+    foreach (['ma', 'mas', 'masque'] as $qJ) {
+        $getUa("/api/v1/search?key=$key&lang=fr&q=$qJ&sid=sidjour000000001&d=d", $uaJ);
+    }
+    $getUa("/api/v1/search?key=$key&lang=fr&q=" . rawurlencode('zzqx jean@exemple.fr') . "&sid=sidjour000000002&d=d", $uaJ);
+    $post('/api/v1/click', ['key' => $key, 'lang' => 'fr', 'q' => 'masque', 'doc_type' => 'product', 'doc_id' => (string) $jDoc['id'], 'position' => 2,
+        'sid' => 'sidjour000000001', 'd' => 'd', 'n' => 'Masque test'], $uaJ);
+    $post('/api/v1/visit', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'p' => '/fr/masque.html', 't' => 'Masque', 'a' => '1'], $uaJ);
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'cart', 'sku' => (string) $jDoc['sku'], 'qty' => 2], $uaJ);
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'order', 'tid' => '100045', 'value' => '89,90',
+        'items' => json_encode([['sku' => (string) $jDoc['sku'], 'qty' => 2, 'price' => 44.95]])], $uaJ);
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'order', 'tid' => '100045', 'value' => '89,90'], $uaJ); // page rechargée
+    $post('/api/v1/event', ['key' => $key, 'lang' => 'fr', 'd' => 'd', 'e' => 'order', 'value' => '10', 'na' => '1'], $uaJ);     // aperçu : ignoré
+    usleep(400000);
+    $jRows = DeepFind\Db::all('SELECT * FROM journeys');
+    $jEv = $jRows ? $JR::find((int) $jRows[0]['id']) : null;
+    $jTypes = array_column($jEv['events'] ?? [], 'type');
+    $jSearch = array_values(array_filter($jEv['events'] ?? [], static fn ($e) => $e['type'] === 'search'));
+    check('parcours : rien avant la première recherche ; visiteur qui ne cherche pas jamais enregistré ; pages vues d\'avant gardées',
+        $noJourneyYet === 0 && count($jRows) === 1 && $jTypes[0] === 'page' && $jTypes[1] === 'bar'
+        && ($jEv['events'][0]['data']['path'] ?? '') === '/fr/plongee/' && $jRows[0]['entry_path'] === '/fr/plongee/', json_encode([$noJourneyYet, $jTypes]));
+    check('parcours : frappe fusionnée (dernière saisie), recherche masquée, clic, panier, commande comptée une fois',
+        array_column(array_column($jSearch, 'data'), 'q') === ['masque', 'zzqx [e-mail]'] && $jSearch[1]['data']['n'] === 0
+        && in_array('click', $jTypes, true) && in_array('cart', $jTypes, true) && count(array_keys($jTypes, 'order', true)) === 1
+        && (int) $jRows[0]['searches'] === 2 && (int) $jRows[0]['zero_searches'] === 1 && (int) $jRows[0]['orders'] === 1 && (int) $jRows[0]['revenue'] === 8990
+        && (int) $jRows[0]['carts'] === 1 && !str_contains(json_encode($jEv), 'jean@'), json_encode([$jTypes, $jSearch, $jRows[0] ?? null]));
+    $tJ = $sumJ();
+    $termsJ = $AU::topTerms($todayM, $todayM);
+    check('parcours d\'achat : compteurs du visiteur (barre, sans résultat, panier, commande) ; page hors audience non comptée',
+        $tJ['bar_openers'] === 1 && $tJ['zero_searchers'] === 1 && $tJ['carters'] === 1 && $tJ['buyers'] === 1 && $tJ['revenue'] === 8990
+        && $tJ['searcher_buyers'] === 1 && $tJ['abandoners'] === 0 && $tJ['pageviews'] === $pvBefore + 1, json_encode($tJ));
+    check('parcours d\'achat : recherches qui rapportent (panier et commande attribués à la dernière recherche, masquée)',
+        count($termsJ) === 1 && $termsJ[0]['term'] === 'zzqx [e-mail]' && $termsJ[0]['carts'] === 1 && $termsJ[0]['orders'] === 1 && $termsJ[0]['revenue'] === 8990, json_encode($termsJ));
+    check('parcours d\'achat : pas de « ma » ni « mas » dans les recherches comptées',
+        DeepFind\Db::value("SELECT COUNT(*) FROM audience_terms WHERE term IN ('ma', 'mas')") == 0
+        && (int) DeepFind\Db::value("SELECT searches FROM audience_terms WHERE term = 'masque'") === 1
+        && (int) DeepFind\Db::value('SELECT orders FROM audience_products WHERE product_id = ?', [(string) $jDoc['id']]) === 1);
+    check('parcours : aucune IP ni navigateur enregistré', !str_contains(json_encode(DeepFind\Db::all('SELECT * FROM journeys')) . json_encode(DeepFind\Db::all('SELECT * FROM journey_events')), 'Mozilla')
+        && !str_contains(json_encode(DeepFind\Db::all('SELECT * FROM journeys')), '127.0.0.1'));
+    check('parcours : liste filtrée (avec commande, recherche, sans résultat)', $JR::list('order')['total'] === 1 && $JR::list('abandon')['total'] === 0
+        && $JR::list('all', 'masque')['total'] === 1 && $JR::list('zero')['total'] === 1 && $JR::list('all', 'introuvable')['total'] === 0);
+    $purgedJ = $JR::purge(time() + ($JR::RETENTION_HOURS + 1) * 3600);
+    check('parcours : supprimés ' . $JR::RETENTION_HOURS . ' h après leur dernier événement (événements compris)', $purgedJ === 1
+        && (int) DeepFind\Db::value('SELECT COUNT(*) FROM journey_events') === 0 && $JR::purge() === 0);
+    DeepFind\Settings::set('journeys_enabled', '0');
 
     // ------------------------------------------------ Flux protégé par mot de passe (.htaccess) et test de connexion
     $SE = DeepFind\Security\Secrets::class;

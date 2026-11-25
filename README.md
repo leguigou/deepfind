@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=34" defer
+<script src="https://search.example.com/widget/deepfind.js?v=35" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=33` en `?v=34`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=34` en `?v=35`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -385,7 +385,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |---|---|---|
 | | Tableau de bord | État du moteur, recherches et taux sans résultat sur 24 h, nombre de produits (et de produits désactivés auto), derniers imports, alertes de configuration |
 | **Analyse** | Temps réel & charge | Supervision en direct : visiteurs actifs, recherches par minute, temps de réponse (moyenne, 95e percentile), pages vues, erreurs, charge du processeur et mémoire ; courbes et carte heure par heure sur 5 jours (section 6, « Temps réel & charge ») |
-| | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV (voir « Audience » ci-dessous) |
+| | Audience | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, **parcours d'achat** (conversion des visiteurs qui cherchent, chiffre d'affaires, paniers sans commande, départs après « aucun résultat », recherches qui rapportent, produits cliqués jamais mis au panier), export CSV (voir « Audience » ci-dessous) |
+| | Parcours | Chronologie datée de la journée des visiteurs qui ont cherché ou cliqué sur un carrousel (pages, recherches, clics, panier, commande), sans cookie, conservée 24 h ; désactivée par défaut (voir « Parcours » ci-dessous) |
 | | Statistiques | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 | | Journal des recherches | Détail filtrable et exportable |
 | **Catalogues** | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
@@ -562,6 +563,26 @@ Fonctionnement : chaque appel de l'API publique (le widget) incrémente des comp
 - **pages qui envoient le signal** : toutes, la page d'accueil uniquement (`/` ou la racine d'une langue, ex. `/fr`), ou des **pages choisies** : adresses qui commencent par l'un des chemins indiqués (`/fr/plongee` couvre `/fr/plongee.html` et `/fr/plongee/palmes.html`), avec ou sans la page d'accueil.
 - Moins de pages mesurées = moins de requêtes, mais les visiteurs qui ne passent pas par ces pages ne sont comptés que s'ils cherchent : la part de visiteurs qui cherchent est alors surestimée (la page le signale).
 - Nécessite le widget `?v=22` ou plus récent et la tâche planifiée `schedule:run`.
+
+**Journée de mesure** : elle va d'une heure réglable (**4 h** par défaut, heure de Paris) à la même heure le lendemain, et porte la date de son début. Une visite à 1 h du matin compte avec la soirée de la veille. La clé du jour change à cette heure-là puis est détruite. Un changement d'heure (Réglages, en bas de la page) s'applique à la **bascule suivante** : la journée concernée est alors plus courte ou plus longue, jamais comptée deux fois.
+
+**Parcours d'achat** (même empreinte du jour, totaux uniquement) : barre de recherche ouverte, fenêtre fermée sans clic, recherches sans résultat, clics dans les carrousels, ajouts au panier et commandes (montants). Indicateurs : conversion des visiteurs qui cherchent face aux autres, chiffre d'affaires et panier moyen après recherche, paniers sans commande, visiteurs partis après « aucun résultat », entonnoir, **recherches qui rapportent** (panier et commande attribués à la dernière recherche du visiteur dans la journée), **produits cliqués jamais mis au panier**. Le site envoie paniers et commandes de deux façons :
+- automatiquement, si le site envoie déjà les événements GA4 `add_to_cart` et `purchase` au `dataLayer` (Google Tag Manager, gtag) : le widget les lit (réglage « Lire les événements GA4 du dataLayer ») ; l'événement Magento `ajax:addToCart` (thème Luma) est aussi écouté ;
+- sinon, avec le widget : `DeepFind.track('cart', { sku, qty, price, name })` et, sur la page de confirmation, `DeepFind.track('order', { id, total, items: [{ sku, qty, price }] })`. Le numéro de commande sert seulement à ne pas compter deux fois la même commande ; il n'est pas enregistré. Prix absent : prix du catalogue.
+
+Les termes des recherches sont **masqués** avant d'être comptés (e-mails, téléphones, numéros de carte, IBAN). Termes et produits sont purgés avec les journaux (`logs:purge`).
+
+### Parcours
+
+**Analyse › Parcours** (désactivé par défaut, réglage en bas de la page Audience) : la chronologie datée de la journée des visiteurs qui ont **cherché** dans la barre de recherche ou **cliqué sur un carrousel** : pages vues (adresse et titre), barre ouverte, recherches (dernière saisie et nombre de résultats), filtres, clics, popins, carrousels, ajouts au panier, commande. Liste filtrable (avec commande, panier sans commande, recherche sans résultat, clic dans un carrousel, recherche sans clic, journée, texte), puis chronologie d'un visiteur.
+
+- Même empreinte du jour que l'audience : aucun cookie, rien sur l'appareil, aucune IP ; impossible de relier deux journées. Le nom « Visiteur A66F91 » n'est qu'un repère.
+- Avant sa première recherche (ou clic dans un carrousel), un visiteur n'est pas enregistré : ses pages vues restent quelques heures en mémoire puis disparaissent ; le parcours reprend ces pages s'il cherche ensuite.
+- Recherches et titres de pages masqués (e-mails, téléphones, cartes, IBAN) ; sur les pages compte, commande, paiement, seul le chemin est envoyé.
+- Conservation : **24 heures** après le dernier événement (`Journeys::RETENTION_HOURS` dans `src/Logging/Journeys.php`), suppression par `schedule:run`.
+- Parcours activés : le widget envoie une page vue sur **toutes** les pages (une petite requête par page), même si l'audience ne mesure que certaines pages.
+
+> ⚠️ Une vue individuelle, même pseudonyme et limitée à une journée, n'entre pas forcément dans l'exemption de consentement de la mesure d'audience : à faire valider par le DPO avant d'activer les parcours (et l'attribution du chiffre d'affaires). Ce document n'est pas un avis juridique.
 
 ### Cache
 

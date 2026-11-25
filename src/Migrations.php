@@ -22,6 +22,8 @@ final class Migrations
         'carousels' => ['card_template' => 'TEXT NULL AFTER custom_css', 'card_template_mobile' => 'TEXT NULL AFTER card_template',
             'card_link' => 'VARCHAR(500) NULL AFTER card_template_mobile', 'title_class' => 'VARCHAR(300) NULL AFTER title',
             'page_filters' => 'TEXT NULL AFTER conditions'],
+        'audience_visitors' => ['bar_opens' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'closes' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_searches' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carousel_clicks' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carts' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'cart_value' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'revenue' => 'INT UNSIGNED NOT NULL DEFAULT 0'],
+        'audience_daily' => ['bar_openers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'closers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_searchers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_leavers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carousel_clickers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carters' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'buyers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'revenue' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0', 'abandoners' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_carters' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_buyers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_revenue' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0', 'searcher_abandoners' => 'INT UNSIGNED NOT NULL DEFAULT 0'],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id', 'custom_result_id' => 'INT UNSIGNED NULL AFTER sid'],
         'sources' => [
@@ -70,6 +72,8 @@ final class Migrations
         'rate_per_minute', 'rate_per_hour', 'same_query_per_minute', 'burst_multiplier', 'violations_before_block',
         'block_minutes', 'block_bad_user_agents', 'bad_user_agents', 'ip_allowlist', 'log_retention_days',
         'scheduler_last_run', 'scores_scheduled_at',
+        // journée de mesure (audience, parcours) : heure de changement de la clé du jour, commune à tous les projets
+        'audience_day_hour', 'audience_day_hour_next', 'audience_day_hour_at',
     ];
 
     /** Colonnes ENUM à élargir : table => [colonne => [valeur requise, nouvelle définition]] */

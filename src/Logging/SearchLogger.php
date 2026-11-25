@@ -92,6 +92,12 @@ final class SearchLogger
             $out[$t] = $n;
         }
         $out['carousel_product_stats'] = \DeepFind\Rules\Carousels::purge();
+        // recherches qui rapportent, produits cliqués / mis au panier : même durée que les journaux (les termes saisis y figurent)
+        $day = date('Y-m-d', time() - $days * 86400);
+        foreach (['audience_terms', 'audience_products'] as $t) {
+            $out[$t] = Db::exec("DELETE FROM `$t` WHERE day < ? LIMIT 100000", [$day]);
+        }
+        $out['journeys'] = \DeepFind\Logging\Journeys::purge();
         $out['ip_blocks_expired'] = Db::exec('DELETE FROM ip_blocks WHERE blocked_until IS NOT NULL AND blocked_until < NOW() - INTERVAL 7 DAY');
         return $out;
     }

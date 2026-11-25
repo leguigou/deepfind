@@ -215,4 +215,16 @@
     <path d="M5.65 5.65l3.35 3.35" />
     <path d="M18.35 5.65l-3.35 3.35" />
   </symbol>
+  <symbol id="search" viewBox="0 0 24 24">
+    <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" />
+  </symbol>
+  <symbol id="x" viewBox="0 0 24 24">
+    <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
+  </symbol>
+  <symbol id="shopping-cart" viewBox="0 0 24 24">
+    <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17h-11v-14h-2" /><path d="M6 5l14 1l-1 7h-13" />
+  </symbol>
+  <symbol id="route" viewBox="0 0 24 24">
+    <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M18 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M12 19h4.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h3.5" />
+  </symbol>
 </svg>
