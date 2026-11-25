@@ -87,6 +87,8 @@ src/Migrations.php             ajout des colonnes manquantes sur une base exista
 src/CacheVersion.php           version des données (fichier var/cache/data_version) incluse dans TOUTES les clés de cache :
                                CacheVersion::bump() après import / règle / paramètre ⇒ caches obsolètes partout, immédiatement
 templates/admin/               gabarits PHP (échapper TOUT avec e())
+src/Logging/Tracker.php        événements d'un visiteur reçus par l'API (audience, parcours d'achat, parcours), après l'envoi de la réponse
+src/Logging/Journeys.php       parcours (Analyse › Parcours) : empreinte du jour, déclencheur, masquage, conservation RETENTION_HOURS
 src/Wiki/                      aide (menu Aide, /admin/wiki ; /wiki redirige) : Wiki.php (arborescence de docs/wiki), Markdown.php (Markdown → HTML, tout échappé)
 docs/wiki/                     pages de l'aide : un dossier = une catégorie (_index.md = titre + intro), un .md = une page, préfixe 01- = ordre ;
                                captures : docs/screenshots ou docs/wiki/_images, écrites ![texte](nom.png)

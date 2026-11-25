@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace DeepFind\Http;
 
 use DeepFind\Logging\Audience;
+use DeepFind\Logging\Journeys;
+use DeepFind\Logging\Tracker;
 use DeepFind\Logging\SearchLogger;
 use DeepFind\Meili\MeiliClient;
 use DeepFind\Meili\MeiliException;
@@ -21,7 +23,9 @@ use DeepFind\Text;
  * API publique appelée par le widget :
  *   GET  /api/v1/search?key=pk_…&q=palme&lang=fr&offset=0&limit=20&brand[]=C4&in_stock=1&on_sale=1&sort=price_asc&sid=…
  *   POST /api/v1/click   (key, q, lang, doc_type, doc_id, position, sid)
- *   POST /api/v1/visit   (key, lang, d = m|t|d)   page vue, pour la mesure d'audience anonyme
+ *   POST /api/v1/visit   (key, lang, d = m|t|d, p = chemin, t = titre, a = 0|1)   page vue (mesure d'audience anonyme ;
+ *        a = 0 : page non mesurée par l'audience, seulement pour le parcours)
+ *   POST /api/v1/event   (key, lang, e = bar|close|cart|order, d, q | sku, qty, price, name | value, tid, items)   parcours d'achat
  *   POST /api/v1/popin   (key, lang, id, e = v|c|x)   popin affichée, cliquée ou fermée (compteurs du jour, sans donnée personnelle)
  *   GET  /api/v1/carousels?key&lang&page=/chemin[&sku=…][&h=id1,id2]   carrousels de la page et leurs produits
  *        (h : historique du visiteur, envoyé seulement avec son consentement ; jamais enregistré)
@@ -39,6 +43,7 @@ final class ApiController
                 $path === '/api/v1/search' && in_array($method, ['GET', 'HEAD'], true) => $this->search(),
                 $path === '/api/v1/click' && $method === 'POST' => $this->click(),
                 $path === '/api/v1/visit' && $method === 'POST' => $this->visit(),
+                $path === '/api/v1/event' && $method === 'POST' => $this->event(),
                 $path === '/api/v1/popin' && $method === 'POST' => $this->popin(),
                 $path === '/api/v1/carousels' && in_array($method, ['GET', 'HEAD'], true) => $this->carousels(),
                 $path === '/api/v1/carousel' && $method === 'POST' => $this->carouselEvent(),
@@ -113,8 +118,19 @@ final class ApiController
 
         // Journalisation après l'envoi de la réponse (pas d'impact sur le temps perçu avec PHP-FPM).
         Response::finish();
-        if ($req->offset === 0 && ($_GET['na'] ?? '') !== '1' && Audience::tracks('searches') && Audience::isNewSearch($store, self::sid($_GET['sid'] ?? ''), $req->qNorm, $req->filtersSummary())) {
-            Audience::record('search', $ip, $ua, (string) ($_GET['d'] ?? ''));
+        // audience (recherches, sans résultat), recherches qui rapportent, parcours : empreinte du jour, sans cookie
+        if ($req->offset === 0 && $req->qNorm !== '' && ($_GET['na'] ?? '') !== '1' && Audience::enabled()) {
+            try {
+                $sid = self::sid($_GET['sid'] ?? '');
+                $isNew = Audience::isNewSearch($store, $sid, $req->qNorm, $req->filtersSummary());
+                // « aucun résultat exact » (produits approchants seulement) compte comme sans résultat, comme dans le journal
+                $approx = !empty($data['approximate']) ? (int) ($data['total'] ?? 0) : 0;
+                $total = $approx > 0 ? 0 : (int) ($data['total'] ?? 0);
+                (new Tracker($ip, $ua, (string) ($_GET['d'] ?? ''), $req->lang))
+                    ->search($req->q, $total, $req->filtersSummary(), $isNew, Tracker::zeroFirst($sid, $isNew, $total), $sid, $approx);
+            } catch (\Throwable $e) {
+                error_log('[deepfind] audience : ' . $e->getMessage());
+            }
         }
         if ($req->offset === 0) {
             (new SearchLogger($store))->log([
@@ -149,8 +165,14 @@ final class ApiController
         }
         Response::noContent($cors);
         Response::finish();
-        if (($p['na'] ?? '') !== '1' && Audience::tracks('clicks')) {
-            Audience::record('click', $ip, (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), (string) ($p['d'] ?? ''));
+        if (($p['na'] ?? '') !== '1' && Audience::enabled()) {
+            try {
+                (new Tracker($ip, (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), (string) ($p['d'] ?? ''), $lang))
+                    ->click((string) ($p['q'] ?? ''), (string) ($p['doc_type'] ?? 'product'), substr((string) ($p['doc_id'] ?? ''), 0, 64),
+                        mb_substr((string) ($p['n'] ?? ''), 0, 200, 'UTF-8'), (int) ($p['position'] ?? 0));
+            } catch (\Throwable $e) {
+                error_log('[deepfind] audience : ' . $e->getMessage());
+            }
         }
         (new SearchLogger($store))->click([
             'lang' => $lang,
@@ -174,7 +196,9 @@ final class ApiController
         if ($key === null) {
             return;
         }
-        if (!\DeepFind\Project::isActive() || !Audience::tracks('pageviews')) {
+        // a = 0 : page hors des pages mesurées par l'audience, envoyée seulement pour les parcours
+        $counted = ($p['a'] ?? '1') !== '0';
+        if (!\DeepFind\Project::isActive() || (!($counted && Audience::tracks('pageviews')) && !Journeys::enabled())) {
             Response::noContent($cors);
             return;
         }
@@ -187,7 +211,41 @@ final class ApiController
         }
         Response::noContent($cors);
         Response::finish();
-        Audience::record('pageview', $ip, $ua, (string) ($p['d'] ?? ''));
+        // chemin de la page : envoyé par le widget (anciennes versions : page d'origine de la requête)
+        $path = (string) ($p['p'] ?? parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?? '/');
+        (new Tracker($ip, $ua, (string) ($p['d'] ?? ''), $lang))->page($path, mb_substr((string) ($p['t'] ?? ''), 0, 200, 'UTF-8'), $counted);
+    }
+
+    /**
+     * Événement du parcours d'achat envoyé par le widget : barre de recherche ouverte, fenêtre fermée sans clic,
+     * ajout au panier, commande (montant). Réponse immédiate, comptage après l'envoi.
+     */
+    private function event(): void
+    {
+        $p = $_POST;
+        $lang = (string) ($p['lang'] ?? 'fr');
+        $lang = preg_match('/^[a-z]{2}$/', $lang) ? $lang : 'fr';
+        [$key, $cors] = $this->authorize((string) ($p['key'] ?? ''), $lang);
+        if ($key === null) {
+            return;
+        }
+        $e = (string) ($p['e'] ?? '');
+        if (!\DeepFind\Project::isActive() || ($p['na'] ?? '') === '1' || !in_array($e, Tracker::EVENTS, true) || !Audience::enabled()) {
+            Response::noContent($cors);
+            return;
+        }
+        $ip = ClientIp::resolve($_SERVER);
+        $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        if ((new BotGuard(Store::get()))->check($ip, $ua, '', 'event') !== null) {
+            Response::noContent($cors);
+            return;
+        }
+        Response::noContent($cors);
+        Response::finish();
+        if (isset($p['items']) && is_string($p['items'])) {
+            $p['items'] = json_decode(substr($p['items'], 0, 20000), true) ?: [];
+        }
+        (new Tracker($ip, $ua, (string) ($p['d'] ?? ''), $lang))->event($e, $p);
     }
 
     /** Événement d'une popin (affichage, clic, fermeture) : réponse immédiate, comptage après l'envoi. */
@@ -214,6 +272,9 @@ final class ApiController
         Response::noContent($cors);
         Response::finish();
         \DeepFind\Rules\Popins::record($lang, $id, $event);
+        if (Journeys::enabled()) {
+            (new Tracker(ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), (string) ($p['d'] ?? ''), $lang))->popin($id, $event);
+        }
     }
 
     /** Carrousels de la page (produits compris). Réponse non mise en cache par le navigateur si elle dépend de l'historique. */
@@ -263,7 +324,12 @@ final class ApiController
         }
         Response::noContent($cors);
         Response::finish();
-        \DeepFind\Rules\Carousels::record($lang, $id, $event, array_values((array) ($p['p'] ?? [])));
+        $products = array_values((array) ($p['p'] ?? []));
+        \DeepFind\Rules\Carousels::record($lang, $id, $event, $products);
+        if ($event === 'c' && isset($products[0]) && Audience::enabled()) {
+            (new Tracker(ClientIp::resolve($_SERVER), (string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), (string) ($p['d'] ?? ''), $lang))
+                ->carouselClick($id, substr((string) $products[0], 0, 64), mb_substr((string) ($p['n'] ?? ''), 0, 200, 'UTF-8'));
+        }
     }
 
     /**
@@ -288,6 +354,12 @@ final class ApiController
         ] + \DeepFind\Widget\WidgetTexts::forWidget($lang) + [
             // mesure d'audience : pages qui signalent une page vue (sans cookie, sans donnée personnelle), ou false
             'audience' => Audience::widgetConfig(),
+            // parcours : page vue envoyée sur toutes les pages (le serveur ne garde que les visiteurs qui cherchent ou cliquent un carrousel)
+            'journey' => \DeepFind\Project::isActive() && Journeys::enabled(),
+            // barre de recherche ouverte, fenêtre fermée sans clic (audience et parcours)
+            'events' => Audience::tracks('searches') || Journeys::enabled(),
+            // ajouts au panier et commandes : DeepFind.track(), et lecture du dataLayer (GA4) si activée
+            'commerce' => Audience::tracks('commerce') || Journeys::enabled() ? ['datalayer' => Settings::int('audience_datalayer') === 1] : false,
             // popins en cours : le widget choisit celle de la page (adresse, appareil, fermeture mémorisée)
             'popins' => \DeepFind\Project::isActive() ? \DeepFind\Rules\Popins::forWidget($lang) : [],
             // carrousels : le widget demande ceux de la page seulement s'il en existe ; historique du visiteur (off | consent | always)

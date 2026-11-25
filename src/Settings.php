@@ -57,6 +57,15 @@ final class Settings
         'audience_pages' => 'all',
         'audience_paths' => '',
         'audience_paths_home' => '0',
+        // parcours d'achat : ajouts au panier et commandes (événements du site ou dataLayer GA4 lu par le widget)
+        'audience_commerce' => '1',
+        'audience_datalayer' => '1',
+        // heure de changement de la clé du jour (heure de Paris) ; changement programmé : appliqué à la bascule suivante
+        'audience_day_hour' => '4',
+        'audience_day_hour_next' => '',
+        'audience_day_hour_at' => '0',
+        // Analyse › Parcours : chronologie des visiteurs qui cherchent (désactivé tant que le DPO n'a pas validé)
+        'journeys_enabled' => '0',
         'widget_enter_submit' => '1',
         'widget_block_native' => '1',
         'widget_hover_image' => '1',

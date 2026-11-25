@@ -417,9 +417,10 @@ fs.mkdirSync(OUT, { recursive: true });
   // période personnalisée : dates de la veille au jour même
   check('audience : champs de dates masqués par défaut', !await page.isVisible('#aud-custom'));
   await page.click('[data-custom-toggle]');
-  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  const yest = new Date(Date.now() - 86400000);
-  const yYmd = ymd(yest), tYmd = ymd(new Date());
+  // « aujourd'hui » = journée de mesure en cours (elle change à 4 h, heure de Paris) : date maximale proposée par la page
+  const tYmd = await page.getAttribute('#aud-custom input[name=to]', 'max');
+  const tD = new Date(tYmd + 'T12:00:00Z');
+  const yYmd = new Date(tD.getTime() - 86400000).toISOString().slice(0, 10);
   await page.fill('#aud-custom input[name=from]', yYmd);
   await page.fill('#aud-custom input[name=to]', tYmd);
   await Promise.all([page.waitForNavigation(), page.click('#aud-custom button')]);
@@ -818,6 +819,42 @@ fs.mkdirSync(OUT, { recursive: true });
     await Promise.all([page.waitForNavigation(), confirmModal()]);
   }
   check('carrousels : suppression', (await page.textContent('body')).includes('Carrousel supprimé') && await page.locator('.ca-table tbody tr[data-row]').count() === 0);
+
+  // Parcours d'achat et Parcours (Analyse) : activés dans Audience › Réglages, puis un visiteur sur un faux site
+  await page.goto(BASE + '/admin/audience');
+  await page.check('#aud-settings input[name=journeys]', { force: true });
+  await Promise.all([page.waitForNavigation(), page.click('#aud-settings > button.btn')]);
+  check('parcours : activés depuis Audience › Réglages', await page.isChecked('#aud-settings input[name=journeys]'));
+  const [jc, jp] = await carCtx();
+  await jp.goto(BASE + '/boutique/plongee.html');
+  await jp.waitForFunction(() => window.DeepFind && window.DeepFind.isActive());
+  await jp.click('input[name=q]');
+  await jp.keyboard.type('masque', { delay: 40 });
+  await jp.waitForSelector('.df-card', { timeout: 5000 });
+  await jp.waitForTimeout(500);
+  await jp.keyboard.press('Escape'); // fermée sans clic
+  await jp.evaluate(() => {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: 'add_to_cart', ecommerce: { items: [{ item_id: 'SEAC-X-VISION', item_name: 'Masque X-Vision', quantity: 1, price: 59.9 }] } });
+    window.DeepFind.track('cart', { sku: 'SEAC-X-VISION', qty: 1, price: 59.9 }); // même ajout signalé deux fois : un seul compté
+    window.DeepFind.track('order', { id: 'E2E-1', total: 59.9, items: [{ sku: 'SEAC-X-VISION', qty: 1, price: 59.9 }] });
+  });
+  await jp.waitForTimeout(1200);
+  await jc.close();
+  await page.goto(BASE + '/admin/journeys');
+  const jrRows = await page.locator('.jr-table tbody tr').filter({ hasText: 'masque' }).count();
+  await page.locator('.jr-table tbody tr').filter({ hasText: 'masque' }).first().locator('a').first().click();
+  await page.waitForSelector('.jr-timeline');
+  const tl = await page.textContent('.jr-timeline');
+  check('parcours : chronologie (page, barre ouverte, recherche, fermeture sans clic, panier dédoublonné, commande)', jrRows >= 1
+    && tl.includes('Boutique') && tl.includes('Barre de recherche ouverte') && tl.includes('Recherche « masque »') && tl.includes('fermée sans clic')
+    && (tl.match(/Ajout au panier :/g) || []).length === 1 && tl.includes('Commande : 59,90') && (await page.title()).includes('Visiteur'), tl.replace(/\s+/g, ' ').slice(0, 400));
+  await page.screenshot({ path: OUT + '/parcours.png', fullPage: true });
+  await page.goto(BASE + '/admin/audience');
+  check('parcours d\'achat : section de la page Audience', (await page.textContent('#parcours-achat + .flash, .aud-kpis')).length > 0
+    && (await page.textContent('body')).includes('Recherches qui rapportent') && (await page.textContent('body')).includes('59,90'));
+  await page.uncheck('#aud-settings input[name=journeys]', { force: true });
+  await Promise.all([page.waitForNavigation(), page.click('#aud-settings > button.btn')]);
 
   // Adapter les produits selon la page : adresse → conditions en plus, vérifiées dans la liste de contrôle, gardées à l'enregistrement
   await page.goto(BASE + '/admin/carousels/edit');

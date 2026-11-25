@@ -1371,3 +1371,34 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .ca-pf-head .pr-url-text { flex: 1; min-width: 180px; margin: 0; }
 .ca-pf-label { font-weight: 600; }
 .ca-pf > .br-add-cond { align-self: flex-start; }
+
+/* Audience : heure de changement de la clé du jour */
+.aud-hour { display: block; margin: 4px 0 14px; }
+.aud-hour select { width: auto; margin-top: 4px; }
+
+/* Analyse › Parcours */
+.jr-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; }
+.jr-filters label { margin: 0; }
+.jr-filters select, .jr-filters input { width: auto; min-width: 180px; margin-top: 4px; }
+.jr-chips { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+.jr-table td { vertical-align: top; }
+.jr-table .badge { margin-left: 4px; }
+.jr-kpis { margin-bottom: 18px; }
+.jr-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.jr-timeline::before { content: ""; position: absolute; left: 95px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+.jr-ev { display: grid; grid-template-columns: 74px 44px minmax(0, 1fr); align-items: start; gap: 0; padding: 7px 0; }
+.jr-ev time { padding-top: 7px; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); text-align: right; padding-right: 8px; }
+.jr-dot { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; margin-left: 4px; border-radius: 50%; background: var(--surface-solid); border: 1px solid var(--border); color: var(--muted); }
+.jr-dot .admin-icon { width: 16px; height: 16px; }
+.jr-body { display: flex; flex-direction: column; gap: 1px; padding: 4px 12px; border-radius: 10px; }
+.jr-type { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.jr-search .jr-dot, .jr-bar .jr-dot { color: var(--accent); border-color: var(--accent); }
+.jr-click .jr-dot, .jr-carousel_click .jr-dot { color: #2563eb; border-color: #2563eb; }
+.jr-cart .jr-dot { color: #d97706; border-color: #d97706; }
+.jr-order .jr-dot { color: var(--ok); border-color: var(--ok); background: var(--ok-bg); }
+.jr-order .jr-body { background: var(--ok-bg); }
+.jr-close .jr-dot { color: var(--ko); border-color: var(--ko); }
+@media (max-width: 640px) {
+  .jr-ev { grid-template-columns: 62px 40px minmax(0, 1fr); }
+  .jr-timeline::before { left: 81px; }
+}

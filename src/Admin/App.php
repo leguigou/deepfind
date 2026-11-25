@@ -116,6 +116,8 @@ final class App
         'GET /admin/monitor' => [MonitorController::class, 'index'],
         'GET /admin/monitor/data' => [MonitorController::class, 'data'],
         'GET /admin/audience' => [AudienceController::class, 'index'],
+        'GET /admin/journeys' => [JourneysController::class, 'index'],
+        'GET /admin/journeys/view' => [JourneysController::class, 'view'],
         'GET /admin/audience/export' => [AudienceController::class, 'export'],
         'POST /admin/audience/settings' => [AudienceController::class, 'settings'],
         'GET /admin/logs/export' => [StatsController::class, 'export'],

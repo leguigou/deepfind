@@ -8,7 +8,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | --- | --- | --- |
 |  | Tableau de bord | État du moteur, recherches et taux sans résultat sur 24 h, nombre de produits (et de produits désactivés auto), derniers imports, alertes de configuration |
 | **Analyse** | [Temps réel & charge](../analyse/temps-reel-et-charge) | Supervision en direct : visiteurs actifs, recherches par minute, temps de réponse (moyenne, 95e percentile), pages vues, erreurs, charge du processeur et mémoire ; courbes et carte heure par heure sur 5 jours |
-|  | [Audience](../analyse/audience) | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, export CSV  |
+|  | [Parcours](../analyse/parcours) | Chronologie datée de la journée des visiteurs qui ont cherché ou cliqué sur un carrousel : pages, recherches, clics, panier, commande. Sans cookie, conservée 24 h, désactivée par défaut |
+|  | [Audience](../analyse/audience) | Statistiques quotidiennes **anonymes** : visiteurs, part qui cherche, recherches par visiteur, clics, mobile / tablette / ordinateur, évolution jour par jour, [parcours d'achat](../analyse/parcours-d-achat), export CSV |
 |  | [Statistiques](../analyse/statistiques-et-journal) | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 |  | [Journal des recherches](../analyse/statistiques-et-journal) | Détail filtrable et exportable |
 | **Catalogues** | [Flux & mapping](../catalogue/mapping) | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |

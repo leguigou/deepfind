@@ -28,6 +28,14 @@ final class AudienceController
             'pages' => Settings::get('audience_pages'),
             'paths' => Settings::get('audience_paths'),
             'pathsHome' => Settings::int('audience_paths_home') === 1,
+            'today' => Audience::measureDay(),
+            'dayHour' => Audience::dayHour(),
+            'dayHourNext' => Settings::get('audience_day_hour_next') !== '' ? ['hour' => Settings::int('audience_day_hour_next'), 'at' => Settings::int('audience_day_hour_at')] : null,
+            'datalayer' => Settings::int('audience_datalayer') === 1,
+            'journeys' => Settings::int('journeys_enabled') === 1,
+            'terms' => Audience::topTerms($from, $to),
+            'notCarted' => Audience::clickedNotCarted($from, $to),
+            'hasCommerce' => Audience::hasCommerce($from, $to),
         ], 'Audience');
     }
 
@@ -48,7 +56,16 @@ final class AudienceController
         Settings::set('audience_pages', $pages);
         Settings::set('audience_paths', implode("\n", $paths));
         Settings::set('audience_paths_home', isset($_POST['paths_home']) ? '1' : '0');
-        Auth::flash('ok', 'Réglages de la mesure d\'audience enregistrés (pris en compte sur le site sous 5 minutes).');
+        Settings::set('audience_datalayer', isset($_POST['datalayer']) ? '1' : '0');
+        Settings::set('journeys_enabled', isset($_POST['journeys']) ? '1' : '0');
+        $msg = 'Réglages de la mesure d\'audience enregistrés (pris en compte sur le site sous 5 minutes).';
+        if (isset($_POST['day_hour']) && is_numeric($_POST['day_hour'])) {
+            $at = Audience::scheduleDayHour((int) $_POST['day_hour']);
+            if ($at !== null) {
+                $msg .= ' Nouvelle heure de changement de la clé appliquée à la prochaine bascule, le ' . date('d/m/Y à H:i', $at) . '.';
+            }
+        }
+        Auth::flash('ok', $msg);
         App::back('/admin/audience', $this->period()['query']);
     }
 
@@ -61,7 +78,10 @@ final class AudienceController
         $out = fopen('php://output', 'wb');
         fwrite($out, "\xEF\xBB\xBF");
         fputcsv($out, ['jour', 'appareil', 'visiteurs', 'pages_vues', 'visiteurs_ayant_cherche', 'recherches', 'visiteurs_ayant_clique', 'clics',
-            'visiteurs_1_recherche', 'visiteurs_2_3_recherches', 'visiteurs_4_recherches_et_plus'], ';', '"', '');
+            'visiteurs_1_recherche', 'visiteurs_2_3_recherches', 'visiteurs_4_recherches_et_plus', 'visiteurs_barre_ouverte', 'visiteurs_fermeture_sans_clic',
+            'visiteurs_recherche_sans_resultat', 'visiteurs_partis_apres_sans_resultat', 'visiteurs_clic_carrousel', 'visiteurs_ajout_panier', 'acheteurs',
+            'commandes', 'chiffre_affaires_centimes', 'paniers_sans_commande', 'chercheurs_ajout_panier', 'chercheurs_acheteurs', 'chercheurs_commandes',
+            'chercheurs_chiffre_affaires_centimes', 'chercheurs_paniers_sans_commande'], ';', '"', '');
         foreach (Audience::series($from, $to) as $day => $byDevice) {
             foreach (Audience::DEVICES as $dev => $label) {
                 if (!isset($byDevice[$dev])) {
@@ -82,7 +102,7 @@ final class AudienceController
     public static function period(?array $in = null): array
     {
         $in ??= $_GET + $_POST;
-        $today = date('Y-m-d');
+        $today = Audience::measureDay(); // journée de mesure en cours (heure de changement de la clé, 4 h par défaut)
         $valid = static fn ($d) => is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && checkdate((int) substr($d, 5, 2), (int) substr($d, 8, 2), (int) substr($d, 0, 4));
         $from = $in['from'] ?? null;
         $to = $in['to'] ?? null;
@@ -98,6 +118,6 @@ final class AudienceController
         }
         $d = (int) ($in['days'] ?? 30);
         $d = isset(self::PERIODS[$d]) ? $d : 30;
-        return ['days' => $d, 'from' => date('Y-m-d', strtotime('-' . ($d - 1) . ' days')), 'to' => $today, 'custom' => false, 'query' => ['days' => $d]];
+        return ['days' => $d, 'from' => date('Y-m-d', strtotime($today . ' -' . ($d - 1) . ' days')), 'to' => $today, 'custom' => false, 'query' => ['days' => $d]];
     }
 }

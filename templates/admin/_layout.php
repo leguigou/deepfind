@@ -7,6 +7,7 @@ $navGroups = [
         'monitor' => ['/admin/monitor', 'Temps réel & charge', 'activity'],
         'stats' => ['/admin/stats', 'Statistiques', 'chart-pie'],
         'audience' => ['/admin/audience', 'Audience', 'users'],
+        'journeys' => ['/admin/journeys', 'Parcours', 'route'],
         'logs' => ['/admin/logs', 'Journal des recherches', 'file-search'],
     ]],
     'catalogue' => ['Catalogues', 'layers', [
