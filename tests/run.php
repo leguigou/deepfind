@@ -1559,6 +1559,17 @@ if ($base) {
         $CPH::searchRules('fr') === [] && ($CA::products('fr', $CA::find($idCaAuto, 'fr'))[0]['id'] ?? '') === ($caA[0]['id'] ?? '') && $CPH::syncLive() === 0
         && !$CPH::isLive($CPH::find($idCph, 'fr')) && $CPH::isLive($CPH::find($idCph, 'fr'), $tomorrow), json_encode([$syncFuture]));
     $CPH::delete($idCph, 'fr');
+    // base pas encore mise à jour (colonne absente) : la mise en avant est ignorée, la recherche et les carrousels continuent
+    DeepFind\Db::exec('ALTER TABLE campaigns DROP COLUMN highlight_search');
+    DeepFind\CacheVersion::bump();
+    $noCol = null;
+    try {
+        $noCol = [count(DeepFind\Rules\BoostRules::forQuery('fr', 'masque')) >= 0, count($CA::products('fr', $CA::find($idCaAuto, 'fr'))) > 0];
+    } catch (Throwable $e) {
+        $noCol = $e->getMessage();
+    }
+    DeepFind\Db::exec("ALTER TABLE campaigns ADD COLUMN highlight_search TINYINT(1) NOT NULL DEFAULT 0 AFTER conditions");
+    check('campagnes : base pas encore mise à jour → recherche et carrousels continuent (mise en avant ignorée)', $noCol === [true, true], json_encode($noCol));
     check('carrousels : pages (accueil, adresse, exclusion)', $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/') && $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/plongee/x.html')
         && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/chasse.html') && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/plongee/checkout/'));
     // Adapter les produits selon la page : conditions en plus sur les pages dont l'adresse correspond (première ligne qui correspond)
