@@ -27,7 +27,8 @@ final class Migrations
         'push_subscriptions' => ['api_key_id' => 'INT UNSIGNED NULL AFTER channel', 'browser' => "VARCHAR(20) CHARACTER SET ascii NOT NULL DEFAULT '' AFTER api_key_id",
             'os' => "VARCHAR(20) CHARACTER SET ascii NOT NULL DEFAULT '' AFTER browser", 'active' => 'TINYINT(1) NOT NULL DEFAULT 1 AFTER os',
             'sent' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER active', 'shown' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER sent', 'clicks' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER shown',
-            'last_sent_at' => 'DATETIME NULL AFTER clicks', 'last_click_at' => 'DATETIME NULL AFTER last_sent_at'],
+            'last_sent_at' => 'DATETIME NULL AFTER clicks', 'last_click_at' => 'DATETIME NULL AFTER last_sent_at',
+            'tester' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER last_click_at', 'label' => "VARCHAR(60) NOT NULL DEFAULT '' AFTER tester"],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id', 'custom_result_id' => 'INT UNSIGNED NULL AFTER sid'],
         'sources' => [

@@ -55,6 +55,7 @@ importScripts('https://search.example.com/widget/push-sw.js');
 - **Titre** (80 caractères au plus, environ 40 visibles sur un téléphone), **texte** (250), **lien** ouvert au clic, **image** (affichée par Android et Windows). Aperçu à droite.
 - **Destinataires** : appareils, et provenance au moment de l'abonnement (moteurs, réseaux sociaux, e-mail… voir [Ciblage selon la provenance](ciblage-par-provenance)). Le nombre d'abonnés visés est affiché.
 - **Envoi** : brouillon, maintenant (dans la minute, après confirmation), ou programmé (date et heure de Paris). Un message envoyé ne peut plus être modifié.
+- **Envoyer au groupe de test** : envoie tout de suite le titre, le texte, le lien et l'image saisis aux appareils du [groupe de test](#groupe-de-test), autant de fois que nécessaire. Le message n'est **ni enregistré ni envoyé aux abonnés**, et ses statistiques ne bougent pas (pensez à l'enregistrer ensuite). Un message programmé reste programmé.
 - **Résultats** : envoyés, échecs, **affichés** et **clics** (signalés par le navigateur de l'abonné), taux de clic.
 
 ## Abonnés
@@ -76,6 +77,19 @@ importScripts('https://search.example.com/widget/push-sw.js');
 - **Supprimer** : retiré de la liste ; s'il revient sur le site avec les notifications autorisées, il est réenregistré.
 - Les compteurs d'un appareil sont signés (`s`, `g` dans le message) : ils ne peuvent pas être gonflés de l'extérieur.
 
+## Groupe de test
+
+Vos appareils (et ceux des collègues qui relisent les messages), pour voir un message sur un vrai téléphone avant de l'envoyer à tout le monde.
+
+1. Abonnez-vous depuis le site (en recette d'abord) avec chaque appareil de test.
+2. Dans **Abonnés**, sur la ligne de l'appareil (le dernier abonné, n° le plus élevé, ou utilisez « Envoyer un test » pour le reconnaître) : saisissez un **nom** (ex. « iPhone de Paul »), puis **Ajouter au groupe de test**. Badge **Test** dans la liste, filtre **Groupe › Groupe de test**.
+3. Dans la fiche d'un message : **Envoyer au groupe de test**, autant de fois que nécessaire. Depuis la liste des abonnés : **Envoyer un test au groupe** (message « Test DeepFind »).
+
+- Le groupe reçoit les essais **même en pause**. Astuce : mettez vos appareils de test en pause pour qu'ils ne reçoivent que les essais, pas les vrais messages.
+- Les essais ne comptent ni dans les résultats du message ni dans les compteurs de l'appareil (ils n'ont pas de n° de message).
+- 50 appareils au plus : le groupe de test ne sert pas à envoyer un message à tout le monde sans le programmer.
+- **Retirer du groupe de test** efface aussi le nom. Un appareil supprimé ou désabonné sort du groupe.
+
 ## Statistiques
 
 En haut des deux écrans : abonnés (téléphones, tablettes, ordinateurs), invitations affichées sur 30 jours, part de « Oui » et de « Plus tard », accord du navigateur (autorisé / bloqué), nouveaux abonnés et désabonnements.
@@ -90,7 +104,7 @@ En haut des deux écrans : abonnés (téléphones, tablettes, ordinateurs), invi
 
 - **Standard** : Web Push. Chiffrement du message (RFC 8291, aes128gcm : ECDH P-256, HKDF, AES-128-GCM) et identification du serveur (VAPID, RFC 8292 : jeton ES256) faits par DeepFind avec OpenSSL — aucun service tiers. Conformité vérifiée par un test avec le vecteur officiel de la RFC 8291.
 - **Clés VAPID** : créées une fois pour l'installation (réglages globaux `push_vapid_public`, `push_vapid_private` — la clé privée est chiffrée avec `APP_SECRET`). **Ne pas les changer** : les abonnements existants deviendraient inutilisables. `php bin/console push:keys` affiche la clé publique.
-- **Tables** : `push_subscriptions` (adresse d'envoi fournie par le navigateur, clés publiques du navigateur, appareil, navigateur et système en famille, provenance, clé du widget utilisée à l'abonnement, pause, compteurs reçus / affichés / cliqués, échecs), `push_campaigns` (messages et compteurs), `push_stats` (invitation, navigateur, abonnements, par jour).
+- **Tables** : `push_subscriptions` (adresse d'envoi fournie par le navigateur, clés publiques du navigateur, appareil, navigateur et système en famille, provenance, clé du widget utilisée à l'abonnement, pause, groupe de test et nom de l'appareil, compteurs reçus / affichés / cliqués, échecs), `push_campaigns` (messages et compteurs), `push_stats` (invitation, navigateur, abonnements, par jour).
 - **Envoi** : `schedule:run` (chaque minute) envoie les messages dont l'heure est passée (`php bin/console push:send` pour le faire à la main), par lots de 500, 50 requêtes en parallèle. Réponse 404 / 410 : abonnement supprimé ; autre échec : supprimé après 5 échecs de suite.
 - **API** : `POST /api/v1/push/subscribe`, `/push/unsubscribe`, `/push/event` (`e` = `iv` invitation vue, `ia` oui, `il` plus tard, `ig` autorisé, `id` bloqué ; ou `c` = message et `e` = `s` affiché / `c` cliqué). `/api/v1/config` renvoie `push` (réglages de l'invitation) ou `false`.
 - **Code** : `src/Push/WebPush.php` (chiffrement, signature, envoi), `src/Push/Push.php` (réglages, abonnés, messages), `src/Admin/PushController.php`, gabarits `push_settings.php`, `push.php`, `push_edit.php`, scripts `public/assets/push-admin.js`, `public/widget/push-sw.js` ; invitation dans `public/widget/deepfind.js` (`startPush`).

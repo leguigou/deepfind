@@ -1256,6 +1256,29 @@ if ($base) {
     check('notifications : envoi de test à un abonné (reçu et lisible) ; abonné en pause exclu des envois, puis réactivé',
         $testCode === 201 && ($testPayload['t'] ?? '') === 'Test DeepFind' && $audPaused === 0 && $PU::audience(['devices' => 'all', 'channels' => []], 'fr') === 1,
         json_encode([$testCode, $testPayload, $audPaused]));
+    // groupe de test : appareil nommé, reçoit les essais même en pause, sans toucher au message ni aux compteurs
+    $grpEmpty = $PU::sendToTesters('fr');
+    $grpErr = $PU::setTester((int) $subOk['id'], 'fr', true, "  iPhone   de <b>Paul</b>  ");
+    $PU::setActive((int) $subOk['id'], 'fr', false);
+    $pcBefore = $PU::find($idPc, 'fr');
+    $subBefore = DeepFind\Db::one('SELECT sent, shown, clicks FROM push_subscriptions WHERE id = ?', [(int) $subOk['id']]);
+    @unlink($pushLog);
+    $grp = $PU::sendToTesters('fr', ['title' => 'Essai promo', 'body' => 'Texte essai', 'url' => '/essai.html', 'image' => '']);
+    usleep(200000);
+    $grpReq = json_decode((string) strtok((string) @file_get_contents($pushLog), "\n"), true);
+    $grpPayload = $grpReq ? json_decode($WP::decrypt(base64_decode($grpReq['body']), $browsers['ok']['key'], $browsers['ok']['auth']), true) : null;
+    $grpList = $PU::subscribers('fr', ['group' => 'test']);
+    $subAfterGrp = DeepFind\Db::one('SELECT sent, shown, clicks FROM push_subscriptions WHERE id = ?', [(int) $subOk['id']]);
+    check('notifications : groupe de test (vide → rien ; appareil nommé ; essai reçu même en pause ; message et compteurs inchangés ; filtre)',
+        $grpEmpty['targeted'] === 0 && $grpErr === null && $grp === ['targeted' => 1, 'sent' => 1, 'failed' => 0, 'gone' => 0]
+        && ($grpPayload['t'] ?? '') === 'Essai promo' && ($grpPayload['u'] ?? '') === '/essai.html' && !isset($grpPayload['c']) && !isset($grpPayload['s'])
+        && $PU::find($idPc, 'fr') == $pcBefore && $subAfterGrp == $subBefore && $PU::testers('fr') === 1
+        && $grpList['total'] === 1 && $grpList['rows'][0]['label'] === 'iPhone de <b>Paul</b>' && $PU::subscribers('fr', ['group' => 'test', 'device' => 'desktop'])['total'] === 0
+        && $PU::setTester(999999, 'fr', true) === 'Abonné introuvable.', json_encode([$grpEmpty, $grpErr, $grp, $grpPayload, $grpList['rows'][0]['label'] ?? null]));
+    $PU::setTester((int) $subOk['id'], 'fr', false);
+    $PU::setActive((int) $subOk['id'], 'fr', true);
+    check('notifications : retrait du groupe de test (nom effacé)', $PU::testers('fr') === 0
+        && DeepFind\Db::value('SELECT label FROM push_subscriptions WHERE id = ?', [(int) $subOk['id']]) === '');
     $unsub = $post('/api/v1/push/unsubscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => $browsers['ok']['endpoint']], 'Mozilla/5.0 Push/ok');
     usleep(300000);
     $pcAfter = $PU::find($idPc, 'fr');

@@ -1441,5 +1441,12 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 /* Notifications › Abonnés */
 .psb-table td { vertical-align: top; }
 .psb-code { font-size: 12px; white-space: nowrap; }
-.psb-table td.actions { min-width: 210px; }
 .psb-table td.actions form { display: inline-block; margin: 2px; }
+.psb-table td.actions { min-width: 240px; }
+.psb-tester { display: flex !important; gap: 4px; align-items: center; }
+.psb-tester input { width: 150px; padding: 4px 8px; font-size: 13px; }
+.psb-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.psb-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.psb-group form { margin: 0; }
+.pe-test { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 16px; margin: 16px 0 4px; padding: 12px 14px;
+  border: 1px dashed var(--border, #d1d5db); border-radius: 10px; }
