@@ -245,7 +245,7 @@ final class ApiController
             $device = ['m' => 'phone', 't' => 'tablet', 'd' => 'desktop'][(string) ($p['d'] ?? '')] ?? 'phone';
             $src = \DeepFind\Rules\Segments::forRequest($p, $ip, $ua);
             $ok = \DeepFind\Push\Push::subscribe($lang, (string) ($p['endpoint'] ?? ''), (string) ($p['p256dh'] ?? ''), (string) ($p['auth'] ?? ''),
-                $device, \DeepFind\Rules\Segments::channel($src));
+                $device, \DeepFind\Rules\Segments::channel($src), (int) $key['id']);
             Response::json(['ok' => $ok], $ok ? 200 : 422, $cors);
             return;
         }

@@ -114,7 +114,7 @@ final class Push
      * Abonnement envoyé par le widget (adresse d'envoi et clés publiques du navigateur).
      * @return bool vrai si l'abonnement est valable
      */
-    public static function subscribe(string $lang, string $endpoint, string $p256dh, string $auth, string $device, string $channel): bool
+    public static function subscribe(string $lang, string $endpoint, string $p256dh, string $auth, string $device, string $channel, ?int $apiKeyId = null): bool
     {
         $endpoint = trim($endpoint);
         // adresse d'envoi du navigateur : https ; http://127.0.0.1 accepté seulement en environnement de test (faux service d'envoi)
@@ -126,10 +126,11 @@ final class Push
         $device = in_array($device, ['phone', 'tablet', 'desktop'], true) ? $device : 'phone';
         $channel = isset(\DeepFind\Rules\Segments::CHANNELS[$channel]) ? $channel : 'direct';
         $now = date('Y-m-d H:i:s');
-        $new = Db::exec('INSERT INTO push_subscriptions (project_id, lang, endpoint_hash, endpoint, p256dh, auth, device, channel, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE p256dh = VALUES(p256dh), auth = VALUES(auth), project_id = VALUES(project_id), lang = VALUES(lang), failures = 0, updated_at = VALUES(updated_at)',
-            [\DeepFind\Project::id(), $lang, hash('sha256', $endpoint), $endpoint, $p256dh, $auth, $device, $channel, $now, $now]);
+        $new = Db::exec('INSERT INTO push_subscriptions (project_id, lang, endpoint_hash, endpoint, p256dh, auth, device, channel, api_key_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE p256dh = VALUES(p256dh), auth = VALUES(auth), project_id = VALUES(project_id), lang = VALUES(lang),
+                api_key_id = VALUES(api_key_id), failures = 0, updated_at = VALUES(updated_at)',
+            [\DeepFind\Project::id(), $lang, hash('sha256', $endpoint), $endpoint, $p256dh, $auth, $device, $channel, $apiKeyId, $now, $now]);
         if ($new === 1) {
             self::stat('sub');
         }
@@ -318,8 +319,14 @@ final class Push
             return ['targeted' => 0, 'sent' => 0, 'failed' => 0];
         }
         $base = rtrim((string) \DeepFind\Config::get('APP_URL', ''), '/');
-        $key = (string) Db::value('SELECT public_key FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id LIMIT 1', [\DeepFind\Project::id()]);
-        $payload = Text::json(array_filter([
+        // clé publique reprise dans le message : celle avec laquelle l'abonné s'est inscrit (autorisée pour le domaine de son site),
+        // sinon la première clé active du projet. Elle ne sert qu'aux compteurs « affiché » / « cliqué » renvoyés par le service worker.
+        $keys = [];
+        foreach (Db::all('SELECT id, public_key FROM api_keys WHERE project_id = ? AND active = 1 ORDER BY id', [\DeepFind\Project::id()]) as $k) {
+            $keys[(int) $k['id']] = (string) $k['public_key'];
+        }
+        $defaultKey = (string) (reset($keys) ?: '');
+        $payloadFor = static fn (string $key): string => Text::json(array_filter([
             't' => $c['title'], 'b' => $c['body'], 'u' => $c['url'] !== '' ? $c['url'] : '/', 'i' => $c['image'], 'ic' => self::url(Settings::get('push_icon')),
             'c' => $c['id'], 'k' => $key, 'a' => $base . '/api/v1', 'l' => $lang,
         ], static fn ($v) => $v !== '' && $v !== null));
@@ -328,12 +335,20 @@ final class Push
         $total = ['targeted' => 0, 'sent' => 0, 'failed' => 0];
         $lastId = 0;
         do {
-            $subs = Db::all("SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE $w AND id > ? ORDER BY id LIMIT 500", [...$p, $lastId]);
+            $subs = Db::all("SELECT id, endpoint, p256dh, auth, api_key_id FROM push_subscriptions WHERE $w AND id > ? ORDER BY id LIMIT 500", [...$p, $lastId]);
             if ($subs === []) {
                 break;
             }
             $lastId = (int) end($subs)['id'];
-            $codes = WebPush::send($subs, $payload, $subject);
+            // un message par clé d'abonnement (même contenu, clé différente)
+            $byKey = [];
+            foreach ($subs as $s) {
+                $byKey[$keys[(int) $s['api_key_id']] ?? $defaultKey][] = $s;
+            }
+            $codes = [];
+            foreach ($byKey as $k => $group) {
+                $codes += WebPush::send($group, $payloadFor((string) $k), $subject);
+            }
             $gone = $retry = $ok = [];
             foreach ($codes as $sid => $code) {
                 if ($code >= 200 && $code < 300) {

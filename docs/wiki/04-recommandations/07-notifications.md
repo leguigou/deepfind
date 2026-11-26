@@ -40,6 +40,14 @@ importScripts('https://search.example.com/widget/push-sw.js');
 - Il ne met rien en cache et n'intercepte aucune requête du site : il affiche les notifications reçues et ouvre le lien au clic.
 - Vérification : en navigation privée sur Android (Chrome), accepter l'invitation, puis envoyer un message de test depuis *Envoi de notifications*.
 
+## Recette et projet Test
+
+- Le **projet** d'un abonné est celui de la **clé du widget** de la page (`data-key`), pas le fichier `sw.js` : un site de recette avec la clé du projet Test donne des abonnés du projet Test, et un message envoyé depuis un projet ne part qu'à ses abonnés.
+- `sw.js` ne fait que charger `push-sw.js`, identique pour tous les projets. Avec un **serveur DeepFind de recette séparé**, copiez la ligne depuis l'extranet de recette : elle pointe alors vers ce serveur.
+- Chaque serveur DeepFind a ses propres clés d'envoi (VAPID) : des abonnés recueillis sur la recette ne reçoivent jamais les messages de la production.
+- Chaque abonné garde la clé avec laquelle il s'est inscrit ; ses messages la reprennent pour renvoyer « affiché » et « cliqué », même si le projet a plusieurs clés (production, recette).
+- Si le thème a déjà un service worker (thème « PWA »), ne le remplacez pas : ajoutez-y la ligne `importScripts(...)`.
+
 ## Envoyer un message (Recommandations › Envoi de notifications)
 
 - **Titre** (80 caractères au plus, environ 40 visibles sur un téléphone), **texte** (250), **lien** ouvert au clic, **image** (affichée par Android et Windows). Aperçu à droite.
@@ -61,7 +69,7 @@ En haut des deux écrans : abonnés (téléphones, tablettes, ordinateurs), invi
 
 - **Standard** : Web Push. Chiffrement du message (RFC 8291, aes128gcm : ECDH P-256, HKDF, AES-128-GCM) et identification du serveur (VAPID, RFC 8292 : jeton ES256) faits par DeepFind avec OpenSSL — aucun service tiers. Conformité vérifiée par un test avec le vecteur officiel de la RFC 8291.
 - **Clés VAPID** : créées une fois pour l'installation (réglages globaux `push_vapid_public`, `push_vapid_private` — la clé privée est chiffrée avec `APP_SECRET`). **Ne pas les changer** : les abonnements existants deviendraient inutilisables. `php bin/console push:keys` affiche la clé publique.
-- **Tables** : `push_subscriptions` (adresse d'envoi fournie par le navigateur, clés publiques du navigateur, appareil, provenance, échecs), `push_campaigns` (messages et compteurs), `push_stats` (invitation, navigateur, abonnements, par jour).
+- **Tables** : `push_subscriptions` (adresse d'envoi fournie par le navigateur, clés publiques du navigateur, appareil, provenance, clé du widget utilisée à l'abonnement, échecs), `push_campaigns` (messages et compteurs), `push_stats` (invitation, navigateur, abonnements, par jour).
 - **Envoi** : `schedule:run` (chaque minute) envoie les messages dont l'heure est passée (`php bin/console push:send` pour le faire à la main), par lots de 500, 50 requêtes en parallèle. Réponse 404 / 410 : abonnement supprimé ; autre échec : supprimé après 5 échecs de suite.
 - **API** : `POST /api/v1/push/subscribe`, `/push/unsubscribe`, `/push/event` (`e` = `iv` invitation vue, `ia` oui, `il` plus tard, `ig` autorisé, `id` bloqué ; ou `c` = message et `e` = `s` affiché / `c` cliqué). `/api/v1/config` renvoie `push` (réglages de l'invitation) ou `false`.
 - **Code** : `src/Push/WebPush.php` (chiffrement, signature, envoi), `src/Push/Push.php` (réglages, abonnés, messages), `src/Admin/PushController.php`, gabarits `push_settings.php`, `push.php`, `push_edit.php`, scripts `public/assets/push-admin.js`, `public/widget/push-sw.js` ; invitation dans `public/widget/deepfind.js` (`startPush`).
