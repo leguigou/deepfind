@@ -430,7 +430,7 @@ HTML;
     // ------------------------------------------------------------------ Pour le widget
 
     /** Version du widget à charger (paramètre ?v= du code du site et du favori « Tester DeepFind »). */
-    public const WIDGET_VERSION = 38;
+    public const WIDGET_VERSION = 39;
 
     /** Durée de validité d'un favori « Tester DeepFind » (jeton d'aperçu). */
     public const PREVIEW_DAYS = 7;

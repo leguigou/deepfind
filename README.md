@@ -214,7 +214,7 @@ Ajoutez ensuite les lignes de `deploy/crontab` dans la crontab de `www-data` (`c
 Le code exact (avec votre clé et le bon numéro de version) est donné dans **Paramètres › Intégration › Layers › Code à ajouter sur le site**. Sur Magento, ajoutez-le avant `</body>`, par exemple dans *Contenu › Design › Configuration › HTML Head › Scripts et feuilles de style* ou dans un bloc du thème :
 
 ```html
-<script src="https://search.example.com/widget/deepfind.js?v=38" defer
+<script src="https://search.example.com/widget/deepfind.js?v=39" defer
   data-key="pk_VOTRE_CLE_PUBLIQUE"
   data-lang="fr"
   data-input="#search"
@@ -247,7 +247,7 @@ Le code exact (avec votre clé et le bon numéro de version) est donné dans **P
 | `data-currency`, `data-locale` | Format des prix (`EUR`, `fr-FR` par défaut) |
 | `data-min-chars`, `data-page-size` | Caractères avant recherche, produits chargés à la fois (sinon : réglages du layer) |
 
-> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=37` en `?v=38`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
+> Après une mise à jour du widget, changez le numéro `?v=` (ex. `?v=38` en `?v=39`) pour forcer le rechargement par les navigateurs. Le numéro à jour est toujours celui du code donné dans **Intégration**.
 
 ## 5. Formats des flux et mapping
 
@@ -392,6 +392,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | **Catalogues** | Flux & mapping | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
 | | Imports | Historique (durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
 | | Produits désactivés | Produits retirés des recherches avec le bouton « Désactiver » de l'aperçu interne, avec filtre, « Activer » et « Tout réactiver » |
+| | Articles de blog | Articles importés depuis le flux du blog : image, titre, catégories, date, lien ; recherche comme sur le site, filtre par catégorie |
+| | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Robots & blocages | IP les plus actives, requêtes répétées, alertes, blocage et déblocage |
 | **Optimisations** | Pertinence & classement | Correspondance des mots, importance des champs, score métier (section 8) |
 | | Règles de boost | Coefficients appliqués aux produits qui remplissent des conditions (section 8) |
@@ -404,7 +406,6 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Carrousels | Bandeaux de produits qui défilent, insérés dans un bloc des pages choisies : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte), ciblage selon la provenance, apprentissage par les clics (section 8) |
 | | Envoi de notifications | Messages envoyés aux abonnés aux notifications (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics (voir « Notifications » ci-dessous) |
 | | Campagnes | Produits à pousser sur une période : clics, affichages, paniers, commandes, chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
-| | Aperçu interne | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
 | | Clés | Clés publiques et domaines autorisés |
