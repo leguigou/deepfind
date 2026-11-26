@@ -26,12 +26,14 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |  | [Popins](../recommandations/popins) | Fenêtre affichée sur les pages du site choisies (accueil, adresses), avec période, délai, fréquence et statistiques ; ciblage selon la provenance du visiteur |
 |  | [Carrousels](../recommandations/carrousels) | Bandeaux de produits qui défilent : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte) ; ciblage selon la provenance ; apprentissage par les clics |
 |  | [Campagnes](../recommandations/campagnes) | Produits à pousser sur une période : clics, affichages, paniers, commandes et chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
+|  | [Envoi de notifications](../recommandations/notifications) | Messages envoyés aux abonnés (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics |
 |  | [Aperçu interne](../recherche-et-pertinence/pertinence-et-classement) | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 |  | [Démo du widget](../affichage-du-widget/tester-sur-le-site) | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | [Projets](../exploitation/projets) | Production, Test… |
 |  | [Clés](integrer-le-widget) | Clés publiques et domaines autorisés |
 |  | [Intégration](../affichage-du-widget/layers-filtres-et-tris) | Layers, filtres, options de tri, code du site, favori de test |
 |  | [Variables](../affichage-du-widget/variables-et-textes) | Variables système (lecture seule), textes du widget modifiables par langue, variables personnalisées `{{code}}` |
+|  | [Notifications](../recommandations/notifications) | Invitation à recevoir les notifications : forme (bandeau, popin, cloche, bloc), appareils (téléphones seulement…), exclusion des iPhone, contenu, style, installation du sw.js |
 |  | [Cache](../exploitation/cache) | État et purge des caches |
 |  | [Paramètres](../exploitation/parametres) | Seuils anti-robots, recherche, widget sur le site, journaux, sécurité des imports ; seuil de livraison offerte |
 | **Aide** | Aide | Documentation complète (wiki), s'ouvre dans un nouvel onglet : rubriques à gauche ; à droite, toutes les pages de la rubrique à la suite, la page lue étant surlignée à gauche pendant le défilement ; recherche. Adresse `/admin/wiki` (raccourci `/wiki`), connexion à l'extranet requise. Contenu : fichiers Markdown de `docs/wiki/` (voir « Contribuer à l'aide » sur sa page d'accueil) |

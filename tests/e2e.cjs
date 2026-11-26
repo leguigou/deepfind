@@ -897,6 +897,64 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.request.post(BASE + '/admin/carousels/delete', { form: { _csrf: csrfC, id: cartCarId } });
   await page.request.post(BASE + '/admin/settings/save', { form: { _csrf: csrfS, free_shipping_threshold: '0' } });
 
+  // Notifications : réglages (forme, appareils), invitation sur le site, abonnement, puis message programmé
+  await page.goto(BASE + '/admin/push/settings');
+  await page.check('input[name=push_enabled]', { force: true });
+  await page.check('input[name=push_form][value=banner_bottom]');
+  await page.selectOption('select[name=push_devices]', 'all');
+  await page.fill('input[name=push_delay]', '0');
+  await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);
+  check('notifications : réglages enregistrés', (await page.textContent('body')).includes('Réglages des notifications enregistrés'));
+  const crypto = require('crypto');
+  const ecdh = crypto.createECDH('prime256v1');
+  ecdh.generateKeys();
+  const b64u = (buf) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const fakeSub = { endpoint: 'http://127.0.0.1:7796/e2e/' + Date.now(), p256dh: b64u(ecdh.getPublicKey()), auth: b64u(crypto.randomBytes(16)) };
+  const [nc, np] = await carCtx();
+  await nc.grantPermissions(['notifications'], { origin: BASE });
+  await nc.route(/\/sw\.js$/, (r) => r.fulfill({ contentType: 'application/javascript', body: "importScripts('" + BASE + "/widget/push-sw.js');" }));
+  // le service d'envoi réel du navigateur (Google…) n'est pas joignable ici, et Chromium sans affichage refuse toujours les notifications :
+  // accord du navigateur et abonnement simulés, avec les clés du test
+  await np.addInitScript((sub) => {
+    if (!window.PushManager || !window.Notification) { return; }
+    let perm = 'default';
+    Object.defineProperty(Notification, 'permission', { configurable: true, get: function () { return perm; } });
+    Notification.requestPermission = function () { perm = 'granted'; return Promise.resolve(perm); };
+    let current = null;
+    PushManager.prototype.getSubscription = function () { return Promise.resolve(current); };
+    PushManager.prototype.subscribe = function () {
+      current = { endpoint: sub.endpoint, toJSON: function () { return { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }; },
+        unsubscribe: function () { current = null; return Promise.resolve(true); } };
+      return Promise.resolve(current);
+    };
+  }, fakeSub);
+  await np.goto(BASE + '/boutique/plongee.html');
+  await np.waitForSelector('.df-push', { timeout: 8000 });
+  const invite = await np.textContent('.df-push');
+  await np.waitForTimeout(400); // fondu d'apparition
+  await np.screenshot({ path: OUT + '/notifications-invitation.png' });
+  await np.click('.df-push-yes');
+  await np.waitForSelector('.df-push-thanks', { timeout: 8000 });
+  await nc.close();
+  await page.goto(BASE + '/admin/push/settings');
+  check('notifications : invitation affichée, accord du navigateur, abonnement enregistré', invite.includes('Ne ratez aucune bonne affaire')
+    && /Abonnés\s*1(?!\d)/.test(await page.textContent('.cards')), invite);
+  await page.goto(BASE + '/admin/push/edit');
+  await page.fill('input[name=title]', 'Test e2e');
+  await page.fill('textarea[name=body]', 'Message de test');
+  check('notifications : aperçu du message et nombre d\'abonnés visés', (await page.textContent('[data-pe-out=title]')) === 'Test e2e'
+    && (await page.textContent('[data-pe-count]')).startsWith('1 abonné'));
+  await page.check('input[name=when][value=now]');
+  await page.click('[data-pe-submit]');
+  await confirmModal().catch(() => {});
+  await page.waitForURL(/\/admin\/push$/, { timeout: 8000 });
+  check('notifications : message programmé (envoi par la tâche planifiée)', (await page.textContent('body')).includes('envoi dans la minute à 1 abonné')
+    && (await page.textContent('.table')).includes('Programmé'));
+  await page.screenshot({ path: OUT + '/notifications-messages.png', fullPage: true });
+  await page.goto(BASE + '/admin/push/settings');
+  await page.uncheck('input[name=push_enabled]', { force: true });
+  await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);
+
   // Adapter les produits selon la page : adresse → conditions en plus, vérifiées dans la liste de contrôle, gardées à l'enregistrement
   await page.goto(BASE + '/admin/carousels/edit');
   await page.fill('[data-f=name]', 'Selon la page e2e');

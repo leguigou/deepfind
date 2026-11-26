@@ -688,3 +688,58 @@ CREATE TABLE IF NOT EXISTS live_visitors (
   PRIMARY KEY (project_id, vhash),
   KEY idx_seen (project_id, last_seen)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
+
+-- Notifications (Web Push) : abonnés. endpoint = adresse d'envoi fournie par le navigateur (service du navigateur : Google,
+-- Mozilla, Apple…), p256dh / auth = clés publiques de chiffrement du navigateur. Aucune autre donnée sur la personne.
+-- Supprimé au désabonnement, ou quand le service du navigateur indique que l'abonnement n'existe plus (404 / 410).
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  lang CHAR(2) NOT NULL,
+  endpoint_hash CHAR(64) CHARACTER SET ascii NOT NULL,
+  endpoint TEXT NOT NULL,
+  p256dh VARCHAR(120) CHARACTER SET ascii NOT NULL,
+  auth VARCHAR(40) CHARACTER SET ascii NOT NULL,
+  device ENUM('phone','tablet','desktop') NOT NULL DEFAULT 'phone',
+  channel VARCHAR(12) CHARACTER SET ascii NOT NULL DEFAULT 'direct',
+  failures TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_endpoint (endpoint_hash),
+  KEY idx_project (project_id, lang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Notifications : messages envoyés (Recommandations › Envoi de notifications) et leurs résultats.
+CREATE TABLE IF NOT EXISTS push_campaigns (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  project_id INT UNSIGNED NOT NULL,
+  lang CHAR(2) NOT NULL,
+  title VARCHAR(80) NOT NULL,
+  body VARCHAR(250) NOT NULL DEFAULT '',
+  image VARCHAR(500) NOT NULL DEFAULT '',
+  url VARCHAR(500) NOT NULL DEFAULT '',
+  devices ENUM('all','phone','mobile','desktop') NOT NULL DEFAULT 'all',
+  channels TEXT NULL,
+  status ENUM('draft','scheduled','sending','sent') NOT NULL DEFAULT 'draft',
+  scheduled_at DATETIME NULL,
+  sent_at DATETIME NULL,
+  targeted INT UNSIGNED NOT NULL DEFAULT 0,
+  sent INT UNSIGNED NOT NULL DEFAULT 0,
+  failed INT UNSIGNED NOT NULL DEFAULT 0,
+  shown INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  KEY idx_project (project_id, lang),
+  KEY idx_due (status, scheduled_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Notifications : invitation (affichée, acceptée, plus tard), réponse du navigateur (autorisé, bloqué), abonnements, désabonnements,
+-- par jour. Totaux uniquement.
+CREATE TABLE IF NOT EXISTS push_stats (
+  project_id INT UNSIGNED NOT NULL,
+  day DATE NOT NULL,
+  metric VARCHAR(12) CHARACTER SET ascii NOT NULL,
+  n INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (project_id, day, metric)
+) ENGINE=InnoDB DEFAULT CHARSET=ascii;

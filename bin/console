@@ -152,6 +152,14 @@ try {
             } catch (Throwable $e) {
                 $out('audience : ' . $e->getMessage());
             }
+            // Notifications programmées dont l'heure est passée
+            try {
+                DeepFind\Push\Push::runDue(static function (string $m) use ($out): void {
+                    $out('[' . date('H:i') . '] ' . $m);
+                });
+            } catch (Throwable $e) {
+                $out('notifications : ' . $e->getMessage());
+            }
             if (isset($opts['work'])) {
                 // Sans Supervisor : traite aussi la file d'attente dans la foulée.
                 workQueue(true, 3600, 5, $out);
@@ -196,6 +204,17 @@ try {
             RulesRepository::bumpVersion();
             break;
 
+        case 'push:send':
+            // Envoie tout de suite les notifications programmées dont l'heure est passée (sinon : schedule:run, chaque minute)
+            $n = DeepFind\Push\Push::runDue($out);
+            $out("$n notification(s) envoyée(s)");
+            break;
+
+        case 'push:keys':
+            // Clé publique VAPID de l'installation (créée si besoin) ; la clé privée reste chiffrée en base
+            $out('Clé publique VAPID : ' . DeepFind\Push\WebPush::vapid()['public']);
+            break;
+
         case 'logs:purge':
             $res = SearchLogger::purge();
             $res['kv_store'] = MysqlStore::purgeExpired();
@@ -232,6 +251,8 @@ DeepFind — commandes :
   rules:sync [--lang=fr]                  Renvoie les synonymes au moteur
   rules:import --lang=fr [--replace] [--synonyms=f.csv] [--rules=f.csv] [--redirects=f.csv]
   logs:purge                              Supprime les journaux au-delà de la durée de conservation
+  push:send                               Envoie les notifications programmées dont l'heure est passée
+  push:keys                               Affiche la clé publique VAPID (notifications)
 TXT);
     }
 } catch (Throwable $e) {

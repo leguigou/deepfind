@@ -29,6 +29,7 @@ $navGroups = [
         'popins' => ['/admin/popins', 'Popins', 'app-window'],
         'carousels' => ['/admin/carousels', 'Carrousels', 'carousel'],
         'campaigns' => ['/admin/campaigns', 'Campagnes', 'target'],
+        'push' => ['/admin/push', 'Envoi de notifications', 'bell'],
         'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'demo' => ['/admin/demo', 'Démo du widget', 'external-link'],
     ]],
@@ -38,6 +39,7 @@ $navGroups = [
         'integration' => ['/admin/integration', 'Intégration', 'code'],
         'cache' => ['/admin/cache', 'Cache', 'database'],
         'variables' => ['/admin/variables', 'Variables', 'braces'],
+        'push_settings' => ['/admin/push/settings', 'Notifications', 'bell'],
         'settings' => ['/admin/settings', 'Paramètres', 'settings'],
     ]],
 ];

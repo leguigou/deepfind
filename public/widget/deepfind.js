@@ -117,7 +117,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=29'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=30'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1259,6 +1259,203 @@
     pageReady = true;
     schedulePopins();
     startCarousels();
+    startPush();
+  }
+
+  // ------------------------------------------------------------------ Notifications (extranet › Paramètres › Notifications)
+  /*
+   * Invitation à recevoir les notifications du site (bandeau, popin, cloche ou bloc), puis demande du navigateur après le clic sur
+   * « Oui » (règle des navigateurs). Le site héberge un sw.js d'une ligne qui charge le service worker de DeepFind (push-sw.js).
+   * Appareils et iPhone / iPad selon les réglages ; « Plus tard » mémorisé N jours dans le navigateur (comme les popins) ;
+   * rien depuis la Démo, l'aperçu ou si le navigateur a déjà bloqué les notifications.
+   */
+  var pushCfg = null;
+  var pushStarted = false;
+  var PUSH_LATER = 'df-push-later:' + cfg.key;
+  var PUSH_PV = 'df-push-pv:' + cfg.key;
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+  function isIos() { return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function pushDeviceOk(p) {
+    if (p.exclude_ios && isIos()) { return false; }
+    var d = device || (mobile.matches ? 'm' : 'd');
+    if (p.devices === 'phone') { return d === 'm'; }
+    if (p.devices === 'mobile') { return d === 'm' || d === 't'; }
+    if (p.devices === 'desktop') { return d === 'd'; }
+    return true;
+  }
+  function pushEvent(e) {
+    if (noAudience) { return; }
+    try {
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, e: e });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(cfg.api + '/push/event', body))) {
+        fetch(cfg.api + '/push/event', { method: 'POST', body: body, keepalive: true, credentials: 'omit' }).catch(function () { /* facultatif */ });
+      }
+    } catch (err) { /* facultatif */ }
+  }
+  function b64uToBytes(s) {
+    var b = atob(String(s).replace(/-/g, '+').replace(/_/g, '/') + '===='.slice((String(s).length % 4) || 4));
+    var out = new Uint8Array(b.length);
+    for (var i = 0; i < b.length; i++) { out[i] = b.charCodeAt(i); }
+    return out;
+  }
+  function pushRegistration() {
+    return navigator.serviceWorker.register(pushCfg.sw).then(function (reg) {
+      var w = reg.installing || reg.waiting;
+      if (reg.active || !w) { return reg; }
+      return new Promise(function (resolve) {
+        w.addEventListener('statechange', function () { if (w.state === 'activated') { resolve(reg); } });
+        setTimeout(function () { resolve(reg); }, 8000);
+      });
+    });
+  }
+  function pushSave(sub) {
+    var j = sub.toJSON ? sub.toJSON() : {};
+    var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, endpoint: j.endpoint || sub.endpoint, p256dh: (j.keys || {}).p256dh || '', auth: (j.keys || {}).auth || '', d: device });
+    addSource(body, true);
+    return fetch(cfg.api + '/push/subscribe', { method: 'POST', body: body, credentials: 'omit' });
+  }
+  // Clic sur « Oui » : demande du navigateur (dans le clic), puis abonnement envoyé à DeepFind
+  function pushSubscribe() {
+    pushEvent('ia');
+    var ask = Notification.requestPermission();
+    return Promise.resolve(ask).then(function (perm) {
+      pushEvent(perm === 'granted' ? 'ig' : 'id');
+      if (perm !== 'granted') { return false; }
+      return pushRegistration().then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (s) {
+          return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(pushCfg.key) });
+        });
+      }).then(function (sub) { return pushSave(sub).then(function () { return true; }); });
+    }).catch(function (err) { console.warn('[DeepFind] notifications : ' + (err && err.message ? err.message : err)); return false; });
+  }
+  function pushUnsubscribe() {
+    return navigator.serviceWorker.getRegistration(pushCfg.sw).then(function (reg) {
+      return reg ? reg.pushManager.getSubscription() : null;
+    }).then(function (sub) {
+      if (!sub) { return; }
+      var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, endpoint: sub.endpoint });
+      return sub.unsubscribe().then(function () { return fetch(cfg.api + '/push/unsubscribe', { method: 'POST', body: body, credentials: 'omit' }); });
+    }).catch(function () { /* déjà désabonné */ });
+  }
+  function pushStyle(p, box) {
+    var c = p.colors || {};
+    var hex = function (v, d) { return typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v : d; };
+    box.style.setProperty('--df-push-bg', hex(c.bg, '#ffffff'));
+    box.style.setProperty('--df-push-text', hex(c.text, '#1f2937'));
+    box.style.setProperty('--df-push-btn', hex(c.button, '#e11d48'));
+    if (p.css && !document.querySelector('style[data-deepfind="push"]')) {
+      var st = document.createElement('style');
+      st.setAttribute('data-deepfind', 'push');
+      st.textContent = String(p.css);
+      document.head.appendChild(st);
+    }
+  }
+  // Contenu de l'invitation (titre, texte, image, boutons) ; preview : boutons inactifs (aperçu de l'extranet)
+  function pushInvite(p, preview, onDone) {
+    var form = p.form || 'banner_bottom';
+    var box = el('div', 'df-push df-push-' + form + (form === 'popin_corner' || form === 'bell' ? ' df-push-' + (p.position === 'left' ? 'left' : 'right') : ''));
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', p.title || 'Notifications');
+    pushStyle(p, box);
+    var img = safeUrl(p.image);
+    if (img && form !== 'banner_top' && form !== 'banner_bottom') { var im = el('img', 'df-push-img'); im.src = img; im.alt = ''; box.appendChild(im); }
+    var txt = el('div', 'df-push-txt');
+    if (p.title) { txt.appendChild(el('strong', 'df-push-title', withVars(p.title))); }
+    if (p.text) { txt.appendChild(el('p', 'df-push-text', withVars(p.text))); }
+    box.appendChild(txt);
+    var btns = el('div', 'df-push-btns');
+    var yes = el('button', 'df-push-yes', p.accept || 'OK');
+    var later = el('button', 'df-push-later', p.later || '×');
+    yes.type = later.type = 'button';
+    btns.appendChild(yes);
+    btns.appendChild(later);
+    box.appendChild(btns);
+    if (!preview) {
+      yes.addEventListener('click', function () {
+        yes.disabled = later.disabled = true;
+        pushSubscribe().then(function (ok) {
+          if (ok && p.thanks) {
+            box.textContent = '';
+            box.appendChild(el('p', 'df-push-thanks', withVars(p.thanks)));
+            setTimeout(function () { onDone(true); }, 3500);
+          } else { onDone(ok); }
+        });
+      });
+      later.addEventListener('click', function () {
+        pushEvent('il');
+        try { window.localStorage.setItem(PUSH_LATER, String(Date.now() + (parseInt(p.remember_days, 10) || 0) * 86400000)); } catch (e) { /* stockage indisponible */ }
+        onDone(false);
+      });
+    }
+    return box;
+  }
+  // Cloche flottante : ouvre l'invitation, ou propose de se désabonner si le visiteur est déjà abonné
+  function pushBell(p, subscribed, preview) {
+    var bell = el('button', 'df-push-bell df-push-' + (p.position === 'left' ? 'left' : 'right') + (subscribed ? ' df-push-on' : ''));
+    bell.type = 'button';
+    bell.setAttribute('aria-label', subscribed ? 'Notifications activées : se désabonner' : (p.title || 'Recevoir les notifications'));
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    var path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', 'M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6M9 17v1a3 3 0 0 0 6 0v-1');
+    svg.appendChild(path);
+    bell.appendChild(svg);
+    pushStyle(p, bell);
+    if (!preview) {
+      var panel = null;
+      bell.addEventListener('click', function () {
+        if (panel) { panel.remove(); panel = null; return; }
+        if (bell.classList.contains('df-push-on')) {
+          panel = el('div', 'df-push df-push-popin_corner df-push-' + (p.position === 'left' ? 'left' : 'right'));
+          pushStyle(p, panel);
+          panel.appendChild(el('p', 'df-push-text', 'Vous recevez nos notifications.'));
+          var off = el('button', 'df-push-later', 'Ne plus les recevoir');
+          off.type = 'button';
+          off.addEventListener('click', function () { pushUnsubscribe().then(function () { bell.classList.remove('df-push-on'); panel.remove(); panel = null; }); });
+          panel.appendChild(off);
+        } else {
+          pushEvent('iv');
+          panel = pushInvite(Object.assign({}, p, { form: 'popin_corner' }), false, function (ok) {
+            if (panel) { panel.remove(); panel = null; }
+            if (ok) { bell.classList.add('df-push-on'); }
+          });
+        }
+        document.body.appendChild(panel);
+      });
+    }
+    return bell;
+  }
+  function startPush() {
+    if (pushStarted || !pageReady || !pushCfg || noAudience || demo || renderMode || !pushSupported() || !pushDeviceOk(pushCfg)) { return; }
+    var path = currentPath().toLowerCase();
+    if ((pushCfg.exclude || []).some(function (x) { return x && path.indexOf(x) === 0; })) { return; }
+    if (Notification.permission === 'denied') { return; }
+    pushStarted = true;
+    var p = pushCfg;
+    var pv = 1;
+    try { pv = (parseInt(window.sessionStorage.getItem(PUSH_PV), 10) || 0) + 1; window.sessionStorage.setItem(PUSH_PV, String(pv)); } catch (e) { /* stockage indisponible */ }
+    var isSubscribed = Notification.permission !== 'granted' ? Promise.resolve(false) : navigator.serviceWorker.getRegistration(p.sw).then(function (reg) {
+      return reg ? reg.pushManager.getSubscription().then(function (s) { if (s) { pushSave(s).catch(function () {}); } return !!s; }) : false; // abonnement rafraîchi
+    }).catch(function () { return false; });
+    isSubscribed.then(function (subscribed) {
+      if (p.form === 'bell') { document.body.appendChild(pushBell(p, subscribed, false)); return; }
+      if (subscribed || pv < (parseInt(p.min_pages, 10) || 1)) { return; }
+      try { if (parseInt(window.localStorage.getItem(PUSH_LATER) || '0', 10) > Date.now()) { return; } } catch (e) { /* stockage indisponible */ }
+      setTimeout(function () {
+        var box = pushInvite(p, false, function () { box.remove(); });
+        if (p.form === 'block') {
+          var target = null;
+          try { target = p.selector ? document.querySelector(p.selector) : null; } catch (e) { target = null; }
+          if (!target) { return; }
+          target.appendChild(box);
+        } else {
+          document.body.appendChild(box);
+        }
+        pushEvent('iv');
+      }, Math.max(0, parseInt(p.delay, 10) || 0) * 1000);
+    });
   }
 
   // ------------------------------------------------------------------ Popins (extranet › Recommandations › Popins)
@@ -1766,7 +1963,7 @@
         layer: c.layer || null, filters: c.filters || null, sorts: c.sorts || null, popins: Array.isArray(c.popins) ? c.popins : [],
         carousels: c.carousels === true, personal: typeof c.personal === 'string' ? c.personal : 'consent',
         journey: c.journey === true, events: c.events === true, commerce: c.commerce || false,
-        segments: c.segments === true, segment: c.segment || null, cart_context: c.cart_context === true,
+        segments: c.segments === true, segment: c.segment || null, cart_context: c.cart_context === true, push: c.push || false,
         texts: c.texts || null, vars: c.vars || null, t: Date.now() }));
     } catch (e) { /* stockage indisponible */ }
   }
@@ -1788,6 +1985,8 @@
     segmentsWanted = c.segments === true;
     if (c.segment && typeof c.segment === 'object') { visitorSegment = c.segment; }
     cartWanted = c.cart_context === true;
+    // notifications : invitation (réglages de l'extranet)
+    if (c.push && typeof c.push === 'object') { pushCfg = c.push; startPush(); }
     hookCommerce(c);
     // Affichage : pris en compte au démarrage seulement (une modification s'applique à la page suivante)
     if (started) { return; }
@@ -2069,6 +2268,13 @@
       if (!started) { applyCfg(p.config || null); started = true; document.head.appendChild(css); }
       Array.prototype.forEach.call(document.querySelectorAll('.df-popin, .df-carousel, style[data-deepfind^="carousel-"]'), function (n) { n.remove(); });
       if (p.type === 'popin') { showPopin(p.item); return; }
+      if (p.type === 'push') {
+        Array.prototype.forEach.call(document.querySelectorAll('.df-push, .df-push-bell'), function (n) { n.remove(); });
+        var pb = p.item.form === 'bell' ? pushBell(p.item, false, true) : pushInvite(p.item, true, function () {});
+        if (p.item.form === 'bell') { var pv0 = pushInvite(Object.assign({}, p.item, { form: 'popin_corner' }), true, function () {}); pv0.classList.add('df-push-above'); document.body.appendChild(pv0); }
+        ((p.item.form === 'block' && p.slot) || document.body).appendChild(pb);
+        return;
+      }
       var box = renderCarousel(p.item);
       (p.slot || document.body).appendChild(box);
       box.__dfStart();
