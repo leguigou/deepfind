@@ -873,6 +873,21 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/campagne.png', fullPage: true });
   await page.goto(BASE + '/admin/campaigns');
   check('campagnes : liste', (await page.textContent('.cp-table')).includes('Campagne e2e'));
+  // Campagne par règles seules : même éditeur de conditions que les boosts (Marque est …)
+  await page.goto(BASE + '/admin/campaigns/edit');
+  await page.fill('input[name=name]', 'Règles e2e');
+  await page.click('[data-add-cond]');
+  await page.selectOption('.cp-rules .br-cond select.br-field', 'brand');
+  await page.click('.cp-rules .br-cond .ms-toggle');
+  await page.locator('.cp-rules .ms-list .ms-item', { hasText: 'C4' }).first().click();
+  await page.click('input[name=name]');
+  await page.locator('.cp-rules').screenshot({ path: OUT + '/campagne-regles.png' });
+  await Promise.all([page.waitForNavigation(), page.click('.cp-form .cr-foot button.btn:not(.btn-danger)')]);
+  const cpRBody = await page.textContent('body');
+  check('campagnes : produits par règles (enregistrée, produits correspondants comptés, badge « règle »)', cpRBody.includes('Campagne « Règles e2e » enregistrée')
+    && /Règles : \d+ produit\(s\)/.test(cpRBody) && await page.locator('.cp-table .badge:has-text("règle")').count() > 0, cpRBody.slice(0, 400));
+  await page.click('.cr-delete-btn');
+  await Promise.all([page.waitForNavigation(), confirmModal()]);
 
   // Carrousel « page panier » : panier lu dans les données Magento du navigateur, message de livraison offerte
   await page.goto(BASE + '/admin/settings');

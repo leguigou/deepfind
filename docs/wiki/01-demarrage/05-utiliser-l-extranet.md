@@ -25,8 +25,8 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |  | [Bannières](../recommandations/bannieres) | Image ou code HTML en haut des résultats |
 |  | [Popins](../recommandations/popins) | Fenêtre affichée sur les pages du site choisies (accueil, adresses), avec période, délai, fréquence et statistiques ; ciblage selon la provenance du visiteur |
 |  | [Carrousels](../recommandations/carrousels) | Bandeaux de produits qui défilent : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte) ; ciblage selon la provenance ; apprentissage par les clics |
-|  | [Campagnes](../recommandations/campagnes) | Produits à pousser sur une période : clics, affichages, paniers, commandes et chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
-|  | [Envoi de notifications](../recommandations/notifications) | Messages envoyés aux abonnés (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics |
+|  | [Campagnes](../recommandations/campagnes) | Produits à pousser sur une période (choisis un par un ou par règles) : clics, affichages, paniers, commandes et chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
+|  | [Envoi de notifications](../recommandations/notifications) | Messages envoyés aux abonnés (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics, liste des abonnés, groupe de test |
 |  | [Aperçu interne](../recherche-et-pertinence/pertinence-et-classement) | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
 |  | [Démo du widget](../affichage-du-widget/tester-sur-le-site) | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | [Projets](../exploitation/projets) | Production, Test… |

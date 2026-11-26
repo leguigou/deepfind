@@ -1134,6 +1134,22 @@ if ($base) {
         && $plSearch !== null && $plSearch['revenue'] === 10000 && $plSearch['label'] === 'Recherche'
         && $CP::status($CP::find($idCp, 'fr')) === 'current', json_encode([$cpStats['total'], $cpStats['placements']]));
     $CP::delete($idCp, 'fr');
+    // campagne par règles (comme les boosts) : produits du catalogue qui remplissent les conditions, en plus de la liste
+    $cpDoc = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'id = ' . json_encode((string) $rId[0]), 1, 0, ['id', 'sku', 'brand'])[0] ?? [];
+    [$cpR, $cpRErr] = $CP::sanitize(['name' => 'Par marque', 'active' => '1', 'items' => [], 'match' => 'all',
+        'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => [(string) ($cpDoc['brand'] ?? '')]], ['field' => 'nope', 'op' => 'in', 'values' => ['x']]]], 'fr');
+    [$cpNone, $cpNoneErr] = $CP::sanitize(['name' => 'Vide', 'items' => [], 'conditions' => []], 'fr');
+    $idCpR = $CP::save('fr', $cpR, null);
+    $cpRFound = $CP::find($idCpR, 'fr');
+    $cpRStats = $CP::stats($cpRFound, 'fr');
+    $cpRSkus = array_column($cpRStats['rows'], 'sku');
+    $brandCount = count(DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'brand = ' . json_encode((string) ($cpDoc['brand'] ?? '')), 1000, 0, ['id']));
+    check('campagnes : produits par règles (marque ; champ inconnu ignoré ; ni produit ni règle refusé ; totaux sur tous les produits)',
+        $cpR !== null && $cpRErr === [] && $cpRFound['conditions'] === [['field' => 'brand', 'op' => 'in', 'values' => [(string) $cpDoc['brand']]]] && $cpRFound['match_all'] === true
+        && $cpNone === null && str_contains(implode(' ', $cpNoneErr), 'ou une règle') && $cpRStats['rule']['count'] === $brandCount && $brandCount > 0
+        && in_array((string) $cpDoc['sku'], $cpRSkus, true) && array_filter($cpRStats['rows'], static fn ($r) => !$r['rule']) === [] && $cpRStats['total']['orders'] >= 1,
+        json_encode([$cpRErr, $cpRStats['rule'], $cpRStats['total'], $brandCount, $cpDoc]));
+    $CP::delete($idCpR, 'fr');
     // tendances (après les campagnes : les totaux par produit sont remplacés par des données de test)
     $mDay = $AU::measureDay();
     DeepFind\Db::exec('DELETE FROM audience_products');
