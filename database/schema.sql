@@ -702,6 +702,8 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   auth VARCHAR(40) CHARACTER SET ascii NOT NULL,
   device ENUM('phone','tablet','desktop') NOT NULL DEFAULT 'phone',
   channel VARCHAR(12) CHARACTER SET ascii NOT NULL DEFAULT 'direct',
+  -- clé publique du widget utilisée à l'abonnement : reprise dans les messages (compteurs affichés / clics autorisés pour ce domaine)
+  api_key_id INT UNSIGNED NULL,
   failures TINYINT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,

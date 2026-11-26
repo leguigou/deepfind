@@ -1199,8 +1199,10 @@ if ($base) {
         $browsers[$kind] = ['key' => $k, 'p256dh' => $WP::b64u($WP::rawPublic($k)), 'auth' => $WP::b64u(random_bytes(16)), 'endpoint' => 'http://127.0.0.1:7796/' . $kind . '/' . bin2hex(random_bytes(4))];
     }
     $subCodes = [];
+    // deuxième clé du projet (ex. site de recette) : l'abonné « ok » s'inscrit avec elle, ses messages doivent la reprendre
+    $key2 = DeepFind\Security\ApiKeys::create('Recette notifications', 'localhost', 'fr');
     foreach ($browsers as $kind => $br) {
-        $subCodes[] = $post('/api/v1/push/subscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => $br['endpoint'], 'p256dh' => $br['p256dh'], 'auth' => $br['auth'],
+        $subCodes[] = $post('/api/v1/push/subscribe', ['key' => $kind === 'ok' ? $key2 : $key, 'lang' => 'fr', 'endpoint' => $br['endpoint'], 'p256dh' => $br['p256dh'], 'auth' => $br['auth'],
             'd' => 'm', 'src_s' => 'brevo', 'src_m' => 'email'], 'Mozilla/5.0 (Linux; Android 14) Push/' . $kind);
     }
     $subCodes[] = $post('/api/v1/push/subscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => 'javascript:alert(1)', 'p256dh' => 'x', 'auth' => 'y', 'd' => 'm'], 'Mozilla/5.0 Push/bad');
@@ -1222,10 +1224,10 @@ if ($base) {
     $okReq = array_values(array_filter($reqs, static fn ($r) => str_starts_with($r['path'], '/ok/')))[0] ?? null;
     $payloadP = $okReq ? json_decode($WP::decrypt(base64_decode($okReq['body']), $browsers['ok']['key'], $browsers['ok']['auth']), true) : null;
     $pcAfter = $PU::find($idPc, 'fr');
-    check('notifications : envoi chiffré reçu et lu par le navigateur abonné (titre, texte, lien, compteurs) ; signature VAPID valide',
+    check('notifications : envoi chiffré reçu et lu par le navigateur abonné (titre, texte, lien, clé de son abonnement) ; signature VAPID valide',
         $nSent === 1 && count($reqs) === 2 && $okReq['encoding'] === 'aes128gcm' && $vapidOk($okReq['auth'], 'http://127.0.0.1:7796')
         && ($payloadP['t'] ?? '') === 'Soldes -20 %' && ($payloadP['b'] ?? '') === 'Jusqu\'à dimanche' && ($payloadP['u'] ?? '') === '/promotions.html'
-        && ($payloadP['c'] ?? 0) === $idPc && str_starts_with((string) ($payloadP['k'] ?? ''), 'pk_'), json_encode([$nSent, count($reqs), $payloadP]));
+        && ($payloadP['c'] ?? 0) === $idPc && ($payloadP['k'] ?? '') === $key2, json_encode([$nSent, count($reqs), $payloadP]));
     check('notifications : abonnement expiré (410) supprimé, message marqué envoyé ; nouvel essai sans effet',
         $pcAfter['status'] === 'sent' && $pcAfter['sent'] === 1 && $pcAfter['failed'] === 1 && $PU::counts('fr')['total'] === 1 && $PU::runDue() === 0, json_encode($pcAfter));
     $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 's'], 'Mozilla/5.0 Push/sw');
@@ -1236,6 +1238,7 @@ if ($base) {
     check('notifications : affichage et clic signalés par le service worker ; désabonnement', $pcAfter['shown'] === 1 && $pcAfter['clicks'] === 1
         && $unsub === 200 && $PU::counts('fr')['total'] === 0 && $PU::stats(1)['uns'] === 1, json_encode($pcAfter));
     proc_terminate($pushSrv);
+    DeepFind\Db::exec('DELETE FROM api_keys WHERE public_key = ?', [$key2]);
     DeepFind\Settings::set('push_enabled', '0');
     DeepFind\Settings::set('push_form', 'banner_bottom');
 
