@@ -384,3 +384,10 @@ html.df-lock { overflow: hidden; }
 @media (prefers-reduced-motion: no-preference) { .df-push { animation: df-push-in .25s ease-out; } @keyframes df-push-in { from { opacity: 0; } to { opacity: 1; } } }
 .df-push-popin_center .df-push-txt, .df-push-popin_corner .df-push-txt { flex: none; }
 .df-push-popin_corner .df-push-btns { justify-content: flex-start; }
+/* Croix de fermeture de l'invitation et de la fenêtre de la cloche */
+.df-push { padding-right: 44px; }
+.df-push-block { position: relative; }
+.df-push-x { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: transparent; color: inherit;
+  font: 16px/1 system-ui, sans-serif; opacity: .6; cursor: pointer; display: grid; place-items: center; }
+.df-push-x:hover, .df-push-x:focus-visible { opacity: 1; background: color-mix(in srgb, currentColor 10%, transparent); }
+.df-push-popin_center { padding-right: 22px; } .df-push-popin_center .df-push-txt { padding: 0 18px; }

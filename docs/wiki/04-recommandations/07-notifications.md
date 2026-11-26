@@ -13,6 +13,8 @@ Envoyer des messages sur le téléphone ou l'ordinateur des visiteurs qui l'ont 
 2. S'il clique sur **Oui**, le **navigateur** demande son accord (« Autoriser les notifications ? »). Cette fenêtre n'est pas modifiable et ne s'ouvre qu'après un clic (règle des navigateurs). **S'il la bloque, on ne peut plus la reproposer** : c'est pour cela que l'invitation passe d'abord.
 3. Accord donné : l'abonnement est enregistré, un message de remerciement s'affiche.
 
+La **croix** en haut à droite ferme l'invitation (comme *Plus tard*) ou la fenêtre de la cloche.
+
 *Plus tard* : invitation reproposée au bout du nombre de jours réglé (mémorisé dans le navigateur, comme les popins). Navigateur qui a déjà bloqué les notifications : aucune invitation.
 
 ## Réglages (Paramètres › Notifications)

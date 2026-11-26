@@ -931,13 +931,14 @@ fs.mkdirSync(OUT, { recursive: true });
   await np.goto(BASE + '/boutique/plongee.html');
   await np.waitForSelector('.df-push', { timeout: 8000 });
   const invite = await np.textContent('.df-push');
+  const hasClose = await np.locator('.df-push .df-push-x').count() === 1;
   await np.waitForTimeout(400); // fondu d'apparition
   await np.screenshot({ path: OUT + '/notifications-invitation.png' });
   await np.click('.df-push-yes');
   await np.waitForSelector('.df-push-thanks', { timeout: 8000 });
   await nc.close();
   await page.goto(BASE + '/admin/push/settings');
-  check('notifications : invitation affichée, accord du navigateur, abonnement enregistré', invite.includes('Ne ratez aucune bonne affaire')
+  check('notifications : invitation affichée (avec croix de fermeture), accord du navigateur, abonnement enregistré', hasClose && invite.includes('Ne ratez aucune bonne affaire')
     && /Abonnés\s*1(?!\d)/.test(await page.textContent('.cards')), invite);
   await page.goto(BASE + '/admin/push/edit');
   await page.fill('input[name=title]', 'Test e2e');

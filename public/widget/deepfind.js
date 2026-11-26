@@ -117,7 +117,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=30'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=31'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1370,7 +1370,10 @@
     btns.appendChild(yes);
     btns.appendChild(later);
     box.appendChild(btns);
+    var x = pushClose(box);
     if (!preview) {
+      // croix : dans la fenêtre de la cloche, ferme seulement ; ailleurs, comme « Plus tard »
+      x.addEventListener('click', function () { if (p.panel) { onDone(false); } else { later.click(); } });
       yes.addEventListener('click', function () {
         yes.disabled = later.disabled = true;
         pushSubscribe().then(function (ok) {
@@ -1388,6 +1391,14 @@
       });
     }
     return box;
+  }
+  // Croix de fermeture, en haut à droite de la fenêtre
+  function pushClose(box) {
+    var x = el('button', 'df-push-x', '✕');
+    x.type = 'button';
+    x.setAttribute('aria-label', t.close || 'Fermer');
+    box.appendChild(x);
+    return x;
   }
   // Cloche flottante : ouvre l'invitation, ou propose de se désabonner si le visiteur est déjà abonné
   function pushBell(p, subscribed, preview) {
@@ -1411,13 +1422,14 @@
           panel = el('div', 'df-push df-push-popin_corner df-push-' + (p.position === 'left' ? 'left' : 'right'));
           pushStyle(p, panel);
           panel.appendChild(el('p', 'df-push-text', 'Vous recevez nos notifications.'));
+          pushClose(panel).addEventListener('click', function () { panel.remove(); panel = null; });
           var off = el('button', 'df-push-later', 'Ne plus les recevoir');
           off.type = 'button';
           off.addEventListener('click', function () { pushUnsubscribe().then(function () { bell.classList.remove('df-push-on'); panel.remove(); panel = null; }); });
           panel.appendChild(off);
         } else {
           pushEvent('iv');
-          panel = pushInvite(Object.assign({}, p, { form: 'popin_corner' }), false, function (ok) {
+          panel = pushInvite(Object.assign({}, p, { form: 'popin_corner', panel: true }), false, function (ok) {
             if (panel) { panel.remove(); panel = null; }
             if (ok) { bell.classList.add('df-push-on'); }
           });
