@@ -175,6 +175,7 @@ h3 { font-size: 15px; margin: 0 0 10px; }
 .table-search input[type=search] { flex: 1 1 260px; max-width: 420px; margin: 0; }
 tr[hidden] { display: none !important; }
 td.actions, th.actions { display: table-cell; } td.actions > * { display: inline-block; margin: 2px; }
+td.actions > .btn { display: inline-flex; vertical-align: middle; } /* icône et texte sur une ligne */
 
 /* ---------- Formulaires */
 .form label { display: block; margin: 0 0 12px; font-weight: 600; }
@@ -1411,10 +1412,13 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 /* Recommandations › Campagnes */
 .cp-up { color: var(--ok); font-weight: 600; }
 .cp-down { color: var(--ko); font-weight: 600; }
-.cp-table td { vertical-align: top; }
+.cp-table td { vertical-align: middle; }
+.cp-table td:first-child { min-width: 180px; }
+.cp-table td:nth-child(2) { white-space: nowrap; }
 .cp-form { margin-top: 8px; }
 .cp-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.cp-table td.actions { white-space: nowrap; }
+.cp-table td.actions { white-space: nowrap; text-align: right; vertical-align: middle; }
+.cp-table td.actions .btn svg { width: 14px; height: 14px; }
 .cp-form .grid2 { align-items: end; }
 .cp-active { align-self: center; }
 .cp-bulk { margin: 6px 0 10px; }

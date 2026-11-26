@@ -873,6 +873,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/campagne.png', fullPage: true });
   await page.goto(BASE + '/admin/campaigns');
   check('campagnes : liste', (await page.textContent('.cp-table')).includes('Campagne e2e'));
+  await page.locator('.cp-table').screenshot({ path: OUT + '/campagnes-liste.png' });
   // Campagne par règles seules : même éditeur de conditions que les boosts (Marque est …)
   await page.goto(BASE + '/admin/campaigns/edit');
   await page.fill('input[name=name]', 'Règles e2e');
