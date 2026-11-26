@@ -1467,7 +1467,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .psb-table td { vertical-align: top; }
 .psb-code { font-size: 12px; white-space: nowrap; }
 .psb-table td.actions form { display: inline-block; margin: 2px; }
-.psb-table td.actions { min-width: 240px; }
+.psb-table td.actions { min-width: 0; width: 1%; text-align: right; }
 .psb-tester { display: flex !important; gap: 4px; align-items: center; }
 .psb-tester input { width: 150px; padding: 4px 8px; font-size: 13px; }
 .psb-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
@@ -1511,3 +1511,24 @@ td.actions form > .btn { vertical-align: middle; }
 .btn-sm .admin-icon { width: 14px; height: 14px; }
 .btn-sm { line-height: 1.4; min-height: 28px; }
 .pm-table td.actions { white-space: nowrap; }
+
+/* Menu « ⋮ » d'une ligne de tableau */
+.kebab { position: relative; display: inline-block; }
+.kebab > summary { list-style: none; }
+.kebab > summary::-webkit-details-marker { display: none; }
+.kb-toggle { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); font-size: 20px; line-height: 1; font-weight: 700; cursor: pointer; user-select: none; }
+.kb-toggle:hover, .kebab[open] > .kb-toggle { border-color: var(--accent, #ff4f8b); }
+.kb-toggle:focus-visible { outline: 2px solid var(--accent, #ff4f8b); outline-offset: 2px; }
+.kb-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; min-width: 230px; padding: 6px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface-solid); box-shadow: 0 14px 40px rgba(0, 0, 0, .35); text-align: left; white-space: normal; }
+.kb-menu form { display: block !important; margin: 0 !important; }
+.kb-menu.kb-floating { position: fixed; right: auto; z-index: 1000; }
+.kebab:not([open]) > .kb-menu { display: none; }
+.kb-item { display: block; width: 100%; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 14px;
+  text-align: left; cursor: pointer; }
+.kb-item:hover, .kb-item:focus-visible { background: var(--surface-2); outline: none; }
+.kb-danger { color: var(--ko); }
+.kb-sep { border: 0; border-top: 1px solid var(--border); margin: 4px 2px; }
+.kb-form { padding: 4px 4px 2px; }
+.kb-form input[name=label] { width: 100%; margin: 0 0 4px; padding: 6px 10px; font-size: 13px; }

@@ -203,8 +203,24 @@ final class PushController
             App::back('/admin/push');
             return;
         }
-        View::render('push_view', ['active' => 'push', 'c' => $c, 'icon' => Settings::get('push_icon'),
+        View::render('push_view', ['active' => 'push', 'c' => $c, 'icon' => Settings::get('push_icon'), 'testers' => Push::testers($lang),
             'host' => (string) parse_url((string) \DeepFind\Config::get('APP_URL', ''), PHP_URL_HOST)], 'Message « ' . $c['title'] . ' »');
+    }
+
+    /** « Envoyer au groupe de test » depuis la page d'un message (même déjà envoyé) : contenu enregistré, statistiques inchangées. */
+    public function testSaved(): void
+    {
+        $lang = Auth::lang();
+        $id = (int) ($_POST['id'] ?? 0);
+        $c = Push::find($id, $lang);
+        if ($c === null) {
+            Auth::flash('error', 'Message introuvable.');
+            App::back('/admin/push');
+            return;
+        }
+        [$type, $msg] = self::testResult(Push::sendToTesters($lang, $c));
+        Auth::flash($type, $msg);
+        App::back('/admin/push/view', ['id' => $id]);
     }
 
     public function duplicate(): void

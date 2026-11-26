@@ -124,6 +124,7 @@ final class App
         'POST /admin/push/test' => [PushController::class, 'test'],
         'GET /admin/push/view' => [PushController::class, 'view'],
         'POST /admin/push/duplicate' => [PushController::class, 'duplicate'],
+        'POST /admin/push/view/test' => [PushController::class, 'testSaved'],
         'POST /admin/push/upload' => [PushController::class, 'upload'],
         'GET /admin/push/subscribers' => [PushController::class, 'subscribers'],
         'POST /admin/push/subscribers/action' => [PushController::class, 'subscriberAction'],

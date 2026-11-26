@@ -1,5 +1,5 @@
 <?php
-/** Recommandations › Envoi de notifications › message (lecture seule) : tel qu'envoyé, destinataires, résultats. @var array $c @var string $icon @var string $host */
+/** Recommandations › Envoi de notifications › message (lecture seule) : tel qu'envoyé, destinataires, résultats. @var array $c @var string $icon @var string $host @var int $testers */
 use DeepFind\Push\Push;
 use DeepFind\Rules\Segments;
 
@@ -11,6 +11,8 @@ $link = $c['url'] !== '' ? $c['url'] : '/';
 <div class="cp-nav pv-nav"><a href="<?= e(url('/admin/push')) ?>" class="cr-back">‹ Retour aux messages</a>
   <span class="pv-btns">
     <?php if (in_array($c['status'], ['draft', 'scheduled'], true)): ?><a class="btn btn-sm btn-light" href="<?= e(url('/admin/push/edit', ['id' => $c['id']])) ?>"><?= admin_icon('pencil') ?> Modifier</a><?php endif; ?>
+    <form method="post" action="<?= e(url('/admin/push/view/test')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+      <button class="btn btn-sm btn-light"<?= $testers === 0 ? ' disabled title="Groupe de test vide : ajoutez vos appareils dans Abonnés (menu ⋮ › Ajouter au groupe de test)"' : ' title="Renvoie ce message tout de suite aux ' . $testers . ' appareil(s) du groupe de test ; statistiques inchangées"' ?>><?= admin_icon('bell') ?> Envoyer au groupe de test (<?= $testers ?>)</button></form>
     <form method="post" action="<?= e(url('/admin/push/duplicate')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
       <button class="btn btn-sm"><?= admin_icon('copy') ?> Dupliquer</button></form>
   </span></div>

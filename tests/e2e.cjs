@@ -1080,13 +1080,26 @@ fs.mkdirSync(OUT, { recursive: true });
   const psbRow = await page.textContent('.psb-table tbody tr');
   check('notifications : liste des abonnés (appareil, adresse et clé masquées, statut)', psbRow.includes('Ordinateur') && psbRow.includes('****')
     && psbRow.includes('Actif') && !psbRow.includes(fakeSub.p256dh), psbRow.replace(/\s+/g, ' '));
-  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Mettre en pause")')]);
+  // actions regroupées dans le menu « ⋮ » de la ligne
+  await page.click('.psb-table tbody tr .kb-toggle');
+  const kbItems = await page.locator('.kb-floating .kb-item').allTextContents();
+  const kbBox = await page.locator('.kb-floating').boundingBox();
+  await page.screenshot({ path: OUT + '/notifications-abonnes-menu.png' });
+  check('notifications : menu « ⋮ » des actions d\'un abonné (liste, visible en entier)', kbItems.map((x) => x.trim()).join('|') === 'Envoyer un test|Ajouter au groupe de test|Mettre en pause|Supprimer'
+    && kbBox !== null && kbBox.y + kbBox.height <= 900 && kbBox.y >= 0, JSON.stringify([kbItems, kbBox]));
+  await page.keyboard.press('Escape');
+  const kbClosed = !(await page.locator('.psb-table tbody tr details.kebab').evaluate((d) => d.open));
+  await page.click('.psb-table tbody tr .kb-toggle');
+  await Promise.all([page.waitForNavigation(), page.click('.kb-floating button:has-text("Mettre en pause")')]);
+  check('notifications : menu « ⋮ » fermé par Échap', kbClosed);
   const paused = (await page.textContent('.psb-table tbody tr')).includes('En pause');
-  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Réactiver")')]);
+  await page.click('.psb-table tbody tr .kb-toggle');
+  await Promise.all([page.waitForNavigation(), page.click('.kb-floating button:has-text("Réactiver")')]);
   check('notifications : abonné mis en pause puis réactivé', paused && (await page.textContent('.psb-table tbody tr')).includes('Actif') && page.url().includes('device=desktop'));
   // Groupe de test : appareil nommé, filtre, puis essai depuis la fiche d'un message (contenu gardé, message non enregistré)
-  await page.fill('.psb-table tbody tr .psb-tester input[name=label]', 'Ordi e2e');
-  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Ajouter au groupe de test")')]);
+  await page.click('.psb-table tbody tr .kb-toggle');
+  await page.fill('.kb-floating .kb-form input[name=label]', 'Ordi e2e');
+  await Promise.all([page.waitForNavigation(), page.click('.kb-floating button:has-text("Ajouter au groupe de test")')]);
   await page.goto(BASE + '/admin/push/subscribers?group=test');
   const grpRow = await page.textContent('.psb-table tbody tr');
   await page.goto(BASE + '/admin/push/subscribers');
@@ -1102,8 +1115,14 @@ fs.mkdirSync(OUT, { recursive: true });
   check('notifications : groupe de test (appareil nommé, filtre, essai depuis un message sans l\'enregistrer)', grpRow.includes('Test') && grpRow.includes('Ordi e2e')
     && grpFlash.includes('Groupe de test') && grpKept === 'Essai groupe e2e' && !(await page.textContent('.table')).includes('Essai groupe e2e'),
     JSON.stringify([grpRow.replace(/\s+/g, ' '), grpFlash]));
+  // page « Voir » d'un message (programmé ou envoyé) : renvoi au groupe de test
+  await page.goto(BASE + '/admin/push');
+  await Promise.all([page.waitForNavigation(), page.locator('.table tbody tr', { hasText: 'Test e2e' }).first().locator('a:has-text("Voir")').click()]);
+  await Promise.all([page.waitForNavigation(), page.click('.pv-btns button:has-text("Envoyer au groupe de test")')]);
+  check('notifications : page « Voir » → envoyer au groupe de test', (await page.textContent('.flash')).includes('Groupe de test') && page.url().includes('/admin/push/view'));
   await page.goto(BASE + '/admin/push/subscribers?group=test');
-  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Retirer du groupe de test")')]);
+  await page.click('.psb-table tbody tr .kb-toggle');
+  await Promise.all([page.waitForNavigation(), page.click('.kb-floating button:has-text("Retirer du groupe de test")')]);
   await page.goto(BASE + '/admin/push/settings');
   await page.uncheck('input[name=push_enabled]', { force: true });
   await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);

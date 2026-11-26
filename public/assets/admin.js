@@ -72,6 +72,47 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
+    // Menus « ⋮ » (details.kebab) : un seul ouvert ; pendant l'ouverture, la liste est placée dans <body> (position fixe, sous le bouton,
+    // ou au-dessus en bas d'écran) pour ne pas être coupée par un tableau qui défile ni décalée par un effet de flou ; fermeture par clic ailleurs ou Échap
+    var kebabs = document.querySelectorAll('details.kebab');
+    var placeKebab = function (d) {
+      var menu = d.__kbMenu;
+      var r = d.querySelector('summary').getBoundingClientRect();
+      menu.style.left = Math.max(8, Math.min(r.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+      var below = r.bottom + 6;
+      menu.style.top = (below + menu.offsetHeight > window.innerHeight - 8 ? Math.max(8, r.top - menu.offsetHeight - 6) : below) + 'px';
+    };
+    var closeKebab = function (d) { if (d.open) { d.open = false; } };
+    kebabs.forEach(function (d) {
+      d.__kbMenu = d.querySelector('.kb-menu');
+      d.addEventListener('toggle', function () {
+        var menu = d.__kbMenu;
+        if (!d.open) {
+          if (menu.parentNode !== d) { menu.classList.remove('kb-floating'); d.appendChild(menu); }
+          return;
+        }
+        kebabs.forEach(function (o) { if (o !== d) { closeKebab(o); } });
+        menu.classList.add('kb-floating');
+        document.body.appendChild(menu);
+        placeKebab(d);
+        var first = menu.querySelector('input, .kb-item');
+        if (first) { first.focus({ preventScroll: true }); }
+      });
+    });
+    if (kebabs.length) {
+      document.addEventListener('click', function (ev) {
+        kebabs.forEach(function (d) { if (d.open && !d.contains(ev.target) && !d.__kbMenu.contains(ev.target)) { closeKebab(d); } });
+      });
+      document.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Escape') { return; }
+        kebabs.forEach(function (d) { if (d.open) { closeKebab(d); d.querySelector('summary').focus(); } });
+      });
+      var closeAll = function () { kebabs.forEach(closeKebab); };
+      window.addEventListener('resize', closeAll);
+      document.querySelectorAll('.table-wrap, .table-scroll').forEach(function (w) { w.addEventListener('scroll', closeAll, { passive: true }); });
+      window.addEventListener('scroll', function () { kebabs.forEach(function (d) { if (d.open) { placeKebab(d); } }); }, { passive: true });
+    }
+
     // Liens longs à charger (ex. « Retélécharger le flux ») : texte d'attente pendant le chargement de la page suivante
     document.querySelectorAll('a[data-loading-text]').forEach(function (l) {
       l.addEventListener('click', function () { l.textContent = l.getAttribute('data-loading-text'); l.setAttribute('aria-busy', 'true'); l.classList.add('is-loading'); });
