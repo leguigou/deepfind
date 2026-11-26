@@ -4,7 +4,13 @@
 
 > 💡 Une campagne **mesure** ; elle ne change pas l'affichage. Pour pousser les produits, utilisez ensuite un [carrousel](carrousels/creer-un-carrousel) (produits épinglés), un [résultat personnalisé](../recherche-et-pertinence/resultats-personnalises) ou une [règle de boost](../recherche-et-pertinence/regles-de-boost), puis suivez l'effet ici.
 
-## Créer une campagne
+## Créer ou modifier une campagne
+
+- **+ Nouvelle campagne** ouvre le formulaire. Après l'enregistrement, la page des **résultats** s'affiche.
+- Dans la liste : cliquer sur le **nom** (ou **Résultats**) ouvre le tableau de bord ; **Modifier** ouvre directement le formulaire, seul. Depuis les résultats : **Modifier la campagne**.
+- **Supprimer cette campagne** : en bas du formulaire.
+
+### Le formulaire
 
 - **Nom**, **objectif** (texte libre, ex. « écouler le stock de palmes 2025 »), **début** (vide : date de création) et **fin** (vide : sans fin), **active**.
 - **Produits, un par un** : recherche par nom, SKU ou marque, ou **liste de SKU collée** (un par ligne, ou séparés par des virgules). 100 produits au plus. Un SKU de déclinaison retrouve son produit.
@@ -14,7 +20,7 @@
   - Après l'enregistrement, le message indique combien de produits correspondent aujourd'hui. Au-delà de 1 000, seuls les 1 000 premiers sont suivis : précisez les règles.
 - Au moins un produit ou une règle est nécessaire.
 
-## Le tableau de bord
+## Le tableau de bord (résultats)
 
 Période suivie : du début à la fin (ou à aujourd'hui), comparée à la **période précédente de même durée**.
 
@@ -33,7 +39,7 @@ Le tableau montre d'abord les produits choisis un par un, puis ceux des règles 
 
 ## Détails techniques
 
-- Table `campaigns` (nom, période, objectif, SKU en JSON, règles : `match_all` et `conditions` en JSON, même format que les carrousels) ; code `src/Rules/Campaigns.php`, `src/Admin/CampaignsController.php`, gabarits `campaigns.php` et `campaign_edit.php`, script `public/assets/campaigns.js`.
+- Table `campaigns` (nom, période, objectif, SKU en JSON, règles : `match_all` et `conditions` en JSON, même format que les carrousels) ; code `src/Rules/Campaigns.php`, `src/Admin/CampaignsController.php`, gabarits `campaigns.php` et `campaign_edit.php` (formulaire) et `campaign_results.php` (résultats), script `public/assets/campaigns.js`.
 - Produits des règles : `Campaigns::ruleProducts()` — filtre du moteur construit par `PageRules::filter()` (« contient » transformé en liste de valeurs du catalogue, en cache jusqu'au prochain import), 1 000 produits au plus (`Campaigns::RULE_LIMIT`), recalculé à chaque affichage. Validation des conditions : `CustomResults::sanitizeRules()`, éditeur `public/assets/conditions.js`.
 - Résultats : `audience_products` (clics, paniers, commandes, CA par produit et par jour), `carousel_product_stats` (affichages), `click_logs` (position), `audience_attrib` (par emplacement). Aucune donnée personnelle.
 - **Attribution par emplacement** : à chaque clic sur un produit (recherche, carrousel), le serveur retient pour la journée, sous l'empreinte du jour du visiteur, l'emplacement de ce clic (en mémoire seulement). Un ajout au panier ou une commande de ce produit lui est attribué ; sans clic, `direct`.

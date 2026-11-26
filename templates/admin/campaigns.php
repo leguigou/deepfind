@@ -17,11 +17,11 @@ $delta = static function (int $now, int $before): string {
 <p><a class="btn" href="<?= e(url('/admin/campaigns/edit')) ?>">+ Nouvelle campagne</a></p>
 <div class="table-wrap">
 <table class="table cp-table">
-  <thead><tr><th>Campagne</th><th>Période</th><th class="num">Produits</th><th class="num">Clics</th><th class="num">Paniers</th><th class="num">Commandes</th><th class="num">Chiffre d'affaires</th><th class="num">vs période précédente</th></tr></thead>
+  <thead><tr><th>Campagne</th><th>Période</th><th class="num">Produits</th><th class="num">Clics</th><th class="num">Paniers</th><th class="num">Commandes</th><th class="num">Chiffre d'affaires</th><th class="num">vs période précédente</th><th class="actions"></th></tr></thead>
   <tbody>
   <?php foreach ($list as $c): $s = $c['stats']; [$sl, $sc] = $statusLabel[$c['status']]; $ruptures = count(array_filter($s['rows'], static fn ($r) => $r['found'] && !$r['in_stock'])); ?>
     <tr>
-      <td><a href="<?= e(url('/admin/campaigns/edit', ['id' => $c['id']])) ?>"><?= e($c['name']) ?></a> <span class="badge <?= e($sc) ?>"><?= e($sl) ?></span>
+      <td><a href="<?= e(url('/admin/campaigns/results', ['id' => $c['id']])) ?>"><?= e($c['name']) ?></a> <span class="badge <?= e($sc) ?>"><?= e($sl) ?></span>
         <?php if ($ruptures > 0): ?><span class="badge badge-ko"><?= $ruptures ?> en rupture</span><?php endif; ?>
         <?php if ($c['objective'] !== ''): ?><br><small class="muted"><?= e(mb_strimwidth($c['objective'], 0, 90, '…', 'UTF-8')) ?></small><?php endif; ?></td>
       <td><?= e(date('d/m/Y', strtotime($s['period']['from']))) ?> → <?= $c['ends_at'] ? e(date('d/m/Y', strtotime($c['ends_at']))) : '<span class="muted">sans fin</span>' ?></td>
@@ -31,9 +31,11 @@ $delta = static function (int $now, int $before): string {
       <td class="num"><?= fmt_n($s['total']['orders']) ?></td>
       <td class="num"><strong><?= $euro($s['total']['revenue']) ?></strong></td>
       <td class="num"><?= $delta($s['total']['revenue'], $s['prev']['revenue']) ?></td>
+      <td class="actions"><a class="btn btn-sm btn-light" href="<?= e(url('/admin/campaigns/results', ['id' => $c['id']])) ?>">Résultats</a>
+        <a class="btn btn-sm btn-light" href="<?= e(url('/admin/campaigns/edit', ['id' => $c['id']])) ?>"><?= admin_icon('pencil') ?> Modifier</a></td>
     </tr>
   <?php endforeach; ?>
-  <?php if ($list === []): ?><tr><td colspan="8" class="muted">Aucune campagne. Créez-en une pour suivre les produits que vous voulez pousser.</td></tr><?php endif; ?>
+  <?php if ($list === []): ?><tr><td colspan="9" class="muted">Aucune campagne. Créez-en une pour suivre les produits que vous voulez pousser.</td></tr><?php endif; ?>
   </tbody>
 </table>
 </div>

@@ -128,6 +128,7 @@ final class App
         'POST /admin/push/settings/save' => [PushController::class, 'saveSettings'],
         'GET /admin/campaigns' => [CampaignsController::class, 'index'],
         'GET /admin/campaigns/edit' => [CampaignsController::class, 'edit'],
+        'GET /admin/campaigns/results' => [CampaignsController::class, 'results'],
         'POST /admin/campaigns/save' => [CampaignsController::class, 'save'],
         'POST /admin/campaigns/delete' => [CampaignsController::class, 'delete'],
         'GET /admin/journeys/view' => [JourneysController::class, 'view'],

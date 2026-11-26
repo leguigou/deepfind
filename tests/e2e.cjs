@@ -886,6 +886,15 @@ fs.mkdirSync(OUT, { recursive: true });
   const cpRBody = await page.textContent('body');
   check('campagnes : produits par règles (enregistrée, produits correspondants comptés, badge « règle »)', cpRBody.includes('Campagne « Règles e2e » enregistrée')
     && /Règles : \d+ produit\(s\)/.test(cpRBody) && await page.locator('.cp-table .badge:has-text("règle")').count() > 0, cpRBody.slice(0, 400));
+  // Résultats seuls ; « Modifier la campagne » ouvre le formulaire seul (règles gardées), sans tableau de bord
+  const cpResultsNoForm = await page.locator('[data-campaign-form]').count() === 0;
+  await Promise.all([page.waitForNavigation(), page.click('a:has-text("Modifier la campagne")')]);
+  check('campagnes : résultats et formulaire sur deux pages (Modifier → formulaire seul, règles gardées)', cpResultsNoForm
+    && await page.locator('.cp-table').count() === 0 && await page.inputValue('input[name=name]') === 'Règles e2e'
+    && (await page.locator('.cp-rules .br-cond').count()) === 1 && (await page.textContent('.cp-rules')).includes('produit(s) correspondent'));
+  await page.goto(BASE + '/admin/campaigns');
+  await Promise.all([page.waitForNavigation(), page.locator('.cp-table tr', { hasText: 'Règles e2e' }).locator('a:has-text("Modifier")').click()]);
+  check('campagnes : bouton « Modifier » de la liste', await page.inputValue('input[name=name]') === 'Règles e2e');
   await page.click('.cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
 

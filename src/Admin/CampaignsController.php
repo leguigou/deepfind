@@ -44,10 +44,23 @@ final class CampaignsController
         foreach (CustomResults::fields($lang) as $code => [$label, $type]) {
             $fields[] = ['code' => $code, 'label' => $label, 'type' => $type, 'static' => BoostRules::STATIC_VALUES[$code] ?? null];
         }
-        View::render('campaign_edit', [
-            'active' => 'campaigns', 'c' => $c, 'items' => $items, 'fields' => $fields, 'stats' => $c['id'] ? Campaigns::stats($c, $lang) : null,
-            'status' => Campaigns::status($c),
-        ], $c['id'] ? 'Campagne « ' . $c['name'] . ' »' : 'Nouvelle campagne');
+        $rule = $c['conditions'] !== [] ? Campaigns::ruleProducts($lang, $c) : null;
+        View::render('campaign_edit', ['active' => 'campaigns', 'c' => $c, 'items' => $items, 'fields' => $fields, 'rule' => $rule],
+            $c['id'] ? 'Modifier la campagne « ' . $c['name'] . ' »' : 'Nouvelle campagne');
+    }
+
+    /** Résultats d'une campagne (tableau de bord seul ; « Modifier la campagne » ouvre le formulaire). */
+    public function results(): void
+    {
+        $lang = Auth::lang();
+        $c = Campaigns::find((int) ($_GET['id'] ?? 0), $lang);
+        if ($c === null) {
+            Auth::flash('error', 'Campagne introuvable.');
+            App::back('/admin/campaigns');
+            return;
+        }
+        View::render('campaign_results', ['active' => 'campaigns', 'c' => $c, 'stats' => Campaigns::stats($c, $lang), 'status' => Campaigns::status($c)],
+            'Campagne « ' . $c['name'] . ' »');
     }
 
     public function save(): void
@@ -67,7 +80,7 @@ final class CampaignsController
         $rule = Campaigns::ruleProducts($lang, $c);
         Auth::flash('ok', sprintf('Campagne « %s » enregistrée.', $c['name']) . ($c['conditions'] === [] ? '' : ($rule['error'] ?? sprintf(' Règles : %s produit(s) du catalogue correspondent aujourd\'hui%s.',
             number_format($rule['total'], 0, ',', ' '), $rule['total'] > Campaigns::RULE_LIMIT ? ' (suivi limité aux ' . Campaigns::RULE_LIMIT . ' premiers : précisez les règles)' : ''))));
-        App::back('/admin/campaigns/edit', ['id' => $id]);
+        App::back('/admin/campaigns/results', ['id' => $id]);
     }
 
     public function delete(): void
