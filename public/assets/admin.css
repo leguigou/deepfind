@@ -1420,6 +1420,7 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .cp-bulk textarea { margin: 6px 0; max-width: 560px; }
 .cp-rules { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--border); }
 .cp-rules .br-conds { margin: 8px 0; }
+.cp-rules .br-add-cond { width: auto; margin: 4px 0 8px; }
 
 /* Notifications : réglages et rédaction */
 .ps-form h3 { margin: 22px 0 8px; }
