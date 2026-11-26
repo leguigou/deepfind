@@ -59,7 +59,7 @@ importScripts('https://search.example.com/widget/push-sw.js');
 - **Envoyer au groupe de test** : envoie tout de suite le titre, le texte, le lien et l'image saisis aux appareils du [groupe de test](#groupe-de-test), autant de fois que nécessaire. Le message n'est **ni enregistré ni envoyé aux abonnés**, et ses statistiques ne bougent pas (pensez à l'enregistrer ensuite). Un message programmé reste programmé.
 - **Résultats** : envoyés, échecs, **affichés** et **clics** (signalés par le navigateur de l'abonné), taux de clic.
 - **Liste des messages** : vignette de l'image, puis pour chaque message **Voir**, **Dupliquer** et Supprimer.
-  - **Voir** : le message tel qu'il a été envoyé (aperçu de la notification avec son image, titre, texte, lien, appareils, provenance, date) et ses résultats (visés, envoyés, affichés, clics, taux de clic). Un clic sur le titre d'un message envoyé ouvre aussi cette page ; un brouillon ou un message programmé s'ouvre dans le formulaire.
+  - **Voir** : bouton **Envoyer au groupe de test** (même pour un message déjà envoyé : il est renvoyé tel quel aux appareils du groupe de test, sans changer ses statistiques). Le message tel qu'il a été envoyé (aperçu de la notification avec son image, titre, texte, lien, appareils, provenance, date) et ses résultats (visés, envoyés, affichés, clics, taux de clic). Un clic sur le titre d'un message envoyé ouvre aussi cette page ; un brouillon ou un message programmé s'ouvre dans le formulaire.
   - **Dupliquer** : copie le message (texte, image, lien, destinataires) en **brouillon** nommé « … (copie) », avec des résultats à zéro, et ouvre le formulaire. Pratique pour renvoyer un message ou en faire une variante.
 
 ## Abonnés
@@ -77,6 +77,7 @@ importScripts('https://search.example.com/widget/push-sw.js');
 
 - **Filtres** : appareil, statut, navigateur, provenance, n°.
 - **Envoyer un test** : notification « Test DeepFind » envoyée tout de suite à cet abonné seul (même en pause). Pour tester votre appareil : abonnez-vous depuis le site, puis testez le dernier abonné (n° le plus élevé).
+- Les actions d'un abonné sont dans le menu **⋮** (rond à droite de la ligne) : Envoyer un test, Ajouter au groupe de test (avec un nom) ou Retirer du groupe de test, Mettre en pause ou Réactiver, Supprimer. Le menu se ferme par un clic ailleurs ou la touche Échap.
 - **Mettre en pause / Réactiver** : l'abonné ne reçoit plus les messages, sans perdre son abonnement.
 - **Supprimer** : retiré de la liste ; s'il revient sur le site avec les notifications autorisées, il est réenregistré.
 - Les compteurs d'un appareil sont signés (`s`, `g` dans le message) : ils ne peuvent pas être gonflés de l'extérieur.
@@ -86,8 +87,8 @@ importScripts('https://search.example.com/widget/push-sw.js');
 Vos appareils (et ceux des collègues qui relisent les messages), pour voir un message sur un vrai téléphone avant de l'envoyer à tout le monde.
 
 1. Abonnez-vous depuis le site (en recette d'abord) avec chaque appareil de test.
-2. Dans **Abonnés**, sur la ligne de l'appareil (le dernier abonné, n° le plus élevé, ou utilisez « Envoyer un test » pour le reconnaître) : saisissez un **nom** (ex. « iPhone de Paul »), puis **Ajouter au groupe de test**. Badge **Test** dans la liste, filtre **Groupe › Groupe de test**.
-3. Dans la fiche d'un message : **Envoyer au groupe de test**, autant de fois que nécessaire. Depuis la liste des abonnés : **Envoyer un test au groupe** (message « Test DeepFind »).
+2. Dans **Abonnés**, menu **⋮** de la ligne de l'appareil (le dernier abonné, n° le plus élevé, ou utilisez « Envoyer un test » pour le reconnaître) : saisissez un **nom** (ex. « iPhone de Paul »), puis **Ajouter au groupe de test**. Badge **Test** dans la liste, filtre **Groupe › Groupe de test**.
+3. Dans la fiche d'un message : **Envoyer au groupe de test**, autant de fois que nécessaire ; aussi sur la page **Voir** d'un message déjà envoyé (renvoyé tel quel, statistiques inchangées). Depuis la liste des abonnés : **Envoyer un test au groupe** (message « Test DeepFind »).
 
 - Le groupe reçoit les essais **même en pause**. Astuce : mettez vos appareils de test en pause pour qu'ils ne reçoivent que les essais, pas les vrais messages.
 - Les essais ne comptent ni dans les résultats du message ni dans les compteurs de l'appareil (ils n'ont pas de n° de message).

@@ -14,6 +14,12 @@ $action = static function (int $id, string $do, string $label, string $cls, stri
         . '<input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="do" value="' . e($do) . '"><input type="hidden" name="back" value="' . e($back) . '">'
         . '<button class="btn btn-sm ' . e($cls) . '"' . ($confirm !== '' ? ' data-confirm="' . e($confirm) . '"' : '') . '>' . e($label) . '</button></form>';
 };
+// élément du menu « ⋮ » d'une ligne (mêmes actions, présentées en liste)
+$item = static function (int $id, string $do, string $label, string $back, string $cls = '', string $confirm = ''): string {
+    return '<form method="post" action="' . e(url('/admin/push/subscribers/action')) . '" role="none">' . csrf_field()
+        . '<input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="do" value="' . e($do) . '"><input type="hidden" name="back" value="' . e($back) . '">'
+        . '<button class="kb-item ' . e($cls) . '" role="menuitem"' . ($confirm !== '' ? ' data-confirm="' . e($confirm) . '"' : '') . '>' . e($label) . '</button></form>';
+};
 ?>
 <p><a href="<?= e(url('/admin/push')) ?>" class="cr-back">‹ Retour aux messages</a></p>
 <p class="muted">Chaque abonné est un navigateur (téléphone, tablette, ordinateur) qui a accepté les notifications. Aucune donnée sur la personne :
@@ -64,15 +70,21 @@ $action = static function (int $id, string $do, string $label, string $cls, stri
       <td class="num"><?= fmt_n((int) $r['shown']) ?></td>
       <td class="num"><?= fmt_n((int) $r['clicks']) ?><br><small class="muted"><?= $pct((int) $r['clicks'], (int) ($r['shown'] ?: $r['sent'])) ?></small></td>
       <td><?= $dt($r['last_click_at']) ?></td>
-      <td class="actions">
-        <?= $action($id, 'test', 'Envoyer un test', 'btn-light', $back) ?>
-        <?php if ((int) $r['tester'] === 1): ?><?= $action($id, 'tester_off', 'Retirer du groupe de test', 'btn-light', $back) ?>
-        <?php else: ?><form method="post" action="<?= e(url('/admin/push/subscribers/action')) ?>" class="psb-tester"><?= csrf_field() ?>
-          <input type="hidden" name="id" value="<?= $id ?>"><input type="hidden" name="do" value="tester_on"><input type="hidden" name="back" value="<?= e($back) ?>">
-          <input name="label" maxlength="60" placeholder="Nom (ex. iPhone de Paul)" aria-label="Nom de l'appareil de test">
-          <button class="btn btn-sm btn-light">Ajouter au groupe de test</button></form><?php endif; ?>
-        <?= (int) $r['active'] === 1 ? $action($id, 'pause', 'Mettre en pause', 'btn-light', $back) : $action($id, 'resume', 'Réactiver', '', $back) ?>
-        <?= $action($id, 'delete', 'Supprimer', 'btn-danger', $back, 'Supprimer l\'abonné n° ' . $id . ' ? Il ne recevra plus de messages (sauf s\'il revient sur le site avec les notifications autorisées).') ?>
+      <td class="actions psb-actions">
+        <details class="kebab">
+          <summary class="kb-toggle" aria-label="Actions pour l'abonné n° <?= $id ?>" title="Actions"><span aria-hidden="true">⋮</span></summary>
+          <div class="kb-menu" role="menu">
+            <?= $item($id, 'test', 'Envoyer un test', $back) ?>
+            <?php if ((int) $r['tester'] === 1): ?><?= $item($id, 'tester_off', 'Retirer du groupe de test', $back) ?>
+            <?php else: ?><form method="post" action="<?= e(url('/admin/push/subscribers/action')) ?>" class="kb-form" role="none"><?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $id ?>"><input type="hidden" name="do" value="tester_on"><input type="hidden" name="back" value="<?= e($back) ?>">
+              <input name="label" maxlength="60" placeholder="Nom (ex. iPhone de Paul)" aria-label="Nom de l'appareil de test">
+              <button class="kb-item" role="menuitem">Ajouter au groupe de test</button></form><?php endif; ?>
+            <?= (int) $r['active'] === 1 ? $item($id, 'pause', 'Mettre en pause', $back) : $item($id, 'resume', 'Réactiver', $back) ?>
+            <hr class="kb-sep">
+            <?= $item($id, 'delete', 'Supprimer', $back, 'kb-danger', 'Supprimer l\'abonné n° ' . $id . ' ? Il ne recevra plus de messages (sauf s\'il revient sur le site avec les notifications autorisées).') ?>
+          </div>
+        </details>
       </td>
     </tr>
   <?php endforeach; ?>
