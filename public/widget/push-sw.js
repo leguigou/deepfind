@@ -20,13 +20,14 @@ function dfSafeUrl(u) {
 function dfPing(d, e) {
   if (!d || !d.a || !d.c || !d.k) { return Promise.resolve(); }
   var body = new URLSearchParams({ key: String(d.k), lang: String(d.l || 'fr'), c: String(d.c), e: e });
+  if (d.s && d.g) { body.set('s', String(d.s)); body.set('g', String(d.g)); } // compteurs de l'appareil (identifiant signé)
   return fetch(String(d.a) + '/push/event', { method: 'POST', body: body, credentials: 'omit' }).catch(function () { /* compteur facultatif */ });
 }
 
 self.addEventListener('push', function (event) {
   var d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { t: event.data ? event.data.text() : '' }; }
-  var options = { body: String(d.b || ''), data: { u: dfSafeUrl(d.u), c: d.c, k: d.k, a: d.a, l: d.l }, tag: d.c ? 'deepfind-' + d.c : undefined };
+  var options = { body: String(d.b || ''), data: { u: dfSafeUrl(d.u), c: d.c, k: d.k, a: d.a, l: d.l, s: d.s, g: d.g }, tag: d.c ? 'deepfind-' + d.c : undefined };
   if (d.ic) { options.icon = String(d.ic); options.badge = String(d.ic); }
   if (d.i) { options.image = String(d.i); }
   event.waitUntil(Promise.all([self.registration.showNotification(String(d.t || ''), options), dfPing(d, 's')]));

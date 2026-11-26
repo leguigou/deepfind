@@ -384,3 +384,12 @@ html.df-lock { overflow: hidden; }
 @media (prefers-reduced-motion: no-preference) { .df-push { animation: df-push-in .25s ease-out; } @keyframes df-push-in { from { opacity: 0; } to { opacity: 1; } } }
 .df-push-popin_center .df-push-txt, .df-push-popin_corner .df-push-txt { flex: none; }
 .df-push-popin_corner .df-push-btns { justify-content: flex-start; }
+/* Croix de fermeture de l'invitation et de la fenêtre de la cloche */
+.df-push { padding-right: 44px; }
+.df-push-block { position: relative; }
+.df-push-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; border: 2px solid #fff; border-radius: 50%;
+  background: var(--df-push-btn, #e11d48); color: #fff; font: 700 13px/1 system-ui, sans-serif; cursor: pointer; display: grid; place-items: center;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .3); transition: transform .15s ease, filter .15s ease; }
+.df-push-x:hover, .df-push-x:focus-visible { transform: scale(1.1); filter: brightness(1.1); outline: none; }
+.df-push-x:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--df-push-btn, #e11d48) 40%, transparent); }
+.df-push-popin_center { padding-right: 22px; } .df-push-popin_center .df-push-txt { padding: 0 18px; }

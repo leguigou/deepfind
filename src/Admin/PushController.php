@@ -114,6 +114,40 @@ final class PushController
         App::back('/admin/push');
     }
 
+    /** Abonnés : liste filtrée (appareil, statut, navigateur, provenance, n°), pause / réactivation, suppression, test. */
+    public function subscribers(): void
+    {
+        $lang = Auth::lang();
+        $f = array_intersect_key($_GET, array_flip(['device', 'status', 'browser', 'channel', 'id']));
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $list = Push::subscribers($lang, $f, $page);
+        View::render('push_subscribers', ['active' => 'push', 'f' => $f, 'page' => $page, 'rows' => $list['rows'], 'total' => $list['total'],
+            'browsers' => $list['browsers'], 'counts' => Push::counts($lang)], 'Abonnés aux notifications');
+    }
+
+    public function subscriberAction(): void
+    {
+        $lang = Auth::lang();
+        $id = (int) ($_POST['id'] ?? 0);
+        $back = (string) ($_POST['back'] ?? '');
+        $msg = match ((string) ($_POST['do'] ?? '')) {
+            'pause' => Push::setActive($id, $lang, false) ? ['ok', 'Abonné n° ' . $id . ' mis en pause : il ne recevra plus les messages.'] : ['error', 'Abonné introuvable.'],
+            'resume' => Push::setActive($id, $lang, true) ? ['ok', 'Abonné n° ' . $id . ' réactivé.'] : ['error', 'Abonné introuvable.'],
+            'delete' => Push::deleteSubscriber($id, $lang) ? ['ok', 'Abonné n° ' . $id . ' supprimé.'] : ['error', 'Abonné introuvable.'],
+            'test' => (static function () use ($id, $lang): array {
+                $code = Push::sendTest($id, $lang);
+                return match (true) {
+                    $code >= 200 && $code < 300 => ['ok', 'Notification de test envoyée à l\'abonné n° ' . $id . ' (acceptée par le service d\'envoi ; elle arrive en quelques secondes si l\'appareil est connecté).'],
+                    $code === 404 || $code === 410 => ['error', 'Abonnement n° ' . $id . ' expiré ou retiré par le visiteur : supprimé.'],
+                    default => ['error', 'Envoi de test refusé (code ' . $code . '). Vérifiez la connexion du serveur à Internet.'],
+                };
+            })(),
+            default => ['error', 'Action inconnue.'],
+        };
+        Auth::flash($msg[0], $msg[1]);
+        App::back(str_starts_with($back, '/admin/push/subscribers') ? $back : '/admin/push/subscribers');
+    }
+
     public function delete(): void
     {
         Push::delete((int) ($_POST['id'] ?? 0), Auth::lang());

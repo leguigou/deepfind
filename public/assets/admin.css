@@ -174,7 +174,7 @@ h3 { font-size: 15px; margin: 0 0 10px; }
 .table-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
 .table-search input[type=search] { flex: 1 1 260px; max-width: 420px; margin: 0; }
 tr[hidden] { display: none !important; }
-td.actions { display: table-cell; } td.actions > * { display: inline-block; margin: 2px; }
+td.actions, th.actions { display: table-cell; } td.actions > * { display: inline-block; margin: 2px; }
 
 /* ---------- Formulaires */
 .form label { display: block; margin: 0 0 12px; font-weight: 600; }
@@ -1438,3 +1438,8 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .pe-notif p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
 .pe-img { width: 100%; margin-top: 8px; border-radius: 10px; }
 @media (max-width: 1000px) { .pe-layout { grid-template-columns: minmax(0, 1fr); } .pe-preview { position: static; } }
+/* Notifications › Abonnés */
+.psb-table td { vertical-align: top; }
+.psb-code { font-size: 12px; white-space: nowrap; }
+.psb-table td.actions { min-width: 210px; }
+.psb-table td.actions form { display: inline-block; margin: 2px; }

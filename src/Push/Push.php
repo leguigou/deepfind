@@ -114,7 +114,7 @@ final class Push
      * Abonnement envoyé par le widget (adresse d'envoi et clés publiques du navigateur).
      * @return bool vrai si l'abonnement est valable
      */
-    public static function subscribe(string $lang, string $endpoint, string $p256dh, string $auth, string $device, string $channel, ?int $apiKeyId = null): bool
+    public static function subscribe(string $lang, string $endpoint, string $p256dh, string $auth, string $device, string $channel, ?int $apiKeyId = null, string $ua = ''): bool
     {
         $endpoint = trim($endpoint);
         // adresse d'envoi du navigateur : https ; http://127.0.0.1 accepté seulement en environnement de test (faux service d'envoi)
@@ -126,11 +126,12 @@ final class Push
         $device = in_array($device, ['phone', 'tablet', 'desktop'], true) ? $device : 'phone';
         $channel = isset(\DeepFind\Rules\Segments::CHANNELS[$channel]) ? $channel : 'direct';
         $now = date('Y-m-d H:i:s');
-        $new = Db::exec('INSERT INTO push_subscriptions (project_id, lang, endpoint_hash, endpoint, p256dh, auth, device, channel, api_key_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        $new = Db::exec('INSERT INTO push_subscriptions (project_id, lang, endpoint_hash, endpoint, p256dh, auth, device, channel, api_key_id, browser, os, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE p256dh = VALUES(p256dh), auth = VALUES(auth), project_id = VALUES(project_id), lang = VALUES(lang),
-                api_key_id = VALUES(api_key_id), failures = 0, updated_at = VALUES(updated_at)',
-            [\DeepFind\Project::id(), $lang, hash('sha256', $endpoint), $endpoint, $p256dh, $auth, $device, $channel, $apiKeyId, $now, $now]);
+                api_key_id = VALUES(api_key_id), browser = VALUES(browser), os = VALUES(os), failures = 0, updated_at = VALUES(updated_at)',
+            [\DeepFind\Project::id(), $lang, hash('sha256', $endpoint), $endpoint, $p256dh, $auth, $device, $channel, $apiKeyId,
+                self::browserOf($ua), self::osOf($ua), $now, $now]);
         if ($new === 1) {
             self::stat('sub');
         }
@@ -268,7 +269,7 @@ final class Push
     /** Abonnés visés par un message (appareil, provenance à l'abonnement). */
     private static function targetWhere(array $c): array
     {
-        $where = ['project_id = ?', 'lang = ?'];
+        $where = ['project_id = ?', 'lang = ?', 'active = 1'];
         $params = [\DeepFind\Project::id(), $c['lang'] ?? 'fr'];
         $dev = ['phone' => ['phone'], 'mobile' => ['phone', 'tablet'], 'desktop' => ['desktop']][$c['devices']] ?? null;
         if ($dev !== null) {
@@ -326,9 +327,11 @@ final class Push
             $keys[(int) $k['id']] = (string) $k['public_key'];
         }
         $defaultKey = (string) (reset($keys) ?: '');
-        $payloadFor = static fn (string $key): string => Text::json(array_filter([
+        // message propre à chaque abonné : sa clé, son identifiant et une signature (compteurs « affiché » / « cliqué » par appareil)
+        $payloadFor = static fn (array $s): string => Text::json(array_filter([
             't' => $c['title'], 'b' => $c['body'], 'u' => $c['url'] !== '' ? $c['url'] : '/', 'i' => $c['image'], 'ic' => self::url(Settings::get('push_icon')),
-            'c' => $c['id'], 'k' => $key, 'a' => $base . '/api/v1', 'l' => $lang,
+            'c' => $c['id'], 'k' => $keys[(int) ($s['api_key_id'] ?? 0)] ?? $defaultKey, 'a' => $base . '/api/v1', 'l' => $lang,
+            's' => (int) $s['id'], 'g' => self::sign((int) $c['id'], (int) $s['id']),
         ], static fn ($v) => $v !== '' && $v !== null));
         $subject = str_starts_with($base, 'https://') ? $base : 'mailto:' . (string) \DeepFind\Config::get('PUSH_CONTACT', 'contact@example.com');
         [$w, $p] = self::targetWhere($c + ['lang' => $lang]);
@@ -340,15 +343,7 @@ final class Push
                 break;
             }
             $lastId = (int) end($subs)['id'];
-            // un message par clé d'abonnement (même contenu, clé différente)
-            $byKey = [];
-            foreach ($subs as $s) {
-                $byKey[$keys[(int) $s['api_key_id']] ?? $defaultKey][] = $s;
-            }
-            $codes = [];
-            foreach ($byKey as $k => $group) {
-                $codes += WebPush::send($group, $payloadFor((string) $k), $subject);
-            }
+            $codes = WebPush::send($subs, \Closure::fromCallable($payloadFor), $subject);
             $gone = $retry = $ok = [];
             foreach ($codes as $sid => $code) {
                 if ($code >= 200 && $code < 300) {
@@ -360,7 +355,7 @@ final class Push
                 }
             }
             if ($ok !== []) {
-                Db::exec('UPDATE push_subscriptions SET failures = 0 WHERE id IN (' . implode(',', array_map('intval', $ok)) . ')');
+                Db::exec('UPDATE push_subscriptions SET failures = 0, sent = sent + 1, last_sent_at = ? WHERE id IN (' . implode(',', array_map('intval', $ok)) . ')', [date('Y-m-d H:i:s')]);
             }
             if ($gone !== []) {
                 Db::exec('DELETE FROM push_subscriptions WHERE id IN (' . implode(',', array_map('intval', $gone)) . ')');
@@ -378,12 +373,167 @@ final class Push
         return $total;
     }
 
-    /** Notification affichée (s) ou cliquée (c), signalée par le service worker du site. */
-    public static function campaignEvent(int $id, string $e): void
+    /**
+     * Notification affichée (s) ou cliquée (c), signalée par le service worker du site : compteurs du message et, si la signature
+     * de l'abonné est valable, de son appareil.
+     */
+    public static function campaignEvent(int $id, string $e, int $subId = 0, string $sig = ''): void
     {
         $col = ['s' => 'shown', 'c' => 'clicks'][$e] ?? null;
-        if ($col !== null && $id > 0) {
-            Db::exec("UPDATE push_campaigns SET $col = $col + 1 WHERE id = ? AND project_id = ?", [$id, \DeepFind\Project::id()]);
+        if ($col === null || $id <= 0) {
+            return;
         }
+        // identifiant d'abonné présent mais signature fausse : signal ignoré (messages sans identifiant : compteur du message seul)
+        $signed = $subId > 0 && hash_equals(self::sign($id, $subId), $sig);
+        if ($subId > 0 && !$signed) {
+            return;
+        }
+        Db::exec("UPDATE push_campaigns SET $col = $col + 1 WHERE id = ? AND project_id = ?", [$id, \DeepFind\Project::id()]);
+        if ($signed) {
+            Db::exec("UPDATE push_subscriptions SET $col = $col + 1" . ($e === 'c' ? ', last_click_at = ?' : '') . ' WHERE id = ? AND project_id = ?',
+                $e === 'c' ? [date('Y-m-d H:i:s'), $subId, \DeepFind\Project::id()] : [$subId, \DeepFind\Project::id()]);
+        }
+    }
+
+    /** Signature courte message + abonné (les compteurs d'un appareil ne peuvent pas être gonflés de l'extérieur). */
+    public static function sign(int $campaignId, int $subId): string
+    {
+        return substr(hash_hmac('sha256', $campaignId . '.' . $subId, (string) \DeepFind\Config::get('APP_SECRET', 'deepfind')), 0, 16);
+    }
+
+    // ------------------------------------------------------------------ Abonnés (Recommandations › Envoi de notifications › Abonnés)
+
+    public const STATUSES = ['active' => 'Actifs', 'paused' => 'En pause', 'failing' => 'En échec (envoi refusé, nouvel essai au prochain message)'];
+    public const SERVICES = ['fcm.googleapis.com' => 'Google (Chrome, Edge, Android)', 'updates.push.services.mozilla.com' => 'Mozilla (Firefox)',
+        'web.push.apple.com' => 'Apple (Safari)', 'notify.windows.com' => 'Microsoft (Edge)'];
+
+    /** Famille du navigateur (sans version). */
+    public static function browserOf(string $ua): string
+    {
+        return match (true) {
+            $ua === '' => '',
+            (bool) preg_match('/SamsungBrowser/i', $ua) => 'Samsung Internet',
+            (bool) preg_match('/Edg(e|A|iOS)?\//', $ua) => 'Edge',
+            (bool) preg_match('/OPR\/|Opera/', $ua) => 'Opera',
+            (bool) preg_match('/Firefox\/|FxiOS/', $ua) => 'Firefox',
+            (bool) preg_match('/Chrome\/|CriOS/', $ua) => 'Chrome',
+            (bool) preg_match('/Safari\//', $ua) => 'Safari',
+            default => 'Autre',
+        };
+    }
+
+    /** Famille du système (sans version). */
+    public static function osOf(string $ua): string
+    {
+        return match (true) {
+            $ua === '' => '',
+            (bool) preg_match('/Android/i', $ua) => 'Android',
+            (bool) preg_match('/iPhone|iPad|iPod/', $ua) => 'iOS',
+            (bool) preg_match('/Windows/', $ua) => 'Windows',
+            (bool) preg_match('/Mac OS X|Macintosh/', $ua) => 'macOS',
+            (bool) preg_match('/CrOS/', $ua) => 'ChromeOS',
+            (bool) preg_match('/Linux/', $ua) => 'Linux',
+            default => 'Autre',
+        };
+    }
+
+    /** Valeur masquée : début et fin seulement (« dX1a****9fGh »). */
+    public static function mask(string $v, int $keep = 6): string
+    {
+        return strlen($v) <= $keep * 2 + 4 ? str_repeat('*', 8) : substr($v, 0, $keep) . '****' . substr($v, -$keep);
+    }
+
+    /** Service d'envoi d'après l'adresse (Google, Mozilla, Apple…). */
+    public static function service(string $endpoint): string
+    {
+        $host = (string) parse_url($endpoint, PHP_URL_HOST);
+        foreach (self::SERVICES as $h => $label) {
+            if ($host === $h || str_ends_with($host, '.' . $h)) {
+                return $label;
+            }
+        }
+        return $host;
+    }
+
+    /**
+     * Abonnés du projet et de la langue, filtrés (appareil, statut, navigateur, provenance, identifiant), du plus récent au plus ancien.
+     * @return array{rows: list<array>, total: int, browsers: list<string>}
+     */
+    public static function subscribers(string $lang, array $f, int $page = 1, int $perPage = 50): array
+    {
+        $where = ['project_id = ?', 'lang = ?'];
+        $params = [\DeepFind\Project::id(), $lang];
+        if (in_array($f['device'] ?? '', ['phone', 'tablet', 'desktop'], true)) {
+            $where[] = 'device = ?';
+            $params[] = $f['device'];
+        }
+        $where[] = match ($f['status'] ?? '') {
+            'active' => 'active = 1 AND failures = 0',
+            'paused' => 'active = 0',
+            'failing' => 'failures > 0',
+            default => '1 = 1',
+        };
+        if (($f['browser'] ?? '') !== '') {
+            $where[] = 'browser = ?';
+            $params[] = (string) $f['browser'];
+        }
+        if (isset(\DeepFind\Rules\Segments::CHANNELS[$f['channel'] ?? ''])) {
+            $where[] = 'channel = ?';
+            $params[] = $f['channel'];
+        }
+        if ((int) ($f['id'] ?? 0) > 0) {
+            $where[] = 'id = ?';
+            $params[] = (int) $f['id'];
+        }
+        $w = implode(' AND ', $where);
+        $total = (int) Db::value("SELECT COUNT(*) FROM push_subscriptions WHERE $w", $params);
+        $rows = Db::all("SELECT id, endpoint, p256dh, device, channel, browser, os, active, sent, shown, clicks, failures, created_at, updated_at, last_sent_at, last_click_at
+            FROM push_subscriptions WHERE $w ORDER BY id DESC LIMIT " . (int) $perPage . ' OFFSET ' . (int) ((max(1, $page) - 1) * $perPage), $params);
+        foreach ($rows as &$r) {
+            $r['service'] = self::service((string) $r['endpoint']);
+            $r['endpoint_masked'] = self::mask((string) basename((string) parse_url((string) $r['endpoint'], PHP_URL_PATH)));
+            $r['key_masked'] = self::mask((string) $r['p256dh']);
+            unset($r['endpoint'], $r['p256dh']);
+        }
+        $browsers = array_map(static fn ($r) => (string) $r['browser'], Db::all("SELECT DISTINCT browser FROM push_subscriptions WHERE project_id = ? AND lang = ? AND browser <> '' ORDER BY browser",
+            [\DeepFind\Project::id(), $lang]));
+        return ['rows' => $rows, 'total' => $total, 'browsers' => $browsers];
+    }
+
+    /** Met en pause (ne reçoit plus les messages) ou réactive un abonné. */
+    public static function setActive(int $id, string $lang, bool $on): bool
+    {
+        return Db::exec('UPDATE push_subscriptions SET active = ?, failures = 0 WHERE id = ? AND project_id = ? AND lang = ?', [$on ? 1 : 0, $id, \DeepFind\Project::id(), $lang]) > 0;
+    }
+
+    /** Supprime un abonné (le navigateur garde son abonnement mais ne recevra plus rien ; il sera réenregistré s'il revient sur le site). */
+    public static function deleteSubscriber(int $id, string $lang): bool
+    {
+        $n = Db::exec('DELETE FROM push_subscriptions WHERE id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]);
+        if ($n > 0) {
+            self::stat('uns');
+        }
+        return $n > 0;
+    }
+
+    /**
+     * Notification de test à un seul abonné, tout de suite (même en pause). @return int code HTTP du service d'envoi (201 : accepté),
+     * 0 : erreur réseau ; 404 / 410 : abonnement expiré, supprimé.
+     */
+    public static function sendTest(int $id, string $lang): int
+    {
+        $s = Db::one('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]);
+        if (!$s) {
+            return 0;
+        }
+        $base = rtrim((string) \DeepFind\Config::get('APP_URL', ''), '/');
+        $payload = Text::json(array_filter(['t' => 'Test DeepFind', 'b' => 'Si vous voyez ce message, les notifications fonctionnent sur cet appareil (abonné n° ' . $id . ').',
+            'u' => '/', 'ic' => self::url(Settings::get('push_icon'))], static fn ($v) => $v !== ''));
+        $subject = str_starts_with($base, 'https://') ? $base : 'mailto:' . (string) \DeepFind\Config::get('PUSH_CONTACT', 'contact@example.com');
+        $code = WebPush::send([$s], $payload, $subject, 3600, 'high')[(int) $s['id']] ?? 0;
+        if ($code === 404 || $code === 410) {
+            Db::exec('DELETE FROM push_subscriptions WHERE id = ?', [$id]);
+        }
+        return $code;
     }
 }

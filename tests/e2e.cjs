@@ -931,13 +931,14 @@ fs.mkdirSync(OUT, { recursive: true });
   await np.goto(BASE + '/boutique/plongee.html');
   await np.waitForSelector('.df-push', { timeout: 8000 });
   const invite = await np.textContent('.df-push');
+  const hasClose = await np.locator('.df-push .df-push-x').count() === 1;
   await np.waitForTimeout(400); // fondu d'apparition
   await np.screenshot({ path: OUT + '/notifications-invitation.png' });
   await np.click('.df-push-yes');
   await np.waitForSelector('.df-push-thanks', { timeout: 8000 });
   await nc.close();
   await page.goto(BASE + '/admin/push/settings');
-  check('notifications : invitation affichée, accord du navigateur, abonnement enregistré', invite.includes('Ne ratez aucune bonne affaire')
+  check('notifications : invitation affichée (avec croix de fermeture), accord du navigateur, abonnement enregistré', hasClose && invite.includes('Ne ratez aucune bonne affaire')
     && /Abonnés\s*1(?!\d)/.test(await page.textContent('.cards')), invite);
   await page.goto(BASE + '/admin/push/edit');
   await page.fill('input[name=title]', 'Test e2e');
@@ -951,6 +952,16 @@ fs.mkdirSync(OUT, { recursive: true });
   check('notifications : message programmé (envoi par la tâche planifiée)', (await page.textContent('body')).includes('envoi dans la minute à 1 abonné')
     && (await page.textContent('.table')).includes('Programmé'));
   await page.screenshot({ path: OUT + '/notifications-messages.png', fullPage: true });
+  // Abonnés : liste masquée, filtre, pause puis réactivation
+  await page.goto(BASE + '/admin/push/subscribers?device=desktop');
+  const psbRow = await page.textContent('.psb-table tbody tr');
+  check('notifications : liste des abonnés (appareil, adresse et clé masquées, statut)', psbRow.includes('Ordinateur') && psbRow.includes('****')
+    && psbRow.includes('Actif') && !psbRow.includes(fakeSub.p256dh), psbRow.replace(/\s+/g, ' '));
+  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Mettre en pause")')]);
+  const paused = (await page.textContent('.psb-table tbody tr')).includes('En pause');
+  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Réactiver")')]);
+  check('notifications : abonné mis en pause puis réactivé', paused && (await page.textContent('.psb-table tbody tr')).includes('Actif') && page.url().includes('device=desktop'));
+  await page.screenshot({ path: OUT + '/notifications-abonnes.png', fullPage: true });
   await page.goto(BASE + '/admin/push/settings');
   await page.uncheck('input[name=push_enabled]', { force: true });
   await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);

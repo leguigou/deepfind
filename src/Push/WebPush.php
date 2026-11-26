@@ -165,11 +165,11 @@ final class WebPush
     }
 
     /**
-     * Envoie le même message à plusieurs abonnés (50 requêtes en parallèle).
+     * Envoie un message à plusieurs abonnés (50 requêtes en parallèle) : le même texte, ou une fonction abonné → texte.
      * @param list<array{id:int, endpoint:string, p256dh:string, auth:string}> $subs
      * @return array<int, int> identifiant d'abonné → code HTTP (0 : erreur réseau ou message impossible à chiffrer)
      */
-    public static function send(array $subs, string $payload, string $subject, int $ttl = 86400, string $urgency = 'normal'): array
+    public static function send(array $subs, string|\Closure $payload, string $subject, int $ttl = 86400, string $urgency = 'normal'): array
     {
         $keys = self::vapid();
         $out = [];
@@ -178,7 +178,8 @@ final class WebPush
             $handles = [];
             foreach ($chunk as $s) {
                 try {
-                    $body = self::encrypt($payload, $s['p256dh'], $s['auth']);
+                    // message propre à chaque abonné si $payload est une fonction (clé, identifiant de l'abonné)
+                    $body = self::encrypt(is_string($payload) ? $payload : (string) $payload($s), $s['p256dh'], $s['auth']);
                     $auth = self::vapidHeader($s['endpoint'], $subject, $keys);
                 } catch (\Throwable) {
                     $out[(int) $s['id']] = 0;
