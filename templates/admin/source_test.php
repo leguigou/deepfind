@@ -1,7 +1,12 @@
 <p><a href="<?= e(url('/admin/sources/edit', ['id' => $source['id']])) ?>">← Retour à la source <?= e($source['code']) ?></a>
-  · <a href="<?= e(url('/admin/sources/test', ['id' => $source['id'], 'refresh' => 1, 'type' => $type])) ?>">Retélécharger le flux</a>
+  · <a href="<?= e(url('/admin/sources/test', ['id' => $source['id'], 'refresh' => 1, 'type' => $type])) ?>" data-loading-text="Téléchargement du flux…">Retélécharger le flux</a>
   <?php if ($source['delta_url']): ?> · <a href="<?= e(url('/admin/sources/test', ['id' => $source['id'], 'type' => $type === 'delta' ? 'full' : 'delta'])) ?>">Tester le flux <?= $type === 'delta' ? 'complet' : 'delta' ?></a><?php endif; ?></p>
-<?php if ($file): ?><p class="muted">Fichier analysé : <?= e($file) ?> · flux <?= e($type) ?> · rien n'est indexé pendant ce test.</p><?php endif; ?>
+<?php if ($file): ?>
+  <?php if ($refreshed && $error === null): ?><div class="flash flash-ok">Flux retéléchargé à <?= e(date('H:i:s', (int) $fetchedAt)) ?>.</div><?php endif; ?>
+  <p class="muted">Fichier analysé : <?= e($file) ?>, téléchargé le <?= e(date('d/m/Y à H:i:s', (int) $fetchedAt)) ?> · flux <?= e($type) ?>
+  <?php if ($itemCount !== null): ?> · <strong><?= fmt_n($itemCount) ?></strong> élément(s) &lt;<?= e($itemName) ?>&gt; dans le flux<?php endif; ?>
+  · les <?= count($samples) ?> premiers sont montrés ci-dessous · rien n'est indexé pendant ce test.</p>
+<?php endif; ?>
 <?php if ($error): ?><div class="flash flash-error"><?= e($error) ?></div><?php endif; ?>
 <?php if ($flat): ?><div class="flash flash-info">Mode « flat » : les enfants sont regroupés sous leur parent pendant l'import. Ce test montre chaque ligne séparément.</div><?php endif; ?>
 

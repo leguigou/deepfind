@@ -72,6 +72,10 @@
   };
 
   document.addEventListener('DOMContentLoaded', function () {
+    // Liens longs à charger (ex. « Retélécharger le flux ») : texte d'attente pendant le chargement de la page suivante
+    document.querySelectorAll('a[data-loading-text]').forEach(function (l) {
+      l.addEventListener('click', function () { l.textContent = l.getAttribute('data-loading-text'); l.setAttribute('aria-busy', 'true'); l.classList.add('is-loading'); });
+    });
     function label() {
       document.querySelectorAll('[data-theme-label]').forEach(function (el) {
         el.textContent = root.getAttribute('data-theme') === 'light' ? 'clair' : 'sombre';

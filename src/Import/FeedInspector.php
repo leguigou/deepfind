@@ -217,6 +217,8 @@ final class FeedInspector
 
     /**
      * Éléments les plus répétés aux niveaux 1 et 2 du document (le « produit » est en général le plus fréquent).
+     * Les éléments qui contiennent d'autres éléments passent avant les simples valeurs : dans un sitemap, <url> (qui contient
+     * <loc>, <lastmod>…) passe avant <cabesto:category>, plus fréquent quand un article a plusieurs catégories.
      * @return array<string,int>
      */
     public static function candidates(string $file, int $maxNodes = 50000): array
@@ -225,10 +227,20 @@ final class FeedInspector
         $prev = libxml_use_internal_errors(true);
         $r = new XMLReader();
         $counts = [];
+        $containers = [];
+        $open = [];
         if ($r->open($uri, 'UTF-8', LIBXML_NONET | LIBXML_COMPACT | LIBXML_PARSEHUGE)) {
             $seen = 0;
             while (@$r->read() && $seen < $maxNodes) {
-                if ($r->nodeType === XMLReader::ELEMENT && ($r->depth === 1 || $r->depth === 2)) {
+                if ($r->nodeType !== XMLReader::ELEMENT) {
+                    continue;
+                }
+                $d = $r->depth;
+                if ($d >= 2 && isset($open[$d - 1])) {
+                    $containers[$open[$d - 1]] = true; // l'élément parent contient des éléments
+                }
+                $open[$d] = $r->name;
+                if ($d === 1 || $d === 2) {
                     $counts[$r->name] = ($counts[$r->name] ?? 0) + 1;
                     $seen++;
                 }
@@ -237,8 +249,11 @@ final class FeedInspector
         }
         libxml_clear_errors();
         libxml_use_internal_errors($prev);
-        arsort($counts);
-        return array_filter($counts, static fn ($n) => $n >= 1);
+        $counts = array_filter($counts, static fn ($n) => $n >= 1);
+        // ordre : éléments conteneurs d'abord, puis par nombre décroissant (ordre d'apparition en cas d'égalité)
+        $order = array_flip(array_keys($counts));
+        uksort($counts, static fn ($a, $b) => [isset($containers[$a]) ? 0 : 1, -$counts[$a], $order[$a]] <=> [isset($containers[$b]) ? 0 : 1, -$counts[$b], $order[$b]]);
+        return $counts;
     }
 
     private function walk(\DOMElement $el, string $prefix, int $depth, array &$local): void

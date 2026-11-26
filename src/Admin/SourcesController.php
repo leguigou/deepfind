@@ -224,9 +224,21 @@ final class SourcesController
                 $error = $e->getMessage();
             }
         }
+        // nombre d'éléments du flux et date du téléchargement : un clic sur « Retélécharger » se voit
+        $itemName = isset($mapper) ? $mapper->itemElement() : '';
+        $itemCount = null;
+        if ($file && $itemName !== '') {
+            try {
+                $itemCount = XmlItemReader::count($file, [$itemName]);
+            } catch (\Throwable) {
+                $itemCount = null;
+            }
+        }
         View::render('source_test', [
             'active' => 'sources', 'source' => $source, 'type' => $type, 'samples' => $samples, 'error' => $error,
             'file' => $file ? basename($file) . ' (' . round(filesize($file) / 1048576, 2) . ' Mo)' : null,
+            'fetchedAt' => $file && is_file($file) ? (int) filemtime($file) : null, 'refreshed' => isset($_REQUEST['refresh']),
+            'itemName' => $itemName, 'itemCount' => $itemCount,
             'flat' => is_array($mapping) && ($mapping['variant_mode'] ?? 'nested') === 'flat',
         ], 'Test du mapping');
     }
