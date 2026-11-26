@@ -1,5 +1,5 @@
 <?php
-/** @var array $rules @var array $fields @var string $lang */
+/** @var array $rules @var array $fields @var string $lang @var array<string, array> $skuProducts @var array $attrLabels */
 use DeepFind\Rules\BoostRules;
 
 $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',', ''), '0'), ',');
@@ -29,7 +29,20 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
       <td><?php if ($r['terms'] === []): ?><span class="muted">Toutes les recherches</span><?php else: ?>
         <div class="chips"><?php foreach ($r['terms'] as $t): ?><span class="chip" title="<?= $t['match'] === 'broad' ? 'Correspondance large' : 'Correspondance exacte' ?>"><span class="chip-ico"><?= $t['match'] === 'broad' ? '≈' : '=' ?></span><?= e($t['term']) ?></span><?php endforeach; ?></div>
       <?php endif; ?></td>
-      <td class="br-desc"><?= e(BoostRules::describe($r, $lang)) ?></td>
+      <td class="br-desc"><?= e(BoostRules::describe($r, $lang)) ?>
+        <?php $prods = []; foreach ($r['conditions'] as $cd) { if (($cd['field'] ?? '') === 'sku') { foreach ((array) ($cd['values'] ?? []) as $sv) { $prods[mb_strtoupper(trim((string) $sv), 'UTF-8')] = (string) $sv; } } }
+        if ($prods !== []): ?>
+          <ul class="br-prods">
+          <?php foreach (array_slice($prods, 0, 20, true) as $up => $sv): $doc = $skuProducts[$up] ?? null; ?>
+            <li><?php if ($doc === null): ?><code><?= e($sv) ?></code> <span class="badge badge-ko">introuvable dans le catalogue</span>
+              <?php else: ?><button type="button" class="br-prod" data-dialog-open="br-p-<?= e(md5($up)) ?>" title="Voir la fiche du produit">
+                <?php if (!empty($doc['image'])): ?><img src="<?= e((string) $doc['image']) ?>" alt="" loading="lazy"><?php endif; ?>
+                <span><strong><?= e((string) $doc['name']) ?></strong><small class="muted"><?= e($sv) ?><?= !empty($doc['brand']) ? ' · ' . e((string) $doc['brand']) : '' ?>
+                  · <?= fmt_n((float) ($doc['final_price'] ?? 0), 2) ?> €<?= empty($doc['in_stock']) ? ' · rupture' : '' ?></small></span></button><?php endif; ?></li>
+          <?php endforeach; ?>
+          <?php if (count($prods) > 20): ?><li class="muted small">et <?= count($prods) - 20 ?> autre(s)</li><?php endif; ?>
+          </ul>
+        <?php endif; ?></td>
       <td class="actions">
         <button type="button" class="btn btn-sm btn-light" data-br-open data-rule="<?= e(\DeepFind\Text::json($r)) ?>">Modifier</button>
         <form method="post" action="<?= e(url('/admin/boost-rules/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
@@ -42,6 +55,16 @@ $fmtBoost = static fn (float $b) => '×' . rtrim(rtrim(number_format($b, 2, ',',
 </table>
 </div>
 
+<?php // fiches des produits nommés par SKU (même fenêtre que « Détails » de l'aperçu interne)
+$standalone = true; $words = [];
+foreach ($skuProducts as $up => $doc) {
+    $pr = $doc + ['details' => $doc, 'matched' => []];
+    $dlgId = 'br-p-' . md5($up);
+    $isDisabled = (int) ($doc['available'] ?? 1) === 0;
+    $disLabel = 'désactivé auto';
+    include __DIR__ . '/_preview_product.php';
+}
+?>
 <dialog id="br-dialog" class="modal" aria-labelledby="br-title">
   <form method="post" action="<?= e(url('/admin/boost-rules/save')) ?>" class="form modal-form" data-boost-rule-form
         data-fields="<?= e(\DeepFind\Text::json($fields)) ?>" data-values-url="<?= e(url('/admin/boost-rules/values')) ?>">

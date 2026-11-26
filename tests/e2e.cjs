@@ -270,6 +270,22 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
   await page.click('form[action$="/admin/boost-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
+  // Règle sur un SKU : nom du produit sous le SKU, fiche complète au clic ; SKU inconnu signalé
+  const brCsrf = await page.getAttribute('input[name=_csrf]', 'value');
+  await page.request.post(BASE + '/admin/boost-rules/product', { form: { _csrf: brCsrf, sku: 'SEAC-X-VISION', boost: '1.5' } });
+  await page.goto(BASE + '/admin/boost-rules');
+  const brProd = page.locator('.br-prods .br-prod').first();
+  const brProdText = (await brProd.textContent()) || '';
+  await brProd.click();
+  const brDlg = page.locator('dialog[open]');
+  await brDlg.waitFor({ timeout: 5000 });
+  const brDlgText = await brDlg.textContent();
+  await page.screenshot({ path: OUT + '/16-boosts-fiche-produit.png', fullPage: false });
+  await brDlg.locator('[data-dialog-close]').click();
+  check('règles de boost : produit nommé sous le SKU, fiche au clic (prix, stock, attributs ; sans « pourquoi trouvé »)',
+    brProdText.includes('SEAC-X-VISION') && brProdText.length > 20 && brDlgText.includes('SEAC-X-VISION') && brDlgText.includes('Prix')
+    && brDlgText.includes('Attributs') && !brDlgText.includes('Pourquoi ce produit'), brProdText + ' | ' + brDlgText.slice(0, 200));
+  await page.request.post(BASE + '/admin/boost-rules/product', { form: { _csrf: brCsrf, sku: 'SEAC-X-VISION', boost: '1' } });
 
   // Cache : visibilité et purge
   await page.goto(BASE + '/admin/cache');

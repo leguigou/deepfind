@@ -12,3 +12,4 @@
 - La liste des valeurs à cocher montre les 100 premières ; tapez dans « Rechercher… » pour chercher parmi **toutes** les valeurs du catalogue.
 - La pertinence des produits concernés est multipliée par le coefficient (plusieurs règles se multiplient), lors du réordonnancement des premiers résultats, en tri « pertinence » uniquement.
 - **Boost rapide d'un produit** : dans l'aperçu interne, la liste « Boost » crée une règle « Produit SKU » (toutes les recherches).
+- **Produits nommés par SKU** : dans la liste des règles, sous chaque condition « SKU », le produit est affiché (photo, nom, marque, prix, rupture). Un clic ouvre sa **fiche complète** (prix, stock, marge, ventes et clics 30 jours, score métier, catégories, attributs, variantes, descriptions), la même que « Détails » dans l'aperçu interne. Un SKU absent du catalogue est signalé « introuvable dans le catalogue ».
