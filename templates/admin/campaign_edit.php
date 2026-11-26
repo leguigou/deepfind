@@ -1,70 +1,9 @@
 <?php
-/** Recommandations › Campagnes › fiche : produits, période, objectif ; tableau de bord des résultats.
- *  @var array $c @var list<array> $items @var list<array> $fields @var ?array $stats @var string $status */
-$euro = static fn (int $cents) => fmt_n($cents / 100, 2) . ' €';
-$delta = static function (int $now, int $before): string {
-    if ($before === 0) {
-        return $now > 0 ? '<span class="cp-up">nouveau</span>' : '<span class="muted">—</span>';
-    }
-    $pct = round(100 * ($now - $before) / $before);
-    return '<span class="' . ($pct >= 0 ? 'cp-up' : 'cp-down') . '">' . ($pct >= 0 ? '+' : '') . $pct . ' %</span>';
-};
-$statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 'terminée', 'off' => 'désactivée'];
+/** Recommandations › Campagnes › modifier : nom, période, objectif, produits (un par un et par règles).
+ *  @var array $c @var list<array> $items @var list<array> $fields @var ?array $rule */
 ?>
-<p><a href="<?= e(url('/admin/campaigns')) ?>" class="cr-back">‹ Retour aux campagnes</a></p>
-
-<?php if ($stats): $t = $stats['total']; $pv = $stats['prev']; $per = $stats['period']; ?>
-  <p class="muted">Campagne <?= e($statusLabel[$status]) ?> · résultats du <?= e(date('d/m/Y', strtotime($per['from']))) ?> au <?= e(date('d/m/Y', strtotime($per['to']))) ?>
-    (<?= (int) $per['days'] ?> jour<?= $per['days'] > 1 ? 's' : '' ?>), comparés au <?= e(date('d/m/Y', strtotime($per['prev_from']))) ?> – <?= e(date('d/m/Y', strtotime($per['prev_to']))) ?>.</p>
-  <div class="cards">
-    <div class="card kpi"><div class="kpi-label">Chiffre d'affaires</div><div class="kpi-value"><?= $euro($t['revenue']) ?></div><div class="muted small"><?= $delta($t['revenue'], $pv['revenue']) ?> · avant : <?= $euro($pv['revenue']) ?></div></div>
-    <div class="card kpi"><div class="kpi-label">Commandes</div><div class="kpi-value"><?= fmt_n($t['orders']) ?></div><div class="muted small"><?= $delta($t['orders'], $pv['orders']) ?></div></div>
-    <div class="card kpi"><div class="kpi-label">Ajouts au panier</div><div class="kpi-value"><?= fmt_n($t['carts']) ?></div><div class="muted small"><?= $delta($t['carts'], $pv['carts']) ?></div></div>
-    <div class="card kpi"><div class="kpi-label">Clics</div><div class="kpi-value"><?= fmt_n($t['clicks']) ?></div><div class="muted small"><?= $delta($t['clicks'], $pv['clicks']) ?> · recherche et carrousels</div></div>
-    <div class="card kpi"><div class="kpi-label">Vus dans les carrousels</div><div class="kpi-value"><?= fmt_n($t['car_views']) ?></div><div class="muted small">affichages à l'écran</div></div>
-  </div>
-
-  <h2>Produits</h2>
-  <div class="table-wrap">
-  <table class="table cp-table">
-    <thead><tr><th>Produit</th><th class="num">Vus (carrousels)</th><th class="num">Clics</th><th class="num" title="Position moyenne du produit quand il est cliqué dans la recherche">Position (recherche)</th>
-      <th class="num">Paniers</th><th class="num">Commandes</th><th class="num">CA</th><th class="num">vs avant</th></tr></thead>
-    <tbody>
-    <?php foreach ($stats['rows'] as $r): ?>
-      <tr>
-        <td><?php if (!$r['found']): ?><strong><?= e($r['sku']) ?></strong> <span class="badge badge-ko">introuvable dans le catalogue</span>
-          <?php else: ?><a href="<?= e(url('/admin/preview', ['q' => $r['sku']])) ?>"><?= e($r['name']) ?></a> <small class="muted"><?= e($r['sku']) ?></small>
-            <?php if ($r['rule']): ?> <span class="badge badge-info" title="Produit ajouté par les règles de la campagne">règle</span><?php endif; ?>
-            <?php if (!$r['in_stock']): ?> <span class="badge badge-ko">rupture</span><?php endif; ?><?php endif; ?></td>
-        <td class="num"><?= fmt_n($r['car_views']) ?></td>
-        <td class="num"><?= fmt_n($r['clicks']) ?></td>
-        <td class="num"><?= $r['avg_pos'] !== null ? fmt_n($r['avg_pos'], 1) . ' <small class="muted">(' . fmt_n($r['search_clicks']) . ')</small>' : '—' ?></td>
-        <td class="num"><?= fmt_n($r['carts']) ?></td>
-        <td class="num"><?= fmt_n($r['orders']) ?></td>
-        <td class="num"><?= $euro($r['revenue']) ?></td>
-        <td class="num"><?= $delta($r['revenue'], $r['prev']['revenue']) ?></td>
-      </tr>
-    <?php endforeach; ?>
-    </tbody>
-  </table>
-  </div>
-  <?php if ($stats['rule']['hidden'] > 0): ?><p class="muted small"><?= fmt_n($stats['rule']['hidden']) ?> autre(s) produit(s) des règles, moins actifs, ne sont pas affichés ; ils comptent dans les totaux.</p><?php endif; ?>
-
-  <h2>Où les ventes ont été faites</h2>
-  <div class="table-wrap">
-  <table class="table table-compact">
-    <thead><tr><th>Emplacement (dernier clic sur le produit dans la journée)</th><th class="num">Clics</th><th class="num">Paniers</th><th class="num">Commandes</th><th class="num">CA</th></tr></thead>
-    <tbody>
-    <?php foreach ($stats['placements'] as $pl): ?>
-      <tr><td><?= e($pl['label']) ?></td><td class="num"><?= fmt_n($pl['clicks']) ?></td><td class="num"><?= fmt_n($pl['carts']) ?></td>
-        <td class="num"><?= fmt_n($pl['orders']) ?></td><td class="num"><?= $euro($pl['revenue']) ?></td></tr>
-    <?php endforeach; ?>
-    <?php if ($stats['placements'] === []): ?><tr><td colspan="5" class="muted">Pas encore de clic ni de vente sur la période.</td></tr><?php endif; ?>
-    </tbody>
-  </table>
-  </div>
-  <p class="muted small">« Sans clic DeepFind » : produit mis au panier ou acheté sans avoir été cliqué dans la recherche ou un carrousel le même jour (navigation du site, lien externe…).</p>
-<?php endif; ?>
+<p><?php if ($c['id']): ?><a href="<?= e(url('/admin/campaigns/results', ['id' => $c['id']])) ?>" class="cr-back">‹ Retour aux résultats</a>
+  <?php else: ?><a href="<?= e(url('/admin/campaigns')) ?>" class="cr-back">‹ Retour aux campagnes</a><?php endif; ?></p>
 
 <form method="post" action="<?= e(url('/admin/campaigns/save')) ?>" class="card form cp-form" data-campaign-form data-rule-root data-items="<?= e(\DeepFind\Text::json($items)) ?>"
       data-search-url="<?= e(url('/admin/custom-results/search')) ?>" data-fields="<?= e(\DeepFind\Text::json($fields)) ?>" data-values-url="<?= e(url('/admin/boost-rules/values')) ?>"
@@ -73,7 +12,6 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
   <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
   <input type="hidden" name="items" value="" data-items-field>
   <input type="hidden" name="conditions" value="" data-conds-field>
-  <h3><?= $c['id'] ? 'Réglages de la campagne' : 'Nouvelle campagne' ?></h3>
   <div class="grid2">
     <label>Nom <input name="name" maxlength="190" required value="<?= e($c['name']) ?>" placeholder="ex. Soldes d'été – palmes"></label>
     <label class="toggle cp-active"><input type="checkbox" role="switch" name="active" value="1"<?= $c['active'] ? ' checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Campagne active</span></label>
@@ -99,13 +37,13 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
     <label class="check"><input type="radio" name="cp_match" value="any"><span>remplissent <strong>au moins une</strong> condition</span></label>
     <div class="br-conds" data-conds></div>
     <button type="button" class="btn btn-light br-add-cond" data-add-cond>+ Ajouter une condition</button>
-    <?php if ($stats && $c['conditions'] !== []): $ru = $stats['rule']; ?>
-      <p class="muted small"><?= $ru['error'] !== null ? e($ru['error']) : 'Aujourd\'hui : ' . fmt_n($ru['total']) . ' produit(s) correspondent' . ($ru['capped'] ? ' (suivi limité aux ' . \DeepFind\Rules\Campaigns::RULE_LIMIT . ' premiers : précisez les règles)' : '') . '.' ?></p>
+    <?php if ($rule !== null): $ru = $rule; ?>
+      <p class="muted small"><?= $ru['error'] !== null ? e($ru['error']) : 'Aujourd\'hui : ' . fmt_n($ru['total']) . ' produit(s) correspondent' . ($ru['total'] > \DeepFind\Rules\Campaigns::RULE_LIMIT ? ' (suivi limité aux ' . \DeepFind\Rules\Campaigns::RULE_LIMIT . ' premiers : précisez les règles)' : '') . '.' ?></p>
     <?php endif; ?>
   </div>
   <div class="cr-foot">
     <?php if ($c['id']): ?><button class="btn btn-danger cr-delete-btn" form="cp-delete-form" data-confirm="Supprimer la campagne « <?= e($c['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer cette campagne</button><?php endif; ?>
-    <a class="btn btn-light" href="<?= e(url('/admin/campaigns')) ?>">Annuler</a>
+    <a class="btn btn-light" href="<?= e(url($c['id'] ? '/admin/campaigns/results' : '/admin/campaigns', $c['id'] ? ['id' => $c['id']] : [])) ?>">Annuler</a>
     <button class="btn">Enregistrer</button>
   </div>
 </form>
