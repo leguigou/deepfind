@@ -347,6 +347,38 @@ fs.mkdirSync(OUT, { recursive: true });
     && await page.locator('.pst-table tbody tr').count() >= 1, String(pstRows));
   await page.screenshot({ path: OUT + '/articles-de-blog.png', fullPage: false });
 
+  // Intégration › Filtres : valeurs masquées (ex. catégorie « Destockage ») : absentes du filtre, produits toujours là
+  const catOf = async () => page.evaluate(() => {
+    const sec = Array.prototype.find.call(document.querySelectorAll('.df-side .df-sec'), (x) => /Catégories/.test(x.querySelector('.df-sec-head') ? x.querySelector('.df-sec-head').textContent : ''));
+    return { values: sec ? Array.prototype.map.call(sec.querySelectorAll('.df-fv-label'), (l) => l.textContent) : [], total: document.querySelector('.df-title').textContent };
+  });
+  await page.goto(BASE + '/admin/demo');
+  await page.fill('#search', 'palme');
+  await page.waitForSelector('.df-card', { timeout: 5000 });
+  await page.waitForTimeout(400);
+  const catBefore = await catOf();
+  const hideCat = catBefore.values[0] || '';
+  await page.goto(BASE + '/admin/integration?tab=filters');
+  const catRow = page.locator('tr[data-code=category] [data-f=hidden]');
+  const hasCatRow = await catRow.count() > 0;
+  if (hasCatRow && hideCat) {
+    await catRow.fill(hideCat.toUpperCase() + ', Soldes');
+    await Promise.all([page.waitForNavigation(), page.click('form[data-order-form=filters] .form-foot button.btn')]);
+    const savedHidden = await page.inputValue('tr[data-code=category] [data-f=hidden]');
+    await page.goto(BASE + '/admin/demo');
+    await page.fill('#search', 'palme');
+    await page.waitForSelector('.df-card', { timeout: 5000 });
+    await page.waitForTimeout(400);
+    const catAfter = await catOf();
+    check('filtres : catégorie masquée absente du filtre, mêmes résultats', savedHidden.includes('Soldes') && !catAfter.values.includes(hideCat)
+      && catAfter.values.length === catBefore.values.length - 1 && catAfter.total === catBefore.total, JSON.stringify([hideCat, savedHidden, catBefore, catAfter]));
+    await page.goto(BASE + '/admin/integration?tab=filters');
+    await page.fill('tr[data-code=category] [data-f=hidden]', '');
+    await Promise.all([page.waitForNavigation(), page.click('form[data-order-form=filters] .form-foot button.btn')]);
+  } else {
+    check('filtres : ligne « Catégories » et valeurs à masquer présentes', false, JSON.stringify([hasCatRow, catBefore]));
+  }
+
   // Widget sur la page de démo
   await page.goto(BASE + '/admin/demo');
   await page.fill('#search', 'palme');
@@ -1026,6 +1058,22 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.waitForURL(/\/admin\/push$/, { timeout: 8000 });
   check('notifications : message programmé (envoi par la tâche planifiée)', (await page.textContent('body')).includes('envoi dans la minute à 1 abonné')
     && (await page.textContent('.table')).includes('Programmé'));
+  // Voir un message (lecture seule, aperçu), le dupliquer en brouillon ; importer une image (aperçu mis à jour)
+  await Promise.all([page.waitForNavigation(), page.locator('.table tbody tr', { hasText: 'Test e2e' }).first().locator('a:has-text("Voir")').click()]);
+  const pvText = await page.textContent('main');
+  await Promise.all([page.waitForNavigation(), page.click('.pv-btns button:has-text("Dupliquer")')]);
+  const dupTitle = await page.inputValue('input[name=title]');
+  await page.setInputFiles('[data-pu="image"] [data-pu-file]', { name: 'visuel.png', mimeType: 'image/png',
+    buffer: require('fs').readFileSync(require('path').join(__dirname, '..', 'public', 'favicon-32.png')) });
+  await page.waitForFunction(() => /importée/.test(document.querySelector('[data-pu="image"] [data-pu-msg]').textContent), null, { timeout: 5000 });
+  const upUrl = await page.inputValue('input[name=image]');
+  const upPreview = await page.getAttribute('[data-pe-out=image]', 'src');
+  check('notifications : voir un message, le dupliquer, importer une image (adresse remplie, aperçu)', pvText.includes('Test e2e') && pvText.includes('Message de test')
+    && dupTitle === 'Test e2e (copie)' && /\/uploads\/banners\/\d+\/[0-9a-f]{40}\.png$/.test(upUrl) && upPreview === upUrl, JSON.stringify([dupTitle, upUrl, upPreview]));
+  await page.locator('.pe-layout').screenshot({ path: OUT + '/notifications-copie-image.png' });
+  await page.check('input[name=when][value=draft]');
+  await Promise.all([page.waitForNavigation(), page.click('[data-pe-submit]')]);
+  check('notifications : copie enregistrée en brouillon avec l\'image', (await page.textContent('.table')).includes('Test e2e (copie)') && await page.locator('.table img.pm-thumb').count() >= 1);
   await page.screenshot({ path: OUT + '/notifications-messages.png', fullPage: true });
   // Abonnés : liste masquée, filtre, pause puis réactivation
   await page.goto(BASE + '/admin/push/subscribers?device=desktop');

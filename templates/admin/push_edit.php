@@ -7,7 +7,7 @@ $when = $c['status'] === 'scheduled' ? 'at' : 'draft';
 ?>
 <p><a href="<?= e(url('/admin/push')) ?>" class="cr-back">‹ Retour aux messages</a></p>
 <div class="pe-layout">
-<form method="post" action="<?= e(url('/admin/push/save')) ?>" class="card form" data-push-edit data-audience="<?= e(\DeepFind\Text::json($audience)) ?>">
+<form method="post" action="<?= e(url('/admin/push/save')) ?>" class="card form" data-push-upload="<?= e(url('/admin/push/upload')) ?>" data-csrf="<?= e(\DeepFind\Admin\Auth::csrf()) ?>" data-push-edit data-audience="<?= e(\DeepFind\Text::json($audience)) ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
   <label>Titre <small class="muted">(80 caractères au plus ; 40 environ restent visibles sur un téléphone)</small>
@@ -16,7 +16,8 @@ $when = $c['status'] === 'scheduled' ? 'at' : 'draft';
     <textarea name="body" rows="3" maxlength="250" placeholder="ex. Jusqu'à dimanche minuit, sur toute la gamme." data-pe="body"><?= e($c['body']) ?></textarea></label>
   <div class="grid2">
     <label>Lien ouvert au clic <input name="url" value="<?= e($c['url']) ?>" placeholder="https://www.example.com/promotions.html ou /promotions.html"></label>
-    <label>Image <small class="muted">(facultatif ; affichée par Android et Windows)</small><input name="image" value="<?= e($c['image']) ?>" placeholder="https://…" data-pe="image"></label>
+    <div><label>Image <small class="muted">(facultatif ; affichée par Android et Windows ; 1024 × 512 px conseillé)</small><input name="image" value="<?= e($c['image']) ?>" placeholder="https://… ou importez un fichier" data-pe="image"></label>
+      <?= push_upload_button('image') ?></div>
   </div>
   <h3>Destinataires</h3>
   <div class="grid2">

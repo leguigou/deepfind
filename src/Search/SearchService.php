@@ -407,8 +407,8 @@ final class SearchService
         foreach ($attrLabels as $code => $label) {
             $facets[] = $this->facet('attr.' . $code, (string) $label, $dist['attr.' . $code] ?? [], $r->attrs[$code] ?? [], false);
         }
-        $facets = array_values(array_filter($facets, static fn ($f) => $f['values'] !== []));
         $facets = self::arrangeFacets($facets, $r->lang);
+        $facets = array_values(array_filter($facets, static fn ($f) => $f['values'] !== []));
 
         $posts = [];
         foreach ($res['posts']['hits'] ?? [] as $p) {
@@ -650,7 +650,7 @@ final class SearchService
     {
         $conf = [];
         foreach (\DeepFind\Widget\WidgetConfig::filters($lang) as $i => $f) {
-            $conf[$f['code']] = [$i, $f['label'], $f['visible'], $f['limit'], $f['order']];
+            $conf[$f['code']] = [$i, $f['label'], $f['visible'], $f['limit'], $f['order'], array_flip(array_map([\DeepFind\Text::class, 'fold'], $f['hidden'] ?? []))];
         }
         // filtre non ajouté ou désactivé : plus proposé (une valeur déjà sélectionnée reste appliquée)
         $facets = array_values(array_filter($facets, static fn ($f) => ($conf[$f['code']][2] ?? false)));
@@ -660,6 +660,11 @@ final class SearchService
         $max = max(5, Settings::int('facet_values_limit'));
         foreach ($facets as &$f) {
             $f['label'] = $conf[$f['code']][1] ?? $f['label'];
+            // valeurs masquées (ex. « Destockage ») : retirées du filtre seulement, les produits restent ; une valeur déjà cochée reste visible
+            $hidden = $conf[$f['code']][5] ?? [];
+            if ($hidden !== []) {
+                $f['values'] = array_values(array_filter($f['values'], static fn ($v) => !empty($v['selected']) || !isset($hidden[\DeepFind\Text::fold($v['value'])])));
+            }
             $byCount = $f['values'];
             usort($byCount, static fn ($a, $b) => $b['count'] <=> $a['count'] ?: strnatcasecmp($a['value'], $b['value']));
             $keep = array_slice($byCount, 0, max($max, (int) ($conf[$f['code']][3] ?? 0)));

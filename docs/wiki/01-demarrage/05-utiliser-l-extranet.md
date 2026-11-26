@@ -13,7 +13,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |  | [Statistiques](../analyse/statistiques-et-journal) | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 |  | [Journal des recherches](../analyse/statistiques-et-journal) | Détail filtrable et exportable |
 | **Catalogues** | [Flux & mapping](../catalogue/mapping) | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
-|  | [Imports](../catalogue/imports) | Historique (durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
+|  | [Imports](../catalogue/imports) | Historique paginé (50 par page, du plus récent au plus ancien ; durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
 |  | [Produits désactivés](../catalogue/produits-desactives) | Produits retirés des recherches avec le bouton « Désactiver » de l'aperçu interne, avec filtre, « Activer » et « Tout réactiver » |
 |  | [Articles de blog](../catalogue/articles-de-blog) | Articles importés depuis le flux du blog : image, titre, catégories, date, lien ; recherche comme sur le site, filtre par catégorie |
 |  | [Aperçu interne](../recherche-et-pertinence/pertinence-et-classement) | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |
@@ -28,7 +28,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |  | [Popins](../recommandations/popins) | Fenêtre affichée sur les pages du site choisies (accueil, adresses), avec période, délai, fréquence et statistiques ; ciblage selon la provenance du visiteur |
 |  | [Carrousels](../recommandations/carrousels) | Bandeaux de produits qui défilent : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte) ; ciblage selon la provenance ; apprentissage par les clics |
 |  | [Campagnes](../recommandations/campagnes) | Produits à pousser sur une période (choisis un par un ou par règles) : clics, affichages, paniers, commandes et chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
-|  | [Envoi de notifications](../recommandations/notifications) | Messages envoyés aux abonnés (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics, liste des abonnés, groupe de test |
+|  | [Envoi de notifications](../recommandations/notifications) | Messages envoyés aux abonnés (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics, voir et dupliquer un message, import d'image, liste des abonnés, groupe de test |
 |  | [Démo du widget](../affichage-du-widget/tester-sur-le-site) | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | [Projets](../exploitation/projets) | Production, Test… |
 |  | [Clés](integrer-le-widget) | Clés publiques et domaines autorisés |

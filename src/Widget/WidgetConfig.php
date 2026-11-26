@@ -329,9 +329,28 @@ HTML;
                 'limit' => $limit >= 1 ? min(100, $limit) : self::defaultLimit($code),
                 // bloc déplié à l'ouverture de la fenêtre (le visiteur peut le replier / déplier)
                 'open' => !array_key_exists('open', $f) || !empty($f['open']),
-                'order' => isset(self::VALUE_ORDERS[$f['order'] ?? '']) ? (string) $f['order'] : self::defaultOrder($code)];
+                'order' => isset(self::VALUE_ORDERS[$f['order'] ?? '']) ? (string) $f['order'] : self::defaultOrder($code),
+                // valeurs jamais proposées dans ce filtre (ex. catégories « Destockage », « Soldes ») ; les produits restent dans les résultats
+                'hidden' => self::hiddenValues($f['hidden'] ?? [])];
         }
         return array_values($out);
+    }
+
+    /**
+     * Valeurs masquées d'un filtre : liste, ou texte séparé par des virgules / retours à la ligne ; sans doublon (majuscules et accents ignorés), 200 au plus.
+     * @return list<string>
+     */
+    public static function hiddenValues(mixed $in): array
+    {
+        $raw = is_array($in) ? $in : preg_split('/[,\n;]+/u', (string) $in);
+        $out = [];
+        foreach ($raw ?: [] as $v) {
+            $v = Text::truncate(trim((string) preg_replace('/\s+/u', ' ', (string) $v)), 190);
+            if ($v !== '' && !isset($out[Text::fold($v)])) {
+                $out[Text::fold($v)] = $v;
+            }
+        }
+        return array_slice(array_values($out), 0, 200);
     }
 
     /** Filtres disponibles pas encore ajoutés (fenêtre « Ajouter un filtre »). @return array<string, array{0:string, 1:string}> */
@@ -358,6 +377,10 @@ HTML;
             if ($avail[$code][1] === 'terms') {
                 $row['order'] = isset(self::VALUE_ORDERS[$f['order'] ?? '']) ? (string) $f['order'] : self::defaultOrder($code);
                 $row['limit'] = max(1, min(100, (int) ($f['limit'] ?? self::defaultLimit($code)) ?: self::defaultLimit($code)));
+                $hidden = self::hiddenValues($f['hidden'] ?? []);
+                if ($hidden !== []) {
+                    $row['hidden'] = $hidden;
+                }
             }
             $out[$code] = $row;
         }

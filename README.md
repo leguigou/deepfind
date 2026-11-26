@@ -404,7 +404,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 | | Bannières | Image ou code HTML en haut des résultats (section 8) |
 | | Popins | Fenêtre affichée sur les pages du site choisies (accueil, adresses), selon la provenance du visiteur, avec période, délai, fréquence et statistiques (section 8) |
 | | Carrousels | Bandeaux de produits qui défilent, insérés dans un bloc des pages choisies : produits manuels, automatiques, similaires, personnalisés, tendances, achetés ensemble, aussi regardés, page panier (livraison offerte), ciblage selon la provenance, apprentissage par les clics (section 8) |
-| | Envoi de notifications | Messages envoyés aux abonnés aux notifications (téléphone, ordinateur) : rédaction, destinataires, programmation, affichages et clics (voir « Notifications » ci-dessous) |
+| | Envoi de notifications | Messages envoyés aux abonnés aux notifications (téléphone, ordinateur) : rédaction (image importée ou par adresse), destinataires, programmation, affichages et clics, voir un message envoyé, dupliquer (voir « Notifications » ci-dessous) |
 | | Campagnes | Produits à pousser sur une période : clics, affichages, paniers, commandes, chiffre d'affaires par produit et par emplacement, comparés à la période précédente |
 | | Démo du widget | Le widget sur une page de démonstration, avec le **layer de votre choix** |
 | **Paramètres** | Projets | Production, Test… (voir plus bas) |
@@ -673,6 +673,7 @@ Un **layer** est une façon d'afficher la fenêtre de recherche. Un seul est act
 - **Ordre** des filtres par glisser-déposer.
 - **Valeurs affichées** : nombre de valeurs visibles dans un filtre de type liste, les suivantes derrière « + N ».
 - **Ordre des valeurs** : **par nombre** de produits (du plus grand au plus petit) ou **A à Z**. Les valeurs proposées sont toujours celles qui ont le plus de produits (plus celles déjà choisies par le visiteur).
+- **Valeurs masquées** : valeurs jamais proposées dans un filtre (ex. catégories `Destockage, Soldes`) ; leurs produits restent dans les résultats.
 - **Déplié** : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
 - **Prix** : deux champs (min / max) et un curseur à deux poignées, avec « Réinitialiser » et « Valider ».
 - Tant que la liste n'a jamais été enregistrée, tous les filtres disponibles sont proposés. Ensuite, seuls les filtres ajoutés le sont : un nouvel attribut importé apparaît dans « Ajouter un filtre ».

@@ -27,7 +27,7 @@ La **croix** en haut à droite ferme l'invitation (comme *Plus tard*) ou la fen�
 | Quand | délai après l'arrivée (secondes), à partir de la N<sup>e</sup> page vue de la visite, pages sans invitation (débuts d'adresse, ex. `/checkout`) |
 | Contenu | titre, texte, boutons, message de remerciement, image (popins) ; variables `{{code}}` acceptées |
 | Style | couleurs (fond, texte, bouton et cloche), CSS personnalisé (`.df-push`, `.df-push-bell`, `.df-push-yes`, `.df-push-later`) ; **aperçu ordinateur / mobile** |
-| Installation | adresse du `sw.js` sur le site, icône des notifications (carrée, 192 px conseillé) |
+| Installation | adresse du `sw.js` sur le site, icône des notifications (carrée, 192 px conseillé ; adresse ou **Importer une image**) |
 
 ## Installation sur le site (une seule fois)
 
@@ -52,11 +52,15 @@ importScripts('https://search.example.com/widget/push-sw.js');
 
 ## Envoyer un message (Recommandations › Envoi de notifications)
 
-- **Titre** (80 caractères au plus, environ 40 visibles sur un téléphone), **texte** (250), **lien** ouvert au clic, **image** (affichée par Android et Windows). Aperçu à droite.
+- **Titre** (80 caractères au plus, environ 40 visibles sur un téléphone), **texte** (250), **lien** ouvert au clic, **image** (affichée par Android et Windows ; 1024 × 512 px conseillé). Aperçu à droite.
+- **Importer une image** : à côté du champ Image, choisissez un fichier sur l'ordinateur (JPG, PNG, GIF ou WebP, 500 Ko au plus) ; il est enregistré sur DeepFind (même stockage que les bannières) et son adresse remplit le champ. Le même bouton existe dans *Paramètres › Notifications* pour l'**image de l'invitation** et l'**icône des notifications**. Pensez à enregistrer.
 - **Destinataires** : appareils, et provenance au moment de l'abonnement (moteurs, réseaux sociaux, e-mail… voir [Ciblage selon la provenance](ciblage-par-provenance)). Le nombre d'abonnés visés est affiché.
 - **Envoi** : brouillon, maintenant (dans la minute, après confirmation), ou programmé (date et heure de Paris). Un message envoyé ne peut plus être modifié.
 - **Envoyer au groupe de test** : envoie tout de suite le titre, le texte, le lien et l'image saisis aux appareils du [groupe de test](#groupe-de-test), autant de fois que nécessaire. Le message n'est **ni enregistré ni envoyé aux abonnés**, et ses statistiques ne bougent pas (pensez à l'enregistrer ensuite). Un message programmé reste programmé.
 - **Résultats** : envoyés, échecs, **affichés** et **clics** (signalés par le navigateur de l'abonné), taux de clic.
+- **Liste des messages** : vignette de l'image, puis pour chaque message **Voir**, **Dupliquer** et Supprimer.
+  - **Voir** : le message tel qu'il a été envoyé (aperçu de la notification avec son image, titre, texte, lien, appareils, provenance, date) et ses résultats (visés, envoyés, affichés, clics, taux de clic). Un clic sur le titre d'un message envoyé ouvre aussi cette page ; un brouillon ou un message programmé s'ouvre dans le formulaire.
+  - **Dupliquer** : copie le message (texte, image, lien, destinataires) en **brouillon** nommé « … (copie) », avec des résultats à zéro, et ouvre le formulaire. Pratique pour renvoyer un message ou en faire une variante.
 
 ## Abonnés
 

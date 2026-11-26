@@ -871,6 +871,15 @@ if ($base) {
     $WC::saveFilters('fr', [['code' => 'brand', 'visible' => true, 'limit' => 5, 'order' => 'count']]);
     $fc = array_column($SS::arrangeFacets([['code' => 'brand', 'label' => 'Marques', 'values' => $vals]], 'fr')[0]['values'], 'value');
     check('filtres : ordre par nombre de produits (du plus grand au plus petit)', ($fc[0] ?? '') === 'Marque 40' && ($fc[29] ?? '') === 'Marque 11' && end($fc) === 'Marque 02');
+    // valeurs masquées (ex. catégories « Destockage », « Soldes ») : retirées du filtre, sauf si déjà cochées ; produits non concernés
+    $WC::saveFilters('fr', [['code' => 'category', 'visible' => true, 'limit' => 10, 'order' => 'count', 'hidden' => "Déstockage,  soldes ;\nSOLDES"]]);
+    $catVals = [['value' => 'Plongée', 'count' => 9, 'selected' => false], ['value' => 'Destockage', 'count' => 50, 'selected' => false],
+        ['value' => 'Soldes', 'count' => 40, 'selected' => true], ['value' => 'Pêche', 'count' => 5, 'selected' => false]];
+    $fh = array_column($SS::arrangeFacets([['code' => 'category', 'label' => 'Catégories', 'values' => $catVals]], 'fr')[0]['values'], 'value');
+    $hiddenSaved = $WC::filters('fr')[0]['hidden'] ?? null;
+    $onlyHidden = $SS::arrangeFacets([['code' => 'category', 'label' => 'Catégories', 'values' => [['value' => 'DESTOCKAGE', 'count' => 3, 'selected' => false]]]], 'fr');
+    check('filtres : valeurs masquées (accents et majuscules ignorés, sans doublon ; valeur cochée gardée ; filtre vide retiré par l\'appelant)',
+        $hiddenSaved === ['Déstockage', 'soldes'] && $fh === ['Soldes', 'Plongée', 'Pêche'] && $onlyHidden[0]['values'] === [], json_encode([$hiddenSaved, $fh]));
     $WC::activateLayer($l2, false);
     $WC::deleteLayer($l1);
     $WC::deleteLayer($l2);
@@ -1290,6 +1299,12 @@ if ($base) {
         && $PU::browserOf('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0 Safari/537.36 Edg/131.0') === 'Edge'
         && $PU::browserOf('Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0') === 'Firefox' && $PU::mask('abc') === '********');
     @unlink($pushLog);
+    $dupId = $PU::duplicate($idPc, 'fr');
+    $dup = $dupId ? $PU::find($dupId, 'fr') : null;
+    check('notifications : message envoyé dupliqué en brouillon (texte, image, lien, destinataires ; compteurs à zéro)', $dup !== null && $dupId !== $idPc
+        && $dup['status'] === 'draft' && $dup['title'] === 'Soldes -20 % (copie)' && $dup['body'] === $PU::find($idPc, 'fr')['body'] && $dup['url'] === '/promotions.html'
+        && $dup['sent'] === 0 && $dup['clicks'] === 0 && $dup['sent_at'] === null && $PU::duplicate(999999, 'fr') === null, json_encode($dup));
+    $PU::delete((int) $dupId, 'fr');
     $testCode = $PU::sendTest((int) $subOk['id'], 'fr');
     usleep(200000);
     $testReq = json_decode((string) strtok((string) @file_get_contents($pushLog), "\n"), true);
