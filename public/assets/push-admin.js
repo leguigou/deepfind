@@ -3,6 +3,46 @@
 (function () {
   'use strict';
   document.addEventListener('DOMContentLoaded', function () {
+    // ---------------------------------------------------------------- « Importer une image » (message, invitation, icône)
+    document.querySelectorAll('form[data-push-upload] [data-pu]').forEach(function (row) {
+      var form = row.closest('form');
+      var input = form.querySelector('[name="' + row.getAttribute('data-pu') + '"]');
+      var file = row.querySelector('[data-pu-file]');
+      var thumb = row.querySelector('[data-pu-thumb]');
+      var msg = row.querySelector('[data-pu-msg]');
+      var hint = msg.textContent;
+      var TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      var showThumb = function () {
+        var ok = /^https?:\/\//i.test(input.value.trim());
+        thumb.hidden = !ok;
+        if (ok) { thumb.src = input.value.trim(); }
+      };
+      var say = function (text, bad) { msg.textContent = text; msg.classList.toggle('ko', !!bad); };
+      row.querySelector('[data-pu-pick]').addEventListener('click', function () { file.click(); });
+      thumb.addEventListener('error', function () { thumb.hidden = true; });
+      input.addEventListener('input', function () { say(hint); showThumb(); });
+      file.addEventListener('change', function () {
+        var f0 = file.files[0];
+        file.value = '';
+        if (!f0) { return; }
+        if (TYPES.indexOf(f0.type) === -1) { say('Format non accepté (' + f0.name + ') : JPG, PNG, GIF ou WebP.', true); return; }
+        say('Téléversement…');
+        var data = new FormData();
+        data.append('_csrf', form.getAttribute('data-csrf'));
+        data.append('image', f0);
+        fetch(form.getAttribute('data-push-upload'), { method: 'POST', body: data, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.json().catch(function () { return { error: 'réponse illisible du serveur' }; }); })
+          .then(function (d) {
+            if (!d.url) { say('Image non importée : ' + (d.error || 'erreur inconnue'), true); return; }
+            input.value = d.url;
+            input.dispatchEvent(new Event('input', { bubbles: true })); // aperçu mis à jour
+            say('Image importée (' + Math.ceil(f0.size / 1024) + ' Ko). Pensez à enregistrer.');
+          })
+          .catch(function () { say('Téléversement impossible : vérifiez la connexion.', true); });
+      });
+      showThumb();
+    });
+
     // ---------------------------------------------------------------- Paramètres › Notifications
     var ps = document.querySelector('[data-push-settings]');
     if (ps) {

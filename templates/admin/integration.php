@@ -146,7 +146,7 @@ $types = WidgetConfig::TYPES;
 <form method="post" action="<?= e(url('/admin/integration/filters')) ?>" class="card" data-order-form="filters">
   <?= csrf_field() ?><input type="hidden" name="payload" value=""><input type="hidden" name="removed" value="">
   <table class="table ly-table">
-    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Ordre des valeurs</th><th>Déplié</th><th>Statut</th><th></th></tr></thead>
+    <thead><tr><th class="ly-grip-col"></th><th>Nom affiché</th><th>Champ</th><th>Apparence</th><th>Valeurs affichées</th><th>Ordre des valeurs</th><th title="Valeurs jamais proposées dans ce filtre ; leurs produits restent dans les résultats">Valeurs masquées</th><th>Déplié</th><th>Statut</th><th></th></tr></thead>
     <tbody data-order-list>
     <?php foreach ($filters as $f): ?>
       <tr draggable="true" data-row data-code="<?= e($f['code']) ?>">
@@ -163,6 +163,9 @@ $types = WidgetConfig::TYPES;
             <option value="alpha" <?= $f['order'] === 'alpha' ? 'selected' : '' ?>>A à Z</option>
           </select>
         <?php else: ?><span class="muted">—</span><?php endif; ?></td>
+        <td><?php if ($f['appearance'] === 'terms'): ?>
+          <textarea data-f="hidden" class="flt-hidden" rows="1" placeholder="ex. Destockage, Soldes" aria-label="Valeurs masquées de « <?= e($f['label']) ?> »"><?= e(implode(', ', $f['hidden'])) ?></textarea>
+        <?php else: ?><span class="muted">—</span><?php endif; ?></td>
         <td><?php if ($f['appearance'] !== 'toggle'): ?>
           <label class="toggle toggle-sm" title="Bloc déplié par défaut (le visiteur peut le replier)"><input type="checkbox" role="switch" data-f="open" <?= $f['open'] ? 'checked' : '' ?> aria-label="« <?= e($f['label']) ?> » déplié par défaut"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span></label>
         <?php else: ?><span class="muted">—</span><?php endif; ?></td>
@@ -171,10 +174,10 @@ $types = WidgetConfig::TYPES;
           data-remove-confirm="Retirer le filtre « <?= e($f['label']) ?> » ? Il ne sera plus proposé aux visiteurs (vous pourrez l'ajouter de nouveau)."><?= admin_icon('trash') ?></button></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$filters): ?><tr><td colspan="9" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
+    <?php if (!$filters): ?><tr><td colspan="10" class="muted">Aucun filtre : les visiteurs ne voient que les résultats. Ajoutez-en avec « Ajouter un filtre ».</td></tr><?php endif; ?>
     </tbody>
   </table>
-  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ». « Ordre des valeurs » : du plus grand nombre de produits au plus petit, ou alphabétique. « Déplié » : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
+  <p class="muted small">« Valeurs affichées » : nombre de valeurs visibles dans le filtre (catégories, marques…), les suivantes derrière « + N ». « Ordre des valeurs » : du plus grand nombre de produits au plus petit, ou alphabétique. « Valeurs masquées » : valeurs jamais proposées dans le filtre, séparées par des virgules (ex. « Destockage, Soldes » pour les catégories), sans tenir compte des majuscules ni des accents ; les produits de ces valeurs restent dans les résultats, seule la ligne du filtre disparaît. « Déplié » : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
     « En stock » et « En promotion » s'affichent en haut des résultats (ordinateur). Un filtre désactivé ou retiré n'est plus proposé.</p>
   <div class="form-foot"><button class="btn">Enregistrer</button></div>
 </form>

@@ -193,6 +193,39 @@ final class PushController
         };
     }
 
+    /** Message tel qu'il a été (ou sera) envoyé : aperçu, lien, destinataires, résultats ; lecture seule. */
+    public function view(): void
+    {
+        $lang = Auth::lang();
+        $c = Push::find((int) ($_GET['id'] ?? 0), $lang);
+        if ($c === null) {
+            Auth::flash('error', 'Message introuvable.');
+            App::back('/admin/push');
+            return;
+        }
+        View::render('push_view', ['active' => 'push', 'c' => $c, 'icon' => Settings::get('push_icon'),
+            'host' => (string) parse_url((string) \DeepFind\Config::get('APP_URL', ''), PHP_URL_HOST)], 'Message « ' . $c['title'] . ' »');
+    }
+
+    public function duplicate(): void
+    {
+        $id = Push::duplicate((int) ($_POST['id'] ?? 0), Auth::lang());
+        if ($id === null) {
+            Auth::flash('error', 'Message introuvable.');
+            App::back('/admin/push');
+            return;
+        }
+        Auth::flash('ok', 'Message dupliqué en brouillon : modifiez-le si besoin, puis choisissez quand l\'envoyer.');
+        App::back('/admin/push/edit', ['id' => $id]);
+    }
+
+    /** Image importée (message, invitation, icône) : même stockage que les bannières. JSON : url ou erreur. */
+    public function upload(): void
+    {
+        [$url, $error] = \DeepFind\Rules\Banners::storeUpload($_FILES['image'] ?? []);
+        \DeepFind\Http\Response::json($url !== null ? ['url' => $url] : ['error' => $error], $url !== null ? 200 : 422);
+    }
+
     public function delete(): void
     {
         Push::delete((int) ($_POST['id'] ?? 0), Auth::lang());

@@ -261,6 +261,18 @@ final class Push
         return Db::insert('push_campaigns', $row + ['project_id' => $pid, 'lang' => $lang, 'created_at' => $row['updated_at']]);
     }
 
+    /** Copie d'un message (quel que soit son état) en brouillon : même texte, image, lien et destinataires. @return ?int */
+    public static function duplicate(int $id, string $lang): ?int
+    {
+        $c = self::find($id, $lang);
+        if ($c === null) {
+            return null;
+        }
+        $title = mb_substr($c['title'] . ' (copie)', 0, 80, 'UTF-8');
+        return self::save($lang, ['title' => $title, 'body' => $c['body'], 'url' => $c['url'], 'image' => $c['image'], 'devices' => $c['devices'],
+            'channels' => $c['channels'], 'status' => 'draft', 'scheduled_at' => null], null);
+    }
+
     public static function delete(int $id, string $lang): void
     {
         Db::exec("DELETE FROM push_campaigns WHERE id = ? AND project_id = ? AND lang = ? AND status <> 'sending'", [$id, \DeepFind\Project::id(), $lang]);

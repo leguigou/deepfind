@@ -23,7 +23,8 @@ $statusLabel = ['draft' => ['Brouillon', ''], 'scheduled' => ['Programmé', 'bad
   <tbody>
   <?php foreach ($list as $c): [$sl, $sc] = $statusLabel[$c['status']] ?? [$c['status'], '']; ?>
     <tr>
-      <td><?php if (in_array($c['status'], ['draft', 'scheduled'], true)): ?><a href="<?= e(url('/admin/push/edit', ['id' => $c['id']])) ?>"><?= e($c['title']) ?></a><?php else: ?><strong><?= e($c['title']) ?></strong><?php endif; ?>
+      <td class="pm-msg"><?php if ($c['image'] !== ''): ?><img class="pm-thumb" src="<?= e($c['image']) ?>" alt="" loading="lazy"><?php endif; ?>
+        <a href="<?= e(url(in_array($c['status'], ['draft', 'scheduled'], true) ? '/admin/push/edit' : '/admin/push/view', ['id' => $c['id']])) ?>"><strong><?= e($c['title']) ?></strong></a>
         <span class="badge <?= e($sc) ?>"><?= e($sl) ?></span><br><small class="muted"><?= e(mb_strimwidth($c['body'], 0, 90, '…', 'UTF-8')) ?></small></td>
       <td><?= e(explode(' (', Push::DEVICES[$c['devices']] ?? $c['devices'])[0]) ?><?php if ($c['channels']): ?><br><small class="muted"><?= e(implode(', ', array_map(static fn ($k) => explode(' (', \DeepFind\Rules\Segments::CHANNELS[$k] ?? $k)[0], $c['channels']))) ?></small><?php endif; ?></td>
       <td><?= $c['sent_at'] ? e(date('d/m/Y H:i', strtotime($c['sent_at']))) : ($c['scheduled_at'] ? 'le ' . e(date('d/m/Y H:i', strtotime($c['scheduled_at']))) : '—') ?></td>
@@ -31,7 +32,11 @@ $statusLabel = ['draft' => ['Brouillon', ''], 'scheduled' => ['Programmé', 'bad
       <td class="num"><?= fmt_n($c['shown']) ?></td>
       <td class="num"><?= fmt_n($c['clicks']) ?></td>
       <td class="num"><?= $pct($c['clicks'], $c['shown'] ?: $c['sent']) ?></td>
-      <td class="actions"><?php if ($c['status'] !== 'sending'): ?>
+      <td class="actions">
+        <a class="btn btn-sm btn-light" href="<?= e(url('/admin/push/view', ['id' => $c['id']])) ?>"><?= admin_icon('eye') ?> Voir</a>
+        <form method="post" action="<?= e(url('/admin/push/duplicate')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+          <button class="btn btn-sm btn-light"><?= admin_icon('copy') ?> Dupliquer</button></form>
+        <?php if ($c['status'] !== 'sending'): ?>
         <form method="post" action="<?= e(url('/admin/push/delete')) ?>"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
           <button class="btn btn-sm btn-danger" data-confirm="Supprimer le message « <?= e($c['title']) ?> » ?">Supprimer</button></form><?php endif; ?></td>
     </tr>

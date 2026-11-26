@@ -58,6 +58,7 @@ Un **layer** est une façon d'afficher la fenêtre de recherche. Un seul est act
 - **Ordre** des filtres par glisser-déposer.
 - **Valeurs affichées** : nombre de valeurs visibles dans un filtre de type liste, les suivantes derrière « + N ».
 - **Ordre des valeurs** : **par nombre** de produits (du plus grand au plus petit) ou **A à Z**. Les valeurs proposées sont toujours celles qui ont le plus de produits (plus celles déjà choisies par le visiteur).
+- **Valeurs masquées** : valeurs jamais proposées dans un filtre de type liste, séparées par des virgules. Exemple, ligne « Catégories » : `Destockage, Soldes`. La ligne disparaît du filtre, mais **les produits de ces catégories restent dans les résultats** (ils ont d'autres catégories, et la recherche ne change pas). Majuscules et accents ignorés (« destockage » masque « Déstockage ») ; le nom doit être celui affiché dans le filtre. Une valeur déjà cochée (lien du site, règle selon la page) reste visible pour pouvoir la décocher.
 - **Déplié** : bloc ouvert à l'affichage des résultats ; le visiteur peut toujours le replier ou le déplier.
 - **Prix** : deux champs (min / max) et un curseur à deux poignées, avec « Réinitialiser » et « Valider ».
 - Tant que la liste n'a jamais été enregistrée, tous les filtres disponibles sont proposés. Ensuite, seuls les filtres ajoutés le sont : un nouvel attribut importé apparaît dans « Ajouter un filtre ».

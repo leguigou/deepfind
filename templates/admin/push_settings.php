@@ -24,7 +24,7 @@ $swContent = "importScripts('" . $base . "/widget/push-sw.js');";
     <div class="muted small"><?= fmt_n($stats['uns']) ?> désabonnement(s)</div></div>
 </div>
 
-<form method="post" action="<?= e(url('/admin/push/settings/save')) ?>" class="card form ps-form" data-push-settings>
+<form method="post" action="<?= e(url('/admin/push/settings/save')) ?>" class="card form ps-form" data-push-upload="<?= e(url('/admin/push/upload')) ?>" data-csrf="<?= e(\DeepFind\Admin\Auth::csrf()) ?>" data-push-settings>
   <?= csrf_field() ?>
   <?= $toggle('push_enabled', $v['push_enabled'] === '1', 'Notifications activées', 'Désactivées : plus d\'invitation sur le site (les abonnés restent et peuvent recevoir les messages).') ?>
 
@@ -65,7 +65,8 @@ $swContent = "importScripts('" . $base . "/widget/push-sw.js');";
     <label>Texte <textarea name="push_text" rows="2" maxlength="400"><?= e($v['push_text']) ?></textarea></label>
     <label>Bouton « plus tard » <input name="push_later" maxlength="60" value="<?= e($v['push_later']) ?>"></label>
     <label>Message après l'abonnement <input name="push_thanks" maxlength="190" value="<?= e($v['push_thanks']) ?>"></label>
-    <label>Image de l'invitation <small class="muted">(facultatif, popins)</small><input name="push_image" value="<?= e($v['push_image']) ?>" placeholder="https://…"></label>
+    <div><label>Image de l'invitation <small class="muted">(facultatif, popins)</small><input name="push_image" value="<?= e($v['push_image']) ?>" placeholder="https://… ou importez un fichier"></label>
+      <?= push_upload_button('push_image') ?></div>
   </div>
   <p class="muted small">Variables personnalisées acceptées (<code>{{code}}</code>, Paramètres › Variables).</p>
 
@@ -86,7 +87,8 @@ $swContent = "importScripts('" . $base . "/widget/push-sw.js');";
   <div class="grid2">
     <label>Adresse du fichier sur le site <input name="push_sw_path" value="<?= e($v['push_sw_path']) ?>" placeholder="/sw.js" spellcheck="false">
       <small class="muted">Ex. <code>/sw.js</code> (racine) ou <code>/static/frontend/Cabesto/theme/fr_FR/js/sw.js</code>.</small></label>
-    <label>Icône des notifications <small class="muted">(carré, 192 px conseillé)</small><input name="push_icon" value="<?= e($v['push_icon']) ?>" placeholder="https://www.example.com/icon-192.png"></label>
+    <div><label>Icône des notifications <small class="muted">(carré, 192 px conseillé)</small><input name="push_icon" value="<?= e($v['push_icon']) ?>" placeholder="https://www.example.com/icon-192.png ou importez un fichier"></label>
+      <?= push_upload_button('push_icon') ?></div>
   </div>
   <p class="muted small">Clé publique de l'installation (VAPID) : <code><?= e(substr($vapid, 0, 24)) ?>…</code> — créée automatiquement ; ne pas la changer, sinon les abonnés existants seraient perdus.</p>
 

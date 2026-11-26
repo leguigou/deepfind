@@ -266,8 +266,9 @@
             var limit = tr.querySelector('[data-f="limit"]');
             var open = tr.querySelector('[data-f="open"]');
             var order = tr.querySelector('[data-f="order"]');
+            var hidden = tr.querySelector('[data-f="hidden"]');
             return { code: tr.getAttribute('data-code'), label: tr.querySelector('[data-f="label"]').value, visible: tr.querySelector('[data-f="visible"]').checked,
-              limit: limit ? parseInt(limit.value, 10) || 0 : 0, open: open ? open.checked : true, order: order ? order.value : '' };
+              limit: limit ? parseInt(limit.value, 10) || 0 : 0, open: open ? open.checked : true, order: order ? order.value : '', hidden: hidden ? hidden.value : '' };
           });
         } else {
           payload = {

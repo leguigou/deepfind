@@ -152,3 +152,16 @@ function file_field(string $name, string $accept, string $hint = '', bool $requi
         . '<p class="file-drop-error" data-file-error hidden></p>'
         . '</div>';
 }
+
+/**
+ * Bouton « Importer une image » relié au champ d'adresse $field du formulaire (data-push-upload, data-csrf) :
+ * le fichier est téléversé (JPG, PNG, GIF, WebP, 500 Ko au plus) et son adresse remplit le champ. Géré par push-admin.js.
+ */
+function push_upload_button(string $field): string
+{
+    return '<div class="pu-row" data-pu="' . e($field) . '">'
+        . '<input type="file" class="vh" accept="image/jpeg,image/png,image/gif,image/webp" data-pu-file tabindex="-1" aria-hidden="true">'
+        . '<button type="button" class="btn btn-sm btn-light" data-pu-pick>⇪ Importer une image…</button>'
+        . '<img class="pu-thumb" data-pu-thumb alt="" hidden>'
+        . '<small class="muted" data-pu-msg aria-live="polite">JPG, PNG, GIF ou WebP · ' . (int) (\DeepFind\Rules\Banners::MAX_UPLOAD / 1024) . ' Ko maximum</small></div>';
+}

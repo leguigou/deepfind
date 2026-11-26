@@ -1493,3 +1493,15 @@ a.is-loading { pointer-events: none; opacity: .7; cursor: progress; }
 .pst-img img { width: 96px; height: 64px; object-fit: cover; border-radius: 8px; display: block; background: var(--surface-2); }
 .pst-noimg { display: grid; place-items: center; width: 96px; height: 64px; border-radius: 8px; background: var(--surface-2); color: var(--muted); }
 .pst-table .badge { margin: 0 2px 2px 0; }
+
+/* Notifications : import d'image, liste des messages, page d'un message */
+.pu-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 10px; }
+.pu-thumb { height: 40px; max-width: 120px; object-fit: contain; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); }
+.pu-row .ko { color: var(--ko); }
+.pm-msg { min-width: 220px; }
+.pm-thumb { float: left; width: 56px; height: 40px; object-fit: cover; border-radius: 6px; margin: 2px 10px 4px 0; }
+.pv-btns { display: inline-flex; gap: 8px; align-items: center; }
+.pv-btns form { margin: 0; }
+.pv-kpis { margin-top: 8px; }
+.pv-nav { margin-bottom: 14px; }
+.flt-hidden { min-width: 160px; min-height: 36px; font-size: 13px; resize: vertical; }
