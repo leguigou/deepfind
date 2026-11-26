@@ -288,8 +288,8 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/11-import-en-attente.png', fullPage: false });
   if (process.env.E2E_WORKER === '1') {
     await page.waitForFunction(() => /Terminé/.test(document.querySelector('.prog-big [data-f="label"]').textContent), null, { timeout: 60000 });
-    await page.waitForSelector('.cards .badge-ok', { timeout: 15000 });
-    check('import : terminé et page actualisée', (await page.textContent('.prog-big')).includes('100') && (await page.textContent('.cards')).includes('Réussi'));
+    await page.waitForSelector('.imp-kpis .badge-ok', { timeout: 15000 });
+    check('import : terminé et page actualisée', (await page.textContent('.prog-big')).includes('100') && (await page.textContent('.imp-kpis')).includes('Réussi'));
     await page.screenshot({ path: OUT + '/12-import-termine.png', fullPage: false });
   }
 

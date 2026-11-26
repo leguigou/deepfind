@@ -153,6 +153,14 @@ h3 { font-size: 15px; margin: 0 0 10px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .kpi-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .kpi-value { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+/* Import : résumé (5 chiffres sur une ligne sur ordinateur, se replient sur mobile) */
+.imp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 16px 0; }
+.imp-kpis .kpi { display: flex; flex-direction: column; gap: 4px; }
+.imp-kpis .kpi-value { margin-top: 0; }
+.imp-kpis .kpi-value small { font-size: 13px; font-weight: 500; }
+.imp-src { font-size: 16px; overflow-wrap: anywhere; }
+.imp-ok { color: var(--ok, #22c55e); } .imp-ko { color: var(--ko, #ef4444); }
+.imp-attrs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
 .dot.ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); } .dot.ko { background: var(--ko); }
 .table {
