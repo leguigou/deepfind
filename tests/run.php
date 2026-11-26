@@ -70,7 +70,7 @@ try {
 $smId = DeepFind\Import\Importer::postIdFromUrl(...);
 check('blog en sitemap : loc / lastmod / cabesto:title reconnus, identifiant facultatif, image absente sans erreur, id stable depuis l\'URL',
     $smErr === null && !isset($smGroups['required']['id']) && ($smSug['url'] ?? '') === 'loc' && ($smSug['published_at'] ?? '') === 'lastmod' && ($smSug['title'] ?? '') === 'cabesto:title'
-    && count($smPosts) === 2 && !isset($smPosts[0]['image']) && str_ends_with($smPosts[1]['image'] ?? '', 'piscine-au-sel.jpg') && $smPosts[1]['categories'] === ['Piscine']
+    && ($smIns['item'] ?? '') === 'url' && count($smPosts) === 2 && !isset($smPosts[0]['image']) && str_ends_with($smPosts[1]['image'] ?? '', 'piscine-au-sel.jpg') && $smPosts[1]['categories'] === ['Piscine']
     && $smPosts[0]['published_at'] > 0 && $smId('https://www.example.com/fr/a/b/') === $smId('https://autre.example/fr/a/b?x=1') && str_starts_with($smId('https://x/fr/a'), 'u'),
     json_encode([$smErr, $smSug, $smPosts], JSON_UNESCAPED_UNICODE));
 $gxml = '<rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>1</g:id><g:availability>out_of_stock</g:availability></item>'
