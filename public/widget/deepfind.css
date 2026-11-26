@@ -393,3 +393,12 @@ html.df-lock { overflow: hidden; }
 .df-push-x:hover, .df-push-x:focus-visible { transform: scale(1.1); filter: brightness(1.1); outline: none; }
 .df-push-x:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--df-push-btn, #e11d48) 40%, transparent); }
 .df-push-popin_center { padding-right: 22px; } .df-push-popin_center .df-push-txt { padding: 0 18px; }
+
+/* Articles de blog dans la colonne des résultats : mobile seulement (sur ordinateur, ils sont dans la colonne de gauche) */
+.df-posts-main { display: none; }
+@media (max-width: 900px) {
+  .df-posts-main { display: block; grid-column: 1 / -1; margin: 4px 0 12px; padding: 12px; border: 1px solid var(--df-border); border-radius: var(--df-radius); background: var(--df-bg); }
+  .df-posts-main h3 { margin: 0 0 6px; font-size: 15px; color: var(--df-text); }
+  .df-posts-main .df-post { padding: 6px 4px; }
+  .df-side .df-posts { display: none; }
+}

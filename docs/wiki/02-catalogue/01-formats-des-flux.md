@@ -86,6 +86,8 @@ Champs : `title`, `url`, `published_at` (obligatoires), `id` (conseillé), plus 
 
 Mapping correspondant : Titre ← `cabesto:title`, URL ← `loc`, Date de publication ← `lastmod`, Catégories ← `cabesto:category`, Image ← `image:image/image:loc`, Identifiant : non mappé.
 
+Après l'import : liste dans [Articles de blog](articles-de-blog), et affichage dans la recherche du site (même page).
+
 ## Champs calculés à l'import
 
 En plus des champs du flux, l'import calcule (`src/Import/ProductBuilder.php`) : le prix « dès » et `has_price_range` (prix différents selon les déclinaisons), la remise, le stock agrégé, la nouveauté (`is_new`), le **score métier** `biz_score` (ventes, clics, stock, marge, nouveauté, boosts) et `url_path`, le chemin de la page produit (sert à reconnaître le produit d'une page pour les carrousels « similaires »).

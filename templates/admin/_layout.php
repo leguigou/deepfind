@@ -14,6 +14,8 @@ $navGroups = [
         'sources' => ['/admin/sources', 'Flux & mapping', 'hierarchy'],
         'imports' => ['/admin/imports', 'Imports', 'download'],
         'disabled' => ['/admin/disabled', 'Produits désactivés', 'archive'],
+        'posts' => ['/admin/posts', 'Articles de blog', 'news'],
+        'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'bots' => ['/admin/bots', 'Robots & blocages', 'robot-face'],
     ]],
     'optimisation' => ['Optimisations', 'adjustments', [
@@ -30,7 +32,6 @@ $navGroups = [
         'carousels' => ['/admin/carousels', 'Carrousels', 'carousel'],
         'campaigns' => ['/admin/campaigns', 'Campagnes', 'target'],
         'push' => ['/admin/push', 'Envoi de notifications', 'bell'],
-        'preview' => ['/admin/preview', 'Aperçu interne', 'eye'],
         'demo' => ['/admin/demo', 'Démo du widget', 'external-link'],
     ]],
     'administration' => ['Paramètres', 'settings', [

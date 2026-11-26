@@ -117,7 +117,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=32'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=33'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -221,6 +221,9 @@
   var pageBar = el('div', 'df-pagefilter');
   pageBar.hidden = true;
   var grid = el('div', 'df-grid');
+  // Articles de blog dans la colonne des résultats : sur mobile (la colonne de gauche y est le volet « Filtres », souvent fermé)
+  var postsMain = el('div', 'df-posts-main');
+  var POSTS_AFTER = 6; // sous les 6 premiers produits (3 rangées sur mobile)
   var empty = el('div', 'df-empty');
   empty.hidden = true;
   var loader = el('div', 'df-loader', t.loading);
@@ -471,6 +474,7 @@
       frag.appendChild(card(p, (data.offset || 0) + i + 1));
     });
     grid.appendChild(frag);
+    if (!append) { placePostsMain(); }
     // Si le panneau n'est pas encore rempli, on charge la page suivante directement.
     requestAnimationFrame(function () {
       if (state.hasMore && !state.loading && needMore()) { search(true); }
@@ -662,20 +666,38 @@
       sideContent.appendChild(sec);
     });
     var posts = data.posts || [];
+    postsMain.textContent = '';
     if (posts.length) {
       var ps = el('div', 'df-sec df-posts');
       ps.appendChild(el('h3', null, t.posts));
+      postsMain.appendChild(el('h3', null, t.posts));
+      var list = el('div', 'df-posts-list');
       posts.forEach(function (p, i) {
-        var a = el('a', 'df-post');
-        a.href = safeUrl(p.url) || '#';
-        var im = safeUrl(p.image);
-        if (im) { var img = el('img'); img.src = im; img.alt = ''; img.loading = 'lazy'; a.appendChild(img); }
-        a.appendChild(el('span', null, p.title));
-        onOpen(a, function () { track('post', p.id, i + 1, 0, p.title); });
-        ps.appendChild(a);
+        ps.appendChild(postLink(p, i));
+        list.appendChild(postLink(p, i));
       });
+      postsMain.appendChild(list);
       sideContent.appendChild(ps);
     }
+  }
+
+  function postLink(p, i) {
+    var a = el('a', 'df-post');
+    a.href = safeUrl(p.url) || '#';
+    var im = safeUrl(p.image);
+    if (im) { var img = el('img'); img.src = im; img.alt = ''; img.loading = 'lazy'; a.appendChild(img); }
+    a.appendChild(el('span', null, p.title));
+    onOpen(a, function () { track('post', p.id, i + 1, 0, p.title); });
+    return a;
+  }
+
+  // Bloc des articles dans la colonne des résultats (affiché sur mobile seulement, voir deepfind.css) :
+  // sous les premiers produits, ou sous « Aucun résultat » ; les pages suivantes de produits s'ajoutent après lui
+  function placePostsMain() {
+    if (!postsMain.childNodes.length) { if (postsMain.parentNode) { postsMain.parentNode.removeChild(postsMain); } return; }
+    if (!state.total) { main.insertBefore(postsMain, loader); return; }
+    var cards = grid.children;
+    grid.insertBefore(postsMain, cards.length > POSTS_AFTER ? cards[POSTS_AFTER] : null);
   }
 
   // Bloc de filtre repliable : titre cliquable ; état choisi par le visiteur gardé pendant la visite, sinon réglage de l'extranet

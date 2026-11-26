@@ -36,3 +36,4 @@ Le serveur renvoie **toujours le dernier fichier** du widget, quel que soit le n
 | 36 | Ciblage selon la provenance, panier du visiteur pour les recommandations (DeepFind.cart, panier Magento), message de livraison offerte, produit de la page pour « aussi regardé » |
 | 37 | Notifications : invitation à s'abonner (bandeau, popin, cloche, bloc), abonnement Web Push |
 | 38 | Notifications : croix de fermeture en haut à droite (invitation et fenêtre de la cloche), compteurs par appareil |
+| 39 | Articles de blog aussi dans la colonne des résultats sur mobile (sous les premiers produits, ou sous « Aucun résultat ») ; feuille de style `?v=33` |

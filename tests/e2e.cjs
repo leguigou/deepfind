@@ -338,6 +338,15 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.goto(BASE + '/admin/redirects');
   check('projets : Production sans la redirection de Test', (await page.textContent('table')).includes('cgv#retours') && !(await page.textContent('table')).includes('bonjour test'));
 
+  // Catalogues › Articles de blog : liste des articles importés (image, titre, catégories, date), recherche
+  await page.goto(BASE + '/admin/posts');
+  const pstRows = await page.locator('.pst-table tbody tr').count();
+  await page.fill('input[name=q]', 'masque');
+  await Promise.all([page.waitForNavigation(), page.click('.jr-filters button.btn')]);
+  check('articles de blog : liste et recherche', pstRows > 0 && (await page.textContent('.pst-table')).length > 20 && page.url().includes('q=masque')
+    && await page.locator('.pst-table tbody tr').count() >= 1, String(pstRows));
+  await page.screenshot({ path: OUT + '/articles-de-blog.png', fullPage: false });
+
   // Widget sur la page de démo
   await page.goto(BASE + '/admin/demo');
   await page.fill('#search', 'palme');
@@ -347,6 +356,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('widget : résultats affichés', n1 > 0);
   check('widget : marques à gauche', (await page.textContent('.df-side')).includes('Marques'));
   check('widget : articles de blog', (await page.textContent('.df-side')).includes('Articles de blog'));
+  check('widget : articles de blog dans la colonne des résultats seulement sur mobile', await page.locator('.df-posts-main').evaluateAll((b) => b.every((x) => x.getBoundingClientRect().height === 0)));
   await page.screenshot({ path: OUT + '/06-widget.png' });
   await page.evaluate(() => { const m = document.querySelector('.df-main'); m.scrollTop = m.scrollHeight; });
   await page.waitForTimeout(800);
@@ -380,6 +390,16 @@ fs.mkdirSync(OUT, { recursive: true });
   await mp.fill('#search', 'masque');
   await mp.waitForSelector('.df-card', { timeout: 5000 });
   check('widget mobile : pas de défilement horizontal', await mp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  // Articles de blog sur mobile : dans la colonne des résultats, sous les premiers produits (la colonne de gauche est le volet « Filtres »)
+  const mPosts = await mp.evaluate(() => {
+    const box = document.querySelector('.df-grid .df-posts-main');
+    if (!box) { return { found: false }; }
+    const before = Array.prototype.indexOf.call(box.parentNode.children, box);
+    return { found: true, visible: box.getBoundingClientRect().height > 0, title: box.querySelector('h3').textContent, links: box.querySelectorAll('a.df-post').length, before,
+      sideHidden: !document.querySelector('.df-side .df-posts') || getComputedStyle(document.querySelector('.df-side .df-posts')).display === 'none' };
+  });
+  check('widget mobile : articles de blog sous les premiers produits', mPosts.found && mPosts.visible && mPosts.title === 'Articles de blog' && mPosts.links > 0
+    && mPosts.before > 0 && mPosts.before <= 6 && mPosts.sideHidden, JSON.stringify(mPosts));
   const seeAll = mp.locator('.df-see-all[href$="q=masque"]').filter({ hasText: 'Tout voir (+117)' });
   await seeAll.waitFor({ timeout: 5000 });
   for (const width of [390, 320]) {

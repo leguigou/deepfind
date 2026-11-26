@@ -145,6 +145,7 @@ final class App
         'GET /admin/preview' => [PreviewController::class, 'preview'],
         'POST /admin/preview/toggle' => [PreviewController::class, 'toggle'],
         'GET /admin/disabled' => [PreviewController::class, 'disabledList'],
+        'GET /admin/posts' => [PostsController::class, 'index'],
         'POST /admin/disabled/enable-all' => [PreviewController::class, 'enableAll'],
         'GET /admin/demo' => [PreviewController::class, 'demo'],
     ];

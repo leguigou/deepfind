@@ -1487,3 +1487,9 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .br-prod small { font-size: 12px; }
 
 a.is-loading { pointer-events: none; opacity: .7; cursor: progress; }
+
+/* Catalogues › Articles de blog */
+.pst-table td { vertical-align: top; }
+.pst-img img { width: 96px; height: 64px; object-fit: cover; border-radius: 8px; display: block; background: var(--surface-2); }
+.pst-noimg { display: grid; place-items: center; width: 96px; height: 64px; border-radius: 8px; background: var(--surface-2); color: var(--muted); }
+.pst-table .badge { margin: 0 2px 2px 0; }
