@@ -84,13 +84,17 @@ final class PushController
             App::back('/admin/push');
             return;
         }
-        $c ??= Push::blank();
+        $this->renderEdit($c ?? Push::blank(), $lang);
+    }
+
+    private function renderEdit(array $c, string $lang): void
+    {
         $audience = [];
         foreach (array_keys(Push::DEVICES) as $d) {
             $audience[$d] = Push::audience(['devices' => $d, 'channels' => []], $lang);
         }
         View::render('push_edit', ['active' => 'push', 'c' => $c, 'audience' => $audience, 'counts' => Push::counts($lang),
-            'icon' => Settings::get('push_icon'), 'host' => (string) parse_url((string) \DeepFind\Config::get('APP_URL', ''), PHP_URL_HOST)],
+            'testers' => Push::testers($lang), 'icon' => Settings::get('push_icon'), 'host' => (string) parse_url((string) \DeepFind\Config::get('APP_URL', ''), PHP_URL_HOST)],
             $c['id'] ? 'Message « ' . $c['title'] . ' »' : 'Nouveau message');
     }
 
@@ -118,11 +122,11 @@ final class PushController
     public function subscribers(): void
     {
         $lang = Auth::lang();
-        $f = array_intersect_key($_GET, array_flip(['device', 'status', 'browser', 'channel', 'id']));
+        $f = array_intersect_key($_GET, array_flip(['device', 'status', 'browser', 'channel', 'group', 'id']));
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $list = Push::subscribers($lang, $f, $page);
         View::render('push_subscribers', ['active' => 'push', 'f' => $f, 'page' => $page, 'rows' => $list['rows'], 'total' => $list['total'],
-            'browsers' => $list['browsers'], 'counts' => Push::counts($lang)], 'Abonnés aux notifications');
+            'browsers' => $list['browsers'], 'counts' => Push::counts($lang), 'testers' => Push::testers($lang)], 'Abonnés aux notifications');
     }
 
     public function subscriberAction(): void
@@ -134,6 +138,9 @@ final class PushController
             'pause' => Push::setActive($id, $lang, false) ? ['ok', 'Abonné n° ' . $id . ' mis en pause : il ne recevra plus les messages.'] : ['error', 'Abonné introuvable.'],
             'resume' => Push::setActive($id, $lang, true) ? ['ok', 'Abonné n° ' . $id . ' réactivé.'] : ['error', 'Abonné introuvable.'],
             'delete' => Push::deleteSubscriber($id, $lang) ? ['ok', 'Abonné n° ' . $id . ' supprimé.'] : ['error', 'Abonné introuvable.'],
+            'tester_on', 'tester_off' => ($err = Push::setTester($id, $lang, $_POST['do'] === 'tester_on', (string) ($_POST['label'] ?? ''))) !== null ? ['error', $err]
+                : ['ok', $_POST['do'] === 'tester_on' ? 'Abonné n° ' . $id . ' dans le groupe de test.' : 'Abonné n° ' . $id . ' retiré du groupe de test.'],
+            'group_test' => self::testResult(Push::sendToTesters($lang)),
             'test' => (static function () use ($id, $lang): array {
                 $code = Push::sendTest($id, $lang);
                 return match (true) {
@@ -146,6 +153,44 @@ final class PushController
         };
         Auth::flash($msg[0], $msg[1]);
         App::back(str_starts_with($back, '/admin/push/subscribers') ? $back : '/admin/push/subscribers');
+    }
+
+    /**
+     * « Envoyer au groupe de test » depuis la fiche d'un message : envoie le contenu saisi (même non enregistré) aux appareils
+     * du groupe de test et réaffiche la fiche telle quelle. Le message n'est ni enregistré ni modifié.
+     */
+    public function test(): void
+    {
+        $lang = Auth::lang();
+        [$c, $errors] = Push::sanitize(['when' => 'draft'] + $_POST);
+        $id = (int) ($_POST['id'] ?? 0);
+        $cur = $id > 0 ? Push::find($id, $lang) : null;
+        $form = ($c ?? []) + Push::blank();
+        if ($c !== null) {
+            [$type, $msg] = self::testResult(Push::sendToTesters($lang, $c));
+            Auth::flash($type, $msg . ($cur === null || $cur['status'] === 'draft' ? ' Pensez à enregistrer le message.' : ''));
+        } else {
+            Auth::flash('error', implode(' ', $errors));
+            $form = array_merge($form, ['title' => (string) ($_POST['title'] ?? ''), 'body' => (string) ($_POST['body'] ?? ''), 'url' => (string) ($_POST['url'] ?? ''),
+                'image' => (string) ($_POST['image'] ?? '')]);
+        }
+        // statut et date d'origine conservés (un message programmé reste programmé tant qu'il n'est pas enregistré autrement)
+        $form['id'] = $cur['id'] ?? 0;
+        $form['status'] = $cur['status'] ?? 'draft';
+        $form['scheduled_at'] = $cur['scheduled_at'] ?? null;
+        $this->renderEdit($form, $lang);
+    }
+
+    /** @param array{targeted:int, sent:int, failed:int, gone:int} $r @return array{0:string, 1:string} */
+    private static function testResult(array $r): array
+    {
+        return match (true) {
+            $r['targeted'] === 0 => ['error', 'Le groupe de test est vide : dans Abonnés, utilisez « Ajouter au groupe de test » sur vos appareils.'],
+            $r['failed'] === 0 => ['ok', sprintf('Envoyé au groupe de test : %d appareil(s). Il arrive en quelques secondes sur les appareils connectés.', $r['sent'])],
+            default => [$r['sent'] > 0 ? 'ok' : 'error', sprintf('Groupe de test : %d envoyé(s), %d refusé(s)', $r['sent'], $r['failed'])
+                . ($r['gone'] > 0 ? sprintf(', dont %d abonnement(s) expiré(s) ou retiré(s) par le visiteur, supprimé(s) de la liste.', $r['gone'])
+                    : ' : vérifiez la connexion du serveur à Internet, puis réessayez.')],
+        };
     }
 
     public function delete(): void

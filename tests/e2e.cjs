@@ -20,7 +20,7 @@ fs.mkdirSync(OUT, { recursive: true });
   let ok = 0; const fail = [];
   // Fenêtre de confirmation de l'extranet (remplace confirm() du navigateur) : bouton de validation
   const confirmModal = async () => { await page.click('dialog.modal-confirm[open] [data-ok]'); };
-  const check = (name, cond) => { if (cond) { ok++; console.log('  ✔ ' + name); } else { fail.push(name); console.log('  ✘ ' + name); } };
+  const check = (name, cond, detail) => { if (cond) { ok++; console.log('  ✔ ' + name); } else { fail.push(name); console.log('  ✘ ' + name + (detail !== undefined ? '\n      ' + String(detail).slice(0, 600) : '')); } };
   // Fiche enregistrée : « Supprimer » sur la même ligne et à la même hauteur que le bouton « Enregistrer »
   const deleteAligned = async () => page.evaluate(() => {
     const del = document.querySelector('.cr-delete-btn');
@@ -961,7 +961,26 @@ fs.mkdirSync(OUT, { recursive: true });
   const paused = (await page.textContent('.psb-table tbody tr')).includes('En pause');
   await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Réactiver")')]);
   check('notifications : abonné mis en pause puis réactivé', paused && (await page.textContent('.psb-table tbody tr')).includes('Actif') && page.url().includes('device=desktop'));
+  // Groupe de test : appareil nommé, filtre, puis essai depuis la fiche d'un message (contenu gardé, message non enregistré)
+  await page.fill('.psb-table tbody tr .psb-tester input[name=label]', 'Ordi e2e');
+  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Ajouter au groupe de test")')]);
+  await page.goto(BASE + '/admin/push/subscribers?group=test');
+  const grpRow = await page.textContent('.psb-table tbody tr');
+  await page.goto(BASE + '/admin/push/subscribers');
   await page.screenshot({ path: OUT + '/notifications-abonnes.png', fullPage: true });
+  await page.goto(BASE + '/admin/push/edit');
+  await page.fill('input[name=title]', 'Essai groupe e2e');
+  await page.fill('textarea[name=body]', 'Texte essai');
+  await Promise.all([page.waitForNavigation(), page.click('[data-pe-test]')]);
+  const grpFlash = await page.textContent('.flash');
+  const grpKept = await page.inputValue('input[name=title]');
+  await page.locator('.pe-test').screenshot({ path: OUT + '/notifications-groupe-test.png' });
+  await page.goto(BASE + '/admin/push');
+  check('notifications : groupe de test (appareil nommé, filtre, essai depuis un message sans l\'enregistrer)', grpRow.includes('Test') && grpRow.includes('Ordi e2e')
+    && grpFlash.includes('Groupe de test') && grpKept === 'Essai groupe e2e' && !(await page.textContent('.table')).includes('Essai groupe e2e'),
+    JSON.stringify([grpRow.replace(/\s+/g, ' '), grpFlash]));
+  await page.goto(BASE + '/admin/push/subscribers?group=test');
+  await Promise.all([page.waitForNavigation(), page.click('.psb-table tbody tr button:has-text("Retirer du groupe de test")')]);
   await page.goto(BASE + '/admin/push/settings');
   await page.uncheck('input[name=push_enabled]', { force: true });
   await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);

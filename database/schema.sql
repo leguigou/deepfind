@@ -718,6 +718,9 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   clicks INT UNSIGNED NOT NULL DEFAULT 0,
   last_sent_at DATETIME NULL,
   last_click_at DATETIME NULL,
+  -- groupe de test : reçoit les envois « au groupe de test » (même en pause) ; nom donné dans l'extranet (ex. « iPhone de Paul »)
+  tester TINYINT(1) NOT NULL DEFAULT 0,
+  label VARCHAR(60) NOT NULL DEFAULT '',
   failures TINYINT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
