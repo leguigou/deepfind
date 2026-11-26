@@ -18,7 +18,7 @@ $statusLabel = ['draft' => ['Brouillon', ''], 'scheduled' => ['Programmé', 'bad
 <p class="actions"><a class="btn" href="<?= e(url('/admin/push/edit')) ?>">+ Nouveau message</a>
   <a class="btn btn-light" href="<?= e(url('/admin/push/subscribers')) ?>"><?= admin_icon('users') ?> Voir les abonnés (<?= fmt_n($counts['total']) ?>)</a></p>
 <div class="table-wrap">
-<table class="table">
+<table class="table pm-table">
   <thead><tr><th>Message</th><th>Cible</th><th>Envoi</th><th class="num">Envoyés</th><th class="num">Affichés</th><th class="num">Clics</th><th class="num">Taux de clic</th><th class="actions"></th></tr></thead>
   <tbody>
   <?php foreach ($list as $c): [$sl, $sc] = $statusLabel[$c['status']] ?? [$c['status'], '']; ?>

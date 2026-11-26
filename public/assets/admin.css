@@ -1505,3 +1505,9 @@ a.is-loading { pointer-events: none; opacity: .7; cursor: progress; }
 .pv-kpis { margin-top: 8px; }
 .pv-nav { margin-bottom: 14px; }
 .flt-hidden { min-width: 160px; min-height: 36px; font-size: 13px; resize: vertical; }
+/* Boutons des tableaux (liens et formulaires mélangés) : même hauteur, alignés sur une ligne */
+td.actions > *, td.actions form { vertical-align: middle; }
+td.actions form > .btn { vertical-align: middle; }
+.btn-sm .admin-icon { width: 14px; height: 14px; }
+.btn-sm { line-height: 1.4; min-height: 28px; }
+.pm-table td.actions { white-space: nowrap; }

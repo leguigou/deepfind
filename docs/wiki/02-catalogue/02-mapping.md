@@ -7,7 +7,7 @@
 **Catalogues › Flux & mapping › Mapping** : DeepFind télécharge le flux (ou réutilise le téléchargement de moins d'une heure), détaille ses 300 premiers éléments (exemples de valeurs, groupes répétés) puis parcourt **tout le fichier** pour lister **toutes les balises**, même celles qui n'apparaissent que plus loin, ou qui sont absentes quand elles sont vides. Le taux de présence est calculé sur tout le flux ; une balise toujours vide est signalée « (toujours vide) » et n'est jamais pré-sélectionnée. Parcours limité à 60 secondes (environ 1,5 s pour 40 Mo), résultat gardé en cache tant que le fichier ne change pas.
 
 **Ce qui est détecté :**
-- L'élément qui représente un produit (`<product>`, `<item>`…), modifiable.
+- L'élément qui représente un produit ou un article (`<product>`, `<item>`, `<url>` d'un sitemap…), modifiable. Les éléments qui contiennent d'autres balises passent avant les simples valeurs : dans un sitemap, `<url>` est proposé et non `<cabesto:category>`, même si cette balise est plus fréquente (plusieurs catégories par article).
 - Le mode des variantes : imbriqué, ou « à plat » si un champ parent est trouvé et qu'il n'y a pas de groupe répété.
 - Le groupe des variantes (ex. `variants/variant`).
 - **Tous les champs** : éléments, attributs XML (`@id`), et attributs identifiés par un code (`attributes/attribute[@code='couleur']`).
@@ -22,6 +22,14 @@
 - **Sections suivantes** : variantes, catégories (chemin et identifiant), **attributs filtrables** (liste « par code » détectée, ou champs simples comme `color` et `size`, proposés automatiquement).
 
 Le résultat est enregistré dans le mapping JSON de la source, qui reste modifiable en **mode avancé**.
+
+## Tester le résultat
+
+**Tester** (liste des flux, ou « Tester le résultat » sur l'écran de mapping) montre les **3 premiers éléments** du flux : XML d'origine, valeurs après mapping et document indexé (produits). Rien n'est indexé.
+
+- En haut : fichier analysé, **date et heure de son téléchargement**, flux complet ou delta, et **nombre d'éléments** trouvés dans le flux (ex. « 354 éléments `<url>` »). Zéro élément : l'élément choisi pour un produit / un article n'est pas le bon (écran de mapping, « Élément qui représente… »).
+- **Retélécharger le flux** : télécharge à nouveau le fichier (sinon le téléchargement de moins d'une heure est réutilisé). Le lien affiche « Téléchargement du flux… » pendant le chargement, puis un message vert « Flux retéléchargé à … ».
+- Les balises à préfixe (`cabesto:title`, `image:image/image:loc`, `g:price`) sont lues par leur nom, que le préfixe soit déclaré ou non dans l'élément : un article sans image ne bloque plus l'import.
 
 ## Syntaxe du mapping (JSON, mode avancé)
 

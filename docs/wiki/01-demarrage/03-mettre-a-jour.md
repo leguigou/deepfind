@@ -37,3 +37,19 @@ Le serveur renvoie **toujours le dernier fichier** du widget, quel que soit le n
 | 37 | Notifications : invitation à s'abonner (bandeau, popin, cloche, bloc), abonnement Web Push |
 | 38 | Notifications : croix de fermeture en haut à droite (invitation et fenêtre de la cloche), compteurs par appareil |
 | 39 | Articles de blog aussi dans la colonne des résultats sur mobile (sous les premiers produits, ou sous « Aucun résultat ») ; feuille de style `?v=33` |
+
+## Nouveautés récentes (extranet)
+
+À installer avec `php bin/console install` (nouvelles colonnes), puis widget `?v=39`.
+
+| Où | Nouveauté |
+|---|---|
+| Recommandations › Campagnes | Produits choisis **par règles** (comme les boosts) ; **mise en avant pendant la campagne** dans la recherche et les carrousels ; résultats et formulaire sur deux pages, bouton « Modifier » ([Campagnes](../recommandations/campagnes)) |
+| Recommandations › Envoi de notifications | **Groupe de test**, liste des abonnés, **Voir** et **Dupliquer** un message, **Importer une image** ([Notifications](../recommandations/notifications)) |
+| Catalogues › Articles de blog | Nouvelle page : articles importés, recherche, catégories ([Articles de blog](../catalogue/articles-de-blog)) |
+| Catalogues › Aperçu interne | Déplacé depuis Recommandations |
+| Catalogues › Flux & mapping | Blog en **sitemap** (identifiant facultatif, `loc`, `lastmod`, balises à préfixe), page **Tester** plus parlante ([Mapping](../catalogue/mapping), [Formats des flux](../catalogue/formats-des-flux)) |
+| Catalogues › Imports | Historique **paginé** ; page d'un import : résumé en 5 cartes, produits vendables et désactivés auto ([Imports](../catalogue/imports)) |
+| Optimisations › Règles de boost | Produit affiché sous chaque SKU, **fiche complète** au clic ([Règles de boost](../recherche-et-pertinence/regles-de-boost)) |
+| Paramètres › Intégration › Filtres | **Valeurs masquées** (ex. catégories « Destockage, Soldes ») ([Layers, filtres et tris](../affichage-du-widget/layers-filtres-et-tris)) |
+| Widget (v39) | Articles de blog sous les premiers produits sur mobile |
