@@ -7,7 +7,7 @@
 ## Créer ou modifier une campagne
 
 - **+ Nouvelle campagne** ouvre le formulaire. Après l'enregistrement, la page des **résultats** s'affiche.
-- Dans la liste : cliquer sur le **nom** (ou **Résultats**) ouvre le tableau de bord ; **Modifier** ouvre directement le formulaire, seul. Depuis les résultats : **Modifier la campagne**.
+- Dans la liste : cliquer sur le **nom** ouvre le tableau de bord ; **Modifier** ouvre directement le formulaire, seul. Depuis les résultats : **Modifier la campagne**.
 - **Supprimer cette campagne** : en bas du formulaire.
 
 ### Le formulaire

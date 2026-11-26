@@ -288,8 +288,8 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/11-import-en-attente.png', fullPage: false });
   if (process.env.E2E_WORKER === '1') {
     await page.waitForFunction(() => /Terminé/.test(document.querySelector('.prog-big [data-f="label"]').textContent), null, { timeout: 60000 });
-    await page.waitForSelector('.cards .badge-ok', { timeout: 15000 });
-    check('import : terminé et page actualisée', (await page.textContent('.prog-big')).includes('100') && (await page.textContent('.cards')).includes('Réussi'));
+    await page.waitForSelector('.imp-kpis .badge-ok', { timeout: 15000 });
+    check('import : terminé et page actualisée', (await page.textContent('.prog-big')).includes('100') && (await page.textContent('.imp-kpis')).includes('Réussi'));
     await page.screenshot({ path: OUT + '/12-import-termine.png', fullPage: false });
   }
 
@@ -873,6 +873,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/campagne.png', fullPage: true });
   await page.goto(BASE + '/admin/campaigns');
   check('campagnes : liste', (await page.textContent('.cp-table')).includes('Campagne e2e'));
+  await page.locator('.cp-table').screenshot({ path: OUT + '/campagnes-liste.png' });
   // Campagne par règles seules : même éditeur de conditions que les boosts (Marque est …)
   await page.goto(BASE + '/admin/campaigns/edit');
   await page.fill('input[name=name]', 'Règles e2e');

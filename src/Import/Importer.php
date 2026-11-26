@@ -579,6 +579,7 @@ final class Importer
         $liveIndex = $this->meili->getIndex($live);
         $oldCount = $previousSellable ?? ($liveIndex !== null ? (int) ($this->meili->stats($live)['numberOfDocuments'] ?? 0) : 0);
         $this->report['previous_documents'] = $oldCount;
+        $this->report['sellable_documents'] = $newCount;
         $maxDrop = max(0, Settings::int('max_drop_percent'));
         if ($newCount === 0) {
             $this->meili->deleteIndex($tmp);
