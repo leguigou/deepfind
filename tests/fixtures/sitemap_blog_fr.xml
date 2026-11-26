@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:cabesto="https://www.cabesto.com/schemas/sitemap-blog/1.0">
+<url>
+<loc>https://www.example.com/fr/conseils-guides/les-lignes-de-base-pour-debuter-la-peche-en-mer</loc>
+<lastmod>2026-08-20</lastmod>
+<cabesto:title>Les lignes de base pour débuter la pêche en mer</cabesto:title>
+</url>
+<url>
+<loc>https://www.example.com/fr/conseils-guides/piscine/traitement-au-sel</loc>
+<lastmod>2026-07-02</lastmod>
+<cabesto:title>Traitement au sel de piscine</cabesto:title>
+<cabesto:category>Piscine</cabesto:category>
+<image:image>
+<image:loc>https://www.example.com/media/magefan_blog/piscine-au-sel.jpg</image:loc>
+</image:image>
+</url>
+</urlset>
