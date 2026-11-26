@@ -13,7 +13,7 @@ L'extranet s'utilise depuis `/admin`, avec le jeton `ADMIN_TOKEN`. La connexion 
 |  | [Statistiques](../analyse/statistiques-et-journal) | Top requêtes, **recherches sans résultat exact** (aucun résultat ou seulement des approchants) avec ajout direct d'un **synonyme**, d'une redirection ou d'un résultat personnalisé, **produits les plus cliqués** (clics, requêtes d'origine, position moyenne), requêtes avec résultats mais sans clic, export CSV |
 |  | [Journal des recherches](../analyse/statistiques-et-journal) | Détail filtrable et exportable |
 | **Catalogues** | [Flux & mapping](../catalogue/mapping) | Sources (URL complet/delta, authentification), **mapping visuel**, mapping JSON avancé, **test du mapping sans indexer**, **planification des imports**, imports manuels |
-|  | [Imports](../catalogue/imports) | Historique (durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
+|  | [Imports](../catalogue/imports) | Historique paginé (50 par page, du plus récent au plus ancien ; durée, **écart avec l'import précédent**), rapports (motifs de rejet, exemples de SKU rejetés), suivi en direct |
 |  | [Produits désactivés](../catalogue/produits-desactives) | Produits retirés des recherches avec le bouton « Désactiver » de l'aperçu interne, avec filtre, « Activer » et « Tout réactiver » |
 |  | [Articles de blog](../catalogue/articles-de-blog) | Articles importés depuis le flux du blog : image, titre, catégories, date, lien ; recherche comme sur le site, filtre par catégorie |
 |  | [Aperçu interne](../recherche-et-pertinence/pertinence-et-classement) | Résultats avec **marge, score métier, ventes, règles appliquées**, boost rapide, épinglage, désactivation |

@@ -245,8 +245,13 @@ final class SourcesController
 
     public function imports(): void
     {
-        $runs = Db::all('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ? ORDER BY r.id DESC LIMIT 100', [\DeepFind\Project::id()]);
-        View::render('imports', ['active' => 'imports', 'runs' => $runs], 'Historique des imports');
+        $perPage = 50;
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $total = (int) Db::value('SELECT COUNT(*) FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ?', [\DeepFind\Project::id()]);
+        $page = min($page, max(1, (int) ceil($total / $perPage)));
+        $runs = Db::all('SELECT r.*, s.code, s.kind, s.lang FROM import_runs r JOIN sources s ON s.id = r.source_id WHERE s.project_id = ? ORDER BY r.id DESC LIMIT '
+            . $perPage . ' OFFSET ' . (($page - 1) * $perPage), [\DeepFind\Project::id()]);
+        View::render('imports', ['active' => 'imports', 'runs' => $runs, 'page' => $page, 'perPage' => $perPage, 'total' => $total], 'Historique des imports');
     }
 
     /** Avancement des imports en cours (JSON, interrogé toutes les 2 s par la page). */

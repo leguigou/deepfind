@@ -10,6 +10,19 @@ $duration = static function (array $r): string {
     return $r['finished_at'] ? $txt : $txt . ' (en cours)';
 };
 ?>
+<?php /** @var list<array> $runs @var int $page @var int $perPage @var int $total */
+$pages = (int) ceil($total / $perPage);
+$pager = static function () use ($page, $pages, $total, $perPage): string {
+    if ($pages <= 1) {
+        return '';
+    }
+    $link = static fn (int $p, string $label) => '<a class="btn btn-sm btn-light" href="' . e(url('/admin/imports', $p > 1 ? ['page' => $p] : [])) . '">' . $label . '</a>';
+    return '<nav class="pager" aria-label="Pages">' . ($page > 1 ? $link(1, '« Plus récents') . $link($page - 1, '‹ Précédents') : '')
+        . '<span class="muted small">Page ' . $page . ' / ' . $pages . ' · imports ' . fmt_n(($page - 1) * $perPage + 1) . ' à ' . fmt_n(min($total, $page * $perPage)) . ' sur ' . fmt_n($total) . '</span>'
+        . ($page < $pages ? $link($page + 1, 'Suivants ›') . $link($pages, 'Plus anciens »') : '') . '</nav>';
+};
+?>
+<?= $pager() ?>
 <div class="table-scroll">
 <table class="table imports-table">
   <thead><tr><th>#</th><th>Source</th><th>Type</th><th>Déclencheur</th><th>Statut</th><th>Début</th><th>Fin</th><th class="num">Durée</th>
@@ -41,6 +54,7 @@ $duration = static function (array $r): string {
   </tbody>
 </table>
 </div>
+<?= $pager() ?>
 <p class="muted small">Écart : comparaison avec l'import complet précédent, par SKU. Vert = produits nouveaux ou de retour dans le flux (réactivés automatiquement) ;
   rouge = produits absents du flux, désactivés auto (gardés <?= \DeepFind\Import\Importer::RETAIN_DAYS ?> jours dans l'index sans être proposés, puis retirés).
   Les produits désactivés à la main restent désactivés quoi qu'il arrive.</p>
