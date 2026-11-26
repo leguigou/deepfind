@@ -63,6 +63,7 @@
     dev.addEventListener('change', showCount);
     showCount();
     pe.addEventListener('submit', function (ev) {
+      if (ev.submitter && ev.submitter.hasAttribute('data-pe-test')) { return; } // envoi au groupe de test : ni date ni confirmation
       var when = pe.querySelector('input[name=when]:checked');
       if (when && when.value === 'at' && !pe.querySelector('input[name=scheduled_at]').value) {
         ev.preventDefault();

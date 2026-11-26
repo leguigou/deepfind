@@ -71,10 +71,52 @@
       area.value = '';
     });
 
+    // règles (même éditeur que les boosts et les carrousels)
+    var fields = JSON.parse(form.getAttribute('data-fields') || '[]');
+    var byCode = {};
+    fields.forEach(function (fd) { byCode[fd.code] = fd; });
+    var rules = JSON.parse(form.getAttribute('data-rules') || '{}');
+    var conds = form.querySelector('[data-conds]');
+    form.querySelector('input[name=cp_match][value=' + (rules.match_all === false ? 'any' : 'all') + ']').checked = true;
+    var lib = window.DFConditions({ fields: fields, valuesUrl: form.getAttribute('data-values-url'), root: form, listOps: true, listContains: true });
+    function addCond(cond) {
+      var row = lib.conditionRow(cond || {});
+      conds.appendChild(row);
+      if (!cond || !cond.field) { row.focusField(); }
+    }
+    (rules.conditions || []).forEach(function (cond) { addCond(cond); });
+    form.querySelector('[data-add-cond]').addEventListener('click', function () { addCond(); });
+    document.addEventListener('click', function (ev) {
+      if (ev.target.isConnected && !ev.target.closest('.ms')) { form.querySelectorAll('.ms-panel').forEach(function (p) { p.hidden = true; }); }
+    });
+    function readConds() {
+      var out = [];
+      var problem = '';
+      conds.querySelectorAll('.br-cond').forEach(function (r) {
+        var cd = r.getCondition && r.getCondition();
+        if (!cd || problem) { return; }
+        var label = (byCode[cd.field] || {}).label || cd.field;
+        if (cd.values && !cd.values.length) {
+          problem = 'Règles : ' + (cd.op === 'contains' || cd.op === 'not_contains' ? 'saisissez au moins un texte pour « ' : 'choisissez au moins une valeur pour « ') + label + ' ».';
+          return;
+        }
+        if (cd.value !== undefined && (cd.value === '' || isNaN(Number(cd.value)))) { problem = 'Règles : valeur numérique attendue pour « ' + label + ' ».'; return; }
+        if (cd.value !== undefined) { cd.value = Number(cd.value); }
+        out.push(cd);
+      });
+      return { list: out, problem: problem };
+    }
+
     form.addEventListener('submit', function (ev) {
       var list0 = skus();
-      if (!list0.length) { ev.preventDefault(); window.DeepFindUI.alert('Ajoutez au moins un produit à pousser.'); return; }
+      var rc = readConds();
+      if (rc.problem) { ev.preventDefault(); window.DeepFindUI.alert(rc.problem); return; }
+      if (!list0.length && !rc.list.length) { ev.preventDefault(); window.DeepFindUI.alert('Ajoutez au moins un produit à pousser, ou une règle.'); return; }
       form.querySelector('[data-items-field]').value = JSON.stringify(list0);
+      form.querySelector('[data-conds-field]').value = JSON.stringify(rc.list);
+      var m = form.querySelector('input[name=cp_match]:checked');
+      var hidden = form.querySelector('input[name=match][type=hidden]') || form.appendChild(Object.assign(document.createElement('input'), { type: 'hidden', name: 'match' }));
+      hidden.value = m ? m.value : 'all';
     });
   });
 })();

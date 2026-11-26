@@ -481,13 +481,16 @@ final class Push
             $where[] = 'channel = ?';
             $params[] = $f['channel'];
         }
+        if (($f['group'] ?? '') === 'test') {
+            $where[] = 'tester = 1';
+        }
         if ((int) ($f['id'] ?? 0) > 0) {
             $where[] = 'id = ?';
             $params[] = (int) $f['id'];
         }
         $w = implode(' AND ', $where);
         $total = (int) Db::value("SELECT COUNT(*) FROM push_subscriptions WHERE $w", $params);
-        $rows = Db::all("SELECT id, endpoint, p256dh, device, channel, browser, os, active, sent, shown, clicks, failures, created_at, updated_at, last_sent_at, last_click_at
+        $rows = Db::all("SELECT id, endpoint, p256dh, device, channel, browser, os, active, tester, label, sent, shown, clicks, failures, created_at, updated_at, last_sent_at, last_click_at
             FROM push_subscriptions WHERE $w ORDER BY id DESC LIMIT " . (int) $perPage . ' OFFSET ' . (int) ((max(1, $page) - 1) * $perPage), $params);
         foreach ($rows as &$r) {
             $r['service'] = self::service((string) $r['endpoint']);
@@ -535,5 +538,55 @@ final class Push
             Db::exec('DELETE FROM push_subscriptions WHERE id = ?', [$id]);
         }
         return $code;
+    }
+
+    // ------------------------------------------------------------------ Groupe de test
+
+    /** Taille maximale du groupe de test (ce n'est pas un moyen d'envoyer un message à tout le monde sans le programmer). */
+    public const MAX_TESTERS = 50;
+
+    public static function testers(string $lang): int
+    {
+        return (int) Db::value('SELECT COUNT(*) FROM push_subscriptions WHERE project_id = ? AND lang = ? AND tester = 1', [\DeepFind\Project::id(), $lang]);
+    }
+
+    /** Ajoute au groupe de test (avec un nom facultatif) ou retire. @return string|null erreur */
+    public static function setTester(int $id, string $lang, bool $on, string $label = ''): ?string
+    {
+        $pid = \DeepFind\Project::id();
+        if ($on && self::testers($lang) >= self::MAX_TESTERS
+            && !Db::value('SELECT tester FROM push_subscriptions WHERE id = ? AND project_id = ? AND lang = ?', [$id, $pid, $lang])) {
+            return sprintf('Le groupe de test est limité à %d appareils.', self::MAX_TESTERS);
+        }
+        $label = mb_substr(trim(preg_replace('/\s+/u', ' ', $label) ?? ''), 0, 60, 'UTF-8');
+        $n = Db::exec('UPDATE push_subscriptions SET tester = ?, label = ? WHERE id = ? AND project_id = ? AND lang = ?', [$on ? 1 : 0, $on ? $label : '', $id, $pid, $lang]);
+        return $n > 0 || Db::value('SELECT 1 FROM push_subscriptions WHERE id = ? AND project_id = ? AND lang = ?', [$id, $pid, $lang]) ? null : 'Abonné introuvable.';
+    }
+
+    /**
+     * Envoie tout de suite un message au groupe de test (même aux appareils en pause). Ne change ni le message (brouillon, programmé…)
+     * ni ses statistiques, ni les compteurs des appareils : autant d'essais que nécessaire.
+     * $c : ['title', 'body', 'url', 'image'] ; null : message de test standard.
+     * @return array{targeted:int, sent:int, failed:int, gone:int}
+     */
+    public static function sendToTesters(string $lang, ?array $c = null): array
+    {
+        $subs = Db::all('SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE project_id = ? AND lang = ? AND tester = 1 ORDER BY id LIMIT ' . self::MAX_TESTERS,
+            [\DeepFind\Project::id(), $lang]);
+        if ($subs === []) {
+            return ['targeted' => 0, 'sent' => 0, 'failed' => 0, 'gone' => 0];
+        }
+        $c ??= ['title' => 'Test DeepFind', 'body' => 'Message de test envoyé au groupe de test : les notifications fonctionnent sur cet appareil.', 'url' => '/', 'image' => ''];
+        $payload = Text::json(array_filter(['t' => (string) $c['title'], 'b' => (string) $c['body'], 'u' => (string) $c['url'] !== '' ? (string) $c['url'] : '/',
+            'i' => (string) ($c['image'] ?? ''), 'ic' => self::url(Settings::get('push_icon'))], static fn ($v) => $v !== ''));
+        $base = rtrim((string) \DeepFind\Config::get('APP_URL', ''), '/');
+        $subject = str_starts_with($base, 'https://') ? $base : 'mailto:' . (string) \DeepFind\Config::get('PUSH_CONTACT', 'contact@example.com');
+        $codes = WebPush::send($subs, $payload, $subject, 3600, 'high');
+        $sent = count(array_filter($codes, static fn (int $code) => $code >= 200 && $code < 300));
+        $gone = array_keys(array_filter($codes, static fn (int $code) => $code === 404 || $code === 410));
+        if ($gone !== []) {
+            Db::exec('DELETE FROM push_subscriptions WHERE id IN (' . implode(',', array_map('intval', $gone)) . ')');
+        }
+        return ['targeted' => count($subs), 'sent' => $sent, 'failed' => count($subs) - $sent, 'gone' => count($gone)];
     }
 }

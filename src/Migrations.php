@@ -24,10 +24,12 @@ final class Migrations
             'page_filters' => 'TEXT NULL AFTER conditions', 'segments' => 'TEXT NULL AFTER page_filters'],
         'audience_visitors' => ['bar_opens' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'closes' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_searches' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carousel_clicks' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carts' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'cart_value' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'revenue' => 'INT UNSIGNED NOT NULL DEFAULT 0'],
         'audience_daily' => ['bar_openers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'closers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_searchers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'zero_leavers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carousel_clickers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'carters' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'buyers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'revenue' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0', 'abandoners' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_carters' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_buyers' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_orders' => 'INT UNSIGNED NOT NULL DEFAULT 0', 'searcher_revenue' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0', 'searcher_abandoners' => 'INT UNSIGNED NOT NULL DEFAULT 0'],
+        'campaigns' => ['match_all' => 'TINYINT(1) NOT NULL DEFAULT 1 AFTER items', 'conditions' => 'TEXT NULL AFTER match_all'],
         'push_subscriptions' => ['api_key_id' => 'INT UNSIGNED NULL AFTER channel', 'browser' => "VARCHAR(20) CHARACTER SET ascii NOT NULL DEFAULT '' AFTER api_key_id",
             'os' => "VARCHAR(20) CHARACTER SET ascii NOT NULL DEFAULT '' AFTER browser", 'active' => 'TINYINT(1) NOT NULL DEFAULT 1 AFTER os',
             'sent' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER active', 'shown' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER sent', 'clicks' => 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER shown',
-            'last_sent_at' => 'DATETIME NULL AFTER clicks', 'last_click_at' => 'DATETIME NULL AFTER last_sent_at'],
+            'last_sent_at' => 'DATETIME NULL AFTER clicks', 'last_click_at' => 'DATETIME NULL AFTER last_sent_at',
+            'tester' => 'TINYINT(1) NOT NULL DEFAULT 0 AFTER last_click_at', 'label' => "VARCHAR(60) NOT NULL DEFAULT '' AFTER tester"],
         'product_boosts' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id',],
         'click_logs' => ['project_id' => 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER id', 'custom_result_id' => 'INT UNSIGNED NULL AFTER sid'],
         'sources' => [

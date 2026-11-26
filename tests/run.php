@@ -1134,6 +1134,22 @@ if ($base) {
         && $plSearch !== null && $plSearch['revenue'] === 10000 && $plSearch['label'] === 'Recherche'
         && $CP::status($CP::find($idCp, 'fr')) === 'current', json_encode([$cpStats['total'], $cpStats['placements']]));
     $CP::delete($idCp, 'fr');
+    // campagne par règles (comme les boosts) : produits du catalogue qui remplissent les conditions, en plus de la liste
+    $cpDoc = DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'id = ' . json_encode((string) $rId[0]), 1, 0, ['id', 'sku', 'brand'])[0] ?? [];
+    [$cpR, $cpRErr] = $CP::sanitize(['name' => 'Par marque', 'active' => '1', 'items' => [], 'match' => 'all',
+        'conditions' => [['field' => 'brand', 'op' => 'in', 'values' => [(string) ($cpDoc['brand'] ?? '')]], ['field' => 'nope', 'op' => 'in', 'values' => ['x']]]], 'fr');
+    [$cpNone, $cpNoneErr] = $CP::sanitize(['name' => 'Vide', 'items' => [], 'conditions' => []], 'fr');
+    $idCpR = $CP::save('fr', $cpR, null);
+    $cpRFound = $CP::find($idCpR, 'fr');
+    $cpRStats = $CP::stats($cpRFound, 'fr');
+    $cpRSkus = array_column($cpRStats['rows'], 'sku');
+    $brandCount = count(DeepFind\Meili\MeiliClient::admin()->fetchDocuments(DeepFind\Config::productIndex('fr'), 'brand = ' . json_encode((string) ($cpDoc['brand'] ?? '')), 1000, 0, ['id']));
+    check('campagnes : produits par règles (marque ; champ inconnu ignoré ; ni produit ni règle refusé ; totaux sur tous les produits)',
+        $cpR !== null && $cpRErr === [] && $cpRFound['conditions'] === [['field' => 'brand', 'op' => 'in', 'values' => [(string) $cpDoc['brand']]]] && $cpRFound['match_all'] === true
+        && $cpNone === null && str_contains(implode(' ', $cpNoneErr), 'ou une règle') && $cpRStats['rule']['count'] === $brandCount && $brandCount > 0
+        && in_array((string) $cpDoc['sku'], $cpRSkus, true) && array_filter($cpRStats['rows'], static fn ($r) => !$r['rule']) === [] && $cpRStats['total']['orders'] >= 1,
+        json_encode([$cpRErr, $cpRStats['rule'], $cpRStats['total'], $brandCount, $cpDoc]));
+    $CP::delete($idCpR, 'fr');
     // tendances (après les campagnes : les totaux par produit sont remplacés par des données de test)
     $mDay = $AU::measureDay();
     DeepFind\Db::exec('DELETE FROM audience_products');
@@ -1256,6 +1272,29 @@ if ($base) {
     check('notifications : envoi de test à un abonné (reçu et lisible) ; abonné en pause exclu des envois, puis réactivé',
         $testCode === 201 && ($testPayload['t'] ?? '') === 'Test DeepFind' && $audPaused === 0 && $PU::audience(['devices' => 'all', 'channels' => []], 'fr') === 1,
         json_encode([$testCode, $testPayload, $audPaused]));
+    // groupe de test : appareil nommé, reçoit les essais même en pause, sans toucher au message ni aux compteurs
+    $grpEmpty = $PU::sendToTesters('fr');
+    $grpErr = $PU::setTester((int) $subOk['id'], 'fr', true, "  iPhone   de <b>Paul</b>  ");
+    $PU::setActive((int) $subOk['id'], 'fr', false);
+    $pcBefore = $PU::find($idPc, 'fr');
+    $subBefore = DeepFind\Db::one('SELECT sent, shown, clicks FROM push_subscriptions WHERE id = ?', [(int) $subOk['id']]);
+    @unlink($pushLog);
+    $grp = $PU::sendToTesters('fr', ['title' => 'Essai promo', 'body' => 'Texte essai', 'url' => '/essai.html', 'image' => '']);
+    usleep(200000);
+    $grpReq = json_decode((string) strtok((string) @file_get_contents($pushLog), "\n"), true);
+    $grpPayload = $grpReq ? json_decode($WP::decrypt(base64_decode($grpReq['body']), $browsers['ok']['key'], $browsers['ok']['auth']), true) : null;
+    $grpList = $PU::subscribers('fr', ['group' => 'test']);
+    $subAfterGrp = DeepFind\Db::one('SELECT sent, shown, clicks FROM push_subscriptions WHERE id = ?', [(int) $subOk['id']]);
+    check('notifications : groupe de test (vide → rien ; appareil nommé ; essai reçu même en pause ; message et compteurs inchangés ; filtre)',
+        $grpEmpty['targeted'] === 0 && $grpErr === null && $grp === ['targeted' => 1, 'sent' => 1, 'failed' => 0, 'gone' => 0]
+        && ($grpPayload['t'] ?? '') === 'Essai promo' && ($grpPayload['u'] ?? '') === '/essai.html' && !isset($grpPayload['c']) && !isset($grpPayload['s'])
+        && $PU::find($idPc, 'fr') == $pcBefore && $subAfterGrp == $subBefore && $PU::testers('fr') === 1
+        && $grpList['total'] === 1 && $grpList['rows'][0]['label'] === 'iPhone de <b>Paul</b>' && $PU::subscribers('fr', ['group' => 'test', 'device' => 'desktop'])['total'] === 0
+        && $PU::setTester(999999, 'fr', true) === 'Abonné introuvable.', json_encode([$grpEmpty, $grpErr, $grp, $grpPayload, $grpList['rows'][0]['label'] ?? null]));
+    $PU::setTester((int) $subOk['id'], 'fr', false);
+    $PU::setActive((int) $subOk['id'], 'fr', true);
+    check('notifications : retrait du groupe de test (nom effacé)', $PU::testers('fr') === 0
+        && DeepFind\Db::value('SELECT label FROM push_subscriptions WHERE id = ?', [(int) $subOk['id']]) === '');
     $unsub = $post('/api/v1/push/unsubscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => $browsers['ok']['endpoint']], 'Mozilla/5.0 Push/ok');
     usleep(300000);
     $pcAfter = $PU::find($idPc, 'fr');

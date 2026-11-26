@@ -577,7 +577,7 @@ Les termes des recherches sont **masqués** avant d'être comptés (e-mails, té
 
 ### Campagnes, nouvelles sources de carrousels, ciblage
 
-- **Recommandations › Campagnes** : produits à pousser sur une période, avec objectif ; tableau de bord par produit (affichages en carrousel, clics, position moyenne dans la recherche, paniers, commandes, chiffre d'affaires, rupture) comparé à la période précédente, et **chiffre d'affaires par emplacement** (dernier clic du visiteur sur le produit le même jour : recherche, carrousel, ou aucun).
+- **Recommandations › Campagnes** : produits à pousser sur une période, avec objectif ; tableau de bord par produit (affichages en carrousel, clics, position moyenne dans la recherche, paniers, commandes, chiffre d'affaires, rupture) comparé à la période précédente, et **chiffre d'affaires par emplacement**. Produits choisis un par un et/ou **par règles** (mêmes conditions que les boosts : marque, catégorie, promotion, prix… ; la liste suit le catalogue) (dernier clic du visiteur sur le produit le même jour : recherche, carrousel, ou aucun).
 - **Carrousels** : nouvelles sources *Tendances*, *Souvent achetés ensemble*, *Les visiteurs ont aussi regardé*, *Page panier* (compléments du panier, message « Plus que X € pour profiter de la livraison offerte » : seuil dans *Paramètres › Widget sur le site* ou donné par le site). Panier lu dans Magento (`mage-cache-storage`) ou donné par `DeepFind.cart({ items, total, freeShipping })`. Paires de produits gardées 90 jours (`reco_pairs`, totaux sans visiteur).
 - **Ciblage selon la provenance** (popins et carrousels) : canaux (direct, moteurs, publicité, réseaux sociaux, e-mail, affiliation, autres sites, campagne UTM) et conditions `utm_*`. Provenance lue sur la page d'arrivée, gardée en mémoire pour la journée sous l'empreinte du jour.
 
@@ -590,7 +590,7 @@ Messages envoyés sur le téléphone ou l'ordinateur des visiteurs qui l'accepte
 - **Paramètres › Notifications** : forme de l'invitation (bandeau en bas / en haut, popin au centre / dans un coin, cloche flottante, bloc dans la page), appareils (**téléphones uniquement** par défaut, téléphones et tablettes, tous, ordinateurs), **exclusion des iPhone et iPad** (par défaut : ils n'acceptent les notifications que si le site est ajouté à l'écran d'accueil), délai, N-ième page vue, pages exclues, textes, couleurs, CSS, aperçu ordinateur / mobile.
 - **Installation** : déposer une fois sur le site un fichier `sw.js` d'une ligne, `importScripts('https://<DeepFind>/widget/push-sw.js');` (le widget ne peut pas le créer : règle des navigateurs).
 - **Recommandations › Envoi de notifications** : titre, texte, lien, image, appareils, provenance à l'abonnement ; brouillon, envoi maintenant ou programmé (`schedule:run`, ou `php bin/console push:send`) ; envoyés, affichés, clics.
-- **Abonnés** : liste filtrable (appareil, statut, navigateur, provenance), adresse et clé masquées, reçus / affichés / clics par appareil, envoi de test, pause / réactivation, suppression.
+- **Abonnés** : liste filtrable (appareil, statut, navigateur, provenance), adresse et clé masquées, reçus / affichés / clics par appareil, envoi de test, pause / réactivation, suppression, **groupe de test** (appareils nommés qui reçoivent les essais d'un message avant son envoi, même en pause, sans toucher à ses statistiques).
 - Le visiteur clique d'abord sur l'invitation, puis le navigateur demande son accord (fenêtre non modifiable, jamais reproposée s'il refuse).
 
 ### Parcours

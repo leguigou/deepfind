@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace DeepFind\Admin;
 
+use DeepFind\Rules\BoostRules;
 use DeepFind\Rules\Campaigns;
+use DeepFind\Rules\CustomResults;
 
 /** Recommandations › Campagnes : produits à pousser et suivi de leurs résultats. */
 final class CampaignsController
@@ -37,8 +39,13 @@ final class CampaignsController
             return ['sku' => $sku, 'name' => (string) ($d['name'] ?? ''), 'image' => (string) ($d['image'] ?? ''), 'brand' => (string) ($d['brand'] ?? ''),
                 'price' => $d['final_price'] ?? null, 'in_stock' => !empty($d['in_stock']), 'missing' => $d === null];
         }, $c['items']);
+        // champs des règles : les mêmes que pour les boosts et les carrousels
+        $fields = [];
+        foreach (CustomResults::fields($lang) as $code => [$label, $type]) {
+            $fields[] = ['code' => $code, 'label' => $label, 'type' => $type, 'static' => BoostRules::STATIC_VALUES[$code] ?? null];
+        }
         View::render('campaign_edit', [
-            'active' => 'campaigns', 'c' => $c, 'items' => $items, 'stats' => $c['id'] ? Campaigns::stats($c, $lang) : null,
+            'active' => 'campaigns', 'c' => $c, 'items' => $items, 'fields' => $fields, 'stats' => $c['id'] ? Campaigns::stats($c, $lang) : null,
             'status' => Campaigns::status($c),
         ], $c['id'] ? 'Campagne « ' . $c['name'] . ' »' : 'Nouvelle campagne');
     }
@@ -48,7 +55,8 @@ final class CampaignsController
         $lang = Auth::lang();
         $in = $_POST;
         $in['items'] = json_decode((string) ($_POST['items'] ?? '[]'), true) ?: [];
-        [$c, $errors] = Campaigns::sanitize($in);
+        $in['conditions'] = json_decode((string) ($_POST['conditions'] ?? '[]'), true) ?: [];
+        [$c, $errors] = Campaigns::sanitize($in, $lang);
         $id = (int) ($_POST['id'] ?? 0);
         if ($c === null) {
             Auth::flash('error', implode(' ', $errors));
@@ -56,7 +64,9 @@ final class CampaignsController
             return;
         }
         $id = Campaigns::save($lang, $c, $id > 0 ? $id : null);
-        Auth::flash('ok', sprintf('Campagne « %s » enregistrée.', $c['name']));
+        $rule = Campaigns::ruleProducts($lang, $c);
+        Auth::flash('ok', sprintf('Campagne « %s » enregistrée.', $c['name']) . ($c['conditions'] === [] ? '' : ($rule['error'] ?? sprintf(' Règles : %s produit(s) du catalogue correspondent aujourd\'hui%s.',
+            number_format($rule['total'], 0, ',', ' '), $rule['total'] > Campaigns::RULE_LIMIT ? ' (suivi limité aux ' . Campaigns::RULE_LIMIT . ' premiers : précisez les règles)' : ''))));
         App::back('/admin/campaigns/edit', ['id' => $id]);
     }
 

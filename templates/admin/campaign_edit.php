@@ -1,6 +1,6 @@
 <?php
 /** Recommandations › Campagnes › fiche : produits, période, objectif ; tableau de bord des résultats.
- *  @var array $c @var list<array> $items @var ?array $stats @var string $status */
+ *  @var array $c @var list<array> $items @var list<array> $fields @var ?array $stats @var string $status */
 $euro = static fn (int $cents) => fmt_n($cents / 100, 2) . ' €';
 $delta = static function (int $now, int $before): string {
     if ($before === 0) {
@@ -34,6 +34,7 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
       <tr>
         <td><?php if (!$r['found']): ?><strong><?= e($r['sku']) ?></strong> <span class="badge badge-ko">introuvable dans le catalogue</span>
           <?php else: ?><a href="<?= e(url('/admin/preview', ['q' => $r['sku']])) ?>"><?= e($r['name']) ?></a> <small class="muted"><?= e($r['sku']) ?></small>
+            <?php if ($r['rule']): ?> <span class="badge badge-info" title="Produit ajouté par les règles de la campagne">règle</span><?php endif; ?>
             <?php if (!$r['in_stock']): ?> <span class="badge badge-ko">rupture</span><?php endif; ?><?php endif; ?></td>
         <td class="num"><?= fmt_n($r['car_views']) ?></td>
         <td class="num"><?= fmt_n($r['clicks']) ?></td>
@@ -47,6 +48,7 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
     </tbody>
   </table>
   </div>
+  <?php if ($stats['rule']['hidden'] > 0): ?><p class="muted small"><?= fmt_n($stats['rule']['hidden']) ?> autre(s) produit(s) des règles, moins actifs, ne sont pas affichés ; ils comptent dans les totaux.</p><?php endif; ?>
 
   <h2>Où les ventes ont été faites</h2>
   <div class="table-wrap">
@@ -64,11 +66,13 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
   <p class="muted small">« Sans clic DeepFind » : produit mis au panier ou acheté sans avoir été cliqué dans la recherche ou un carrousel le même jour (navigation du site, lien externe…).</p>
 <?php endif; ?>
 
-<form method="post" action="<?= e(url('/admin/campaigns/save')) ?>" class="card form cp-form" data-campaign-form data-items="<?= e(\DeepFind\Text::json($items)) ?>"
-      data-search-url="<?= e(url('/admin/custom-results/search')) ?>">
+<form method="post" action="<?= e(url('/admin/campaigns/save')) ?>" class="card form cp-form" data-campaign-form data-rule-root data-items="<?= e(\DeepFind\Text::json($items)) ?>"
+      data-search-url="<?= e(url('/admin/custom-results/search')) ?>" data-fields="<?= e(\DeepFind\Text::json($fields)) ?>" data-values-url="<?= e(url('/admin/boost-rules/values')) ?>"
+      data-rules="<?= e(\DeepFind\Text::json(['match_all' => $c['match_all'], 'conditions' => $c['conditions']])) ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
   <input type="hidden" name="items" value="" data-items-field>
+  <input type="hidden" name="conditions" value="" data-conds-field>
   <h3><?= $c['id'] ? 'Réglages de la campagne' : 'Nouvelle campagne' ?></h3>
   <div class="grid2">
     <label>Nom <input name="name" maxlength="190" required value="<?= e($c['name']) ?>" placeholder="ex. Soldes d'été – palmes"></label>
@@ -77,7 +81,7 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
     <label>Fin <small class="muted">(vide : sans fin)</small><input type="date" name="ends_at" value="<?= e((string) $c['ends_at']) ?>"></label>
   </div>
   <label>Objectif <small class="muted">(facultatif)</small><textarea name="objective" rows="2" maxlength="500" placeholder="ex. écouler le stock de palmes 2025 avant l'arrivée de la nouvelle collection"><?= e($c['objective']) ?></textarea></label>
-  <strong class="ca-block-title">Produits à pousser</strong>
+  <strong class="ca-block-title">Produits à pousser, un par un</strong>
   <div class="ca-picker">
     <input type="search" data-item-search placeholder="Rechercher un produit (nom, SKU, marque…)" aria-label="Rechercher un produit à ajouter" autocomplete="off">
     <div class="ca-results" data-item-results hidden></div>
@@ -87,6 +91,18 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
     <textarea rows="3" data-bulk placeholder="Un SKU par ligne, ou séparés par des virgules"></textarea>
     <button type="button" class="btn btn-light btn-sm" data-bulk-add>Ajouter ces SKU</button>
   </details>
+  <div class="cp-rules">
+    <strong class="ca-block-title">… et/ou par règles <small class="muted">(comme les boosts : marque, catégorie, promotion, prix…)</small></strong>
+    <p class="muted small">Tous les produits du catalogue qui remplissent les règles sont suivis, en plus de ceux choisis un par un. La liste suit le catalogue
+      (un nouveau produit de la marque entre dans la campagne). Exemple : Marque est « Ecoflow » et Catégorie contient « panneau solaire ».</p>
+    <label class="check"><input type="radio" name="cp_match" value="all"><span>remplissent <strong>toutes</strong> les conditions</span></label>
+    <label class="check"><input type="radio" name="cp_match" value="any"><span>remplissent <strong>au moins une</strong> condition</span></label>
+    <div class="br-conds" data-conds></div>
+    <button type="button" class="btn btn-light br-add-cond" data-add-cond>+ Ajouter une condition</button>
+    <?php if ($stats && $c['conditions'] !== []): $ru = $stats['rule']; ?>
+      <p class="muted small"><?= $ru['error'] !== null ? e($ru['error']) : 'Aujourd\'hui : ' . fmt_n($ru['total']) . ' produit(s) correspondent' . ($ru['capped'] ? ' (suivi limité aux ' . \DeepFind\Rules\Campaigns::RULE_LIMIT . ' premiers : précisez les règles)' : '') . '.' ?></p>
+    <?php endif; ?>
+  </div>
   <div class="cr-foot">
     <?php if ($c['id']): ?><button class="btn btn-danger cr-delete-btn" form="cp-delete-form" data-confirm="Supprimer la campagne « <?= e($c['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer cette campagne</button><?php endif; ?>
     <a class="btn btn-light" href="<?= e(url('/admin/campaigns')) ?>">Annuler</a>
@@ -96,4 +112,5 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
 <?php if ($c['id']): ?>
   <form method="post" action="<?= e(url('/admin/campaigns/delete')) ?>" id="cp-delete-form" hidden><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $c['id'] ?>"></form>
 <?php endif; ?>
+<script src="<?= e(asset('/assets/conditions.js')) ?>"></script>
 <script src="<?= e(asset('/assets/campaigns.js')) ?>"></script>

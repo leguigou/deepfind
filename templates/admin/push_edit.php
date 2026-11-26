@@ -1,5 +1,5 @@
 <?php
-/** Recommandations › Envoi de notifications › message. @var array $c @var array $audience @var array $counts @var string $icon @var string $host */
+/** Recommandations › Envoi de notifications › message. @var array $c @var array $audience @var array $counts @var int $testers @var string $icon @var string $host */
 use DeepFind\Push\Push;
 use DeepFind\Rules\Segments;
 
@@ -36,6 +36,13 @@ $when = $c['status'] === 'scheduled' ? 'at' : 'draft';
   <label class="check"><input type="radio" name="when" value="at"<?= $when === 'at' ? ' checked' : '' ?>><span>Programmer le</span>
     <input type="datetime-local" name="scheduled_at" value="<?= e($c['scheduled_at'] ? date('Y-m-d\TH:i', strtotime($c['scheduled_at'])) : '') ?>" class="pe-at"></label>
   <p class="muted small">Heure de Paris. L'envoi est fait par la tâche planifiée <code>schedule:run</code> (chaque minute). Un message envoyé ne peut plus être modifié.</p>
+  <div class="pe-test">
+    <div><strong>Groupe de test</strong> : <?= $testers ?> appareil<?= $testers > 1 ? 's' : '' ?>
+      <br><small class="muted">Envoie tout de suite le titre, le texte, le lien et l'image saisis à vos appareils de test, autant de fois que nécessaire.
+      Le message n'est ni enregistré ni envoyé aux abonnés, et ses statistiques ne bougent pas.
+      <a href="<?= e(url('/admin/push/subscribers', ['group' => 'test'])) ?>"><?= $testers > 0 ? 'Gérer le groupe' : 'Constituer le groupe' ?></a></small></div>
+    <button class="btn btn-light" formaction="<?= e(url('/admin/push/test')) ?>" data-pe-test<?= $testers === 0 ? ' disabled title="Ajoutez d\'abord vos appareils au groupe de test (Abonnés)"' : '' ?>>Envoyer au groupe de test</button>
+  </div>
   <div class="cr-foot">
     <a class="btn btn-light" href="<?= e(url('/admin/push')) ?>">Annuler</a>
     <button class="btn" data-pe-submit>Enregistrer</button>

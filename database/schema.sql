@@ -453,6 +453,9 @@ CREATE TABLE IF NOT EXISTS campaigns (
   ends_at DATE NULL,
   objective VARCHAR(500) NOT NULL DEFAULT '',
   items TEXT NOT NULL,
+  -- produits choisis par règles (comme les boosts) : conditions [{field, op, values|value}], toutes ou au moins une
+  match_all TINYINT(1) NOT NULL DEFAULT 1,
+  conditions TEXT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang)
@@ -715,6 +718,9 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   clicks INT UNSIGNED NOT NULL DEFAULT 0,
   last_sent_at DATETIME NULL,
   last_click_at DATETIME NULL,
+  -- groupe de test : reçoit les envois « au groupe de test » (même en pause) ; nom donné dans l'extranet (ex. « iPhone de Paul »)
+  tester TINYINT(1) NOT NULL DEFAULT 0,
+  label VARCHAR(60) NOT NULL DEFAULT '',
   failures TINYINT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
