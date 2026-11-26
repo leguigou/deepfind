@@ -67,7 +67,24 @@ Même structure que le flux complet, avec seulement le `sku` et les champs modif
 
 ## Blog (Magefan)
 
-Champs : `id`, `title`, `url`, `published_at` (obligatoires), plus `image`, `excerpt`, `content`, `author`, `updated_at`, `categories/category`, `tags/tag`, `related_products/sku`, `enabled`. Seul l'import complet est disponible (le volume est faible).
+Champs : `title`, `url`, `published_at` (obligatoires), `id` (conseillé), plus `image`, `excerpt`, `content`, `author`, `updated_at`, `categories/category`, `tags/tag`, `related_products/sku`, `enabled`. Seul l'import complet est disponible (le volume est faible).
+
+- **Sans identifiant** (« non mappé ») : chaque article reçoit un identifiant calculé à partir de son **adresse** (chemin, sans domaine ni paramètres). Il reste le même d'un import à l'autre tant que l'adresse ne change pas ; un article dont l'adresse change est vu comme un nouvel article.
+- **Sitemap du blog** (`<urlset><url><loc>…</loc><lastmod>…</lastmod>…</url></urlset>`) : élément répété `url` ; `loc` et `lastmod` sont reconnus d'office pour l'URL et la date de publication. Les balises à préfixe (`cabesto:title`, `cabesto:category`, `image:image/image:loc`) se choisissent dans la liste ; l'image (`image:image/image:loc`) est à choisir à la main. Un article sans image ou sans catégorie est accepté.
+
+```xml
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:cabesto="https://www.cabesto.com/schemas/sitemap-blog/1.0">
+  <url>
+    <loc>https://www.example.com/fr/conseils-guides/piscine/traitement-au-sel</loc>
+    <lastmod>2026-07-02</lastmod>
+    <cabesto:title>Traitement au sel de piscine</cabesto:title>
+    <cabesto:category>Piscine</cabesto:category>
+    <image:image><image:loc>https://www.example.com/media/piscine-au-sel.jpg</image:loc></image:image>
+  </url>
+</urlset>
+```
+
+Mapping correspondant : Titre ← `cabesto:title`, URL ← `loc`, Date de publication ← `lastmod`, Catégories ← `cabesto:category`, Image ← `image:image/image:loc`, Identifiant : non mappé.
 
 ## Champs calculés à l'import
 

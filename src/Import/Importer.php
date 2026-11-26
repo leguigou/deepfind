@@ -433,10 +433,14 @@ final class Importer
                 $this->report['skipped']++;
                 continue;
             }
-            $id = (string) ($f['id'] ?? '');
-            if ($id === '' || ($f['title'] ?? '') === '' || ($f['url'] ?? '') === '') {
-                $this->reject('id, titre ou URL manquant', $id);
+            $id = trim((string) ($f['id'] ?? ''));
+            if (($f['title'] ?? '') === '' || ($f['url'] ?? '') === '') {
+                $this->reject('titre ou URL manquant', $id !== '' ? $id : (string) ($f['url'] ?? ''));
                 continue;
+            }
+            if ($id === '') {
+                // flux sans identifiant (ex. sitemap du blog) : identifiant stable calculé à partir de l'URL
+                $id = self::postIdFromUrl((string) $f['url']);
             }
             $batch[] = [
                 'id' => 'b' . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $id),
@@ -465,6 +469,13 @@ final class Importer
         $this->waitTasks($tasks);
         $this->swapIfSafe($live, $tmp, IndexSettings::posts($lang, $synonyms));
         RulesRepository::bumpVersion();
+    }
+
+    /** Identifiant d'un article sans identifiant dans le flux : empreinte de son adresse (sans domaine, ni paramètres, ni « / » final). */
+    public static function postIdFromUrl(string $url): string
+    {
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?? $url);
+        return 'u' . substr(sha1(mb_strtolower(rtrim($path, '/'), 'UTF-8')), 0, 20);
     }
 
     // ================================================================== Outils communs

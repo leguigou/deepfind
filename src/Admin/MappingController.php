@@ -259,7 +259,7 @@ final class MappingController
 
         $missing = [];
         $f = $mapping['fields'];
-        $req = $kind === 'posts' ? ['id', 'title', 'url', 'published_at'] : ['sku', 'name', 'url'];
+        $req = $kind === 'posts' ? ['title', 'url', 'published_at'] : ['sku', 'name', 'url'];
         if ($kind === 'products' && $mode === 'flat') {
             $req[] = 'parent_id';
         }

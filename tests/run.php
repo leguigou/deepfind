@@ -45,6 +45,34 @@ check('to_float point + séparateur milliers', Mapper::toFloat('1,234.56') === 1
 check('to_bool « En stock »', Mapper::toBool('En stock') === 1 && Mapper::toBool('Rupture') === 0);
 check('stock Google Shopping (in_stock / out_of_stock / preorder)', Mapper::toBool('in_stock') === 1 && Mapper::toBool('out_of_stock') === 0 && Mapper::toBool('preorder') === 1);
 check('stock schema.org et quantités', Mapper::toBool('https://schema.org/InStock') === 1 && Mapper::toBool('http://schema.org/OutOfStock') === 0 && Mapper::toBool('12') === 1 && Mapper::toBool('0') === 0);
+// Blog en sitemap (<urlset><url><loc>…) : espaces de noms (cabesto:, image:), sans identifiant → calculé depuis l'URL
+$smFile = __DIR__ . '/fixtures/sitemap_blog_fr.xml';
+$smIns = DeepFind\Import\FeedInspector::inspect($smFile);
+$smOpts = DeepFind\Import\FeedInspector::options($smIns);
+$smGroups = DeepFind\Import\FieldCatalog::groups('posts');
+$smSug = [];
+foreach ($smGroups['required'] + $smGroups['secondary'] as $k => $info) {
+    $p = DeepFind\Import\FeedInspector::suggest($info['synonyms'], $smOpts);
+    if ($p !== '') {
+        $smSug[$k] = $p;
+    }
+}
+$smMapper = new Mapper(['item_element' => 'url', 'fields' => $smSug + ['image' => 'image:image/image:loc']], 'posts');
+$smPosts = [];
+$smErr = null;
+try {
+    foreach (DeepFind\Import\XmlItemReader::items($smFile, ['url']) as [, $el]) {
+        $smPosts[] = $smMapper->mapPost($el);
+    }
+} catch (Throwable $e) {
+    $smErr = $e->getMessage();
+}
+$smId = DeepFind\Import\Importer::postIdFromUrl(...);
+check('blog en sitemap : loc / lastmod / cabesto:title reconnus, identifiant facultatif, image absente sans erreur, id stable depuis l\'URL',
+    $smErr === null && !isset($smGroups['required']['id']) && ($smSug['url'] ?? '') === 'loc' && ($smSug['published_at'] ?? '') === 'lastmod' && ($smSug['title'] ?? '') === 'cabesto:title'
+    && count($smPosts) === 2 && !isset($smPosts[0]['image']) && str_ends_with($smPosts[1]['image'] ?? '', 'piscine-au-sel.jpg') && $smPosts[1]['categories'] === ['Piscine']
+    && $smPosts[0]['published_at'] > 0 && $smId('https://www.example.com/fr/a/b/') === $smId('https://autre.example/fr/a/b?x=1') && str_starts_with($smId('https://x/fr/a'), 'u'),
+    json_encode([$smErr, $smSug, $smPosts], JSON_UNESCAPED_UNICODE));
 $gxml = '<rss xmlns:g="http://base.google.com/ns/1.0"><channel><item><g:id>1</g:id><g:availability>out_of_stock</g:availability></item>'
     . '<item><g:id>2</g:id><g:availability>in_stock</g:availability></item></channel></rss>';
 $gtmp = tempnam(sys_get_temp_dir(), 'df');

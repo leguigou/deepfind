@@ -53,10 +53,11 @@ final class FieldCatalog
     ];
 
     private const POST = [
-        'id' => ['label' => 'Identifiant', 'help' => 'post_id Magefan', 'synonyms' => ['id', 'post_id', 'entity_id']],
+        'id' => ['label' => 'Identifiant', 'help' => 'post_id Magefan ; vide (flux sans identifiant, ex. sitemap) : calculé à partir de l\'URL de l\'article', 'synonyms' => ['id', 'post_id', 'entity_id']],
         'title' => ['label' => 'Titre', 'help' => 'Recherche (poids fort)', 'synonyms' => ['title', 'titre', 'name']],
-        'url' => ['label' => 'URL de l\'article', 'help' => 'Adresse complète', 'synonyms' => ['url', 'link', 'post_url']],
-        'published_at' => ['label' => 'Date de publication', 'help' => 'Format ISO 8601 conseillé', 'synonyms' => ['published_at', 'publish_time', 'pubdate', 'date', 'creation_time']],
+        // « loc » / « lastmod » : balises d'un sitemap (<url><loc>…</loc><lastmod>…</lastmod></url>)
+        'url' => ['label' => 'URL de l\'article', 'help' => 'Adresse complète', 'synonyms' => ['url', 'link', 'post_url', 'loc']],
+        'published_at' => ['label' => 'Date de publication', 'help' => 'Format ISO 8601 conseillé (ex. lastmod d\'un sitemap)', 'synonyms' => ['published_at', 'publish_time', 'pubdate', 'date', 'creation_time', 'lastmod']],
         'image' => ['label' => 'Image', 'help' => '', 'synonyms' => ['image', 'featured_image', 'post_image', 'thumbnail']],
         'excerpt' => ['label' => 'Résumé', 'help' => '', 'synonyms' => ['excerpt', 'short_content', 'resume', 'summary']],
         'content' => ['label' => 'Contenu', 'help' => 'HTML retiré', 'synonyms' => ['content', 'content_html', 'body', 'contenu']],
@@ -75,7 +76,7 @@ final class FieldCatalog
     public static function groups(string $kind, string $variantMode = 'nested'): array
     {
         if ($kind === 'posts') {
-            $required = ['id', 'title', 'url', 'published_at'];
+            $required = ['title', 'url', 'published_at']; // identifiant facultatif : calculé à partir de l'URL
             $all = self::POST;
         } else {
             $required = ['sku', 'name', 'url', 'price'];

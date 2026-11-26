@@ -271,8 +271,21 @@ final class Mapper
             }
             return $nodes;
         }
-        $res = @$el->xpath($path);
+        $res = @$el->xpath(self::prefixFree($path));
         return is_array($res) ? $res : [];
+    }
+
+    /**
+     * Chemin à préfixes (« image:image/image:loc », « cabesto:title ») lu par nom local, sans dépendre des déclarations
+     * d'espaces de noms : un élément qui n'utilise pas le préfixe (ex. article sans image) ne le déclare pas, et l'erreur
+     * « Undefined namespace prefix » de XPath ferait échouer tout l'import à la fin de la lecture du flux.
+     */
+    private static function prefixFree(string $path): string
+    {
+        if (!preg_match('/^[\w\-.]+:[\w\-.]+|\/[\w\-.]+:[\w\-.]+/', $path)) {
+            return $path;
+        }
+        return (string) preg_replace_callback('/(?<![@\w\-.:])([\w\-.]+):([\w\-.]+)(?![\w\-.]*\()/', static fn ($m) => "*[local-name()='" . $m[2] . "']", $path);
     }
 
     /** @return list<string> */
@@ -301,7 +314,7 @@ final class Mapper
             }
             return $out;
         }
-        $res = @$el->xpath($path);
+        $res = @$el->xpath(self::prefixFree($path));
         if (!is_array($res)) {
             return [];
         }
