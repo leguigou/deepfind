@@ -15,7 +15,8 @@ $statusLabel = ['draft' => ['Brouillon', ''], 'scheduled' => ['Programmé', 'bad
   <div class="card kpi"><div class="kpi-label">Nouveaux abonnés (30 j)</div><div class="kpi-value"><?= fmt_n($stats['sub']) ?></div>
     <div class="muted small"><?= fmt_n($stats['uns']) ?> désabonnement(s)</div></div>
 </div>
-<p><a class="btn" href="<?= e(url('/admin/push/edit')) ?>">+ Nouveau message</a></p>
+<p class="actions"><a class="btn" href="<?= e(url('/admin/push/edit')) ?>">+ Nouveau message</a>
+  <a class="btn btn-light" href="<?= e(url('/admin/push/subscribers')) ?>"><?= admin_icon('users') ?> Voir les abonnés (<?= fmt_n($counts['total']) ?>)</a></p>
 <div class="table-wrap">
 <table class="table">
   <thead><tr><th>Message</th><th>Cible</th><th>Envoi</th><th class="num">Envoyés</th><th class="num">Affichés</th><th class="num">Clics</th><th class="num">Taux de clic</th><th class="actions"></th></tr></thead>

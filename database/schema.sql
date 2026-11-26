@@ -704,6 +704,17 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   channel VARCHAR(12) CHARACTER SET ascii NOT NULL DEFAULT 'direct',
   -- clé publique du widget utilisée à l'abonnement : reprise dans les messages (compteurs affichés / clics autorisés pour ce domaine)
   api_key_id INT UNSIGNED NULL,
+  -- navigateur et système, en famille seulement (Chrome, Android…), d'après le navigateur à l'abonnement
+  browser VARCHAR(20) CHARACTER SET ascii NOT NULL DEFAULT '',
+  os VARCHAR(20) CHARACTER SET ascii NOT NULL DEFAULT '',
+  -- 0 : mis en pause dans l'extranet (ne reçoit plus les messages)
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  -- messages reçus par le service d'envoi, affichés et cliqués sur l'appareil
+  sent INT UNSIGNED NOT NULL DEFAULT 0,
+  shown INT UNSIGNED NOT NULL DEFAULT 0,
+  clicks INT UNSIGNED NOT NULL DEFAULT 0,
+  last_sent_at DATETIME NULL,
+  last_click_at DATETIME NULL,
   failures TINYINT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,

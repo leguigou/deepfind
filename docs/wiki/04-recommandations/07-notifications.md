@@ -55,6 +55,25 @@ importScripts('https://search.example.com/widget/push-sw.js');
 - **Envoi** : brouillon, maintenant (dans la minute, après confirmation), ou programmé (date et heure de Paris). Un message envoyé ne peut plus être modifié.
 - **Résultats** : envoyés, échecs, **affichés** et **clics** (signalés par le navigateur de l'abonné), taux de clic.
 
+## Abonnés
+
+*Recommandations › Envoi de notifications › Voir les abonnés* : un abonné = un navigateur qui a accepté les notifications.
+
+| Colonne | Contenu |
+|---|---|
+| N° | identifiant de l'abonné |
+| Appareil | téléphone, tablette ou ordinateur ; navigateur et système (famille seulement : Chrome, Android…) ; provenance à l'abonnement |
+| Service d'envoi / adresse | Google, Mozilla, Apple, Microsoft ; adresse d'envoi **masquée** (début `****` fin) |
+| Clé de chiffrement | clé publique du navigateur, **masquée** |
+| Inscription, statut | date ; **Actif**, **En pause** (ne reçoit plus les messages) ou **N échec(s)** (envoi refusé ; supprimé après 5 de suite) |
+| Reçus, affichés, clics | messages acceptés pour cet appareil, puis affichés et cliqués (signalés par l'appareil), taux de clic, dernier clic |
+
+- **Filtres** : appareil, statut, navigateur, provenance, n°.
+- **Envoyer un test** : notification « Test DeepFind » envoyée tout de suite à cet abonné seul (même en pause). Pour tester votre appareil : abonnez-vous depuis le site, puis testez le dernier abonné (n° le plus élevé).
+- **Mettre en pause / Réactiver** : l'abonné ne reçoit plus les messages, sans perdre son abonnement.
+- **Supprimer** : retiré de la liste ; s'il revient sur le site avec les notifications autorisées, il est réenregistré.
+- Les compteurs d'un appareil sont signés (`s`, `g` dans le message) : ils ne peuvent pas être gonflés de l'extérieur.
+
 ## Statistiques
 
 En haut des deux écrans : abonnés (téléphones, tablettes, ordinateurs), invitations affichées sur 30 jours, part de « Oui » et de « Plus tard », accord du navigateur (autorisé / bloqué), nouveaux abonnés et désabonnements.
@@ -69,7 +88,7 @@ En haut des deux écrans : abonnés (téléphones, tablettes, ordinateurs), invi
 
 - **Standard** : Web Push. Chiffrement du message (RFC 8291, aes128gcm : ECDH P-256, HKDF, AES-128-GCM) et identification du serveur (VAPID, RFC 8292 : jeton ES256) faits par DeepFind avec OpenSSL — aucun service tiers. Conformité vérifiée par un test avec le vecteur officiel de la RFC 8291.
 - **Clés VAPID** : créées une fois pour l'installation (réglages globaux `push_vapid_public`, `push_vapid_private` — la clé privée est chiffrée avec `APP_SECRET`). **Ne pas les changer** : les abonnements existants deviendraient inutilisables. `php bin/console push:keys` affiche la clé publique.
-- **Tables** : `push_subscriptions` (adresse d'envoi fournie par le navigateur, clés publiques du navigateur, appareil, provenance, clé du widget utilisée à l'abonnement, échecs), `push_campaigns` (messages et compteurs), `push_stats` (invitation, navigateur, abonnements, par jour).
+- **Tables** : `push_subscriptions` (adresse d'envoi fournie par le navigateur, clés publiques du navigateur, appareil, navigateur et système en famille, provenance, clé du widget utilisée à l'abonnement, pause, compteurs reçus / affichés / cliqués, échecs), `push_campaigns` (messages et compteurs), `push_stats` (invitation, navigateur, abonnements, par jour).
 - **Envoi** : `schedule:run` (chaque minute) envoie les messages dont l'heure est passée (`php bin/console push:send` pour le faire à la main), par lots de 500, 50 requêtes en parallèle. Réponse 404 / 410 : abonnement supprimé ; autre échec : supprimé après 5 échecs de suite.
 - **API** : `POST /api/v1/push/subscribe`, `/push/unsubscribe`, `/push/event` (`e` = `iv` invitation vue, `ia` oui, `il` plus tard, `ig` autorisé, `id` bloqué ; ou `c` = message et `e` = `s` affiché / `c` cliqué). `/api/v1/config` renvoie `push` (réglages de l'invitation) ou `false`.
 - **Code** : `src/Push/WebPush.php` (chiffrement, signature, envoi), `src/Push/Push.php` (réglages, abonnés, messages), `src/Admin/PushController.php`, gabarits `push_settings.php`, `push.php`, `push_edit.php`, scripts `public/assets/push-admin.js`, `public/widget/push-sw.js` ; invitation dans `public/widget/deepfind.js` (`startPush`).

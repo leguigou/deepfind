@@ -590,6 +590,7 @@ Messages envoyés sur le téléphone ou l'ordinateur des visiteurs qui l'accepte
 - **Paramètres › Notifications** : forme de l'invitation (bandeau en bas / en haut, popin au centre / dans un coin, cloche flottante, bloc dans la page), appareils (**téléphones uniquement** par défaut, téléphones et tablettes, tous, ordinateurs), **exclusion des iPhone et iPad** (par défaut : ils n'acceptent les notifications que si le site est ajouté à l'écran d'accueil), délai, N-ième page vue, pages exclues, textes, couleurs, CSS, aperçu ordinateur / mobile.
 - **Installation** : déposer une fois sur le site un fichier `sw.js` d'une ligne, `importScripts('https://<DeepFind>/widget/push-sw.js');` (le widget ne peut pas le créer : règle des navigateurs).
 - **Recommandations › Envoi de notifications** : titre, texte, lien, image, appareils, provenance à l'abonnement ; brouillon, envoi maintenant ou programmé (`schedule:run`, ou `php bin/console push:send`) ; envoyés, affichés, clics.
+- **Abonnés** : liste filtrable (appareil, statut, navigateur, provenance), adresse et clé masquées, reçus / affichés / clics par appareil, envoi de test, pause / réactivation, suppression.
 - Le visiteur clique d'abord sur l'invitation, puis le navigateur demande son accord (fenêtre non modifiable, jamais reproposée s'il refuse).
 
 ### Parcours

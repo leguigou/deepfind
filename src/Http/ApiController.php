@@ -245,7 +245,7 @@ final class ApiController
             $device = ['m' => 'phone', 't' => 'tablet', 'd' => 'desktop'][(string) ($p['d'] ?? '')] ?? 'phone';
             $src = \DeepFind\Rules\Segments::forRequest($p, $ip, $ua);
             $ok = \DeepFind\Push\Push::subscribe($lang, (string) ($p['endpoint'] ?? ''), (string) ($p['p256dh'] ?? ''), (string) ($p['auth'] ?? ''),
-                $device, \DeepFind\Rules\Segments::channel($src), (int) $key['id']);
+                $device, \DeepFind\Rules\Segments::channel($src), (int) $key['id'], $ua);
             Response::json(['ok' => $ok], $ok ? 200 : 422, $cors);
             return;
         }
@@ -260,7 +260,7 @@ final class ApiController
         Response::finish();
         $e = (string) ($p['e'] ?? '');
         if (isset($p['c'])) {
-            \DeepFind\Push\Push::campaignEvent((int) $p['c'], $e);
+            \DeepFind\Push\Push::campaignEvent((int) $p['c'], $e, (int) ($p['s'] ?? 0), substr((string) ($p['g'] ?? ''), 0, 32));
         } elseif (($p['na'] ?? '') !== '1') {
             \DeepFind\Push\Push::stat($e);
         }

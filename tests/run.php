@@ -1230,8 +1230,32 @@ if ($base) {
         && ($payloadP['c'] ?? 0) === $idPc && ($payloadP['k'] ?? '') === $key2, json_encode([$nSent, count($reqs), $payloadP]));
     check('notifications : abonnement expiré (410) supprimé, message marqué envoyé ; nouvel essai sans effet',
         $pcAfter['status'] === 'sent' && $pcAfter['sent'] === 1 && $pcAfter['failed'] === 1 && $PU::counts('fr')['total'] === 1 && $PU::runDue() === 0, json_encode($pcAfter));
-    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 's'], 'Mozilla/5.0 Push/sw');
-    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 'c'], 'Mozilla/5.0 Push/sw');
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 's', 's' => $payloadP['s'] ?? 0, 'g' => $payloadP['g'] ?? ''], 'Mozilla/5.0 Push/sw');
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 'c', 's' => $payloadP['s'] ?? 0, 'g' => $payloadP['g'] ?? ''], 'Mozilla/5.0 Push/sw');
+    $post('/api/v1/push/event', ['key' => $key, 'lang' => 'fr', 'c' => $idPc, 'e' => 'c', 's' => $payloadP['s'] ?? 0, 'g' => 'falsifiee0000000'], 'Mozilla/5.0 Push/sw');
+    usleep(300000);
+    $subOk = DeepFind\Db::one('SELECT id, sent, shown, clicks, last_click_at, browser, os FROM push_subscriptions WHERE endpoint_hash = ?', [hash('sha256', $browsers['ok']['endpoint'])]);
+    $psbList = $PU::subscribers('fr', ['device' => 'phone', 'status' => 'active']);
+    check('notifications : compteurs par appareil (reçu, affiché, cliqué ; signature falsifiée ignorée), liste des abonnés masquée',
+        $subOk !== null && (int) $subOk['sent'] === 1 && (int) $subOk['shown'] === 1 && (int) $subOk['clicks'] === 1 && $subOk['last_click_at'] !== null
+        && $psbList['total'] === 1 && str_contains($psbList['rows'][0]['endpoint_masked'], '****') && str_contains($psbList['rows'][0]['key_masked'], '****')
+        && !isset($psbList['rows'][0]['endpoint']) && !str_contains(json_encode($psbList), $browsers['ok']['p256dh']), json_encode([$subOk, $psbList['rows'][0] ?? null]));
+    check('notifications : navigateur et système reconnus (famille seulement)', $PU::browserOf('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36') === 'Chrome'
+        && $PU::osOf('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36') === 'Android'
+        && $PU::browserOf('Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1') === 'Safari'
+        && $PU::browserOf('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0 Safari/537.36 Edg/131.0') === 'Edge'
+        && $PU::browserOf('Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0') === 'Firefox' && $PU::mask('abc') === '********');
+    @unlink($pushLog);
+    $testCode = $PU::sendTest((int) $subOk['id'], 'fr');
+    usleep(200000);
+    $testReq = json_decode((string) strtok((string) @file_get_contents($pushLog), "\n"), true);
+    $testPayload = $testReq ? json_decode($WP::decrypt(base64_decode($testReq['body']), $browsers['ok']['key'], $browsers['ok']['auth']), true) : null;
+    $PU::setActive((int) $subOk['id'], 'fr', false);
+    $audPaused = $PU::audience(['devices' => 'all', 'channels' => []], 'fr');
+    $PU::setActive((int) $subOk['id'], 'fr', true);
+    check('notifications : envoi de test à un abonné (reçu et lisible) ; abonné en pause exclu des envois, puis réactivé',
+        $testCode === 201 && ($testPayload['t'] ?? '') === 'Test DeepFind' && $audPaused === 0 && $PU::audience(['devices' => 'all', 'channels' => []], 'fr') === 1,
+        json_encode([$testCode, $testPayload, $audPaused]));
     $unsub = $post('/api/v1/push/unsubscribe', ['key' => $key, 'lang' => 'fr', 'endpoint' => $browsers['ok']['endpoint']], 'Mozilla/5.0 Push/ok');
     usleep(300000);
     $pcAfter = $PU::find($idPc, 'fr');
