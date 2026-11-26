@@ -22,6 +22,14 @@ final class Campaigns
     public const MAX_ITEMS = 100;
     /** Produits pris en compte par les règles (les plus nombreux sont ignorés au-delà ; le tableau en montre MAX_ITEMS). */
     public const RULE_LIMIT = 1000;
+    /** Force de la mise en avant dans la recherche (coefficient, comme une règle de boost). */
+    public const BOOSTS = ['1.5' => 'Légère (×1,5)', '2' => 'Moyenne (×2)', '3' => 'Forte (×3)'];
+    /** Places en tête des carrousels : 1 à 6. */
+    public const MAX_SLOTS = 6;
+    /** Produits mis en avant dans les carrousels : les plus susceptibles d'être vendus (ventes, clics, score métier). */
+    public const PICK_SORT = ['sales_30d:desc', 'clicks_30d:desc', 'biz_score:desc'];
+    /** Sources de carrousel où la mise en avant s'applique (choix automatique) ; pas les produits choisis à la main, le panier, l'historique. */
+    public const CAROUSEL_SOURCES = ['auto', 'similar', 'trending'];
 
     /** @return list<array> */
     public static function all(string $lang): array
@@ -38,14 +46,17 @@ final class Campaigns
 
     public static function blank(): array
     {
-        return ['id' => 0, 'name' => '', 'active' => true, 'starts_at' => null, 'ends_at' => null, 'objective' => '', 'items' => [], 'match_all' => true, 'conditions' => [], 'created_at' => date('Y-m-d H:i:s')];
+        return ['id' => 0, 'name' => '', 'active' => true, 'starts_at' => null, 'ends_at' => null, 'objective' => '', 'items' => [], 'match_all' => true, 'conditions' => [],
+            'highlight_search' => false, 'search_boost' => 2.0, 'highlight_carousels' => false, 'carousel_slots' => 2, 'created_at' => date('Y-m-d H:i:s')];
     }
 
     private static function decode(array $r): array
     {
         return ['id' => (int) $r['id'], 'name' => (string) $r['name'], 'active' => (int) $r['active'] === 1, 'starts_at' => $r['starts_at'] ?: null,
             'ends_at' => $r['ends_at'] ?: null, 'objective' => (string) $r['objective'], 'items' => json_decode((string) $r['items'], true) ?: [],
-            'match_all' => (int) ($r['match_all'] ?? 1) === 1, 'conditions' => json_decode((string) ($r['conditions'] ?? ''), true) ?: [], 'created_at' => (string) $r['created_at']];
+            'match_all' => (int) ($r['match_all'] ?? 1) === 1, 'conditions' => json_decode((string) ($r['conditions'] ?? ''), true) ?: [],
+            'highlight_search' => (int) ($r['highlight_search'] ?? 0) === 1, 'search_boost' => (float) ($r['search_boost'] ?? 2),
+            'highlight_carousels' => (int) ($r['highlight_carousels'] ?? 0) === 1, 'carousel_slots' => (int) ($r['carousel_slots'] ?? 2), 'created_at' => (string) $r['created_at']];
     }
 
     /** @return array{0:?array, 1:list<string>} */
@@ -82,25 +93,33 @@ final class Campaigns
         }
         return $errors !== [] ? [null, $errors] : [['name' => $name, 'active' => !empty($in['active']), 'starts_at' => $start, 'ends_at' => $end,
             'objective' => mb_substr(trim((string) ($in['objective'] ?? '')), 0, 500, 'UTF-8'), 'items' => $items,
-            'match_all' => $rules[0]['match_all'] ?? true, 'conditions' => $conds], []];
+            'match_all' => $rules[0]['match_all'] ?? true, 'conditions' => $conds,
+            'highlight_search' => !empty($in['highlight_search']), 'search_boost' => (float) (isset(self::BOOSTS[(string) ($in['search_boost'] ?? '')]) ? $in['search_boost'] : 2),
+            'highlight_carousels' => !empty($in['highlight_carousels']), 'carousel_slots' => max(1, min(self::MAX_SLOTS, (int) ($in['carousel_slots'] ?? 2) ?: 2))], []];
     }
 
     public static function save(string $lang, array $c, ?int $id): int
     {
         $row = ['name' => $c['name'], 'active' => $c['active'] ? 1 : 0, 'starts_at' => $c['starts_at'], 'ends_at' => $c['ends_at'],
             'objective' => $c['objective'], 'items' => Text::json($c['items']),
-            'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => $c['conditions'] !== [] ? Text::json($c['conditions']) : null, 'updated_at' => date('Y-m-d H:i:s')];
+            'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => $c['conditions'] !== [] ? Text::json($c['conditions']) : null,
+            'highlight_search' => $c['highlight_search'] ? 1 : 0, 'search_boost' => $c['search_boost'], 'highlight_carousels' => $c['highlight_carousels'] ? 1 : 0,
+            'carousel_slots' => $c['carousel_slots'], 'updated_at' => date('Y-m-d H:i:s')];
         $pid = \DeepFind\Project::id();
         if ($id !== null && self::find($id, $lang) !== null) {
             Db::update('campaigns', $row, 'id = ? AND project_id = ? AND lang = ?', [$id, $pid, $lang]);
-            return $id;
+        } else {
+            $id = Db::insert('campaigns', $row + ['project_id' => $pid, 'lang' => $lang, 'created_at' => $row['updated_at']]);
         }
-        return Db::insert('campaigns', $row + ['project_id' => $pid, 'lang' => $lang, 'created_at' => $row['updated_at']]);
+        \DeepFind\CacheVersion::bump(); // mise en avant : recherche et carrousels recalculés tout de suite
+        return $id;
     }
 
     public static function delete(int $id, string $lang): void
     {
-        Db::exec('DELETE FROM campaigns WHERE id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]);
+        if (Db::exec('DELETE FROM campaigns WHERE id = ? AND project_id = ? AND lang = ?', [$id, \DeepFind\Project::id(), $lang]) > 0) {
+            \DeepFind\CacheVersion::bump();
+        }
     }
 
     /** à venir | en cours | terminée | désactivée */
@@ -257,5 +276,97 @@ final class Campaigns
         return ['period' => $p, 'rows' => [...$manualRows, ...$shown], 'total' => $total, 'prev' => $prev, 'placements' => $placements,
             'rule' => ['count' => count($ruleDocs), 'total' => $rule['total'], 'hidden' => count($ruleRows) - count($shown), 'error' => $rule['error'],
                 'capped' => $rule['total'] > self::RULE_LIMIT]];
+    }
+
+    // ------------------------------------------------------------------ Mise en avant pendant la campagne
+
+    /** Jour calendaire (heure de Paris) : la mise en avant va du jour de début à 0 h au jour de fin à 23 h 59. */
+    public static function today(?int $ts = null): string
+    {
+        return (new \DateTimeImmutable('@' . ($ts ?? time())))->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d');
+    }
+
+    /** La mise en avant de cette campagne est-elle en cours ce jour-là ? */
+    public static function isLive(array $c, ?string $day = null): bool
+    {
+        $day ??= self::today();
+        return $c['active'] && ($c['highlight_search'] || $c['highlight_carousels'])
+            && ($c['starts_at'] === null || $c['starts_at'] <= $day) && ($c['ends_at'] === null || $c['ends_at'] >= $day);
+    }
+
+    /**
+     * Campagnes mises en avant aujourd'hui, avec les identifiants de leurs produits (liste + règles, catalogue du jour).
+     * Cache : version des données (changée à chaque enregistrement, import, et au changement de jour par schedule:run).
+     * @return list<array{id:int, name:string, search:bool, boost:float, carousels:bool, slots:int, ids:list<string>}>
+     */
+    public static function live(string $lang): array
+    {
+        $day = self::today();
+        $store = \DeepFind\Store\Store::get();
+        $key = 'camplive:' . \DeepFind\Project::id() . ':' . $lang . ':' . \DeepFind\CacheVersion::get() . ':' . $day;
+        $cached = $store->get($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+        $out = [];
+        foreach (Db::all('SELECT * FROM campaigns WHERE project_id = ? AND lang = ? AND active = 1 AND (highlight_search = 1 OR highlight_carousels = 1)',
+            [\DeepFind\Project::id(), $lang]) as $r) {
+            $c = self::decode($r);
+            if (!self::isLive($c, $day)) {
+                continue;
+            }
+            $ids = array_map(static fn ($d) => (string) $d['id'], self::products($lang, $c['items']));
+            foreach (self::ruleProducts($lang, $c)['docs'] as $d) {
+                $ids[] = (string) $d['id'];
+            }
+            $ids = array_values(array_unique($ids));
+            if ($ids !== []) {
+                $out[] = ['id' => $c['id'], 'name' => $c['name'], 'search' => $c['highlight_search'], 'boost' => $c['search_boost'],
+                    'carousels' => $c['highlight_carousels'], 'slots' => $c['carousel_slots'], 'ids' => $ids];
+            }
+        }
+        $store->set($key, $out, 600);
+        return $out;
+    }
+
+    /** Règles de boost « virtuelles » des campagnes mises en avant dans la recherche (produits en stock seulement). @return list<array> */
+    public static function searchRules(string $lang): array
+    {
+        $rules = [];
+        foreach (self::live($lang) as $h) {
+            if ($h['search']) {
+                $rules[] = ['id' => 0, 'campaign' => $h['id'], 'name' => 'Campagne « ' . $h['name'] . ' »', 'active' => true, 'boost' => $h['boost'], 'terms' => [],
+                    'match_all' => true, 'conditions' => [['field' => 'id', 'values' => $h['ids']], ['field' => 'in_stock', 'values' => ['1']]]];
+            }
+        }
+        return $rules;
+    }
+
+    /**
+     * Changement de jour (appelé chaque minute par schedule:run) : si l'ensemble des campagnes mises en avant change
+     * (début ou fin), la version des données du projet change, et la recherche et les carrousels sont recalculés.
+     * @return int projets mis à jour
+     */
+    public static function syncLive(): int
+    {
+        $n = 0;
+        $day = self::today();
+        foreach (Db::all('SELECT DISTINCT project_id FROM campaigns WHERE highlight_search = 1 OR highlight_carousels = 1') as $p) {
+            $pid = (int) $p['project_id'];
+            $live = [];
+            foreach (Db::all('SELECT * FROM campaigns WHERE project_id = ? AND active = 1 AND (highlight_search = 1 OR highlight_carousels = 1)', [$pid]) as $r) {
+                if (self::isLive(self::decode($r), $day)) {
+                    $live[] = (int) $r['id'];
+                }
+            }
+            $sig = $live === [] ? '-' : implode(',', $live);
+            $name = 'campaign_live_' . $pid;
+            if ((string) (Db::value('SELECT value FROM settings WHERE name = ?', [$name]) ?? '') !== $sig) {
+                Db::exec('INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', [$name, $sig, $sig]);
+                \DeepFind\CacheVersion::bump($pid);
+                $n++;
+            }
+        }
+        return $n;
     }
 }

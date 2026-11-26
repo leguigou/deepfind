@@ -456,6 +456,12 @@ CREATE TABLE IF NOT EXISTS campaigns (
   -- produits choisis par règles (comme les boosts) : conditions [{field, op, values|value}], toutes ou au moins une
   match_all TINYINT(1) NOT NULL DEFAULT 1,
   conditions TEXT NULL,
+  -- mise en avant pendant la campagne (dates de début et de fin, jours entiers, heure de Paris) :
+  -- recherche (coefficient comme une règle de boost) et carrousels (places en tête, là où les produits ont leur place)
+  highlight_search TINYINT(1) NOT NULL DEFAULT 0,
+  search_boost DECIMAL(4,2) NOT NULL DEFAULT 2.00,
+  highlight_carousels TINYINT(1) NOT NULL DEFAULT 0,
+  carousel_slots TINYINT UNSIGNED NOT NULL DEFAULT 2,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang)

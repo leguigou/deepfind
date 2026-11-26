@@ -71,8 +71,11 @@ fs.mkdirSync(OUT, { recursive: true });
   check('aide : clic à gauche = défilement jusqu\'à la page, sans rechargement, page surlignée',
     (await page.textContent('.wk-nav a[aria-current=page]')).includes('Aperçu direct') && await page.locator('.wk-section').count() > 5);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(400);
-  check('aide : en remontant, la page lue change à gauche', (await page.textContent('.wk-nav a[aria-current=page]')).includes('Recommandations'));
+  // le défilement animé vers la page cliquée peut durer plus longtemps sur une longue rubrique : on attend qu'il se termine
+  const wkTop = await page.waitForFunction(() => { const a = document.querySelector('.wk-nav a[aria-current=page]'); return a && a.textContent.includes('Recommandations'); },
+    null, { timeout: 4000 }).then(() => true).catch(async () => { await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(600);
+    return (await page.textContent('.wk-nav a[aria-current=page]')).includes('Recommandations'); });
+  check('aide : en remontant, la page lue change à gauche', wkTop);
   await page.fill('[data-wk-search]', 'consentement');
   await page.locator('.wk-result >> nth=0').waitFor({ timeout: 3000 });
   check('aide : recherche (sans accents)', (await page.textContent('[data-wk-results]')).includes('Personnalisation et consentement'));
@@ -270,6 +273,22 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.screenshot({ path: OUT + '/16-boosts.png', fullPage: false });
   await page.click('form[action$="/admin/boost-rules/delete"] button, .cr-delete-btn');
   await Promise.all([page.waitForNavigation(), confirmModal()]);
+  // Règle sur un SKU : nom du produit sous le SKU, fiche complète au clic ; SKU inconnu signalé
+  const brCsrf = await page.getAttribute('input[name=_csrf]', 'value');
+  await page.request.post(BASE + '/admin/boost-rules/product', { form: { _csrf: brCsrf, sku: 'SEAC-X-VISION', boost: '1.5' } });
+  await page.goto(BASE + '/admin/boost-rules');
+  const brProd = page.locator('.br-prods .br-prod').first();
+  const brProdText = (await brProd.textContent()) || '';
+  await brProd.click();
+  const brDlg = page.locator('dialog[open]');
+  await brDlg.waitFor({ timeout: 5000 });
+  const brDlgText = await brDlg.textContent();
+  await page.screenshot({ path: OUT + '/16-boosts-fiche-produit.png', fullPage: false });
+  await brDlg.locator('[data-dialog-close]').click();
+  check('règles de boost : produit nommé sous le SKU, fiche au clic (prix, stock, attributs ; sans « pourquoi trouvé »)',
+    brProdText.includes('SEAC-X-VISION') && brProdText.length > 20 && brDlgText.includes('SEAC-X-VISION') && brDlgText.includes('Prix')
+    && brDlgText.includes('Attributs') && !brDlgText.includes('Pourquoi ce produit'), brProdText + ' | ' + brDlgText.slice(0, 200));
+  await page.request.post(BASE + '/admin/boost-rules/product', { form: { _csrf: brCsrf, sku: 'SEAC-X-VISION', boost: '1' } });
 
   // Cache : visibilité et purge
   await page.goto(BASE + '/admin/cache');
@@ -883,14 +902,25 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.locator('.cp-rules .ms-list .ms-item', { hasText: 'C4' }).first().click();
   await page.click('input[name=name]');
   await page.locator('.cp-rules').screenshot({ path: OUT + '/campagne-regles.png' });
+  // Mise en avant : message de période après les dates, options affichées quand on active
+  await page.fill('input[name=starts_at]', '2026-12-01');
+  await page.fill('input[name=ends_at]', '2026-12-03');
+  const cpWhen = await page.textContent('[data-cp-when]');
+  const optHidden = await page.locator('[data-cp-hl-opt=carousels]').isHidden();
+  await page.locator('input[name=highlight_carousels]').check({ force: true });
+  await page.locator('input[name=highlight_search]').check({ force: true });
+  check('campagnes : mise en avant (période rappelée à 0 h / 23 h 59, places en tête par défaut 2)', cpWhen.includes('à 0 h') && cpWhen.includes('23 h 59')
+    && optHidden && await page.locator('[data-cp-hl-opt=carousels]').isVisible() && await page.inputValue('input[name=carousel_slots]') === '2', cpWhen);
+  await page.locator('.cp-highlight').screenshot({ path: OUT + '/campagne-mise-en-avant.png' });
   await Promise.all([page.waitForNavigation(), page.click('.cp-form .cr-foot button.btn:not(.btn-danger)')]);
   const cpRBody = await page.textContent('body');
   check('campagnes : produits par règles (enregistrée, produits correspondants comptés, badge « règle »)', cpRBody.includes('Campagne « Règles e2e » enregistrée')
     && /Règles : \d+ produit\(s\)/.test(cpRBody) && await page.locator('.cp-table .badge:has-text("règle")').count() > 0, cpRBody.slice(0, 400));
   // Résultats seuls ; « Modifier la campagne » ouvre le formulaire seul (règles gardées), sans tableau de bord
   const cpResultsNoForm = await page.locator('[data-campaign-form]').count() === 0;
+  const cpHlStatus = (await page.textContent('.cp-hl-status').catch(() => '')) || '';
   await Promise.all([page.waitForNavigation(), page.click('a:has-text("Modifier la campagne")')]);
-  check('campagnes : résultats et formulaire sur deux pages (Modifier → formulaire seul, règles gardées)', cpResultsNoForm
+  check('campagnes : résultats et formulaire sur deux pages (Modifier → formulaire seul, règles gardées)', cpResultsNoForm && cpHlStatus.includes('Mise en avant à venir') && cpHlStatus.includes('2 place(s)')
     && await page.locator('.cp-table').count() === 0 && await page.inputValue('input[name=name]') === 'Règles e2e'
     && (await page.locator('.cp-rules .br-cond').count()) === 1 && (await page.textContent('.cp-rules')).includes('produit(s) correspondent'));
   await page.goto(BASE + '/admin/campaigns');

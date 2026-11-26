@@ -305,7 +305,7 @@ final class BoostRules
     /** Règles actives qui concernent cette recherche (sans terme = toutes les recherches). @return list<array> */
     public static function forQuery(string $lang, string $q): array
     {
-        $rules = self::active($lang);
+        $rules = [...self::active($lang), ...Campaigns::searchRules($lang)];
         if ($rules === []) {
             return [];
         }
@@ -471,5 +471,44 @@ final class BoostRules
             }
         }
         return implode($rule['match_all'] ? ' ET ' : ' OU ', $parts);
+    }
+
+    /**
+     * Produits nommés dans les conditions « SKU » des règles (liste des règles : nom sous le SKU, fiche au clic).
+     * @return array<string, array> SKU en majuscules => document complet du catalogue (absent : SKU introuvable)
+     */
+    public static function skuProducts(string $lang, array $rules): array
+    {
+        $skus = [];
+        foreach ($rules as $r) {
+            foreach ((array) ($r['conditions'] ?? []) as $c) {
+                if (($c['field'] ?? '') === 'sku' && in_array($c['op'] ?? 'in', ['in', 'not_in'], true)) {
+                    foreach ((array) ($c['values'] ?? []) as $v) {
+                        $skus[mb_strtoupper(trim((string) $v), 'UTF-8')] = true;
+                    }
+                }
+            }
+        }
+        $skus = array_slice(array_keys(array_filter($skus, static fn ($_, $k) => $k !== '', ARRAY_FILTER_USE_BOTH)), 0, 200);
+        if ($skus === []) {
+            return [];
+        }
+        try {
+            $res = \DeepFind\Meili\MeiliClient::search()->multiSearch([['indexUid' => \DeepFind\Config::productIndex($lang), 'q' => '',
+                'filter' => [\DeepFind\Search\Filter::in('all_skus', $skus)], 'limit' => count($skus) * 2]]);
+        } catch (\Throwable $e) {
+            error_log('[deepfind] règles de boost (produits) : ' . $e->getMessage());
+            return [];
+        }
+        $out = [];
+        foreach ($res[0]['hits'] ?? [] as $doc) {
+            foreach ((array) ($doc['all_skus'] ?? [$doc['sku'] ?? '']) as $s) {
+                $s = mb_strtoupper((string) $s, 'UTF-8');
+                if (in_array($s, $skus, true) && !isset($out[$s])) {
+                    $out[$s] = $doc;
+                }
+            }
+        }
+        return $out;
     }
 }

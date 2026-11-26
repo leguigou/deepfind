@@ -21,7 +21,8 @@ final class BoostRulesController
             $fields[] = ['code' => $code, 'label' => $label, 'type' => $type, 'static' => BoostRules::STATIC_VALUES[$code] ?? null];
         }
         View::render('boost_rules', [
-            'active' => 'boost_rules', 'lang' => $lang, 'rules' => BoostRules::all($lang), 'fields' => $fields,
+            'active' => 'boost_rules', 'lang' => $lang, 'rules' => $rules = BoostRules::all($lang), 'fields' => $fields,
+            'skuProducts' => BoostRules::skuProducts($lang, $rules), 'attrLabels' => \DeepFind\Settings::json('attr_labels_' . $lang),
         ], 'Règles de boost');
     }
 

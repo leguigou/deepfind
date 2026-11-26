@@ -152,6 +152,14 @@ try {
             } catch (Throwable $e) {
                 $out('audience : ' . $e->getMessage());
             }
+            // Campagnes : début ou fin de la mise en avant (changement de jour) → recherche et carrousels recalculés
+            try {
+                if (DeepFind\Rules\Campaigns::syncLive() > 0) {
+                    $out('[' . date('H:i') . '] campagnes : mise en avant mise à jour');
+                }
+            } catch (Throwable $e) {
+                $out('campagnes : ' . $e->getMessage());
+            }
             // Notifications programmées dont l'heure est passée
             try {
                 DeepFind\Push\Push::runDue(static function (string $m) use ($out): void {

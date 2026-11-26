@@ -13,6 +13,11 @@ $statusLabel = ['current' => 'en cours', 'upcoming' => 'à venir', 'ended' => 't
 <p class="cp-nav"><a href="<?= e(url('/admin/campaigns')) ?>" class="cr-back">‹ Retour aux campagnes</a>
   <a class="btn btn-light btn-sm" href="<?= e(url('/admin/campaigns/edit', ['id' => $c['id']])) ?>"><?= admin_icon('pencil') ?> Modifier la campagne</a></p>
 <?php if ($c['objective'] !== ''): ?><p><strong>Objectif</strong> : <?= e($c['objective']) ?></p><?php endif; ?>
+<?php if ($c['highlight_search'] || $c['highlight_carousels']): $hlLive = \DeepFind\Rules\Campaigns::isLive($c); ?>
+  <p class="cp-hl-status"><span class="badge <?= $hlLive ? 'badge-ok' : 'badge-warn' ?>"><?= $hlLive ? 'Mise en avant en cours' : ($c['active'] && $c['starts_at'] !== null && $c['starts_at'] > \DeepFind\Rules\Campaigns::today() ? 'Mise en avant à venir' : 'Mise en avant arrêtée') ?></span>
+    <?= $c['highlight_search'] ? 'recherche ×' . e(rtrim(rtrim(number_format($c['search_boost'], 2, ',', ''), '0'), ',')) : '' ?><?= $c['highlight_search'] && $c['highlight_carousels'] ? ' · ' : '' ?><?= $c['highlight_carousels'] ? 'carrousels : ' . (int) $c['carousel_slots'] . ' place(s) en tête' : '' ?>
+    <span class="muted small">(du <?= $c['starts_at'] ? e(date('d/m/Y', strtotime($c['starts_at']))) : 'début' ?> à 0 h <?= $c['ends_at'] ? 'au ' . e(date('d/m/Y', strtotime($c['ends_at']))) . ' à 23 h 59' : ', sans fin' ?>)</span></p>
+<?php endif; ?>
 <?php $t = $stats['total']; $pv = $stats['prev']; $per = $stats['period']; ?>
   <p class="muted">Campagne <?= e($statusLabel[$status]) ?> · résultats du <?= e(date('d/m/Y', strtotime($per['from']))) ?> au <?= e(date('d/m/Y', strtotime($per['to']))) ?>
     (<?= (int) $per['days'] ?> jour<?= $per['days'] > 1 ? 's' : '' ?>), comparés au <?= e(date('d/m/Y', strtotime($per['prev_from']))) ?> – <?= e(date('d/m/Y', strtotime($per['prev_to']))) ?>.</p>
