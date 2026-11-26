@@ -453,6 +453,9 @@ CREATE TABLE IF NOT EXISTS campaigns (
   ends_at DATE NULL,
   objective VARCHAR(500) NOT NULL DEFAULT '',
   items TEXT NOT NULL,
+  -- produits choisis par règles (comme les boosts) : conditions [{field, op, values|value}], toutes ou au moins une
+  match_all TINYINT(1) NOT NULL DEFAULT 1,
+  conditions TEXT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   KEY idx_project_lang (project_id, lang)

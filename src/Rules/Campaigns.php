@@ -10,7 +10,8 @@ use DeepFind\Search\Filter;
 use DeepFind\Text;
 
 /**
- * Campagnes de produits à pousser (Recommandations › Campagnes) : une liste de produits, une période, un objectif, et le suivi
+ * Campagnes de produits à pousser (Recommandations › Campagnes) : une liste de produits (choisis un par un, et/ou par règles
+ * comme les boosts : marque, catégorie, promotion…), une période, un objectif, et le suivi
  * de leurs résultats pendant la période comparés à la période précédente de même durée :
  * clics (recherche, carrousels), affichages dans les carrousels, position moyenne des clics dans la recherche, ajouts au panier,
  * commandes, chiffre d'affaires, et chiffre d'affaires par emplacement (où le produit a été cliqué avant d'être acheté).
@@ -19,6 +20,8 @@ use DeepFind\Text;
 final class Campaigns
 {
     public const MAX_ITEMS = 100;
+    /** Produits pris en compte par les règles (les plus nombreux sont ignorés au-delà ; le tableau en montre MAX_ITEMS). */
+    public const RULE_LIMIT = 1000;
 
     /** @return list<array> */
     public static function all(string $lang): array
@@ -35,18 +38,18 @@ final class Campaigns
 
     public static function blank(): array
     {
-        return ['id' => 0, 'name' => '', 'active' => true, 'starts_at' => null, 'ends_at' => null, 'objective' => '', 'items' => [], 'created_at' => date('Y-m-d H:i:s')];
+        return ['id' => 0, 'name' => '', 'active' => true, 'starts_at' => null, 'ends_at' => null, 'objective' => '', 'items' => [], 'match_all' => true, 'conditions' => [], 'created_at' => date('Y-m-d H:i:s')];
     }
 
     private static function decode(array $r): array
     {
         return ['id' => (int) $r['id'], 'name' => (string) $r['name'], 'active' => (int) $r['active'] === 1, 'starts_at' => $r['starts_at'] ?: null,
             'ends_at' => $r['ends_at'] ?: null, 'objective' => (string) $r['objective'], 'items' => json_decode((string) $r['items'], true) ?: [],
-            'created_at' => (string) $r['created_at']];
+            'match_all' => (int) ($r['match_all'] ?? 1) === 1, 'conditions' => json_decode((string) ($r['conditions'] ?? ''), true) ?: [], 'created_at' => (string) $r['created_at']];
     }
 
     /** @return array{0:?array, 1:list<string>} */
-    public static function sanitize(array $in): array
+    public static function sanitize(array $in, string $lang = 'fr'): array
     {
         $errors = [];
         $name = mb_substr(trim((string) ($in['name'] ?? '')), 0, 190, 'UTF-8');
@@ -67,20 +70,26 @@ final class Campaigns
                 $items[] = $sku;
             }
         }
-        if ($items === []) {
-            $errors[] = 'Ajoutez au moins un produit à pousser.';
+        // règles : mêmes conditions que les boosts et les carrousels (« contient » accepté)
+        [$rules, $condErrors] = CustomResults::sanitizeRules([['match' => ($in['match'] ?? 'all') === 'any' ? 'any' : 'all', 'conditions' => (array) ($in['conditions'] ?? [])]], $lang, true);
+        array_push($errors, ...$condErrors);
+        $conds = $rules[0]['conditions'] ?? [];
+        if ($items === [] && $conds === [] && $condErrors === []) {
+            $errors[] = 'Ajoutez au moins un produit à pousser, ou une règle.';
         }
         if (count($items) > self::MAX_ITEMS) {
             $errors[] = self::MAX_ITEMS . ' produits au plus par campagne.';
         }
         return $errors !== [] ? [null, $errors] : [['name' => $name, 'active' => !empty($in['active']), 'starts_at' => $start, 'ends_at' => $end,
-            'objective' => mb_substr(trim((string) ($in['objective'] ?? '')), 0, 500, 'UTF-8'), 'items' => $items], []];
+            'objective' => mb_substr(trim((string) ($in['objective'] ?? '')), 0, 500, 'UTF-8'), 'items' => $items,
+            'match_all' => $rules[0]['match_all'] ?? true, 'conditions' => $conds], []];
     }
 
     public static function save(string $lang, array $c, ?int $id): int
     {
         $row = ['name' => $c['name'], 'active' => $c['active'] ? 1 : 0, 'starts_at' => $c['starts_at'], 'ends_at' => $c['ends_at'],
-            'objective' => $c['objective'], 'items' => Text::json($c['items']), 'updated_at' => date('Y-m-d H:i:s')];
+            'objective' => $c['objective'], 'items' => Text::json($c['items']),
+            'match_all' => $c['match_all'] ? 1 : 0, 'conditions' => $c['conditions'] !== [] ? Text::json($c['conditions']) : null, 'updated_at' => date('Y-m-d H:i:s')];
         $pid = \DeepFind\Project::id();
         if ($id !== null && self::find($id, $lang) !== null) {
             Db::update('campaigns', $row, 'id = ? AND project_id = ? AND lang = ?', [$id, $pid, $lang]);
@@ -151,6 +160,28 @@ final class Campaigns
     }
 
     /**
+     * Produits du catalogue qui remplissent aujourd'hui les règles de la campagne (RULE_LIMIT au plus).
+     * @return array{docs: list<array>, total: int, error: ?string}
+     */
+    public static function ruleProducts(string $lang, array $c): array
+    {
+        if (($c['conditions'] ?? []) === []) {
+            return ['docs' => [], 'total' => 0, 'error' => null];
+        }
+        $filter = PageRules::filter(['match_all' => $c['match_all'], 'conditions' => $c['conditions']], $lang);
+        try {
+            $res = \DeepFind\Meili\MeiliClient::search()->multiSearch([['indexUid' => \DeepFind\Config::productIndex($lang), 'q' => '',
+                'filter' => $filter !== null ? [$filter] : [], 'limit' => self::RULE_LIMIT,
+                'attributesToRetrieve' => ['id', 'sku', 'all_skus', 'name', 'image', 'in_stock', 'final_price', 'url', 'brand']]]);
+        } catch (\Throwable $e) {
+            error_log('[deepfind] campagnes (règles) : ' . $e->getMessage());
+            return ['docs' => [], 'total' => 0, 'error' => 'Catalogue indisponible : produits des règles non calculés.'];
+        }
+        $docs = array_values($res[0]['hits'] ?? []);
+        return ['docs' => $docs, 'total' => max(count($docs), (int) ($res[0]['estimatedTotalHits'] ?? $res[0]['totalHits'] ?? 0)), 'error' => null];
+    }
+
+    /**
      * Résultats de la campagne.
      * @return array{period: array, rows: list<array>, total: array, prev: array, placements: list<array>}
      */
@@ -158,7 +189,11 @@ final class Campaigns
     {
         $p = self::period($c);
         $docs = self::products($lang, $c['items']);
-        $ids = array_values(array_unique(array_map(static fn ($d) => (string) $d['id'], $docs)));
+        // produits des règles qui ne sont pas déjà dans la liste
+        $manualIds = array_map(static fn ($d) => (string) $d['id'], $docs);
+        $rule = self::ruleProducts($lang, $c);
+        $ruleDocs = array_values(array_filter($rule['docs'], static fn ($d) => !in_array((string) $d['id'], $manualIds, true)));
+        $ids = array_values(array_unique([...$manualIds, ...array_map(static fn ($d) => (string) $d['id'], $ruleDocs)]));
         $pid = \DeepFind\Project::id();
         $zero = ['clicks' => 0, 'carts' => 0, 'orders' => 0, 'revenue' => 0];
         $sum = static function (string $from, string $to) use ($ids, $pid): array {
@@ -197,20 +232,30 @@ final class Campaigns
         $rows = [];
         $total = $zero + ['car_views' => 0];
         $prev = $zero;
-        foreach ($c['items'] as $sku) {
-            $doc = $docs[mb_strtoupper($sku, 'UTF-8')] ?? null;
+        $lines = array_map(static fn ($sku) => [$sku, $docs[mb_strtoupper($sku, 'UTF-8')] ?? null, false], $c['items']);
+        foreach ($ruleDocs as $d) {
+            $lines[] = [(string) ($d['sku'] ?? $d['id']), $d, true];
+        }
+        foreach ($lines as [$sku, $doc, $byRule]) {
             $id = $doc ? (string) $doc['id'] : '';
             $m = $now[$id] ?? $zero;
             $b = $before[$id] ?? $zero;
             $rows[] = ['sku' => $sku, 'id' => $id, 'found' => $doc !== null, 'name' => (string) ($doc['name'] ?? ''), 'image' => (string) ($doc['image'] ?? ''),
                 'in_stock' => !empty($doc['in_stock']), 'price' => $doc['final_price'] ?? null, 'car_views' => $views[$id] ?? 0,
-                'search_clicks' => $pos[$id]['n'] ?? 0, 'avg_pos' => $pos[$id]['pos'] ?? null, 'prev' => $b] + $m;
+                'search_clicks' => $pos[$id]['n'] ?? 0, 'avg_pos' => $pos[$id]['pos'] ?? null, 'prev' => $b, 'rule' => $byRule] + $m;
             foreach ($zero as $k => $_) {
                 $total[$k] += $m[$k];
                 $prev[$k] += $b[$k];
             }
             $total['car_views'] += $views[$id] ?? 0;
         }
-        return ['period' => $p, 'rows' => $rows, 'total' => $total, 'prev' => $prev, 'placements' => $placements];
+        // tableau : produits choisis un par un, puis ceux des règles les plus actifs (MAX_ITEMS en tout) ; totaux sur tous
+        $manualRows = array_values(array_filter($rows, static fn ($r) => !$r['rule']));
+        $ruleRows = array_values(array_filter($rows, static fn ($r) => $r['rule']));
+        usort($ruleRows, static fn ($a, $b) => [$b['revenue'], $b['orders'], $b['carts'], $b['clicks'], $b['car_views']] <=> [$a['revenue'], $a['orders'], $a['carts'], $a['clicks'], $a['car_views']]);
+        $shown = array_slice($ruleRows, 0, max(0, self::MAX_ITEMS - count($manualRows)));
+        return ['period' => $p, 'rows' => [...$manualRows, ...$shown], 'total' => $total, 'prev' => $prev, 'placements' => $placements,
+            'rule' => ['count' => count($ruleDocs), 'total' => $rule['total'], 'hidden' => count($ruleRows) - count($shown), 'error' => $rule['error'],
+                'capped' => $rule['total'] > self::RULE_LIMIT]];
     }
 }

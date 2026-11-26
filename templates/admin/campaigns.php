@@ -25,7 +25,7 @@ $delta = static function (int $now, int $before): string {
         <?php if ($ruptures > 0): ?><span class="badge badge-ko"><?= $ruptures ?> en rupture</span><?php endif; ?>
         <?php if ($c['objective'] !== ''): ?><br><small class="muted"><?= e(mb_strimwidth($c['objective'], 0, 90, '…', 'UTF-8')) ?></small><?php endif; ?></td>
       <td><?= e(date('d/m/Y', strtotime($s['period']['from']))) ?> → <?= $c['ends_at'] ? e(date('d/m/Y', strtotime($c['ends_at']))) : '<span class="muted">sans fin</span>' ?></td>
-      <td class="num"><?= count($c['items']) ?></td>
+      <td class="num"><?= fmt_n(count($c['items']) + ($c['stats']['rule']['count'] ?? 0)) ?><?= $c['conditions'] !== [] ? '<br><small class="muted">dont ' . fmt_n($c['stats']['rule']['count'] ?? 0) . ' par règles</small>' : '' ?></td>
       <td class="num"><?= fmt_n($s['total']['clicks']) ?></td>
       <td class="num"><?= fmt_n($s['total']['carts']) ?></td>
       <td class="num"><?= fmt_n($s['total']['orders']) ?></td>
