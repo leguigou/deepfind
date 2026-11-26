@@ -309,8 +309,16 @@ final class Campaigns
             return $cached;
         }
         $out = [];
-        foreach (Db::all('SELECT * FROM campaigns WHERE project_id = ? AND lang = ? AND active = 1 AND (highlight_search = 1 OR highlight_carousels = 1)',
-            [\DeepFind\Project::id(), $lang]) as $r) {
+        // jamais bloquant : une erreur (base pas encore mise à jour par « php bin/console install », moteur indisponible…)
+        // supprime seulement la mise en avant, pas la recherche ni les carrousels
+        try {
+            $rows = Db::all('SELECT * FROM campaigns WHERE project_id = ? AND lang = ? AND active = 1 AND (highlight_search = 1 OR highlight_carousels = 1)',
+                [\DeepFind\Project::id(), $lang]);
+        } catch (\Throwable $e) {
+            error_log('[deepfind] campagnes (mise en avant) : ' . $e->getMessage() . ' — lancez php bin/console install');
+            return [];
+        }
+        foreach ($rows as $r) {
             $c = self::decode($r);
             if (!self::isLive($c, $day)) {
                 continue;
