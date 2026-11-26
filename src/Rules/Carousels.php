@@ -601,6 +601,17 @@ final class Carousels
             $base[] = $pageCond;
         }
         $want = $max - count($pinned);
+        // 2. campagnes mises en avant : leurs produits les plus susceptibles d'être vendus, en tête, s'ils ont leur place ici
+        // (conditions du carrousel et de la page, produit semblable à celui de la page, en stock)
+        $promo = in_array($c['source'], Campaigns::CAROUSEL_SOURCES, true) ? self::campaignPicks($lang, $c, $base, $exclude, $pageProduct, $want) : [];
+        if ($promo !== []) {
+            $pinned = [...$pinned, ...$promo];
+            $exclude = [...$exclude, ...array_map(static fn ($h) => (string) $h['id'], $promo)];
+            $want -= count($promo);
+            if ($want <= 0) {
+                return array_map([SearchService::class, 'publicProduct'], $pinned);
+            }
+        }
         // apprentissage : un choix plus large, reclassé ensuite selon les clics dans ce carrousel
         $pool = $c['learning'] ? min(100, max($want * 3, $want + 12)) : $want;
         $rest = self::fromSource($lang, $c, $base, $exclude, $pageProduct, $history, $pool, $cart);
@@ -613,6 +624,25 @@ final class Carousels
             $rest = self::learn($c['id'], $rest);
         }
         return array_map([SearchService::class, 'publicProduct'], [...$pinned, ...array_slice($rest, 0, $want)]);
+    }
+
+    /** Produits des campagnes mises en avant pour ce carrousel (places de chaque campagne, $want au plus). @return list<array> */
+    private static function campaignPicks(string $lang, array $c, array $base, array $exclude, ?array $pageProduct, int $want): array
+    {
+        $out = [];
+        $similar = $c['source'] === 'similar' && $pageProduct !== null ? self::similarFilters([$pageProduct], $c['similar_by']) : [];
+        foreach (Campaigns::live($lang) as $h) {
+            if (!$h['carousels'] || count($out) >= $want) {
+                continue;
+            }
+            $hits = self::query($lang, ['filter' => [...$base, 'in_stock = 1', ...$similar, ...self::notIds($exclude), Filter::in('id', array_slice($h['ids'], 0, Campaigns::RULE_LIMIT))],
+                'sort' => Campaigns::PICK_SORT, 'limit' => min($h['slots'], $want - count($out)), 'attributesToRetrieve' => SearchService::PUBLIC_FIELDS]);
+            foreach ($hits as $hit) {
+                $out[] = $hit;
+                $exclude[] = (string) $hit['id'];
+            }
+        }
+        return $out;
     }
 
     /** Produits selon la source ; null = pas de contexte (repli sur la sélection automatique). @return ?list<array> */

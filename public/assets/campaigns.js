@@ -71,6 +71,29 @@
       area.value = '';
     });
 
+    // dates : rappel de la période de mise en avant (jours entiers, heure de Paris)
+    var when = form.querySelector('[data-cp-when]');
+    var fmtDay = function (v) {
+      var d = new Date(v + 'T12:00:00');
+      return isNaN(d) ? v : d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    };
+    function showWhen() {
+      var s = form.querySelector('input[name=starts_at]').value;
+      var e = form.querySelector('input[name=ends_at]').value;
+      if (!s && !e) { when.textContent = 'Sans dates : la campagne et sa mise en avant commencent à l\'enregistrement, sans fin.'; return; }
+      if (s && e && e < s) { when.textContent = 'La date de fin est avant la date de début.'; return; }
+      when.textContent = 'Période : ' + (s ? 'du ' + fmtDay(s) + ' à 0 h' : 'dès l\'enregistrement') + (e ? ' au ' + fmtDay(e) + ' à 23 h 59' : ', sans fin')
+        + ' (heure de Paris). Pas d\'heure précise pour l\'instant : la mise en avant commence et s\'arrête à minuit.';
+    }
+    form.querySelectorAll('input[name=starts_at], input[name=ends_at]').forEach(function (i) { i.addEventListener('change', showWhen); i.addEventListener('input', showWhen); });
+    showWhen();
+    form.querySelectorAll('[data-cp-hl]').forEach(function (cb) {
+      var opt = form.querySelector('[data-cp-hl-opt="' + cb.getAttribute('data-cp-hl') + '"]');
+      var sync = function () { opt.hidden = !cb.checked; };
+      cb.addEventListener('change', sync);
+      sync();
+    });
+
     // règles (même éditeur que les boosts et les carrousels)
     var fields = JSON.parse(form.getAttribute('data-fields') || '[]');
     var byCode = {};

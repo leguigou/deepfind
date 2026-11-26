@@ -1535,6 +1535,30 @@ if ($base) {
     check('carrousels : automatique (conditions, en stock, nombre, tri score métier, sans marge)', count($caA) > 0 && count($caA) <= 4
         && array_unique(array_column($caA, 'brand')) === ['C4'] && !in_array(false, array_column($caA, 'in_stock'), true) && $bizA === $sortedBiz
         && !str_contains(json_encode($caA), 'margin') && !str_contains(json_encode($caA), 'biz_score'), json_encode([$caA, $bizA]));
+    // Campagne mise en avant : en tête des carrousels là où les produits ont leur place, coefficient dans la recherche, aux dates de la campagne
+    $CPH = DeepFind\Rules\Campaigns::class;
+    $c4 = array_values(array_filter($caDocs, static fn ($d) => ($d['brand'] ?? '') === 'C4'));
+    usort($c4, static fn ($a, $b) => $a['biz_score'] <=> $b['biz_score']);
+    $notC4 = array_values(array_filter($caDocs, static fn ($d) => ($d['brand'] ?? '') !== 'C4'))[0];
+    $today = $CPH::today();
+    [$cph] = $CPH::sanitize(['name' => 'Nautisme', 'active' => '1', 'items' => [$c4[0]['sku'], $notC4['sku']], 'starts_at' => $today, 'ends_at' => $today,
+        'highlight_search' => '1', 'search_boost' => '3', 'highlight_carousels' => '1', 'carousel_slots' => '1'], 'fr');
+    $idCph = $CPH::save('fr', $cph, null);
+    $caH = $CA::products('fr', $CA::find($idCaAuto, 'fr'));
+    $hlRules = DeepFind\Rules\BoostRules::forQuery('fr', 'masque');
+    $hlRule = array_values(array_filter($hlRules, static fn ($r) => ($r['campaign'] ?? 0) === $idCph))[0] ?? null;
+    [$hlF] = $hlRule ? DeepFind\Rules\BoostRules::factor([$hlRule], ['id' => $c4[0]['id'], 'in_stock' => true]) : [0];
+    [$hlOut] = $hlRule ? DeepFind\Rules\BoostRules::factor([$hlRule], ['id' => $c4[0]['id'], 'in_stock' => false]) : [0];
+    check('campagnes : mise en avant (1 place en tête du carrousel, produit hors conditions jamais ajouté, ×3 dans la recherche, pas en rupture)',
+        ($caH[0]['id'] ?? '') === $c4[0]['id'] && count($caH) === count($caA) && !in_array($notC4['id'], array_column($caH, 'id'), true)
+        && $hlRule !== null && $hlRule['name'] === 'Campagne « Nautisme »' && $hlF === 3.0 && $hlOut === 1.0, json_encode([array_column($caH, 'id'), $c4[0]['id'], $hlRule]));
+    $tomorrow = date('Y-m-d', strtotime($today . ' +1 day'));
+    $CPH::save('fr', array_merge($cph, ['starts_at' => $tomorrow, 'ends_at' => $tomorrow]), $idCph);
+    $syncFuture = $CPH::syncLive();
+    check('campagnes : mise en avant à venir sans effet ; changement de jour détecté (version des données changée une seule fois)',
+        $CPH::searchRules('fr') === [] && ($CA::products('fr', $CA::find($idCaAuto, 'fr'))[0]['id'] ?? '') === ($caA[0]['id'] ?? '') && $CPH::syncLive() === 0
+        && !$CPH::isLive($CPH::find($idCph, 'fr')) && $CPH::isLive($CPH::find($idCph, 'fr'), $tomorrow), json_encode([$syncFuture]));
+    $CPH::delete($idCph, 'fr');
     check('carrousels : pages (accueil, adresse, exclusion)', $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/') && $CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/plongee/x.html')
         && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/fr/chasse.html') && !$CA::pageMatches($CA::find($idCaAuto, 'fr'), '/plongee/checkout/'));
     // Adapter les produits selon la page : conditions en plus sur les pages dont l'adresse correspond (première ligne qui correspond)

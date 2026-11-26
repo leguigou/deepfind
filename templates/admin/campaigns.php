@@ -22,6 +22,7 @@ $delta = static function (int $now, int $before): string {
   <?php foreach ($list as $c): $s = $c['stats']; [$sl, $sc] = $statusLabel[$c['status']]; $ruptures = count(array_filter($s['rows'], static fn ($r) => $r['found'] && !$r['in_stock'])); ?>
     <tr>
       <td><a href="<?= e(url('/admin/campaigns/results', ['id' => $c['id']])) ?>"><?= e($c['name']) ?></a> <span class="badge <?= e($sc) ?>"><?= e($sl) ?></span>
+        <?php if (\DeepFind\Rules\Campaigns::isLive($c)): ?><span class="badge badge-info" title="Produits mis en avant dans la recherche et / ou les carrousels">mis en avant</span><?php endif; ?>
         <?php if ($ruptures > 0): ?><span class="badge badge-ko"><?= $ruptures ?> en rupture</span><?php endif; ?>
         <?php if ($c['objective'] !== ''): ?><br><small class="muted"><?= e(mb_strimwidth($c['objective'], 0, 90, '…', 'UTF-8')) ?></small><?php endif; ?></td>
       <td><?= e(date('d/m/Y', strtotime($s['period']['from']))) ?> → <?= $c['ends_at'] ? e(date('d/m/Y', strtotime($c['ends_at']))) : '<span class="muted">sans fin</span>' ?></td>

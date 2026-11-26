@@ -18,6 +18,7 @@
     <label>Début <small class="muted">(vide : date de création)</small><input type="date" name="starts_at" value="<?= e((string) $c['starts_at']) ?>"></label>
     <label>Fin <small class="muted">(vide : sans fin)</small><input type="date" name="ends_at" value="<?= e((string) $c['ends_at']) ?>"></label>
   </div>
+  <p class="muted small cp-when" data-cp-when aria-live="polite"></p>
   <label>Objectif <small class="muted">(facultatif)</small><textarea name="objective" rows="2" maxlength="500" placeholder="ex. écouler le stock de palmes 2025 avant l'arrivée de la nouvelle collection"><?= e($c['objective']) ?></textarea></label>
   <strong class="ca-block-title">Produits à pousser, un par un</strong>
   <div class="ca-picker">
@@ -40,6 +41,27 @@
     <?php if ($rule !== null): $ru = $rule; ?>
       <p class="muted small"><?= $ru['error'] !== null ? e($ru['error']) : 'Aujourd\'hui : ' . fmt_n($ru['total']) . ' produit(s) correspondent' . ($ru['total'] > \DeepFind\Rules\Campaigns::RULE_LIMIT ? ' (suivi limité aux ' . \DeepFind\Rules\Campaigns::RULE_LIMIT . ' premiers : précisez les règles)' : '') . '.' ?></p>
     <?php endif; ?>
+  </div>
+  <div class="cp-highlight">
+    <strong class="ca-block-title">Mettre en avant pendant la campagne</strong>
+    <p class="muted small">Du jour de début à 0 h au jour de fin à 23 h 59 (heure de Paris), puis tout redevient normal, sans rien à défaire.
+      Seuls les produits <strong>en stock</strong> sont mis en avant.</p>
+    <div class="cp-hl-row">
+      <label class="toggle"><input type="checkbox" role="switch" name="highlight_search" value="1"<?= $c['highlight_search'] ? ' checked' : '' ?> data-cp-hl="search"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Dans la recherche</span></label>
+      <label class="cp-hl-opt" data-cp-hl-opt="search">Force
+        <select name="search_boost"><?php foreach (\DeepFind\Rules\Campaigns::BOOSTS as $v => $l): ?><option value="<?= e($v) ?>"<?= abs($c['search_boost'] - (float) $v) < 0.01 ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></label>
+    </div>
+    <p class="muted small">Les produits de la campagne remontent dans les résultats <strong>quand ils correspondent à la recherche</strong> (comme une règle de boost) :
+      « gilet » fait remonter les gilets de la campagne, « tente » ne les fait pas apparaître.</p>
+    <div class="cp-hl-row">
+      <label class="toggle"><input type="checkbox" role="switch" name="highlight_carousels" value="1"<?= $c['highlight_carousels'] ? ' checked' : '' ?> data-cp-hl="carousels"><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Dans les carrousels</span></label>
+      <label class="cp-hl-opt" data-cp-hl-opt="carousels">Places en tête
+        <input type="number" name="carousel_slots" min="1" max="<?= \DeepFind\Rules\Campaigns::MAX_SLOTS ?>" value="<?= (int) $c['carousel_slots'] ?>"></label>
+    </div>
+    <p class="muted small">Dans chaque carrousel automatique, les premières places vont aux produits de la campagne <strong>les plus susceptibles d'être vendus</strong>
+      (ventes, puis clics des 30 derniers jours, puis score métier), <strong>seulement là où ils ont leur place</strong> : ils doivent remplir les conditions du carrousel
+      et de la page (ex. un carrousel « Pêche » ne montre pas un produit de nautisme) et, pour « produits similaires », ressembler au produit de la page.
+      Les carrousels de produits choisis à la main, du panier et de l'historique du visiteur ne changent pas.</p>
   </div>
   <div class="cr-foot">
     <?php if ($c['id']): ?><button class="btn btn-danger cr-delete-btn" form="cp-delete-form" data-confirm="Supprimer la campagne « <?= e($c['name']) ?> » ?"><?= admin_icon('trash') ?> Supprimer cette campagne</button><?php endif; ?>

@@ -1432,6 +1432,14 @@ kbd { display: inline-block; padding: 1px 6px; border: 1px solid var(--border); 
 .cp-bulk { margin: 6px 0 10px; }
 .cp-bulk summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 .cp-bulk textarea { margin: 6px 0; max-width: 560px; }
+.cp-highlight { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--border); }
+.cp-hl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; margin: 10px 0 4px; }
+.cp-hl-opt { display: flex; flex-direction: row; align-items: center; gap: 8px; margin: 0; font-weight: 500; }
+.cp-hl-opt[hidden] { display: none; }
+.cp-hl-opt select, .cp-hl-opt input { width: auto; margin: 0; }
+.cp-hl-opt input { width: 80px; }
+.cp-when { margin: -4px 0 8px; }
+.cp-hl-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .cp-rules { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--border); }
 .cp-rules .br-conds { margin: 8px 0; }
 .cp-rules .br-add-cond { width: auto; margin: 4px 0 8px; }

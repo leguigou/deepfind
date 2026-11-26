@@ -305,7 +305,7 @@ final class BoostRules
     /** Règles actives qui concernent cette recherche (sans terme = toutes les recherches). @return list<array> */
     public static function forQuery(string $lang, string $q): array
     {
-        $rules = self::active($lang);
+        $rules = [...self::active($lang), ...Campaigns::searchRules($lang)];
         if ($rules === []) {
             return [];
         }
