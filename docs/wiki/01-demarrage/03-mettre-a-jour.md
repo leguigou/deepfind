@@ -37,10 +37,11 @@ Le serveur renvoie **toujours le dernier fichier** du widget, quel que soit le n
 | 37 | Notifications : invitation à s'abonner (bandeau, popin, cloche, bloc), abonnement Web Push |
 | 38 | Notifications : croix de fermeture en haut à droite (invitation et fenêtre de la cloche), compteurs par appareil |
 | 39 | Articles de blog aussi dans la colonne des résultats sur mobile (sous les premiers produits, ou sous « Aucun résultat ») ; feuille de style `?v=33` |
+| 40 | Notifications : croix de fermeture dessinée (parfaitement centrée) ; abonnement vérifié auprès de DeepFind (message « Inscription impossible… » en cas d'échec, au lieu d'un échec silencieux) ; abonnement fait avec d'autres clés (autre serveur DeepFind) refait automatiquement ; feuille de style `?v=34` |
 
 ## Nouveautés récentes (extranet)
 
-À installer avec `php bin/console install` (nouvelles colonnes), puis widget `?v=39`.
+À installer avec `php bin/console install` (nouvelles colonnes), puis widget `?v=40`.
 
 | Où | Nouveauté |
 |---|---|
@@ -52,4 +53,4 @@ Le serveur renvoie **toujours le dernier fichier** du widget, quel que soit le n
 | Catalogues › Imports | Historique **paginé** ; page d'un import : résumé en 5 cartes, produits vendables et désactivés auto ([Imports](../catalogue/imports)) |
 | Optimisations › Règles de boost | Produit affiché sous chaque SKU, **fiche complète** au clic ([Règles de boost](../recherche-et-pertinence/regles-de-boost)) |
 | Paramètres › Intégration › Filtres | **Valeurs masquées** (ex. catégories « Destockage, Soldes ») ([Layers, filtres et tris](../affichage-du-widget/layers-filtres-et-tris)) |
-| Widget (v39) | Articles de blog sous les premiers produits sur mobile |
+| Widget (v39, v40) | Articles de blog sous les premiers produits sur mobile ; croix des notifications centrée |

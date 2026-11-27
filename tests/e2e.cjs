@@ -53,6 +53,19 @@ fs.mkdirSync(OUT, { recursive: true });
     const badToggles = await page.$$eval('label.toggle', (ls) => ls.filter((l) => !l.querySelector('input[role=switch]') || !l.querySelector('.toggle-track') || /^\s*>/.test(l.textContent)).length);
     if (badToggles > 0) { check('interrupteurs bien formés sur ' + p, false); }
   }
+  // Bouton « Enregistrer » toujours à droite de sa barre de boutons (fiches, réglages)
+  const saveRight = [];
+  for (const p of ['/admin/sources/edit?id=1', '/admin/relevance', '/admin/sources/mapping?id=1', '/admin/audience', '/admin/push/settings', '/admin/campaigns/edit', '/admin/settings']) {
+    await page.goto(BASE + p);
+    const ok = await page.evaluate(() => {
+      const b = Array.prototype.find.call(document.querySelectorAll('main button.btn, .main button.btn'), (x) => /^\s*Enregistrer/.test(x.textContent) && !x.classList.contains('btn-light') && x.offsetParent);
+      if (!b) { return null; }
+      const bar = b.parentElement.getBoundingClientRect();
+      return bar.right - b.getBoundingClientRect().right < 40;
+    });
+    if (ok === false) { saveRight.push(p); }
+  }
+  check('formulaires : bouton « Enregistrer » à droite', saveRight.length === 0, saveRight.join(', '));
   // Aide (wiki) : menu sous Paramètres, nouvel onglet, rubriques, recherche, 404, raccourci /wiki
   await page.goto(BASE + '/admin');
   const helpLink = page.locator('nav.side a[href$="/admin/wiki"]').first();
@@ -162,7 +175,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.goto(BASE + '/admin/sources/edit?id=1');
   await page.selectOption('select[data-cron-preset="cron_delta"]', '*/15 6-23 * * *');
   check('planification : préréglage recopié', (await page.inputValue('#cron_delta')) === '*/15 6-23 * * *');
-  await page.click('form.form .actions button.btn >> nth=0');
+  await page.click('form.form .cr-foot button.btn:not(.btn-light):not(.btn-danger)');
   check('planification : enregistrée', (await page.inputValue('#cron_delta')) === '*/15 6-23 * * *' && (await page.textContent('body')).includes('Prochaines exécutions'));
   await page.screenshot({ path: OUT + '/05-source-planification.png', fullPage: true });
   await page.goto(BASE + '/admin/sources');
@@ -202,7 +215,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('input[name="fields[name][pos]"]', '2');
   await page.check('input[name=biz_importance][value=medium]');
   await page.fill('input[name=w_margin]', '35');
-  await page.click('.sticky-actions button.btn >> nth=0');
+  await page.click('.sticky-actions button.btn:not(.btn-light)');
   const relTxt = await page.textContent('body');
   check('pertinence : appliquée au moteur', relTxt.includes('appliqués à'));
   check('pertinence : avertissement poids (recalcul requis)', relTxt.includes('prochain recalcul des scores'));
@@ -212,7 +225,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.fill('input[name="fields[name][pos]"]', '1');
   await page.check('input[name=biz_importance][value=low]');
   await page.fill('input[name=w_margin]', '20');
-  await page.click('.sticky-actions button.btn >> nth=0');
+  await page.click('.sticky-actions button.btn:not(.btn-light)');
   await page.goto(BASE + '/admin/sources/test?id=1');
   check('mapping visuel : test du résultat sans rejet', !(await page.textContent('body')).includes('Rejeté'));
 
@@ -894,7 +907,7 @@ fs.mkdirSync(OUT, { recursive: true });
   // Parcours d'achat et Parcours (Analyse) : activés dans Audience › Réglages, puis un visiteur sur un faux site
   await page.goto(BASE + '/admin/audience');
   await page.check('#aud-settings input[name=journeys]', { force: true });
-  await Promise.all([page.waitForNavigation(), page.click('#aud-settings > button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('#aud-settings .form-foot > button.btn')]);
   check('parcours : activés depuis Audience › Réglages', await page.isChecked('#aud-settings input[name=journeys]'));
   const [jc, jp] = await carCtx();
   await jp.goto(BASE + '/boutique/plongee.html');
@@ -925,7 +938,7 @@ fs.mkdirSync(OUT, { recursive: true });
   check('parcours d\'achat : section de la page Audience', (await page.textContent('#parcours-achat + .flash, .aud-kpis')).length > 0
     && (await page.textContent('body')).includes('Recherches qui rapportent') && (await page.textContent('body')).includes('59,90'));
   await page.uncheck('#aud-settings input[name=journeys]', { force: true });
-  await Promise.all([page.waitForNavigation(), page.click('#aud-settings > button.btn')]);
+  await Promise.all([page.waitForNavigation(), page.click('#aud-settings .form-foot > button.btn')]);
 
   // Campagne de produits à pousser : création depuis l'écran (recherche d'un produit + liste de SKU collée), tableau de bord
   await page.goto(BASE + '/admin/campaigns/edit');
@@ -1082,6 +1095,7 @@ fs.mkdirSync(OUT, { recursive: true });
     && psbRow.includes('Actif') && !psbRow.includes(fakeSub.p256dh), psbRow.replace(/\s+/g, ' '));
   // actions regroupées dans le menu « ⋮ » de la ligne
   await page.click('.psb-table tbody tr .kb-toggle');
+  await page.waitForSelector('.kb-floating .kb-item');
   const kbItems = await page.locator('.kb-floating .kb-item').allTextContents();
   const kbBox = await page.locator('.kb-floating').boundingBox();
   await page.screenshot({ path: OUT + '/notifications-abonnes-menu.png' });
@@ -1281,13 +1295,13 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.click('[data-src-check]');
   await page.waitForFunction(() => document.querySelector('.src-result.is-ok'));
   check('flux : test avec identifiants → connexion réussie (HTTP 200)', (await page.textContent('.src-check-results')).includes('HTTP 200'));
-  await Promise.all([page.waitForNavigation(), page.click('.actions button.btn:not(.btn-light)')]);
+  await Promise.all([page.waitForNavigation(), page.click('.cr-foot button.btn:not(.btn-light):not(.btn-danger)')]);
   const srcHtml = await page.content();
   check('flux : source enregistrée, mot de passe jamais réaffiché', srcHtml.includes('Source enregistrée') && !srcHtml.includes('s3cret')
     && (await page.getAttribute('input[name=auth_password]', 'placeholder')).includes('enregistré'));
   check('fiches : « Supprimer la source » sur la ligne des boutons, même hauteur', await page.evaluate(() => {
     const del = document.querySelector('.cr-delete-btn');
-    const save = document.querySelector('.actions .btn:not(.btn-light)');
+    const save = document.querySelector('.cr-foot .btn:not(.btn-light):not(.btn-danger)');
     if (!del || !save) { return false; }
     const a = del.getBoundingClientRect();
     const b = save.getBoundingClientRect();

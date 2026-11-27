@@ -31,6 +31,7 @@ final class WidgetTexts
             'pageAll' => 'Résultats de tout le catalogue.', 'pageBack' => 'Revenir à « %s »', 'popin' => 'Message',
             'carousel' => 'Sélection de produits', 'prev' => 'Produits précédents', 'next' => 'Produits suivants', 'seeMore' => 'Voir tout',
             'freeShippingLeft' => 'Plus que %s pour profiter de la livraison offerte', 'freeShippingDone' => 'La livraison vous est offerte !',
+            'pushError' => 'Inscription impossible pour le moment, réessayez plus tard.',
         ],
         'en' => [
             'products' => 'Products', 'brands' => 'Brands', 'posts' => 'Blog posts', 'filters' => 'Filters', 'inStock' => 'In stock', 'onSale' => 'On sale',
@@ -44,6 +45,7 @@ final class WidgetTexts
             'pageAll' => 'Results from the whole catalogue.', 'pageBack' => 'Back to “%s”', 'popin' => 'Message',
             'carousel' => 'Product selection', 'prev' => 'Previous products', 'next' => 'Next products', 'seeMore' => 'See all',
             'freeShippingLeft' => 'Only %s away from free delivery', 'freeShippingDone' => 'You get free delivery!',
+            'pushError' => 'Sign-up failed, please try again later.',
         ],
     ];
 
@@ -80,6 +82,7 @@ final class WidgetTexts
             'close' => 'Bouton de fermeture (lecteurs d\'écran)',
             'freeShippingLeft' => 'Carrousel « page panier » : montant restant pour la livraison offerte (%s = le montant)',
             'freeShippingDone' => 'Carrousel « page panier » : livraison offerte atteinte',
+            'pushError' => 'Notifications : l\'inscription a échoué (service d\'envoi ou serveur injoignable)',
         ],
     ];
 

@@ -82,13 +82,13 @@
   <?php endif; ?>
   <label>Mapping (JSON, mode avancé) : correspondance entre votre flux et les champs internes
     <textarea name="mapping" rows="26" class="code" spellcheck="false"><?= e($source['mapping']) ?></textarea></label>
-  <div class="actions">
-    <button class="btn">Enregistrer</button>
-    <button class="btn btn-light" name="to_mapping" value="1">Enregistrer et ouvrir le mapping visuel</button>
+  <div class="cr-foot">
     <?php if ($source['id']): ?>
+      <button class="btn btn-danger cr-delete-btn" form="cr-delete-form" data-confirm="Supprimer définitivement cette source ?"><?= admin_icon('trash') ?> Supprimer la source</button>
       <button class="btn btn-light" formaction="<?= e(url('/admin/sources/test', ['id' => $source['id']])) ?>">Tester ce mapping (sans enregistrer)</button>
-      <button class="btn btn-danger cr-delete-btn cr-delete-end" form="cr-delete-form" data-confirm="Supprimer définitivement cette source ?"><?= admin_icon('trash') ?> Supprimer la source</button>
     <?php endif; ?>
+    <button class="btn btn-light" name="to_mapping" value="1">Enregistrer et ouvrir le mapping visuel</button>
+    <button class="btn">Enregistrer</button>
   </div>
 </form>
 

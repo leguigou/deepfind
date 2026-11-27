@@ -149,9 +149,9 @@ $tableHead = '<thead><tr><th>Champ DeepFind</th><th></th><th>Champ détecté dan
   <?php endif; ?>
   <?php endif; ?>
 
-  <div class="actions sticky-actions">
-    <button class="btn">Enregistrer le mapping</button>
+  <div class="actions sticky-actions actions-end">
     <a class="btn btn-light" href="<?= e(url('/admin/sources/test', ['id' => $id])) ?>">Tester le résultat</a>
+    <button class="btn">Enregistrer le mapping</button>
   </div>
 </form>
 <?php endif; ?>
