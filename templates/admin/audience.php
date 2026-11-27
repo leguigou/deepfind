@@ -245,6 +245,6 @@ $funnel = [
     </div>
     <p class="muted small">Page d'accueil : <code>/</code> ou la racine d'une langue (<code>/fr</code>). Moins de pages mesurées = moins de requêtes, mais des visiteurs qui ne cherchent pas sont alors oubliés.</p>
   </fieldset>
-  <button class="btn">Enregistrer</button>
+  <div class="form-foot"><button class="btn">Enregistrer</button></div>
 </form>
 <script src="<?= e(asset('/assets/audience.js')) ?>"></script>

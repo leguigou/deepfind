@@ -1532,3 +1532,8 @@ td.actions form > .btn { vertical-align: middle; }
 .kb-sep { border: 0; border-top: 1px solid var(--border); margin: 4px 2px; }
 .kb-form { padding: 4px 4px 2px; }
 .kb-form input[name=label] { width: 100%; margin: 0 0 4px; padding: 6px 10px; font-size: 13px; }
+
+/* Bouton principal (Enregistrer) toujours à droite ; actions secondaires à sa gauche, suppression à l'extrême gauche */
+.actions-end { justify-content: flex-end; }
+.form-foot { gap: 10px; align-items: center; margin-top: 16px; }
+.lp-foot .lp-save { margin-left: auto; }

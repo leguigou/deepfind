@@ -387,8 +387,8 @@ html.df-lock { overflow: hidden; }
 /* Croix de fermeture de l'invitation et de la fenêtre de la cloche */
 .df-push { padding-right: 44px; }
 .df-push-block { position: relative; }
-.df-push-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; border: 2px solid #fff; border-radius: 50%;
-  background: var(--df-push-btn, #e11d48); color: #fff; font: 700 13px/1 system-ui, sans-serif; cursor: pointer; display: grid; place-items: center;
+.df-push-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; border: 2px solid #fff; border-radius: 50%; box-sizing: border-box;
+  background: var(--df-push-btn, #e11d48); color: #fff; font-size: 0; line-height: 0; cursor: pointer; display: block;
   box-shadow: 0 2px 8px rgba(15, 23, 42, .3); transition: transform .15s ease, filter .15s ease; }
 .df-push-x:hover, .df-push-x:focus-visible { transform: scale(1.1); filter: brightness(1.1); outline: none; }
 .df-push-x:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--df-push-btn, #e11d48) 40%, transparent); }
@@ -402,3 +402,10 @@ html.df-lock { overflow: hidden; }
   .df-posts-main .df-post { padding: 6px 4px; }
   .df-side .df-posts { display: none; }
 }
+
+/* Croix de fermeture dessinée (deux traits croisés au centre exact du rond) */
+.df-push-x::before, .df-push-x::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 2px; margin: -1px 0 0 -6px;
+  border-radius: 2px; background: currentColor; }
+.df-push-x::before { transform: rotate(45deg); }
+.df-push-x::after { transform: rotate(-45deg); }
+.df-push-err { flex-basis: 100%; margin: 0; color: #b91c1c; font-size: 13px; font-weight: 600; }

@@ -106,10 +106,10 @@ $radios = static function (string $name, array $options, string $current): void 
     <p class="muted small">Appliqué immédiatement.</p>
   </div>
 
-  <div class="fixed-actions sticky-actions">
-    <button class="btn">Enregistrer</button>
+  <div class="fixed-actions sticky-actions actions-end">
     <?php if ($sources): ?>
     <button class="btn btn-light" name="reindex" value="1">Enregistrer et recalculer les scores</button>
     <?php endif; ?>
+    <button class="btn">Enregistrer</button>
   </div>
 </form>

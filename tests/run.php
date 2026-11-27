@@ -1768,7 +1768,7 @@ if ($base) {
         }
     }
     $groupKeys = array_merge(...array_map('array_keys', array_values($WT::GROUPS)));
-    check('variables : textes d\'origine identiques à ceux du widget, tous présentés à l\'écran', $missing === [] && count($WT::DEFAULTS['fr']) === 44
+    check('variables : textes d\'origine identiques à ceux du widget, tous présentés à l\'écran', $missing === [] && count($WT::DEFAULTS['fr']) === 45
         && array_diff(array_keys($WT::DEFAULTS['fr']), $groupKeys) === [] && array_keys($WT::DEFAULTS['fr']) === array_keys($WT::DEFAULTS['en']), json_encode($missing));
     $WT::saveTexts('fr', ['from' => '  À partir de :  ', 'isNew' => 'Nouveau', 'clear' => '<b>Tout effacer</b>', 'inconnu' => 'x', 'filters' => '']);
     $wErr = $WT::saveCustom('fr', [['code' => '{{ livraison }}', 'value' => 'Livraison offerte', 'description' => 'Bandeau'], ['code' => 'name', 'value' => 'x'],

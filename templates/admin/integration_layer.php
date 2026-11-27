@@ -258,6 +258,6 @@ $colors = [
   <?php else: ?>
     <button class="btn btn-light" form="lp-activate" data-confirm="Activer « <?= e($layer['name']) ?> » ? Il remplacera le layer actif sur le site.">Activer le layer</button>
   <?php endif; ?>
-  <button class="btn" form="lp-form">Enregistrer</button>
+  <button class="btn lp-save" form="lp-form">Enregistrer</button>
 </div>
 <script src="<?= e(asset('/assets/integration.js')) ?>"></script>

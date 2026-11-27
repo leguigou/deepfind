@@ -78,7 +78,8 @@
       pageLimited: 'Résultats limités à', pageRemove: 'Retirer le filtre « %s » et chercher dans tout le catalogue',
       pageAll: 'Résultats de tout le catalogue.', pageBack: 'Revenir à « %s »', popin: 'Message',
       carousel: 'Sélection de produits', prev: 'Produits précédents', next: 'Produits suivants', seeMore: 'Voir tout',
-      freeShippingLeft: 'Plus que %s pour profiter de la livraison offerte', freeShippingDone: 'La livraison vous est offerte !' },
+      freeShippingLeft: 'Plus que %s pour profiter de la livraison offerte', freeShippingDone: 'La livraison vous est offerte !',
+      pushError: 'Inscription impossible pour le moment, réessayez plus tard.' },
     en: { products: 'Products', brands: 'Brands', posts: 'Blog posts', filters: 'Filters', inStock: 'In stock', onSale: 'On sale',
       seeAll: 'See all', sort: 'Sort', relevance: 'Relevance', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', newest: 'Newest',
       none: 'No results for', tryOther: 'Check the spelling or try a more general term.', from: 'from', outOfStock: 'Out of stock',
@@ -89,7 +90,8 @@
       pageLimited: 'Results limited to', pageRemove: 'Remove the “%s” filter and search the whole catalogue',
       pageAll: 'Results from the whole catalogue.', pageBack: 'Back to “%s”', popin: 'Message',
       carousel: 'Product selection', prev: 'Previous products', next: 'Next products', seeMore: 'See all',
-      freeShippingLeft: 'Only %s away from free delivery', freeShippingDone: 'You get free delivery!' }
+      freeShippingLeft: 'Only %s away from free delivery', freeShippingDone: 'You get free delivery!',
+      pushError: 'Sign-up failed, please try again later.' }
   };
   var t = T[cfg.lang] || T.fr;
   // Paramètres › Variables : textes modifiés pour la langue, variables personnalisées {{code}} (texte brut)
@@ -117,7 +119,7 @@
   // ------------------------------------------------------------------ Feuille de style
   var css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = base + '/widget/deepfind.css?v=33'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
+  css.href = base + '/widget/deepfind.css?v=34'; // ajoutée seulement si le projet est actif (voir démarrage en bas)
 
   // ------------------------------------------------------------------ Utilitaires DOM
   function el(tag, cls, text) {
@@ -1334,9 +1336,27 @@
     var j = sub.toJSON ? sub.toJSON() : {};
     var body = new URLSearchParams({ key: cfg.key, lang: cfg.lang, endpoint: j.endpoint || sub.endpoint, p256dh: (j.keys || {}).p256dh || '', auth: (j.keys || {}).auth || '', d: device });
     addSource(body, true);
-    return fetch(cfg.api + '/push/subscribe', { method: 'POST', body: body, credentials: 'omit' });
+    // l'abonnement n'est compté que si DeepFind l'a bien enregistré (sinon : message dans l'invitation, détail dans la console)
+    return fetch(cfg.api + '/push/subscribe', { method: 'POST', body: body, credentials: 'omit' }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok || !d || d.ok !== true) { throw new Error('enregistrement refusé par DeepFind (HTTP ' + r.status + (d && d.error ? ', ' + d.error : '') + ')'); }
+        return true;
+      });
+    });
+  }
+  // Clé de l'abonnement existant différente de celle du serveur (abonné avec un autre DeepFind ou d'autres clés) : à refaire
+  function sameKey(sub) {
+    try {
+      var k = sub.options && sub.options.applicationServerKey;
+      if (!k) { return true; }
+      var a = new Uint8Array(k), b = b64uToBytes(pushCfg.key);
+      if (a.length !== b.length) { return false; }
+      for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) { return false; } }
+      return true;
+    } catch (e) { return true; }
   }
   // Clic sur « Oui » : demande du navigateur (dans le clic), puis abonnement envoyé à DeepFind
+  var pushFailed = false;
   function pushSubscribe() {
     pushEvent('ia');
     var ask = Notification.requestPermission();
@@ -1345,10 +1365,12 @@
       if (perm !== 'granted') { return false; }
       return pushRegistration().then(function (reg) {
         return reg.pushManager.getSubscription().then(function (s) {
-          return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(pushCfg.key) });
+          if (s && sameKey(s)) { return s; }
+          var fresh = function () { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(pushCfg.key) }); };
+          return s ? s.unsubscribe().then(fresh, fresh) : fresh();
         });
-      }).then(function (sub) { return pushSave(sub).then(function () { return true; }); });
-    }).catch(function (err) { console.warn('[DeepFind] notifications : ' + (err && err.message ? err.message : err)); return false; });
+      }).then(function (sub) { return pushSave(sub); });
+    }).catch(function (err) { console.warn('[DeepFind] notifications : ' + (err && err.message ? err.message : err)); pushFailed = true; return false; });
   }
   function pushUnsubscribe() {
     return navigator.serviceWorker.getRegistration(pushCfg.sw).then(function (reg) {
@@ -1403,6 +1425,12 @@
             box.textContent = '';
             box.appendChild(el('p', 'df-push-thanks', withVars(p.thanks)));
             setTimeout(function () { onDone(true); }, 3500);
+          } else if (!ok && pushFailed) {
+            // échec (DeepFind injoignable ou refus) : message dans l'invitation, boutons réactivés pour réessayer
+            pushFailed = false;
+            yes.disabled = later.disabled = false;
+            var err = box.querySelector('.df-push-err') || box.insertBefore(el('p', 'df-push-err'), btns);
+            err.textContent = t.pushError;
           } else { onDone(ok); }
         });
       });
@@ -1416,7 +1444,7 @@
   }
   // Croix de fermeture, en haut à droite de la fenêtre
   function pushClose(box) {
-    var x = el('button', 'df-push-x', '✕');
+    var x = el('button', 'df-push-x'); // croix dessinée en CSS (centrée quelle que soit la police du site)
     x.type = 'button';
     x.setAttribute('aria-label', t.close || 'Fermer');
     box.appendChild(x);
@@ -1471,7 +1499,8 @@
     var pv = 1;
     try { pv = (parseInt(window.sessionStorage.getItem(PUSH_PV), 10) || 0) + 1; window.sessionStorage.setItem(PUSH_PV, String(pv)); } catch (e) { /* stockage indisponible */ }
     var isSubscribed = Notification.permission !== 'granted' ? Promise.resolve(false) : navigator.serviceWorker.getRegistration(p.sw).then(function (reg) {
-      return reg ? reg.pushManager.getSubscription().then(function (s) { if (s) { pushSave(s).catch(function () {}); } return !!s; }) : false; // abonnement rafraîchi
+      // abonnement rafraîchi ; un abonnement fait avec d'autres clés (autre DeepFind) ne compte pas : l'invitation est reproposée
+      return reg ? reg.pushManager.getSubscription().then(function (s) { if (s && sameKey(s)) { pushSave(s).catch(function () {}); return true; } return false; }) : false;
     }).catch(function () { return false; });
     isSubscribed.then(function (subscribed) {
       if (p.form === 'bell') { document.body.appendChild(pushBell(p, subscribed, false)); return; }

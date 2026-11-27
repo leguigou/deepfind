@@ -49,6 +49,19 @@ importScripts('https://search.example.com/widget/push-sw.js');
 - Chaque serveur DeepFind a ses propres clés d'envoi (VAPID) : des abonnés recueillis sur la recette ne reçoivent jamais les messages de la production.
 - Chaque abonné garde la clé avec laquelle il s'est inscrit ; ses messages la reprennent pour renvoyer « affiché » et « cliqué », même si le projet a plusieurs clés (production, recette).
 - Si le thème a déjà un service worker (thème « PWA »), ne le remplacez pas : ajoutez-y la ligne `importScripts(...)`.
+- **Un navigateur = un abonné, dans un seul projet.** Le même navigateur sur le même site garde un seul abonnement : s'il s'abonne à nouveau avec la clé d'un autre projet, son abonnement **passe** dans ce projet (il disparaît de l'ancien). Pour tester sur un même ordinateur la production et la recette, utilisez deux navigateurs (ou un profil Chrome de plus).
+- **Abonnement fait avec un autre serveur DeepFind** (autres clés d'envoi) : le widget (version 40 et plus) le détecte, le refait avec les clés du serveur actuel et repropose l'invitation si besoin.
+
+### Je me suis abonné mais je n'apparais pas dans les abonnés
+
+1. Vérifiez le **projet** et la **langue** choisis en haut de l'extranet : ceux de la clé du widget du site testé.
+2. Sur le site, ouvrez la console du navigateur (F12, onglet « Console ») puis cliquez sur le bouton d'abonnement : une ligne **`[DeepFind] notifications : …`** donne la cause :
+   - `enregistrement refusé par DeepFind (HTTP 403, push_disabled)` : invitation désactivée dans *Paramètres › Notifications* pour ce projet ;
+   - `HTTP 401` / `403` sans détail : clé du widget invalide, ou domaine du site non autorisé pour la clé (*Paramètres › Clés*) ;
+   - `HTTP 204` : navigateur bloqué par l'anti-robots (*Catalogues › Robots & blocages*) ;
+   - erreur sur `sw.js` (404, « Failed to register ») : le fichier `sw.js` manque à la racine du site, ou son adresse est fausse (*Paramètres › Notifications › Installation*).
+3. Depuis la version 40 du widget, un échec affiche aussi « Inscription impossible pour le moment… » dans l'invitation, au lieu de la fermer.
+4. Chrome : l'icône à gauche de l'adresse › *Paramètres du site* › Notifications doit être sur « Autoriser » ; « Réinitialiser l'autorisation » permet de recommencer de zéro.
 
 ## Envoyer un message (Recommandations › Envoi de notifications)
 
