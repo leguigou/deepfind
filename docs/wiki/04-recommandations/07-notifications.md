@@ -22,6 +22,7 @@ La **croix** en haut à droite ferme l'invitation (comme *Plus tard*) ou la fen�
 | Réglage | Choix |
 |---|---|
 | Forme | bandeau en bas, bandeau en haut, popin au centre, popin dans un coin, **cloche flottante** (le visiteur clique quand il veut ; un abonné peut s'y désabonner), bloc dans la page (sélecteur CSS) |
+| Cacher la cloche une fois abonné | cloche seulement : **activé par défaut**, la cloche n'est montrée qu'aux visiteurs pas encore abonnés et disparaît dès qu'ils acceptent (désabonnement par les réglages du navigateur). Désactivé : la cloche reste, avec un point vert, et propose « Ne plus les recevoir ». Les autres formes (bandeau, popins, bloc) ne sont jamais reproposées à un visiteur abonné |
 | Appareils | **téléphones uniquement** (par défaut), téléphones et tablettes, tous, ordinateurs uniquement — d'après la taille de l'écran et l'écran tactile |
 | Exclure les iPhone et iPad | activé par défaut : sur iPhone / iPad, les notifications ne marchent que si le site a été **ajouté à l'écran d'accueil** (iOS 16.4 ou plus récent) ; sinon l'invitation ne servirait à rien |
 | Quand | délai après l'arrivée (secondes), à partir de la N<sup>e</sup> page vue de la visite, pages sans invitation (débuts d'adresse, ex. `/checkout`) |

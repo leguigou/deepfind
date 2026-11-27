@@ -65,6 +65,7 @@ final class Push
             'remember_days' => max(0, min(365, Settings::int('push_remember_days'))),
             'selector' => Settings::get('push_selector'),
             'position' => $pick(self::POSITIONS, 'push_position', 'right'),
+            'bell_hide' => Settings::int('push_bell_hide') === 1,
             'sw' => self::swPath(Settings::get('push_sw_path')),
         ];
     }

@@ -1035,7 +1035,7 @@ fs.mkdirSync(OUT, { recursive: true });
   await nc.route(/\/sw\.js$/, (r) => r.fulfill({ contentType: 'application/javascript', body: "importScripts('" + BASE + "/widget/push-sw.js');" }));
   // le service d'envoi réel du navigateur (Google…) n'est pas joignable ici, et Chromium sans affichage refuse toujours les notifications :
   // accord du navigateur et abonnement simulés, avec les clés du test
-  await np.addInitScript((sub) => {
+  const pushStub = (sub) => {
     if (!window.PushManager || !window.Notification) { return; }
     let perm = 'default';
     Object.defineProperty(Notification, 'permission', { configurable: true, get: function () { return perm; } });
@@ -1047,7 +1047,8 @@ fs.mkdirSync(OUT, { recursive: true });
         unsubscribe: function () { current = null; return Promise.resolve(true); } };
       return Promise.resolve(current);
     };
-  }, fakeSub);
+  };
+  await np.addInitScript(pushStub, fakeSub);
   await np.goto(BASE + '/boutique/plongee.html');
   await np.waitForSelector('.df-push', { timeout: 8000 });
   const invite = await np.textContent('.df-push');
@@ -1060,6 +1061,25 @@ fs.mkdirSync(OUT, { recursive: true });
   await page.goto(BASE + '/admin/push/settings');
   check('notifications : invitation affichée (avec croix de fermeture), accord du navigateur, abonnement enregistré', hasClose && invite.includes('Ne ratez aucune bonne affaire')
     && /Abonnés\s*1(?!\d)/.test(await page.textContent('.cards')), invite);
+  // Cloche : réglage « Cacher la cloche une fois le visiteur abonné » (activé par défaut) : montrée avant, retirée dès l'accord
+  await page.check('input[name=push_form][value=bell]');
+  const bellHideDefault = await page.isChecked('input[name=push_bell_hide]');
+  await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);
+  const [bc, bp] = await carCtx();
+  await bc.grantPermissions(['notifications'], { origin: BASE });
+  await bc.route(/\/sw\.js$/, (r) => r.fulfill({ contentType: 'application/javascript', body: "importScripts('" + BASE + "/widget/push-sw.js');" }));
+  await bp.addInitScript(pushStub, fakeSub);
+  await bp.goto(BASE + '/boutique/plongee.html');
+  await bp.waitForSelector('.df-push-bell', { timeout: 8000 });
+  await bp.click('.df-push-bell');
+  await bp.click('.df-push-yes');
+  await bp.waitForSelector('.df-push-thanks', { timeout: 8000 });
+  await bp.waitForSelector('.df-push-bell', { state: 'detached', timeout: 8000 }).catch(() => {});
+  const bellGone = await bp.locator('.df-push-bell').count() === 0;
+  await bc.close();
+  check('notifications : cloche cachée une fois abonné (réglage activé par défaut)', bellHideDefault && bellGone, JSON.stringify([bellHideDefault, bellGone]));
+  await page.check('input[name=push_form][value=banner_bottom]');
+  await Promise.all([page.waitForNavigation(), page.click('.ps-form .cr-foot button.btn')]);
   await page.goto(BASE + '/admin/push/edit');
   await page.fill('input[name=title]', 'Test e2e');
   await page.fill('textarea[name=body]', 'Message de test');

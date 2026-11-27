@@ -91,6 +91,8 @@ final class Settings
         'push_remember_days' => '14',
         'push_selector' => '',
         'push_position' => 'right',
+        // cloche : cachée une fois le visiteur abonné (sinon gardée, avec « Ne plus les recevoir »)
+        'push_bell_hide' => '1',
         'push_sw_path' => '/sw.js',
         'push_vapid_public' => '',
         'push_vapid_private' => '',

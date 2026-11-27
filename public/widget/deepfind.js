@@ -1481,7 +1481,7 @@
           pushEvent('iv');
           panel = pushInvite(Object.assign({}, p, { form: 'popin_corner', panel: true }), false, function (ok) {
             if (panel) { panel.remove(); panel = null; }
-            if (ok) { bell.classList.add('df-push-on'); }
+            if (ok) { if (p.bell_hide) { bell.remove(); } else { bell.classList.add('df-push-on'); } }
           });
         }
         document.body.appendChild(panel);
@@ -1503,7 +1503,11 @@
       return reg ? reg.pushManager.getSubscription().then(function (s) { if (s && sameKey(s)) { pushSave(s).catch(function () {}); return true; } return false; }) : false;
     }).catch(function () { return false; });
     isSubscribed.then(function (subscribed) {
-      if (p.form === 'bell') { document.body.appendChild(pushBell(p, subscribed, false)); return; }
+      if (p.form === 'bell') {
+        // réglage « Cacher la cloche une fois le visiteur abonné » : la cloche n'est montrée qu'aux visiteurs pas encore abonnés
+        if (!(subscribed && p.bell_hide)) { document.body.appendChild(pushBell(p, subscribed, false)); }
+        return;
+      }
       if (subscribed || pv < (parseInt(p.min_pages, 10) || 1)) { return; }
       try { if (parseInt(window.localStorage.getItem(PUSH_LATER) || '0', 10) > Date.now()) { return; } } catch (e) { /* stockage indisponible */ }
       setTimeout(function () {

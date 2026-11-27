@@ -40,6 +40,12 @@ $swContent = "importScripts('" . $base . "/widget/push-sw.js');";
     <label data-ps-show="block">Sélecteur CSS du bloc <input name="push_selector" value="<?= e($v['push_selector']) ?>" placeholder="#deepfind-notifications" spellcheck="false">
       <small class="muted">L'invitation est ajoutée à la fin de ce bloc, sur les pages où il existe.</small></label>
   </div>
+  <div data-ps-show="bell">
+    <label class="toggle"><input type="checkbox" role="switch" name="push_bell_hide" value="1"<?= $v['push_bell_hide'] === '1' ? ' checked' : '' ?>><span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span><span class="toggle-text">Cacher la cloche une fois le visiteur abonné</span></label>
+    <p class="muted small">Activé : la cloche n'apparaît que pour les visiteurs pas encore abonnés, et disparaît dès qu'ils acceptent. Ils peuvent toujours se désabonner
+      depuis les réglages du navigateur (icône à gauche de l'adresse du site › Notifications). Désactivé : la cloche reste, avec un point vert, et propose « Ne plus les recevoir ».
+      Les autres formes (bandeau, popins, bloc) ne sont de toute façon plus proposées à un visiteur abonné.</p>
+  </div>
 
   <h3>2. Appareils</h3>
   <div class="grid2">

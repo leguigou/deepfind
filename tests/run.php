@@ -1236,7 +1236,7 @@ if ($base) {
     [, $cfP1] = $getUa("/api/v1/config?key=$key&lang=fr", 'Mozilla/5.0 (Linux; Android 14) Push/1');
     check('notifications : invitation annoncée au widget seulement si activée (forme, appareils, iPhone exclus par défaut, clé publique)',
         ($cfP0['push'] ?? null) === false && ($cfP1['push']['form'] ?? '') === 'bell' && ($cfP1['push']['devices'] ?? '') === 'phone'
-        && ($cfP1['push']['exclude_ios'] ?? null) === true && ($cfP1['push']['key'] ?? '') === $WP::vapid()['public'] && ($cfP1['push']['sw'] ?? '') === '/sw.js',
+        && ($cfP1['push']['exclude_ios'] ?? null) === true && ($cfP1['push']['bell_hide'] ?? null) === true && ($cfP1['push']['key'] ?? '') === $WP::vapid()['public'] && ($cfP1['push']['sw'] ?? '') === '/sw.js',
         json_encode($cfP1['push'] ?? null));
     check('notifications : réglages contrôlés (chemin du sw.js, couleurs, CSS sans balises)', $PU::swPath('../../etc/passwd') === '/sw.js' && $PU::swPath('static/js/sw.js') === '/static/js/sw.js'
         && $PU::swPath('/sw.php') === '/sw.js' && $PU::color('red', '#000000') === '#000000' && $PU::css('<script>x</script>.a{color:red}@import url(x)') === 'x.a{color:red} url(x)');

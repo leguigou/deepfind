@@ -37,7 +37,7 @@ Le serveur renvoie **toujours le dernier fichier** du widget, quel que soit le n
 | 37 | Notifications : invitation à s'abonner (bandeau, popin, cloche, bloc), abonnement Web Push |
 | 38 | Notifications : croix de fermeture en haut à droite (invitation et fenêtre de la cloche), compteurs par appareil |
 | 39 | Articles de blog aussi dans la colonne des résultats sur mobile (sous les premiers produits, ou sous « Aucun résultat ») ; feuille de style `?v=33` |
-| 40 | Notifications : croix de fermeture dessinée (parfaitement centrée) ; abonnement vérifié auprès de DeepFind (message « Inscription impossible… » en cas d'échec, au lieu d'un échec silencieux) ; abonnement fait avec d'autres clés (autre serveur DeepFind) refait automatiquement ; feuille de style `?v=34` |
+| 40 | Notifications : cloche cachée une fois le visiteur abonné (réglage) ; croix de fermeture dessinée (parfaitement centrée) ; abonnement vérifié auprès de DeepFind (message « Inscription impossible… » en cas d'échec, au lieu d'un échec silencieux) ; abonnement fait avec d'autres clés (autre serveur DeepFind) refait automatiquement ; feuille de style `?v=34` |
 
 ## Nouveautés récentes (extranet)
 

@@ -17,7 +17,7 @@ final class PushController
         'push_min_pages' => 'int', 'push_exclude_paths' => 'text', 'push_title' => 'text', 'push_text' => 'text', 'push_accept' => 'text',
         'push_later' => 'text', 'push_thanks' => 'text', 'push_image' => 'url', 'push_icon' => 'url', 'push_color_bg' => 'color',
         'push_color_text' => 'color', 'push_color_button' => 'color', 'push_css' => 'css', 'push_remember_days' => 'int', 'push_selector' => 'text',
-        'push_position' => 'choice', 'push_sw_path' => 'sw',
+        'push_position' => 'choice', 'push_sw_path' => 'sw', 'push_bell_hide' => 'bool',
     ];
 
     public function settings(): void
